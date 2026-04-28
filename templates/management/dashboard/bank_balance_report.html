@@ -1,0 +1,403 @@
+<html lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Banka Bakiye Raporu - Kuyum Plus</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: "DejaVu Sans", "Helvetica", "Arial", sans-serif;
+            color: #000;
+            background: #fff;
+            font-size: 11px;
+            line-height: 1.35
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 12mm 14mm
+        }
+
+        .hr-thick {
+            border-top: 2px solid #333;
+            margin: 6pt 0 8pt;
+            height: 0
+        }
+
+        .hr-thin {
+            border-top: 0.8pt solid #999;
+            margin: 6pt 0;
+            height: 0
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 6pt
+        }
+
+        .brand {
+            font-size: 16pt;
+            font-weight: 700;
+            letter-spacing: 1.2pt
+        }
+
+        .subtitle {
+            font-size: 8.5pt;
+            color: #666;
+            margin-top: 2pt
+        }
+
+        .report-title {
+            font-size: 11.5pt;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: underline;
+            margin: 6pt 0 2pt
+        }
+
+        .period {
+            font-size: 9pt;
+            color: #333;
+            text-align: center;
+            margin-bottom: 6pt
+        }
+
+        .info {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4pt 0 8pt
+        }
+
+        .info td {
+            vertical-align: top;
+            padding: 2pt 0
+        }
+
+        .info .label {
+            display: inline-block;
+            min-width: 110pt;
+            font-weight: 700;
+            color: #333
+        }
+
+        .box {
+            border: 1.2pt solid #000;
+            padding: 8pt;
+            margin: 6pt 0;
+            background: #fff
+        }
+
+        .box-title {
+            font-size: 10pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 4pt 0;
+            margin: 0 0 8pt;
+            background: #fff;
+            color: #000
+        }
+
+        .sum-table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        .sum-table td {
+            border: none;
+            padding: 3pt 6pt
+        }
+
+        .sum-table .left {
+            text-align: left
+        }
+
+        .sum-table .right {
+            text-align: right;
+            white-space: nowrap
+        }
+
+        .sum-table .total td {
+            border-top: 1.2pt solid #000;
+            font-weight: 700;
+            padding-top: 6pt
+        }
+
+        .negative {
+            color: #c51818
+        }
+
+        .section-bar {
+            background: #000;
+            color: #fff;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 9pt;
+            padding: 4pt 8pt;
+            margin: 8pt 0 2pt;
+            border: none;
+            text-align: left
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 8pt;
+            margin-top: 0
+        }
+
+        .tbl thead th {
+            background: #000;
+            color: #fff;
+            border: 0.8pt solid #000;
+            padding: 3pt 2pt;
+            font-weight: 700;
+            line-height: 1.1;
+            text-align: center;
+            font-size: 7.5pt
+        }
+
+        .tbl td {
+            border: 0.6pt solid #999;
+            padding: 2pt 3pt;
+            vertical-align: middle;
+            line-height: 1.1;
+            overflow-wrap: anywhere;
+            font-size: 7.5pt
+        }
+
+        .center {
+            text-align: center
+        }
+
+        .right {
+            text-align: right
+        }
+
+        .wrap {
+            white-space: normal
+        }
+
+        .nowrap {
+            white-space: nowrap
+        }
+
+        .mono {
+            font-family: "Courier New", monospace;
+            font-size: 7pt
+        }
+
+        .fit {
+            -pdf-keep-in-frame-mode: shrink
+        }
+
+        .notes {
+            border: 0.8px solid #000;
+            height: 120px !important;
+            margin-top: 1rem !important;
+            min-height: 10rem !important;
+            max-height: 10rem !important;
+
+
+        }
+
+        .notes-title {
+            padding: 6px !important;
+            font-weight: 700;
+            font-size: 9px;
+            min-height: 10rem !important;
+            max-height: 10rem !important;
+            margin-bottom: 3px;
+            margin-top: 1rem !important;
+
+        }
+
+        .sign {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12pt
+        }
+
+        .sign td {
+            width: 50%;
+            text-align: center;
+            vertical-align: top
+        }
+
+        .sig-line {
+            border-bottom: 0.8pt solid #000;
+            height: 20pt;
+            margin: 0 15pt 4pt
+        }
+
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 8pt;
+            margin-top: 6pt
+        }
+
+        .print {
+            font-size: 7.5pt;
+            color: #888;
+            text-align: right;
+            margin-top: 4pt
+        }
+
+        thead {
+            display: table-header-group
+        }
+
+        tfoot {
+            display: table-footer-group
+        }
+
+        .group-row td {
+            background: #f2f2f2;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 4pt 6pt;
+        }
+
+        .info td.right-col {
+            text-align: right;
+        }
+
+        .info td.right-col .label {
+            text-align: right;
+        }
+
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <div class="hr-thick"></div>
+    <div class="header">
+        <div class="brand">{{ company_name|upper }}</div>
+        <div class="subtitle">{{ company_subtitle }}</div>
+    </div>
+    <div class="hr-thin"></div>
+
+    <div class="report-title">{{ report_title }}</div>
+    <div class="period">{{ period_text }}</div>
+
+    <table class="info">
+        <tr>
+            <td>
+                <div><span class="label">Rapor No:</span> {{ report_no }}</div>
+                <div><span class="label">Düzenleme Tarihi:</span> {{ generated_date }}</div>
+                <div><span class="label">Düzenleme Saati:</span> {{ generated_time }}</div>
+            </td>
+
+            <td class="right-col">
+                <div><span class="label">Mağaza ID:</span> {{ store_id }}</div>
+                <div><span class="label">Yetkili:</span> {{ authorized_person }}</div>
+                <div><span class="label">Dönem:</span> {{ period_days }} Gün</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="box">
+        <div class="box-title">MALİ ÖZET (TL)</div>
+        <table class="sum-table">
+            <tr>
+                <td class="left">Toplam Satış Tutarı:</td>
+                <td class="right nowrap">{{ sum_total_sales_tl }} ₺</td>
+            </tr>
+            <tr>
+                <td class="left">Toplam Alış Tutarı:</td>
+                <td class="right nowrap">{{ sum_total_purchases_tl }} ₺</td>
+            </tr>
+            <tr class="total">
+                <td class="left">NET TOPLAM TUTAR:</td>
+                <td class="right nowrap {% if is_net_negative %}negative{% endif %}">{{ sum_net_total_tl }} ₺</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-bar">BANKA BAKİYELERİ VE HAREKETLER</div>
+
+    <table class="tbl">
+        <colgroup>
+            <col style="width:36%"/>
+            <col style="width:12%"/>
+            <col style="width:13%"/>
+            <col style="width:13%"/>
+            <col style="width:13%"/>
+            <col style="width:13%"/>
+        </colgroup>
+        <thead>
+        <tr>
+            <th>Banka</th>
+            <th class="right">Açılış</th>
+            <th class="right">Giren</th>
+            <th class="right">Çıkan</th>
+            <th class="right">Olmalı</th>
+            <th class="right">Kapanış</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+            {% if r.is_group %}
+                <tr class="group-row">
+                    <td colspan="6">{{ r.group }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td class="wrap fit">{{ r.stok_kodu }}</td>
+                    <td class="right nowrap fit">{{ r.ilk_stok }}</td>
+                    <td class="right nowrap fit">{{ r.giren }}</td>
+                    <td class="right nowrap fit">{{ r.cikan }}</td>
+                    <td class="right nowrap fit">{{ r.olmali }}</td>
+                    <td class="right nowrap fit">{{ r.stok_durum }}</td>
+                </tr>
+            {% endif %}
+        {% empty %}
+            <tr>
+                <td colspan="6" class="center">Bu dönem için banka hareketi bulunamadı.</td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <div class="notes">
+        <div class="notes-title">NOTLAR:<br><br><br><br><br></div>
+    </div>
+
+    <table class="sign">
+        <tr>
+            <td>
+                <div class="sig-line"></div>
+                <div><b>Hazırlayan</b></div>
+                <div style="color:#666;font-size:8.5pt">İmza / Tarih</div>
+            </td>
+            <td>
+                <div class="sig-line"></div>
+                <div><b>Onaylayan</b></div>
+                <div style="color:#666;font-size:8.5pt">İmza / Tarih</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        Bu rapor bilgisayar ortamında hazırlanmıştır. <br/>
+        Yenişehir Mah. Sümbül Sk. No: 6-1/79 Sweet Life Center • Pendik - İstanbul •
+        <a href="mailto:destek@kuyumplus.com">destek@kuyumplus.com</a> •
+        <a href="tel:+902166068801">0 216 606 88 01</a>
+    </div>
+
+    <div class="print">Yazdırma Tarihi: {{ print_datetime }}</div>
+</div>
+</body>
+</html>

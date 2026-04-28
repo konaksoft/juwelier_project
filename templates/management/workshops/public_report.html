@@ -1,0 +1,221 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ workshop.company_name }} • Ürün Raporu</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="{% static 'management/css/style.bundle.css' %}" rel="stylesheet">
+    <style>
+        :root {
+            --brand: #1A253A;
+            --accent: #FFCD02;
+            --ink: #E3EAF2;
+            --card: #152036;
+            --line: #2A3D66;
+        }
+
+        body {
+            background: radial-gradient(circle, #2A3D66 40%, #1A253A 70%, #0F1B2B);
+            color: var(--ink);
+            font-family: system-ui, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .topbar {
+            background: var(--brand);
+            border: 1px solid #2a334c;
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.25rem;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: #99A6B8;
+            font-size: 0.9rem;
+        }
+
+        /* Table Card */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        th {
+            background: #1e2b42;
+            color: #fff;
+            text-align: left;
+            padding: 14px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #1f2f4a;
+            font-size: 14px;
+            vertical-align: middle;
+            color: #cbd5e1;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .img-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #334155;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .print-btn {
+            background: var(--accent);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            .topbar, .panel {
+                border: 1px solid #ddd;
+                box-shadow: none;
+                background: #fff;
+            }
+
+            th {
+                background: #f3f3f3;
+                color: #000;
+            }
+
+            td {
+                color: #000;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .print-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="topbar">
+        <div class="brand">
+            <h3>{{ workshop.company_name }}</h3>
+            <p>Rapor Periyodu: {{ date_filter_text }}</p>
+        </div>
+        <div>
+            <div style="text-align:right; font-size:13px; color:#ccc; margin-bottom:5px;">
+                Toplam: {{ total_count }} Adet / {{ total_gram|floatformat:2 }} Gr
+            </div>
+            <button class="print-btn" onclick="window.print()">🖨️ Yazdır</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                <tr>
+                    <th>Görsel</th>
+                    <th>Takip Kodu</th>
+                    <th>Ürün Türü</th>
+                    <th>Açıklama</th>
+                    <th>Gram</th>
+                    <th>Fiyat</th>
+                    <th>Geliş Tarihi</th>
+                    <th>Durum</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for repair in repairs %}
+                    <tr>
+                        <td>
+                            {% if repair.image %}
+                                <img src="{{ repair.image.url }}" class="img-thumb">
+                            {% else %}
+                                <span style="font-size:24px;">📷</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight:bold; color:#fff;">{{ repair.tracking_code }}</td>
+                        <td>{{ repair.product_type }}</td>
+                        <td style="max-width:250px;">{{ repair.product_description|default:"-"|truncatechars:50 }}</td>
+                        <td>{{ repair.gram }}</td>
+                        <td>{{ repair.price }} TL</td>
+                        <td>{{ repair.moved_to_workshop_at|date:"d.m.Y H:i" }}</td>
+                        <td><span class="badge">Atölyede</span></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding:40px; color:#6b7280;">
+                            Bu periyotta bekleyen ürün bulunmamaktadır.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

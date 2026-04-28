@@ -1,0 +1,815 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        .balance-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .balance-card:hover {
+            transform: scale(1.02);
+        }
+
+        .balance-box {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            width: 30%;
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .receivable {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 2px solid #28a745;
+        }
+
+        .payable {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 2px solid #dc3545;
+        }
+
+        .balance {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #007bff;
+            border: 2px solid #007bff;
+        }
+
+
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-fluid">
+                    <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl">
+                        <div class="content flex-row-fluid" id="kt_content">
+
+                            <div class="row g-3 g-lg-4 w-100 mt-4">
+
+                                <div class="col-12 col-xl-12">
+                                    <div class="card card-flush">
+                                        <div class="card-header pt-7 d-flex justify-content-between align-items-center">
+                                            <h2 class="mb-0">
+                                                <i class="fas fa-user-circle fs-2"
+                                                   style="color: #007bff; margin-right: 15px;"></i>
+                                                Atolye: <span
+                                                    style="color: #007bff; font-weight: 800; margin-left: 10px;">
+                                                {{ record.company_name }}
+                                            </span>
+                                            </h2>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+                                                <li class="nav-item mt-2">
+                                                    <a class="nav-link text-active-primary ms-0 me-10 py-5 active"
+                                                       data-bs-toggle="tab" href="#bekleyen">
+                                                        Bekleyenler
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item mt-2">
+                                                    <a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                       data-bs-toggle="tab" href="#tamamlanan">
+                                                        Tamamlananlar
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item mt-2">
+                                                    <a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                       data-bs-toggle="tab" href="#islemler">
+                                                        İşlem Geçmişi
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-xl-12">
+                                    <div id="kt_datatable_example_buttons" class="d-none"></div>
+                                    <div class="tab-content">
+
+                                        <div class="tab-pane fade show active" id="bekleyen">
+                                            <div class="card">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <h2 class="text-primary fw-bold mb-0">
+                                                        <i class="fas fa-list me-2"></i>
+                                                        <span style="position: relative; top: 3px;">Ürünler</span>
+                                                    </h2>
+
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <button type="button" class="btn btn-light-primary"
+                                                                data-kt-menu-trigger="click"
+                                                                data-kt-menu-placement="bottom-end">
+                                                            <i class="fa-solid fa-download"></i> Raporlar
+                                                        </button>
+                                                        <div id="kt_datatable_example_export_menu"
+                                                             class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                                             data-kt-menu="true">
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="excel">Excel</a>
+                                                            </div>
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="csv">CSV</a>
+                                                            </div>
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="pdf">PDF</a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <div class="d-flex flex-stack mb-5">
+                                                            <div class="d-flex justify-content-end align-items-center d-none"
+                                                                 data-kt-docs-table-toolbar="selected">
+                                                            </div>
+                                                        </div>
+                                                        <table id="kt_datatable_example_1"
+                                                               class="table align-middle table-row-dashed fs-6 gy-5">
+                                                            <thead>
+                                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                                <th class="w-10px pe-2" data-dt-column="0">
+                                                                <span class="dt-column-title">
+                                                                    <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               data-kt-check="true"
+                                                                               data-kt-check-target="#kt_table_rows .form-check-input">
+                                                                    </div>
+                                                                </span>
+                                                                    <span class="dt-column-order"></span>
+                                                                </th>
+                                                                <th>Takip Kodu</th>
+                                                                <th>Teslim Alan</th>
+                                                                <th>Teslim Eden</th>
+                                                                <th>Müşteri</th>
+                                                                <th>Cinsi</th>
+                                                                <th>Tarih</th>
+                                                                <th>Durum</th>
+                                                                <th>Fiyat</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody class="text-gray-600 fw-semibold">
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tamamlananlar -->
+                                        <div class="tab-pane fade" id="tamamlanan">
+                                            <div class="card">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <h2 class="text-primary fw-bold mb-0">
+                                                        <i class="fas fa-list me-2"></i>
+                                                        <span style="position: relative; top: 3px;">Ürünler</span>
+                                                    </h2>
+
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <button type="button" class="btn btn-light-primary"
+                                                                data-kt-menu-trigger="click"
+                                                                data-kt-menu-placement="bottom-end">
+                                                            <i class="fa-solid fa-download"></i> Raporlar
+                                                        </button>
+                                                        <div id="kt_datatable_example_export_menu"
+                                                             class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                                             data-kt-menu="true">
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="excel">Excel</a>
+                                                            </div>
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="csv">CSV</a>
+                                                            </div>
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="pdf">PDF</a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <div class="d-flex flex-stack mb-5">
+                                                            <div class="d-flex justify-content-end align-items-center d-none"
+                                                                 data-kt-docs-table-toolbar="selected">
+                                                            </div>
+                                                        </div>
+                                                        <table id="kt_datatable_example_2"
+                                                               class="table align-middle table-row-dashed fs-6 gy-5">
+                                                            <thead>
+                                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                                <th class="w-10px pe-2" data-dt-column="0">
+                                                                <span class="dt-column-title">
+                                                                    <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               data-kt-check="true"
+                                                                               data-kt-check-target="#kt_table_rows .form-check-input">
+                                                                    </div>
+                                                                </span>
+                                                                    <span class="dt-column-order"></span>
+                                                                </th>
+                                                                <th>Takip Kodu</th>
+                                                                <th>Teslim Alan</th>
+                                                                <th>Teslim Eden</th>
+                                                                <th>Müşteri</th>
+                                                                <th>Cinsi</th>
+                                                                <th>Tarih</th>
+                                                                <th>Durum</th>
+                                                                <th>Fiyat</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody class="text-gray-600 fw-semibold">
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- İşlem Geçmişi -->
+                                        <div class="tab-pane fade" id="islemler">
+                                            <div class="card">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <h2 class="text-primary fw-bold mb-0">
+                                                        <i class="fas fa-list me-2"></i>
+                                                        <span style="position: relative; top: 3px;">Ürünler</span>
+                                                    </h2>
+
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <button type="button" class="btn btn-light-primary"
+                                                                data-kt-menu-trigger="click"
+                                                                data-kt-menu-placement="bottom-end">
+                                                            <i class="fa-solid fa-download"></i> Raporlar
+                                                        </button>
+                                                        <div id="kt_datatable_example_export_menu"
+                                                             class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                                             data-kt-menu="true">
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="excel">Excel</a>
+                                                            </div>
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="csv">CSV</a>
+                                                            </div>
+                                                            <div class="menu-item px-3">
+                                                                <a href="#" class="menu-link px-3"
+                                                                   data-kt-export="pdf">PDF</a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <div class="d-flex flex-stack mb-5">
+                                                            <div class="d-flex justify-content-end align-items-center d-none"
+                                                                 data-kt-docs-table-toolbar="selected">
+                                                            </div>
+                                                        </div>
+                                                        <table id="kt_datatable_example_3"
+                                                               class="table align-middle table-row-dashed fs-6 gy-5">
+                                                            <thead>
+                                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                                <th class="w-10px pe-2" data-dt-column="0">
+                                                                <span class="dt-column-title">
+                                                                    <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               data-kt-check="true"
+                                                                               data-kt-check-target="#kt_table_rows .form-check-input">
+                                                                    </div>
+                                                                </span>
+                                                                    <span class="dt-column-order"></span>
+                                                                </th>
+                                                                <th>Takip Kodu</th>
+                                                                <th>Teslim Alan</th>
+                                                                <th>Teslim Eden</th>
+                                                                <th>Müşteri</th>
+                                                                <th>Cinsi</th>
+                                                                <th>Tarih</th>
+                                                                <th>Durum</th>
+                                                                <th>Fiyat</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody class="text-gray-600 fw-semibold">
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="record_id" value="{{ record.id }}">
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        let record_id = $("#record_id").val();
+        let dt;
+        var KTDatatablesServerSide = function () {
+            var table;
+            var filterPayment;
+            var initDatatable = function () {
+                dt = $("#kt_datatable_example_1").DataTable({
+                    "dom": '<"top"f>rt<"bottom"ilp><"clear">',
+                    "info": true,
+                    "paging": true,
+                    searchDelay: 400,
+                    processing: true,
+                    serverSide: true,
+                    "orderMulti": false,
+                    "autoWidth": false,
+                    stateSave: true,
+                    select: {
+                        style: 'multi',
+                        selector: 'td:first-child input[type="checkbox"]',
+                        className: 'row-selected'
+                    },
+                    "ajax": {
+                        "url": "/repairs/get-workshop-product",
+                        "type": "GET",
+                        "dataType": "json",
+                        data: function (d) {
+                            if (record_id) {
+                                d.record_id = record_id;
+                                d.status__in = 'store,workshop';
+                            }
+                        }
+                    },
+                    "columns": [
+                        {
+                            data: "id",
+                            orderable: false,
+                            className: "text-center",
+                            render: function (data, type, row, meta) {
+                                return '<input class="form-check-input" type="checkbox" value="' + row.id + '" ' +
+                                    'data-kt-check="true" ' +
+                                    'data-kt-check-target="#kt_table_rows .form-check-input" ' +
+                                    'data-id="' + row.id + '">';
+                            }
+                        },
+                        {
+                            data: "tracking_code",
+                            orderable: false,
+                            render: function (data, type, row, meta) {
+                                return `
+                                        <span class='fw-bold text-primary' style='cursor: pointer;' onclick="getRepairDetails('${row.id}')">
+                                            ${data}
+                                        </span>
+                                    `;
+                            }
+                        },
+                        {
+                            data: "id",
+                            render: function (data, type, row, meta) {
+                                let customerFullName = `${row.received_by__first_name} ${row.received_by__last_name}`;
+                                return `<a href="#" class="fw-semibold text-primary">${customerFullName}</a>`;
+                            }
+                        }, {
+                            data: "id",
+                            render: function (data, type, row, meta) {
+                                if (row.status === "delivered" && row.delivered_by__first_name && row.delivered_by__last_name) {
+                                    let fullName = `${row.delivered_by__first_name} ${row.delivered_by__last_name}`;
+                                    return `<a href="#" class="fw-semibold text-primary">${fullName}</a>`;
+                                } else {
+                                    return "-";
+                                }
+                            }
+                        }, {
+                            data: "customer__first_name",
+                            render: function (data, type, row, meta) {
+                                let customerFullName = `${row.customer__first_name} ${row.customer__last_name}`;
+                                return `<a href="/customers/detail/${row.customer__id}" class="fw-semibold text-warning">${customerFullName}</a>`;
+                            }
+                        },
+                        {
+                            data: "product_type",
+                            render: function (data, type, row, meta) {
+                                return `<span class='badge bg-info text-white'>${data}</span>`;
+                            }
+                        },
+                        {
+                            "data": "created_at",
+                            "render": function (data, type, row, meta) {
+                                if (data) {
+                                    return new Date(data).toLocaleString();
+                                }
+                                return 'N/A';
+                            }
+                        },
+                        {
+                            data: "status",
+                            className: "text-center",
+                            render: function (data, type, row, meta) {
+                                let statusClasses = {
+                                    'store': 'bg-secondary text-dark',
+                                    'workshop': 'bg-warning text-dark',
+                                    'ready_for_pickup': 'bg-info text-white',
+                                    'delivered': 'bg-success text-white'
+                                };
+                                let badgeClass = statusClasses[data] || 'bg-light text-dark';
+                                return `<span class='badge ${badgeClass}'>${row.status_display}</span>`;
+                            }
+                        },
+                        {
+                            data: "price",
+                            render: function (data, type, row, meta) {
+                                return `<span class='fw-bold text-success'>${parseFloat(data).toFixed(2)} TL</span>`;
+                            }
+                        },
+
+                    ],
+                    language: {
+                        url: "/static/management/plugins/custom/datatables/TR.json",
+                    },
+                    createdRow: function (row, data, dataIndex) {
+                        $(row).find('td:eq(4)').attr('data-filter', data.type);
+                    },
+                    rowCallback: function (row, data) {
+                    }
+                });
+
+                $('#kt_datatable_example_1 th .form-check-input').on('change', function () {
+                    var isChecked = $(this).is(':checked');
+                    $('#kt_datatable_example_1 .form-check-input').prop('checked', isChecked);
+                });
+
+                table = dt.$;
+
+                dt.on('draw', function () {
+                    initToggleToolbar();
+                    toggleToolbars();
+                    KTMenu.createInstances();
+                });
+                dt.on('column-reorder', function () {
+                    dt.ajax.reload();
+                });
+            }
+
+            var exportButtons = function () {
+                const documentTitle = 'Mağaza Tablosu';
+                var buttons = new $.fn.dataTable.Buttons(dt, {
+                    buttons: [
+                        {
+                            extend: 'copyHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        },
+                        {
+                            extend: 'excelHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        },
+                        {
+                            extend: 'csvHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        }
+                    ]
+                }).container().appendTo($('#kt_datatable_example_buttons'));
+
+                const exportButtons = document.querySelectorAll('#kt_datatable_example_export_menu [data-kt-export]');
+                exportButtons.forEach(exportButton => {
+                    exportButton.addEventListener('click', e => {
+                        e.preventDefault();
+                        const exportValue = e.target.getAttribute('data-kt-export');
+                        const target = document.querySelector('.dt-buttons .buttons-' + exportValue);
+                        target.click();
+                    });
+                });
+            }
+            var initToggleToolbar = function () {
+                const container = document.querySelector('#kt_datatable_example_1');
+                const checkboxes = container.querySelectorAll('[type="checkbox"]');
+
+
+                checkboxes.forEach(c => {
+                    c.addEventListener('click', function () {
+                        setTimeout(function () {
+                            toggleToolbars();
+                        }, 50);
+                    });
+                });
+            }
+            var toggleToolbars = function () {
+                const container = document.querySelector('#kt_datatable_example_1');
+                const allCheckboxes = container.querySelectorAll('tbody [type="checkbox"]');
+                let checkedState = false;
+                let count = 0;
+
+                allCheckboxes.forEach(c => {
+                    if (c.checked) {
+                        checkedState = true;
+                        count++;
+                    }
+                });
+            }
+
+            return {
+                init: function () {
+                    initDatatable();
+                    initToggleToolbar();
+                    exportButtons();
+
+                }
+            }
+        }();
+
+        KTUtil.onDOMContentLoaded(function () {
+            KTDatatablesServerSide.init();
+        });
+
+        let dt2;
+
+        function initDatatable2() {
+            dt2 = $("#kt_datatable_example_2").DataTable({
+                "dom": '<"top"f>rt<"bottom"ilp><"clear">',
+                "info": true,
+                "paging": true,
+                searchDelay: 400,
+                processing: true,
+                serverSide: true,
+                "orderMulti": false,
+                "autoWidth": false,
+                stateSave: true,
+                select: {
+                    style: 'multi',
+                    selector: 'td:first-child input[type="checkbox"]',
+                    className: 'row-selected'
+                },
+                "ajax": {
+                    "url": "/repairs/get-workshop-product",
+                    "type": "GET",
+                    "dataType": "json",
+                    kpSkipLoader: true,
+                    data: function (d) {
+                        if (record_id) d.record_id = record_id;
+                        d.status__in = 'ready_for_pickup';
+                    }
+                },
+                "columns": [
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center",
+                        render: function (data, type, row, meta) {
+                            return '<input class="form-check-input" type="checkbox" value="' + row.id + '" ' +
+                                'data-kt-check="true" ' +
+                                'data-kt-check-target="#kt_table_rows .form-check-input" ' +
+                                'data-id="' + row.id + '">';
+                        }
+                    },
+                    {
+                        data: "tracking_code",
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            return `
+                        <span class='fw-bold text-primary' style='cursor: pointer;' onclick="getRepairDetails('${row.id}')">
+                            ${data}
+                        </span>
+                    `;
+                        }
+                    },
+                    {
+                        data: "id",
+                        render: function (data, type, row, meta) {
+                            let customerFullName = `${row.received_by__first_name} ${row.received_by__last_name}`;
+                            return `<a href="#" class="fw-semibold text-primary">${customerFullName}</a>`;
+                        }
+                    }, {
+                        data: "id",
+                        render: function (data, type, row, meta) {
+                            if (row.status === "delivered" && row.delivered_by__first_name && row.delivered_by__last_name) {
+                                let fullName = `${row.delivered_by__first_name} ${row.delivered_by__last_name}`;
+                                return `<a href="#" class="fw-semibold text-primary">${fullName}</a>`;
+                            } else {
+                                return "-";
+                            }
+                        }
+                    }, {
+                        data: "customer__first_name",
+                        render: function (data, type, row, meta) {
+                            let customerFullName = `${row.customer__first_name} ${row.customer__last_name}`;
+                            return `<a href="/customers/detail/${row.customer__id}" class="fw-semibold text-warning">${customerFullName}</a>`;
+                        }
+                    },
+                    {
+                        data: "product_type",
+                        render: function (data, type, row, meta) {
+                            return `<span class='badge bg-info text-white'>${data}</span>`;
+                        }
+                    },
+                    {
+                        "data": "created_at",
+                        "render": function (data, type, row, meta) {
+                            if (data) {
+                                return new Date(data).toLocaleString();
+                            }
+                            return 'N/A';
+                        }
+                    },
+                    {
+                        data: "status",
+                        className: "text-center",
+                        render: function (data, type, row, meta) {
+                            let statusClasses = {
+                                'store': 'bg-secondary text-dark',
+                                'workshop': 'bg-warning text-dark',
+                                'ready_for_pickup': 'bg-info text-white',
+                                'delivered': 'bg-success text-white'
+                            };
+                            let badgeClass = statusClasses[data] || 'bg-light text-dark';
+                            return `<span class='badge ${badgeClass}'>${row.status_display}</span>`;
+                        }
+                    },
+                    {
+                        data: "price",
+                        render: function (data, type, row, meta) {
+                            return `<span class='fw-bold text-success'>${parseFloat(data).toFixed(2)} TL</span>`;
+                        }
+                    },
+                ],
+                language: {
+                    url: "/static/management/plugins/custom/datatables/TR.json",
+                },
+                createdRow: function (row, data, dataIndex) {
+                    $(row).find('td:eq(4)').attr('data-filter', data.type);
+                },
+                rowCallback: function (row, data) {
+                }
+            });
+        }
+
+        let dt3;
+
+        function initDatatable3() {
+            dt3 = $("#kt_datatable_example_3").DataTable({
+                "dom": '<"top"f>rt<"bottom"ilp><"clear">',
+                "info": true,
+                "paging": true,
+                searchDelay: 400,
+                processing: true,
+                serverSide: true,
+                "orderMulti": false,
+                "autoWidth": false,
+                stateSave: true,
+                select: {
+                    style: 'multi',
+                    selector: 'td:first-child input[type="checkbox"]',
+                    className: 'row-selected'
+                },
+                "ajax": {
+                    "url": "/repairs/get-workshop-product",
+                    "type": "GET",
+                    "dataType": "json",
+                    kpSkipLoader: true,
+                    data: function (d) {
+                        if (record_id) d.record_id = record_id;
+                        d.status__in = 'delivered';
+                    }
+                },
+                "columns": [
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center",
+                        render: function (data, type, row, meta) {
+                            return '<input class="form-check-input" type="checkbox" value="' + row.id + '" ' +
+                                'data-kt-check="true" ' +
+                                'data-kt-check-target="#kt_table_rows .form-check-input" ' +
+                                'data-id="' + row.id + '">';
+                        }
+                    },
+                    {
+                        data: "tracking_code",
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            return `
+                        <span class='fw-bold text-primary' style='cursor: pointer;' onclick="getRepairDetails('${row.id}')">
+                            ${data}
+                        </span>
+                    `;
+                        }
+                    },
+                    {
+                        data: "id",
+                        render: function (data, type, row, meta) {
+                            let customerFullName = `${row.received_by__first_name} ${row.received_by__last_name}`;
+                            return `<a href="#" class="fw-semibold text-primary">${customerFullName}</a>`;
+                        }
+                    }, {
+                        data: "id",
+                        render: function (data, type, row, meta) {
+                            if (row.status === "delivered" && row.delivered_by__first_name && row.delivered_by__last_name) {
+                                let fullName = `${row.delivered_by__first_name} ${row.delivered_by__last_name}`;
+                                return `<a href="#" class="fw-semibold text-primary">${fullName}</a>`;
+                            } else {
+                                return "-";
+                            }
+                        }
+                    }, {
+                        data: "customer__first_name",
+                        render: function (data, type, row, meta) {
+                            let customerFullName = `${row.customer__first_name} ${row.customer__last_name}`;
+                            return `<a href="/customers/detail/${row.customer__id}" class="fw-semibold text-warning">${customerFullName}</a>`;
+                        }
+                    },
+                    {
+                        data: "product_type",
+                        render: function (data, type, row, meta) {
+                            return `<span class='badge bg-info text-white'>${data}</span>`;
+                        }
+                    },
+                    {
+                        "data": "created_at",
+                        "render": function (data, type, row, meta) {
+                            if (data) {
+                                return new Date(data).toLocaleString();
+                            }
+                            return 'N/A';
+                        }
+                    },
+                    {
+                        data: "status",
+                        className: "text-center",
+                        render: function (data, type, row, meta) {
+                            let statusClasses = {
+                                'store': 'bg-secondary text-dark',
+                                'workshop': 'bg-warning text-dark',
+                                'ready_for_pickup': 'bg-info text-white',
+                                'delivered': 'bg-success text-white'
+                            };
+                            let badgeClass = statusClasses[data] || 'bg-light text-dark';
+                            return `<span class='badge ${badgeClass}'>${row.status_display}</span>`;
+                        }
+                    },
+                    {
+                        data: "price",
+                        render: function (data, type, row, meta) {
+                            return `<span class='fw-bold text-success'>${parseFloat(data).toFixed(2)} TL</span>`;
+                        }
+                    },
+                ],
+                language: {
+                    url: "/static/management/plugins/custom/datatables/TR.json",
+                },
+                createdRow: function (row, data, dataIndex) {
+                    $(row).find('td:eq(4)').attr('data-filter', data.type);
+                },
+                rowCallback: function (row, data) {
+                }
+            });
+        }
+
+        let dt2Started = false;
+        let dt3Started = false;
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            const target = $(e.target).attr('href');
+            if (target === '#tamamlanan' && !dt2Started) {
+                initDatatable2();
+                dt2Started = true;
+            }
+            if (target === '#islemler' && !dt3Started) {
+                initDatatable3();
+                dt3Started = true;
+            }
+        });
+    </script>
+{% endblock footer %}

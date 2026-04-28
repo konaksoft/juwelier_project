@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kuyumcu Etiketi</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .barcode-container {
+            width: 75px;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            font-size: 10px;
+        }
+
+        /* ── Yan Yana: etiket-1 solda, etiket-2 sağda ── */
+        .barcode-container.layout-side-by-side {
+            flex-direction: row;
+            width: 150px;
+        }
+
+        .barcode-container.layout-side-by-side .etiket-1 {
+            width: var(--label-width, 50%);
+            margin-bottom: 0;
+        }
+
+        .barcode-container.layout-side-by-side .etiket-2 {
+            width: calc(100% - var(--label-width, 50%));
+            margin-bottom: 0;
+        }
+
+        .etiket-1, .etiket-2 {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── Yansımalı (Kelebek): tek kompakt blok ── */
+        .barcode-container.layout-reflected .etiket-1,
+        .barcode-container.layout-reflected .etiket-2 {
+            margin-bottom: 0;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+
+        .etiket-mirror {
+            transform: rotate(180deg);
+        }
+
+        .supplier-company {
+            margin-bottom: 2px;
+            text-align: center;
+        }
+
+        .barcode-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* scaleX uygulandığında barkod çevresindeki dış layout kaymaz. */
+            overflow: visible;
+        }
+
+        .barcode {
+            /* Genişlik JsBarcode'un doğal viewBox aspect ratio'suna göre otomatik hesaplanır.
+               CSS ile width zorlanırsa SVG sıkışır ve yükseklik değişince padding oluşur. */
+            width: auto;
+            /* transform-origin center: scaleX büyüdüğünde barkod ortalanmış kalır. */
+            transform-origin: center center;
+        }
+
+        .barcode-text {
+            margin-top: 1px;
+            text-align: center;
+        }
+
+        .k-ayar {
+            font-weight: bold;
+            margin-top: 1px;
+            text-align: center;
+        }
+
+        .sale-has {
+            font-weight: bold;
+            margin-bottom: 1px;
+            text-align: center;
+        }
+
+        .company-name {
+            font-weight: bold;
+            margin-bottom: 1px;
+            text-align: center;
+        }
+
+        .info-row {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .jewelry-type {
+            text-align: center;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .barcode-container {
+                margin: 0;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="barcodes">
+    {% for product in products %}
+        {# Her ürün kendi material'ına özel resolved config'i taşır. GOLD geriye dönük varsayılan. #}
+        {% with cfg=product.config|default:config %}
+            <div class="barcode-container {% if layout_mode == 'SIDE_BY_SIDE' %}layout-side-by-side{% elif layout_mode == 'REFLECTED' %}layout-reflected{% endif %}"
+                 {% if layout_mode == 'SIDE_BY_SIDE' %}style="--label-width:
+                         {{ cfg.label_width_percentage|default:50 }}%;"{% endif %}>
+
+                {# ── ETİKET-1: Firma + Barkod + No + Material'a özel kalite alanı ── #}
+                <div class="etiket-1">
+                    {% if cfg.store_name.visible %}
+                        <div class="company-name"
+                             style="font-size:{{ cfg.store_name.print_font }}px; transform:translate({{ cfg.store_name.print_dx }}px, {{ cfg.store_name.print_dy }}px);">
+                            {{ product.barcode_title }}
+                        </div>
+                    {% endif %}
+
+                    {% if barcode_lines.visible %}
+                        <div class="barcode-wrapper"
+                             style="transform:translate({{ barcode_lines.print_dx }}px, {{ barcode_lines.print_dy }}px);">
+                            <svg class="barcode"
+                                 id="barcode-{{ forloop.counter0 }}"
+                                 style="height: {{ barcode_lines.height }}px;"></svg>
+                        </div>
+                    {% endif %}
+
+                    <div class="info-row">
+                        {% if cfg.barcode_no.visible %}
+                            <div class="barcode-text"
+                                 style="font-size:{{ cfg.barcode_no.print_font }}px; transform:translate({{ cfg.barcode_no.print_dx }}px, {{ cfg.barcode_no.print_dy }}px);">
+                                {{ product.product__barcode }}
+                            </div>
+                        {% endif %}
+
+
+                        {% if product.material_type == 'GOLD' and cfg.quality_text.visible %}
+                            <div class="k-ayar"
+                                 style="font-size:{{ cfg.quality_text.print_font }}px; transform:translate({{ cfg.quality_text.print_dx }}px, {{ cfg.quality_text.print_dy }}px);">
+                                {% if product.product__gold_rate == "995" %}24K
+                                {% elif product.product__gold_rate == "916" %}22K
+                                {% elif product.product__gold_rate == "875" %}21K
+                                {% elif product.product__gold_rate == "750" %}18K
+                                {% elif product.product__gold_rate == "585" %}14K
+                                {% elif product.product__gold_rate == "416" %}10K
+                                {% elif product.product__gold_rate == "333" %}8K
+                                {% elif product.product__gold_rate %}
+                                    {{ product.product__gold_rate }}K
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        {# Montür altını: ayar (örn. "18K") + gram (örn. "4,10 gr") — opsiyonel, default gizli #}
+                        {% if cfg.mount_karat and cfg.mount_karat.visible and product.mount_karat %}
+                            <div style="font-size:{{ cfg.mount_karat.print_font }}px; transform:translate({{ cfg.mount_karat.print_dx }}px, {{ cfg.mount_karat.print_dy }}px);">
+                                {{ product.mount_karat }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# ── ETİKET-2: Material'a özel alanlar + Fiyat + Tedarikçi ── #}
+                <div class="etiket-2 {% if layout_mode == 'REFLECTED' %}etiket-mirror{% endif %}">
+
+                    {# ─── DIAMOND: 4C + Sertifika ─── #}
+                    {% if product.material_type == 'DIAMOND' %}
+                        {% if cfg.carat_weight.visible and product.carat_weight %}
+                            <div style="font-size:{{ cfg.carat_weight.print_font }}px; transform:translate({{ cfg.carat_weight.print_dx }}px, {{ cfg.carat_weight.print_dy }}px);">
+                                {{ product.carat_weight }}
+                            </div>
+                        {% endif %}
+                        <div class="info-row">
+                            {% if cfg.color_grade.visible and product.color_grade %}
+                                <div style="font-size:{{ cfg.color_grade.print_font }}px; transform:translate({{ cfg.color_grade.print_dx }}px, {{ cfg.color_grade.print_dy }}px);">
+                                    {{ product.color_grade }}
+                                </div>
+                            {% endif %}
+                            {% if cfg.clarity_grade.visible and product.clarity_grade %}
+                                <div style="font-size:{{ cfg.clarity_grade.print_font }}px; transform:translate({{ cfg.clarity_grade.print_dx }}px, {{ cfg.clarity_grade.print_dy }}px);">
+                                    {{ product.clarity_grade }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if cfg.cut_grade.visible and product.cut_grade %}
+                            <div style="font-size:{{ cfg.cut_grade.print_font }}px; transform:translate({{ cfg.cut_grade.print_dx }}px, {{ cfg.cut_grade.print_dy }}px);">
+                                {{ product.cut_grade }}
+                            </div>
+                        {% endif %}
+
+                        {% if cfg.mount_gram and cfg.mount_gram.visible and product.mount_gram %}
+                            <div style="font-size:{{ cfg.mount_gram.print_font }}px; transform:translate({{ cfg.mount_gram.print_dx }}px, {{ cfg.mount_gram.print_dy }}px);">
+                                {{ product.mount_gram }}
+                            </div>
+                        {% endif %}
+                        {% if cfg.price.visible %}
+                            {# DIAMOND fiyatı: show_currency=True ise "1.452,26 $", False ise "1.452,26" — backend belirler. #}
+                            <div class="sale-has"
+                                 style="font-size:{{ cfg.price.print_font }}px; transform:translate({{ cfg.price.print_dx }}px, {{ cfg.price.print_dy }}px);">
+                                {{ product.product__sale_price_hs }}
+                            </div>
+                        {% endif %}
+                        <div class="info-row">
+                            {% if cfg.certificate_lab.visible and product.certificate_lab %}
+                                <div style="font-size:{{ cfg.certificate_lab.print_font }}px; transform:translate({{ cfg.certificate_lab.print_dx }}px, {{ cfg.certificate_lab.print_dy }}px);">
+                                    {{ product.certificate_lab }}
+                                </div>
+                            {% endif %}
+                            {% if cfg.certificate_no.visible and product.certificate_no %}
+                                <div style="font-size:{{ cfg.certificate_no.print_font }}px; transform:translate({{ cfg.certificate_no.print_dx }}px, {{ cfg.certificate_no.print_dy }}px);">
+                                    {{ product.certificate_no }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# ─── WATCH: Marka / Model / Referans / Mekanizma / Durum ─── #}
+                    {% elif product.material_type == 'WATCH' %}
+                        {% if cfg.brand.visible and product.brand %}
+                            <div class="company-name"
+                                 style="font-size:{{ cfg.brand.print_font }}px; transform:translate({{ cfg.brand.print_dx }}px, {{ cfg.brand.print_dy }}px);">
+                                {{ product.brand }}
+                            </div>
+                        {% endif %}
+                        {% if cfg.model_name.visible and product.model_name %}
+                            <div style="font-size:{{ cfg.model_name.print_font }}px; transform:translate({{ cfg.model_name.print_dx }}px, {{ cfg.model_name.print_dy }}px);">
+                                {{ product.model_name }}
+                            </div>
+                        {% endif %}
+                        {% if cfg.reference_no.visible and product.reference_no %}
+                            <div style="font-size:{{ cfg.reference_no.print_font }}px; transform:translate({{ cfg.reference_no.print_dx }}px, {{ cfg.reference_no.print_dy }}px);">
+                                {{ product.reference_no }}
+                            </div>
+                        {% endif %}
+                        <div class="info-row">
+                            {% if cfg.movement_type.visible and product.movement_type %}
+                                <div style="font-size:{{ cfg.movement_type.print_font }}px; transform:translate({{ cfg.movement_type.print_dx }}px, {{ cfg.movement_type.print_dy }}px);">
+                                    {{ product.movement_type }}
+                                </div>
+                            {% endif %}
+                            {% if cfg.condition.visible and product.condition %}
+                                <div style="font-size:{{ cfg.condition.print_font }}px; transform:translate({{ cfg.condition.print_dx }}px, {{ cfg.condition.print_dy }}px);">
+                                    {{ product.condition }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if cfg.price.visible %}
+                            <div class="sale-has"
+                                 style="font-size:{{ cfg.price.print_font }}px; transform:translate({{ cfg.price.print_dx }}px, {{ cfg.price.print_dy }}px);">
+                                {{ product.product__sale_price_hs }} S
+                            </div>
+                        {% endif %}
+                        {% if cfg.box_papers.visible and product.box_papers %}
+                            <div style="font-size:{{ cfg.box_papers.print_font }}px; transform:translate({{ cfg.box_papers.print_dx }}px, {{ cfg.box_papers.print_dy }}px);">
+                                {{ product.box_papers }}
+                            </div>
+                        {% endif %}
+
+                        {# ─── GOLD (varsayılan): Fiyat + Milyem/Gram + Ürün Tipi + Alyans ─── #}
+                    {% else %}
+                        {% if cfg.price.visible %}
+                            <div class="sale-has"
+                                 style="font-size:{{ cfg.price.print_font }}px; transform:translate({{ cfg.price.print_dx }}px, {{ cfg.price.print_dy }}px);">
+                                {{ product.product__sale_price_hs }} S
+                            </div>
+                        {% endif %}
+                        <div class="info-row">
+                            {% if cfg.mileage.visible %}
+                                <div style="font-size:{{ cfg.mileage.print_font }}px; transform:translate({{ cfg.mileage.print_dx }}px, {{ cfg.mileage.print_dy }}px);">
+                                    {{ product.bottom_left_val }}
+                                </div>
+                            {% endif %}
+                            {% if cfg.gram.visible %}
+                                <div style="font-size:{{ cfg.gram.print_font }}px; transform:translate({{ cfg.gram.print_dx }}px, {{ cfg.gram.print_dy }}px);">
+                                    {{ product.product__gram }} g
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if cfg.jewelry_type.visible and product.jewelry_type %}
+                            <div class="jewelry-type"
+                                 style="font-size:{{ cfg.jewelry_type.print_font }}px; transform:translate({{ cfg.jewelry_type.print_dx }}px, {{ cfg.jewelry_type.print_dy }}px);">
+                                {{ product.jewelry_type }}
+                            </div>
+                        {% endif %}
+                        {% if cfg.ring_size.visible and product.ring_size %}
+                            <div class="jewelry-type"
+                                 style="font-size:{{ cfg.ring_size.print_font }}px; transform:translate({{ cfg.ring_size.print_dx }}px, {{ cfg.ring_size.print_dy }}px);">
+                                {{ product.ring_size }}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {# Tedarikçi tüm material'larda ortak #}
+                    {% if cfg.supplier.visible %}
+                        <div class="supplier-company"
+                             style="font-size:{{ cfg.supplier.print_font }}px; transform:translate({{ cfg.supplier.print_dx }}px, {{ cfg.supplier.print_dy }}px);">
+                            {{ product.supplier__company_name|default_if_none:"" }}
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        {% endwith %}
+        <script>
+            {% if barcode_lines.visible %}
+                (function () {
+                    // Barkod çizgi kalınlığı iki aşamalı üretilir:
+                    //  1) JsBarcode'a SABİT ve okunabilir bir "width" verilir (2).
+                    //     Bu, SVG'nin çizgi/boşluk oranını (CODE128 kuralları) korur,
+                    //     okuyucu her zaman ayrıştırabilir.
+                    //  2) Kullanıcının "Genişlik" ayarı (10–200) yatay bir scaleX
+                    //     faktörüne dönüştürülerek SVG'ye uygulanır.
+                    //     rawWidth=70 → scaleX(1.0) (varsayılan)
+                    //     rawWidth=140 → scaleX(2.0) (iki kat yayvan)
+                    //     rawWidth=35 → scaleX(0.5) (yarı daraltılmış)
+                    // Bu sayede kullanıcı çizgileri özgürce genişletebilir ama
+                    // barkod okunabilirliği bozulmaz.
+                    var rawWidth = {{ config.barcode_lines_width|default:70 }};
+                    var scaleX = rawWidth / 70.0;
+                    if (scaleX < 0.3) scaleX = 0.3;   // çok daralmayı engelle
+                    if (scaleX > 3.5) scaleX = 3.5;   // label taşmasını engelle
+
+                    JsBarcode("#barcode-{{ forloop.counter0 }}", "{{ product.product__barcode }}", {
+                        format: "CODE128",
+                        displayValue: false,
+                        width: 2,
+                        height: {{ barcode_lines.height }},
+                        margin: 2
+                    });
+
+                    // scaleX SVG'ye uygulanır — çizgi oranı korunur, sadece yatay esner
+                    var _svg = document.getElementById("barcode-{{ forloop.counter0 }}");
+                    if (_svg) {
+                        _svg.style.transform = "scaleX(" + scaleX + ")";
+                    }
+                })();
+            {% endif %}
+        </script>
+    {% endfor %}
+</div>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Karlilik Raporu</title>
+    <style>
+        /* A4 LANDSCAPE — Kategori bazli karlilik raporu */
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+            @frame footer_frame {
+                -pdf-frame-content: footerContent;
+                bottom: 0cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 8.5pt;
+            color: #222;
+        }
+
+        .header-line {
+            border-bottom: 2px solid #d4af37;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .report-title {
+            font-size: 15pt;
+            font-weight: bold;
+            color: #0F1B2B;
+        }
+
+        .report-sub {
+            font-size: 9pt;
+            color: #d4af37;
+            margin-top: 2px;
+        }
+
+        .meta-info {
+            text-align: right;
+            font-size: 8pt;
+            color: #666;
+        }
+
+        .filter-box {
+            background-color: #fffbea;
+            border: 1px solid #e6c74d;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            font-size: 8pt;
+            color: #555;
+        }
+
+        /* KPI */
+        .kpi-table {
+            width: 100%;
+            margin-bottom: 10px;
+            border-collapse: collapse;
+        }
+
+        .kpi-cell {
+            width: 25%;
+            padding: 3px;
+        }
+
+        .kpi-box {
+            border: 1px solid #ddd;
+            padding: 6px 5px;
+            text-align: center;
+            background-color: #fafafa;
+        }
+
+        .kpi-box-green { border-bottom: 3px solid #1a7a42; }
+        .kpi-box-amber { border-bottom: 3px solid #b8860b; }
+        .kpi-box-blue  { border-bottom: 3px solid #1a56db; }
+        .kpi-box-gold  { border-bottom: 3px solid #d4af37; }
+
+        .kpi-label {
+            font-size: 7pt;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        .kpi-val {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #0F1B2B;
+            margin-top: 2px;
+        }
+
+        .kpi-val-green { color: #1a7a42; }
+        .kpi-val-amber { color: #b8860b; }
+        .kpi-val-blue  { color: #1a56db; }
+        .kpi-val-gold  { color: #b8860b; }
+
+        /* Data table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .data-table thead tr { background-color: #0F1B2B; }
+        .data-table thead th {
+            color: #d4af37;
+            padding: 5px 3px;
+            font-size: 7.5pt;
+            text-align: center;
+        }
+        .data-table thead th.th-sale   { background-color: #1a7a42; color: #fff; }
+        .data-table thead th.th-cost   { background-color: #b8860b; color: #fff; }
+        .data-table thead th.th-profit { background-color: #1a56db; color: #fff; }
+        .data-table thead th.th-left   { text-align: left; padding-left: 6px; }
+
+        .data-table tbody td {
+            border-bottom: 1px solid #eee;
+            padding: 4px 3px;
+            font-size: 8pt;
+        }
+        .data-table tbody td.text-center { text-align: center; }
+        .data-table tbody td.text-right  { text-align: right; padding-right: 6px; }
+        .data-table tbody td.td-cat {
+            padding-left: 6px;
+            font-weight: bold;
+        }
+
+        .data-table tfoot tr { background-color: #0F1B2B; }
+        .data-table tfoot td {
+            color: #d4af37;
+            padding: 5px 3px;
+            font-size: 8.5pt;
+            font-weight: bold;
+            text-align: right;
+        }
+        .data-table tfoot td.text-center { text-align: center; }
+        .data-table tfoot td.td-label    { text-align: left; padding-left: 6px; }
+
+        .text-green { color: #1a7a42; }
+        .text-amber { color: #b8860b; }
+        .text-blue  { color: #1a56db; }
+        .text-red   { color: #b30000; }
+
+        #footerContent {
+            text-align: center;
+            color: #888;
+            font-size: 7pt;
+            border-top: 1px solid #ccc;
+            padding-top: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- BASLIK -->
+<div class="header-line">
+    <table border="0" style="width:100%;">
+        <tr>
+            <td style="width:60%;">
+                <div class="report-title">{{ store_name }}</div>
+                <div class="report-sub">ISLEM OZETLERI - KATEGORI BAZLI KARLILIK RAPORU</div>
+            </td>
+            <td style="width:40%;">
+                <div class="meta-info">
+                    <strong>Rapor Tarihi:</strong> {{ report_date }}<br>
+                    <strong>Kapsam:</strong> Tamamlanmis Islemler (Satis Odakli)
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% if filter_labels %}
+<div class="filter-box">
+    <strong>Aktif Filtreler:</strong>
+    {% for fl in filter_labels %}{{ fl }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- KPI KUTULARI -->
+<table class="kpi-table" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-green">
+                <div class="kpi-label">Toplam Satis (TL)</div>
+                <div class="kpi-val kpi-val-green">{{ t_sale_tl }} &#8378;</div>
+                <div class="kpi-label">{{ t_sale_count }} islem</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-amber">
+                <div class="kpi-label">Toplam Maliyet (TL)</div>
+                <div class="kpi-val kpi-val-amber">{{ t_cost_tl }} &#8378;</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-blue">
+                <div class="kpi-label">Brut Kar (TL)</div>
+                <div class="kpi-val kpi-val-blue">{{ t_profit_tl }} &#8378;</div>
+                <div class="kpi-label">% {{ t_kar_pct }}</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-gold">
+                <div class="kpi-label">Kar (Has)</div>
+                <div class="kpi-val kpi-val-gold">{{ t_kar_hs }} gr</div>
+                <div class="kpi-label">Satis Hasi: {{ t_sale_hs }} gr</div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- DETAY TABLOSU -->
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="th-left" rowspan="2" style="width:16%;">Kategori</th>
+            <th rowspan="2" style="width:6%;">Adet</th>
+            <th class="th-sale" colspan="3">SATIS</th>
+            <th class="th-cost" colspan="2">MALIYET</th>
+            <th class="th-profit" colspan="3">KAR</th>
+        </tr>
+        <tr>
+            <th class="th-sale" style="width:8%;">Gram</th>
+            <th class="th-sale" style="width:11%;">Satis (TL)</th>
+            <th class="th-sale" style="width:9%;">Satis (Has)</th>
+            <th class="th-cost" style="width:11%;">Maliyet (TL)</th>
+            <th class="th-cost" style="width:9%;">Maliyet (Has)</th>
+            <th class="th-profit" style="width:11%;">Kar (TL)</th>
+            <th class="th-profit" style="width:9%;">Kar (Has)</th>
+            <th class="th-profit" style="width:7%;">Kar %</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+            <tr>
+                <td class="td-cat">{{ row.category }}</td>
+                <td class="text-center">{{ row.sale_count }}</td>
+                <td class="text-right">{{ row.sale_gram }}</td>
+                <td class="text-right text-green">{{ row.sale_amount_tl }}</td>
+                <td class="text-right text-green">{{ row.sale_hs }}</td>
+                <td class="text-right text-amber">{{ row.sale_cost_tl }}</td>
+                <td class="text-right text-amber">{{ row.sale_cost_hs }}</td>
+                <td class="text-right text-blue">{{ row.sale_profit_tl }}</td>
+                <td class="text-right text-blue">{{ row.kar_hs }}</td>
+                <td class="text-right text-blue">% {{ row.kar_pct }}</td>
+            </tr>
+        {% empty %}
+        <tr>
+            <td colspan="10" style="text-align:center; color:#777; padding:12px;">Belirtilen kriterlere uygun kayit bulunamadi.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td class="td-label">GENEL TOPLAM</td>
+            <td class="text-center">{{ t_sale_count }}</td>
+            <td>—</td>
+            <td>{{ t_sale_tl }} &#8378;</td>
+            <td>{{ t_sale_hs }}</td>
+            <td>{{ t_cost_tl }} &#8378;</td>
+            <td>{{ t_cost_hs }}</td>
+            <td>{{ t_profit_tl }} &#8378;</td>
+            <td>{{ t_kar_hs }}</td>
+            <td>% {{ t_kar_pct }}</td>
+        </tr>
+    </tfoot>
+</table>
+
+<div id="footerContent">
+    Kuyum Plus Kuyumculuk Yonetim Sistemi tarafindan otomatik olusturulmustur. | Sayfa
+    <pdf:pagenumber>
+</div>
+
+</body>
+</html>

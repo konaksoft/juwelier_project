@@ -1,0 +1,428 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .custom-toolbar-card {
+            width: 100% !important;
+            margin: 1rem 3.2rem 0 2.3rem;
+            border-radius: .5rem;
+        }
+
+        .custom-toolbar-card .card-body {
+            padding: 1.5rem 2rem;
+        }
+
+        .custom-toolbar-card .container-xxl {
+            max-width: 100% !important;
+        }
+
+        .toolbar-btn-size {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.7rem;
+            padding: 0 1.2rem;
+        }
+
+        .detail-info-card {
+            border-radius: .75rem;
+        }
+
+        .detail-label {
+            color: #a1a5b7;
+            font-size: .85rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #181c32;
+            font-size: 1rem;
+        }
+
+        .module-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 8px 16px;
+            margin: 4px;
+            font-size: .9rem;
+            transition: all .2s;
+        }
+
+        .module-chip:hover {
+            background: #fff8e1;
+            border-color: #f8bc27;
+        }
+
+        .module-chip i {
+            color: #b88b0b;
+        }
+
+        .module-chip .price {
+            color: #888;
+            font-size: .8rem;
+        }
+
+        .price-total-box {
+            background: linear-gradient(135deg, #f8f9fa, #fff);
+            border: 2px solid #eee;
+            border-radius: 14px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .price-total-box .amount {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .price-total-box .label {
+            font-size: .85rem;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .price-total-box.monthly .amount {
+            color: #b88b0b;
+        }
+
+        .price-total-box.yearly .amount {
+            color: #28a745;
+        }
+
+        .status-badge-lg {
+            font-size: .9rem;
+            padding: 6px 16px;
+            border-radius: 8px;
+        }
+
+        .maintenance-row {
+            background: linear-gradient(135deg, #fff3cd, #fff8e1);
+            border: 1px solid #ffc107;
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .maintenance-row .maint-label {
+            font-weight: 600;
+            color: #856404;
+            font-size: .9rem;
+        }
+
+        .maintenance-row .maint-value {
+            font-weight: 800;
+            color: #856404;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .custom-toolbar-card {
+                margin: 1rem 1rem 0 !important;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card custom-toolbar-card">
+                    <div class="card-body">
+                        <div class="app-container container-xxl d-flex flex-stack">
+                            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                    Başvuru Detay — {{ app.application_no }}
+                                </h1>
+                                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                                    <li class="breadcrumb-item text-muted">CRM</li>
+                                    <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span>
+                                    </li>
+                                    <li class="breadcrumb-item">
+                                        <a href="{% url 'leads:applications' %}" class="text-muted text-hover-primary">Başvurular</a>
+                                    </li>
+                                    <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span>
+                                    </li>
+                                    <li class="breadcrumb-item text-muted">{{ app.application_no }}</li>
+                                </ul>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                {% if not app.proposal %}
+                                    <button class="btn btn-success toolbar-btn-size" id="btnConvert">
+                                        <i class="fa-solid fa-file-invoice me-2"></i> Teklife Çevir
+                                    </button>
+                                {% else %}
+                                    <a href="{% url 'proposals:add' %}?id={{ app.proposal_id }}"
+                                       class="btn btn-light-success toolbar-btn-size">
+                                        <i class="fa-solid fa-file-circle-check me-2"></i> Teklifi Gör
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'leads:applications' %}" class="btn btn-light toolbar-btn-size">
+                                    <i class="fa-solid fa-arrow-left me-2"></i> Geri
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content_container" class="app-container container-fluid">
+                <div class="row g-5">
+                    <div class="col-lg-8">
+                        <div class="card detail-info-card mb-5">
+                            <div class="card-header">
+                                <h3 class="card-title fw-bold">
+                                    <i class="fa-solid fa-user-pen me-2 text-primary"></i> Başvuran Bilgileri
+                                </h3>
+                                <div class="card-toolbar">
+                                    {% if app.status == 'pending' %}
+                                        <span class="badge badge-light-warning status-badge-lg">Beklemede</span>
+                                    {% elif app.status == 'contacted' %}
+                                        <span class="badge badge-light-info status-badge-lg">İletişime Geçildi</span>
+                                    {% elif app.status == 'proposal_created' %}
+                                        <span class="badge badge-light-success status-badge-lg">Teklif Oluşturuldu</span>
+                                    {% elif app.status == 'rejected' %}
+                                        <span class="badge badge-light-danger status-badge-lg">Reddedildi</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-4">
+                                    <div class="col-md-4">
+                                        <div class="detail-label">Ad Soyad</div>
+                                        <div class="detail-value">{{ app.first_name }} {{ app.last_name }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="detail-label">Telefon</div>
+                                        <div class="detail-value">
+                                            <a href="tel:{{ app.phone }}">{{ app.phone }}</a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="detail-label">E-Posta</div>
+                                        <div class="detail-value">{{ app.email|default:"—" }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="detail-label">Firma / Mağaza Adı</div>
+                                        <div class="detail-value">{{ app.business_name }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="detail-label">İl</div>
+                                        <div class="detail-value">{{ app.city|default:"—" }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="detail-label">Kaynak</div>
+                                        <div class="detail-value">
+                                            {% if app.utm_source %}
+                                                <span class="badge badge-light-primary">{{ app.utm_source }}</span>
+                                            {% else %}
+                                                Website
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if app.notes %}
+                                        <div class="col-12">
+                                            <div class="detail-label">Notlar</div>
+                                            <div class="detail-value"
+                                                 style="background:#f8f9fa; padding:12px 16px; border-radius:8px; font-weight:400; color:#555;">
+                                                {{ app.notes }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    <div class="col-md-4">
+                                        <div class="detail-label">Başvuru Tarihi</div>
+                                        <div class="detail-value">{{ app.created_on|date:"d.m.Y H:i" }}</div>
+                                    </div>
+                                    {% if app.lead %}
+                                        <div class="col-md-4">
+                                            <div class="detail-label">Bağlı Lead</div>
+                                            <div class="detail-value">
+                                                <a href="{% url 'leads:detail' app.lead_id %}"
+                                                   class="text-primary">
+                                                    <i class="fa-solid fa-external-link-alt me-1"></i>
+                                                    {{ app.lead.full_name }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card detail-info-card">
+                            <div class="card-header">
+                                <h3 class="card-title fw-bold">
+                                    <i class="fa-solid fa-cubes me-2" style="color:#b88b0b"></i> Seçilen Modüller
+                                    <span class="badge badge-light ms-2">{{ app.selected_modules.count }} modül</span>
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap mb-4">
+                                    {% for m in app.selected_modules.all %}
+                                        <div class="module-chip">
+                                            <i class="{{ m.icon }}"></i>
+                                            <div>
+                                                <strong>{{ m.name }}</strong>
+                                                <span class="price">
+                                                    {% if m.is_core %}
+                                                        (Dahil)
+                                                    {% else %}
+                                                        ₺{{ m.price_monthly }} / ay
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <p class="text-muted">Seçilen modül bulunamadı.</p>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="maintenance-row">
+                                    <div>
+                                        <div class="maint-label">
+                                            <i class="fa-solid fa-wrench me-2"></i>
+                                            Hesaplanan Yıllık Bakım Ücreti (%10)
+                                        </div>
+                                        <small class="text-muted">Modül toplamı üzerinden otomatik hesaplanır. Teklife çevirme sırasında eklenir.</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="maint-value">₺{{ maintenance_monthly }} / ay</div>
+                                        <div class="maint-value" style="font-size:.9rem; color:#6c757d;">₺{{ maintenance_yearly }} / yıl</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card detail-info-card mb-5">
+                            <div class="card-header">
+                                <h3 class="card-title fw-bold">
+                                    <i class="fa-solid fa-calculator me-2 text-primary"></i> Fiyat Özeti
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="price-total-box monthly mb-4">
+                                    <div class="label">Aylık Modül Toplamı</div>
+                                    <div class="amount">₺{{ modules_monthly_total }}</div>
+                                </div>
+                                <div class="price-total-box yearly mb-4">
+                                    <div class="label">Yıllık Modül Toplamı</div>
+                                    <div class="amount">₺{{ modules_yearly_total }}</div>
+                                </div>
+                                <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:14px; text-align:center;">
+                                    <div style="font-size:.8rem; color:#856404; font-weight:600;">+ Bakım (%10)</div>
+                                    <div style="font-size:1.3rem; font-weight:800; color:#856404;">₺{{ maintenance_monthly }} / ay</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card detail-info-card">
+                            <div class="card-header">
+                                <h3 class="card-title fw-bold">
+                                    <i class="fa-solid fa-rotate me-2 text-warning"></i> Durum Güncelle
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <select class="form-select mb-3" id="detailStatus">
+                                    {% for k, v in status_choices %}
+                                        <option value="{{ k }}"
+                                                {% if k == app.status %}selected{% endif %}>{{ v }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-primary w-100" id="btnUpdateStatus">
+                                    <i class="fa-solid fa-save me-2"></i> Durumu Kaydet
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            const APP_ID = '{{ app.id }}';
+            const CSRF = '{{ csrf_token }}';
+
+            $('#btnUpdateStatus').click(function () {
+                const status = $('#detailStatus').val();
+                $.post("{% url 'leads:application-update-status' %}", {
+                    id: APP_ID,
+                    status: status,
+                    csrfmiddlewaretoken: CSRF
+                }, function (resp) {
+                    if (resp.result) {
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: 'Durum güncellendi', showConfirmButton: false, timer: 2000
+                        });
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire('Hata', resp.error_msg, 'error');
+                    }
+                });
+            });
+
+            {% if not app.proposal %}
+            $('#btnConvert').click(function () {
+                Swal.fire({
+                    title: 'Teklife Çevir',
+                    html: 'Bu başvurudan seçili modüllerle otomatik bir taslak teklif oluşturulacak.<br>' +
+                          '<small class="text-muted">Modül fiyatları + %10 bakım bedeli otomatik eklenecektir.</small>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Oluştur',
+                    cancelButtonText: 'İptal',
+                    confirmButtonColor: '#50cd89',
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Oluşturuluyor...',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        $.post("{% url 'leads:application-convert-to-proposal' %}", {
+                            application_id: APP_ID,
+                            csrfmiddlewaretoken: CSRF
+                        }, function (resp) {
+                            Swal.close();
+                            if (resp.result) {
+                                Swal.fire({
+                                    title: 'Teklif Oluşturuldu!',
+                                    html: `Teklif No: <b>${resp.proposal_no}</b><br><small>Yönlendiriliyorsunuz...</small>`,
+                                    icon: 'success',
+                                    timer: 2000,
+                                    timerProgressBar: true,
+                                    showConfirmButton: false,
+                                }).then(() => {
+                                    window.location.href = resp.redirect_url;
+                                });
+                            } else {
+                                Swal.fire('Hata', resp.error_msg, 'error');
+                            }
+                        }).fail(function () {
+                            Swal.fire('Hata', 'İstek gönderilemedi.', 'error');
+                        });
+                    }
+                });
+            });
+            {% endif %}
+        });
+    </script>
+{% endblock footer %}

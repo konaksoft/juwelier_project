@@ -1,0 +1,285 @@
+{% if not is_preview %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Bilezik Kâr Raporu - Kuyum Plus</title>
+{% endif %}
+    <style>
+        {% if is_preview %}
+        /* =======================================================
+           1. SADECE WEB VE MOBİL (MODAL) İÇİN TASARIM (ÖNİZLEME)
+           ======================================================= */
+        .kp-report-wrapper {
+            font-family: "DejaVu Sans", "Helvetica", "Arial", sans-serif !important;
+            color: #000 !important;
+            font-size: 11pt !important;
+            background-color: #f3f6f9 !important;
+            padding: 2rem 1rem !important;
+            display: flex;
+            justify-content: center;
+            border-radius: 6px;
+            text-align: left !important;
+        }
+        .kp-report-wrapper .page {
+            background-color: #fff !important;
+            width: 100%;
+            max-width: 210mm;
+            padding: 40px;
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.15) !important;
+            border-radius: 2px;
+        }
+
+        .kp-report-wrapper .hr-thick { border-top: 2pt solid #333 !important; margin: 6px 0 8px; height: 0; }
+        .kp-report-wrapper .hr-thin { border-top: 0.8pt solid #999 !important; margin: 6px 0; height: 0; }
+
+        .kp-report-wrapper .header { text-align: center; margin-bottom: 0; padding: 0; }
+        .kp-report-wrapper .brand { font-size: 18px; font-weight: 700; margin: 0; color: #000 !important; line-height: 1.2; }
+        .kp-report-wrapper .subtitle { font-size: 12px; color: #666 !important; margin: 2px 0 0; line-height: 1.2; }
+        .kp-report-wrapper .report-title { font-size: 16px; font-weight: 700; text-align: center; text-decoration: underline; margin: 15px 0 5px; color: #000 !important; line-height: 1.2; }
+        .kp-report-wrapper .period { font-size: 13px; color: #333 !important; text-align: center; margin-bottom: 15px; }
+
+        .kp-report-wrapper .info { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: transparent !important; }
+        .kp-report-wrapper .info td { vertical-align: top; border: none !important; color: #000 !important; }
+        .kp-report-wrapper .info .label { display: inline-block; min-width: 110px; font-weight: 700; color: #333 !important; }
+        .kp-report-wrapper .info td.right-col { text-align: right; }
+        .kp-report-wrapper .info td.right-col .label { text-align: right; }
+
+        .kp-report-wrapper .box { border: 1.2pt solid #000 !important; padding: 10px; margin-bottom: 15px; background: #fff !important; }
+        .kp-report-wrapper .box-title { font-size: 14px; font-weight: 700; text-transform: uppercase; text-align: center; margin-bottom: 10px; color: #000 !important; }
+
+        .kp-report-wrapper .sum-table { width: 100%; border-collapse: collapse; background: transparent !important; }
+        .kp-report-wrapper .sum-table td { border: none !important; padding: 4px; color: #000 !important; }
+        .kp-report-wrapper .sum-table .right { text-align: right; }
+        .kp-report-wrapper .sum-table .total td { border-top: 1.2pt solid #000 !important; font-weight: 700; padding-top: 8px; }
+
+        /* Renklendirmeler */
+        .kp-report-wrapper .negative { color: #c51818 !important; }
+        .kp-report-wrapper .positive { color: #1e7e34 !important; }
+
+        .kp-report-wrapper .section-bar { background: #000 !important; color: #fff !important; font-weight: 700; font-size: 12px; padding: 6px 10px; margin: 15px 0; text-align: left; }
+
+        .kp-report-wrapper .tbl { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; background: transparent !important; }
+        .kp-report-wrapper .tbl th { background: #000 !important; color: #fff !important; border: 1px solid #000 !important; padding: 5px; font-weight: 700; text-align: center; }
+        .kp-report-wrapper .tbl td { border: 1px solid #999 !important; padding: 5px; text-align: left; color: #000 !important; }
+        .kp-report-wrapper .tbl .center { text-align: center !important; }
+        .kp-report-wrapper .tbl .right { text-align: right !important; }
+
+        .kp-report-wrapper .notes { border: 1px solid #000 !important; height: 100px; padding: 8px; margin-top: 20px; background: #fff !important; }
+        .kp-report-wrapper .notes-title { font-weight: 700; font-size: 12px; color: #000 !important; }
+
+        .kp-report-wrapper .sign { width: 100%; margin-top: 30px; border-collapse: collapse; }
+        .kp-report-wrapper .sign td { width: 50%; text-align: center; border: none !important; color: #000 !important; }
+        .kp-report-wrapper .sig-line { border-bottom: 1px solid #000 !important; height: 30px; margin: 0 40px 5px; }
+
+        .kp-report-wrapper .footer { text-align: center; color: #666 !important; font-size: 11px; margin-top: 20px; }
+        .kp-report-wrapper .print { font-size: 10px; color: #888 !important; text-align: right; margin-top: 5px; }
+
+        @media (max-width: 768px) {
+            .kp-report-wrapper { padding: 0 !important; background-color: #fff !important; }
+            .kp-report-wrapper .page { padding: 15px; box-shadow: none !important; border-radius: 0; }
+            .kp-report-wrapper .info td { display: block; width: 100%; text-align: left !important; margin-bottom: 10px; }
+            .kp-report-wrapper .info td.right-col { text-align: left !important; }
+            .kp-report-wrapper .info td.right-col .label { text-align: left; }
+            .kp-report-wrapper .page { overflow-x: auto; }
+            .kp-report-wrapper .tbl { min-width: 700px; }
+        }
+
+        {% else %}
+        /* =======================================================
+           2. SADECE PDF ÇIKTISI (XHTML2PDF) İÇİN TEMİZ CSS
+           ======================================================= */
+        @page {
+            size: a4 portrait;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: "DejaVu Sans", sans-serif;
+            color: #000;
+            font-size: 10pt;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page { width: 100%; }
+
+        .header { text-align: center; margin: 0; padding: 0; }
+        .brand { font-size: 16pt; font-weight: bold; margin: 0; padding: 0; }
+        .subtitle { font-size: 9pt; color: #666; margin: 0; padding: 0; }
+
+        .report-title { font-size: 12pt; font-weight: bold; text-align: center; text-decoration: underline; margin: 15px 0 5px 0; padding: 0; }
+        .period { font-size: 9pt; color: #333; text-align: center; margin: 0 0 15px 0; padding: 0; }
+
+        .hr-thick { border-top: 1.5pt solid #333; margin: 5px 0; }
+        .hr-thin { border-top: 0.5pt solid #999; margin: 5px 0; }
+
+        .info { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .info td { vertical-align: top; }
+        .info .label { font-weight: bold; }
+        .info td.right-col { text-align: right; }
+
+        .box { border: 1pt solid #000; padding: 8px; margin-bottom: 15px; }
+        .box-title { font-size: 10pt; font-weight: bold; text-align: center; margin-bottom: 5px; }
+
+        .sum-table { width: 100%; border-collapse: collapse; }
+        .sum-table td { padding: 3px; }
+        .sum-table .right { text-align: right; }
+        .sum-table .total td { border-top: 1pt solid #000; font-weight: bold; padding-top: 5px; }
+
+        .negative { color: #c51818; }
+        .positive { color: #1e7e34; }
+
+        .section-bar { background-color: #000; color: #fff; font-size: 10pt; font-weight: bold; padding: 5px; margin: 15px 0 10px 0; }
+
+        .tbl { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 15px; }
+        .tbl th { background-color: #000; color: #fff; border: 0.5pt solid #000; padding: 4px; font-weight: bold; text-align: center; }
+        .tbl td { border: 0.5pt solid #999; padding: 4px; text-align: left; }
+        .tbl .center { text-align: center; }
+        .tbl .right { text-align: right; }
+
+        .notes { border: 0.5pt solid #000; height: 80px; padding: 5px; margin-top: 15px; }
+        .notes-title { font-weight: bold; font-size: 9pt; }
+
+        .sign { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .sign td { width: 50%; text-align: center; vertical-align: bottom; }
+        .sig-line { border-bottom: 0.5pt solid #000; margin: 0 50px 5px 50px; height: 30px; }
+
+        .footer { text-align: center; color: #666; font-size: 8pt; margin-top: 20px; }
+        .print { font-size: 7pt; color: #888; text-align: right; margin-top: 5px; }
+        {% endif %}
+    </style>
+{% if not is_preview %}
+</head>
+<body>
+{% endif %}
+
+<div class="kp-report-wrapper">
+    <div class="page">
+        <div class="hr-thick"></div>
+        <div class="header">
+            <div class="brand">{{ company_name|upper }}</div>
+            <div class="subtitle">{{ company_subtitle }}</div>
+        </div>
+        <div class="hr-thin"></div>
+
+        <div class="report-title">{{ report_title }}</div>
+        <div class="period">{{ period_text }}</div>
+
+        <table class="info">
+            <tr>
+                <td>
+                    <div><span class="label">Rapor No:</span> {{ report_no }}</div>
+                    <div><span class="label">Rapor Tarihi:</span> {{ generated_date }}</div>
+                    <div><span class="label">Rapor Saati:</span> {{ generated_time }}</div>
+                </td>
+                <td class="right-col">
+                    <div><span class="label">Mağaza ID:</span> {{ store_id }}</div>
+                    <div><span class="label">Yetkili:</span> {{ authorized_person }}</div>
+                    {% if period_days %}
+                        <div><span class="label">Dönem:</span> {{ period_days }} Gün</div>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <div class="box">
+            <div class="box-title">MALİ ÖZET</div>
+            <table class="sum-table">
+                <tr>
+                    <td class="left">Toplam Satış Tutarı:</td>
+                    <td class="right nowrap">{{ sum_total_revenue }} ₺</td>
+                </tr>
+                <tr>
+                    <td class="left">Toplam Maliyet Tutarı:</td>
+                    <td class="right nowrap">{{ sum_total_cost }} ₺</td>
+                </tr>
+                <tr class="total">
+                    <td class="left">NET KÂR:</td>
+                    <td class="right nowrap {% if is_total_profit_negative %}negative{% else %}positive{% endif %}">
+                        {{ sum_total_profit }} ₺
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-bar">BİLEZİK İŞLEM DETAYLARI</div>
+
+        <table class="tbl">
+            <colgroup>
+                <col style="width:10%"/>
+                <col style="width:13%"/>
+                <col style="width:25%"/>
+                <col style="width:10%"/>
+                <col style="width:10%"/> <col style="width:11%"/>
+                <col style="width:11%"/>
+                <col style="width:10%"/>
+            </colgroup>
+            <thead>
+            <tr>
+                <th>İşlem No</th>
+                <th>Tarih</th>
+                <th>Bilezik Tipi / Ürün</th>
+                <th>Müşteri</th>
+                <th class="center">Gramaj</th>
+                <th class="right">Birim Maliyet</th>
+                <th class="right">Satış Fiyatı</th>
+                <th class="right">Kâr</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for r in rows %}
+                <tr>
+                    <td class="mono center">{{ r.process_no }}</td>
+                    <td class="center">{{ r.datetime }}</td>
+                    <td>{{ r.product }}</td>
+                    <td>{{ r.customer }}</td>
+                    <td class="center nowrap">{{ r.qty }}</td>
+                    <td class="right nowrap">{{ r.unit_cost }} ₺</td>
+                    <td class="right nowrap">{{ r.unit_sale }} ₺</td>
+                    <td class="right nowrap {% if r.is_profit_negative %}negative{% else %}positive{% endif %}" style="font-weight:bold;">
+                        {{ r.profit }} ₺
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="8" class="center">Kayıt bulunamadı.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="notes">
+            <div class="notes-title">NOTLAR:<br><br><br><br></div>
+        </div>
+
+        <table class="sign">
+            <tr>
+                <td>
+                    <div class="sig-line"></div>
+                    <div><b>Hazırlayan</b></div>
+                    <div style="color:#666;font-size:8.5pt">İmza / Tarih</div>
+                </td>
+                <td>
+                    <div class="sig-line"></div>
+                    <div><b>Onaylayan</b></div>
+                    <div style="color:#666;font-size:8.5pt">İmza / Tarih</div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="footer">
+            Bu rapor bilgisayar ortamında hazırlanmıştır. <br/>
+            Yenişehir Mah. Sümbül Sk. No: 6-1/79 Sweet Life Center • Pendik - İstanbul •
+            <a href="mailto:destek@kuyumplus.com">destek@kuyumplus.com</a> •
+            <a href="tel:+902166068801">0 216 606 88 01</a>
+        </div>
+
+        <div class="print">Yazdırma Tarihi: {{ print_datetime }}</div>
+    </div>
+</div>
+
+{% if not is_preview %}
+</body>
+</html>
+{% endif %}

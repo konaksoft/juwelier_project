@@ -1,0 +1,80 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card w-100 mx-4">
+                    <div class="card-body py-4 d-flex justify-content-between align-items-center">
+                         <div>
+                             <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                Resmi Veri Yükleme
+                            </h1>
+                             <div class="text-muted fs-7">MASAK ve BMGK listelerini veritabanına aktarın</div>
+                         </div>
+                         <a href="{% url 'masak:index' %}" class="btn btn-light btn-sm">
+                             <i class="fa-solid fa-arrow-left"></i> Geri Dön
+                         </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-container container-fluid mt-4">
+                <div class="card">
+                    <div class="card-body">
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="row g-5">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info border-dashed d-flex align-items-center p-5">
+                                        <i class="fa-solid fa-info-circle fs-2hx text-info me-4"></i>
+                                        <div class="d-flex flex-column">
+                                            <h4 class="mb-1 text-dark">Önemli Bilgi</h4>
+                                            <span>Dosyalar CSV formatında olmalıdır. Büyük dosyaların yüklenmesi zaman alabilir, lütfen işlem bitene kadar sayfayı kapatmayınız.</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">BMGK Kararları (5. Madde)</label>
+                                    <input type="file" name="file_a" class="form-control" accept=".csv">
+                                    <div class="form-text">Dosya A</div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Yabancı Ülke Talepleri (6. Madde)</label>
+                                    <input type="file" name="file_b" class="form-control" accept=".csv">
+                                    <div class="form-text">Dosya B</div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">İç Dondurma Kararları (7. Madde)</label>
+                                    <input type="file" name="file_c" class="form-control" accept=".csv">
+                                    <div class="form-text">Dosya C (FETÖ/PKK vb.)</div>
+                                </div>
+
+                                <div class="col-12 text-end mt-5">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> Yüklemeyi Başlat
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

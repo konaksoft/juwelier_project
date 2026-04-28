@@ -1,0 +1,302 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>{{ subject }}</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", Arial, sans-serif;
+            background: #f4f6f9;
+            color: #232a33;
+            line-height: 1.7
+        }
+
+        a {
+            color: #126de5;
+            text-decoration: none
+        }
+
+        img {
+            border: 0;
+            line-height: 100%;
+            height: auto;
+            display: inline-block
+        }
+
+        .o_block {
+            max-width: 680px;
+            margin: 0 auto
+        }
+
+        .o_card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e9edf3;
+            box-shadow: 0 4px 12px rgba(18, 28, 45, .06)
+        }
+
+        .o_px {
+            padding-left: 28px;
+            padding-right: 28px
+        }
+
+        .o_py {
+            padding-top: 24px;
+            padding-bottom: 24px
+        }
+
+        .o_center {
+            text-align: center
+        }
+
+        .o_heading {
+            font-weight: 700;
+            color: #1f2a37;
+            margin: 0
+        }
+
+        .o_sub {
+            color: #6b7583;
+            font-size: 14px;
+            margin: 0
+        }
+
+        .o_text {
+            font-size: 15px;
+            margin: 0
+        }
+
+        .muted {
+            color: #6e7783
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th, td {
+            border: 1px solid #e8edf2;
+            padding: 10px 12px;
+            font-size: 14px;
+            vertical-align: top
+        }
+
+        th {
+            background: #f7f9fc;
+            text-align: left;
+            color: #374151;
+            font-weight: 600
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #fbfcfe
+        }
+
+        .num {
+            text-align: right;
+            white-space: nowrap
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, rgba(17, 24, 39, .05), rgba(17, 24, 39, .12), rgba(17, 24, 39, .05));
+            margin: 18px 0;
+            border: 0
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 12px;
+            line-height: 1.4
+        }
+
+        .header {
+            border-radius: 12px 12px 0 0
+        }
+
+        .footer {
+            border-radius: 0 0 12px 12px
+        }
+
+        .o_media {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start
+        }
+
+        .o_media img {
+            border-radius: 10px;
+            border: 1px solid #e9edf3;
+            max-width: 140px
+        }
+
+        .o_media .meta p {
+            margin: .2rem 0
+        }
+
+        @media (max-width: 640px) {
+            .o_px {
+                padding-left: 18px !important;
+                padding-right: 18px !important
+            }
+
+            .o_media {
+                flex-direction: column;
+                align-items: center
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #0b1220;
+                color: #dbe2ef
+            }
+
+            .o_card {
+                background: #0f172a;
+                border-color: #1f2937;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .35)
+            }
+
+            .o_heading {
+                color: #e5e7eb
+            }
+
+            .o_sub, .muted {
+                color: #97a3b6
+            }
+
+            th {
+                background: #111a2e;
+                color: #e5e7eb;
+                border-color: #223047
+            }
+
+            td {
+                border-color: #223047
+            }
+
+            tbody tr:nth-child(odd) {
+                background: #0e1629
+            }
+
+            .divider {
+                background: #1e293b
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="o_block" style="padding:12px;">
+
+    <!-- Header -->
+    <div class="o_card o_px o_py header">
+        <div class="o_center">
+            <a href="https://www.kuyumplus.com">
+                <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="160" alt="KuyumPlus">
+            </a>
+            <p class="o_sub" style="margin-top:8px;">Tamir bilgilendirme</p>
+
+            {% if repair.status == 'ready_for_pickup' %}
+                <span class="pill"
+                      style="background:#eefdf3;color:#047857;border:1px solid #a7f3d0">Teslimata Hazır</span>
+            {% elif repair.status == 'workshop' %}
+                <span class="pill"
+                      style="background:#eef4ff;color:#1d4ed8;border:1px solid #c7d2fe">Atölyede Tamirde</span>
+            {% elif repair.status == 'quality_check' %}
+                <span class="pill"
+                      style="background:#fff7ed;color:#b45309;border:1px solid #fde68a">Kalite Kontrolde</span>
+            {% elif repair.status == 'delivered' %}
+                <span class="pill"
+                      style="background:#ecfeff;color:#0ea5e9;border:1px solid #bae6fd">Teslim Edildi</span>
+            {% else %}
+                <span class="pill"
+                      style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb">Mağazada Beklemede</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="o_card o_px o_py" style="margin-top:10px;">
+
+        <h2 class="o_heading" style="font-size:22px;margin-bottom:8px;">{{ subject }}</h2>
+        <p class="o_text" style="margin-bottom:16px;">
+            Merhaba {{ customer.first_name }} {{ customer.last_name }}, ürün tamir kaydınız oluşturuldu.
+            Aşağıda özet bilgileri ve takip bağlantısını bulabilirsiniz.
+        </p>
+
+        <div class="o_media" style="margin:8px 0 14px;">
+            {% if repair_image_url %}
+                <img src="{{ repair_image_url }}" width="140" alt="Ürün">
+            {% endif %}
+            <div class="meta">
+                <p class="o_text"><strong>Takip Kodu:</strong> {{ repair.tracking_code }}</p>
+                <p class="o_text"><strong>Durum:</strong> {{ repair.get_status_display }}</p>
+                <p class="o_text"><strong>Ürün Türü:</strong> {{ repair.product_type|default:"-" }}</p>
+                {% if repair.gram %}<p class="o_text"><strong>Gram:</strong> {{ repair.gram }} gr</p>{% endif %}
+                <p class="o_text"><strong>Fiyat:</strong> {{ repair.price }} TL</p>
+                {% if repair.product_description %}
+                    <p class="o_text"><strong>Not:</strong> {{ repair.product_description }}</p>
+                {% endif %}
+                <p class="o_text"><strong>Teslim Alan:</strong> {{ received_by_name }} — {{ received_at_str }}</p>
+                {% if delivered_by_name %}
+                    <p class="o_text"><strong>Teslim Eden:</strong> {{ delivered_by_name }}</p>
+                {% endif %}
+                {% if workshop_name %}
+                    <p class="o_text"><strong>Atölye:</strong> {{ workshop_name }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <p class="o_text" style="margin:0 0 8px;">Son hareket: <span class="muted">{{ updated_at_str }}</span></p>
+
+        {% if detail_url %}
+            <p class="o_text" style="margin:10px 0;">
+                Durumu dilediğiniz zaman buradan takip edebilirsiniz:
+                <a href="{{ detail_url }}">Tamir detay sayfası</a>
+            </p>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="o_card o_px o_py footer" style="margin-top:10px;">
+        <table role="presentation" width="100%" style="border:0;border-collapse:collapse;">
+            <tr>
+                <td style="border:0;padding:0;vertical-align:middle;">
+                    <a href="https://www.kuyumplus.com" style="display:inline-block;">
+                        <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="140" alt="KuyumPlus"
+                             style="display:block;border:0;outline:none;height:auto;">
+                    </a>
+                </td>
+                <td style="border:0;padding:0;text-align:right;vertical-align:middle;">
+                    <a href="tel:+902166068801"
+                       style="display:inline-block;text-decoration:none;border-radius:999px;background:#0F172A;border:1px solid #334155;white-space:nowrap;padding:10px 14px;color:#fff;">
+                        0&nbsp;216&nbsp;606&nbsp;88&nbsp;01
+                    </a>
+                    &nbsp;
+                    <a href="mailto:destek@kuyumplus.com"
+                       style="display:inline-block;text-decoration:none;border-radius:999px;background:#0F172A;border:1px solid #334155;white-space:nowrap;padding:10px 14px;color:#fff;">
+                        destek@kuyumplus.com
+                    </a>
+                </td>
+            </tr>
+        </table>
+        <p class="muted" style="font-size:13px;margin:8px 0 4px 0;">Kayalar Kuyumculuk • Pendik/İstanbul</p>
+        <p class="muted" style="font-size:13px;margin:0;">© Konasoft 2025</p>
+    </div>
+
+</div>
+</body>
+</html>

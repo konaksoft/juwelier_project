@@ -1,0 +1,2266 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .kpi {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid #e9eef5;
+            background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+            box-shadow: 0 4px 12px rgba(18, 38, 63, 0.05);
+            transition: transform .18s ease, box-shadow .18s ease;
+            height: 74px;
+        }
+
+        .kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 38, 63, 0.08);
+        }
+
+        .kpi__icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 18px;
+        }
+
+        .kpi__body {
+            line-height: 1.15;
+        }
+
+        .kpi__label {
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            opacity: .85;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .kpi__value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: .01em;
+            white-space: nowrap;
+        }
+
+        .kpi--green .kpi__icon {
+            background: rgba(40, 167, 69, .12);
+            color: #28a745;
+        }
+
+        .kpi--green .kpi__label, .kpi--green .kpi__value {
+            color: #1f8d3d;
+        }
+
+        .kpi--red .kpi__icon {
+            background: rgba(220, 53, 69, .12);
+            color: #dc3545;
+        }
+
+        .kpi--red .kpi__label, .kpi--red .kpi__value {
+            color: #b11e2b;
+        }
+
+        .kpi--blue .kpi__icon {
+            background: rgba(0, 123, 255, .12);
+            color: #007bff;
+        }
+
+        .kpi--blue .kpi__label {
+            color: #1661c1;
+        }
+
+        .kpi--blue .kpi__value {
+            color: {% if balance_hs >= 0 %}#28a745{% else %}#dc3545{% endif %};
+        }
+
+        .was-validated .form-control:invalid,
+        .form-control.is-invalid,
+        .was-validated .form-select:invalid,
+        .form-select.is-invalid,
+        .was-validated textarea.form-control:invalid {
+            border-color: #dc3545 !important;
+        }
+
+        .was-validated .form-control:invalid:focus,
+        .was-validated .form-select:invalid:focus,
+        .was-validated textarea.form-control:invalid:focus {
+            box-shadow: 0 0 0 .25rem rgba(220, 53, 69, .25);
+        }
+
+        .btn-emanet {
+            background-color: #6f42c1 !important;
+            color: #fff !important;
+            border-color: #6f42c1 !important;
+        }
+
+        .btn-emanet:hover,
+        .btn-emanet:focus {
+            filter: brightness(0.92);
+            color: #fff !important;
+        }
+
+        .btn-emanet .fa-solid {
+            color: #fff !important;
+        }
+
+        .btn-emanet-light {
+            background-color: rgba(111, 66, 193, .12);
+            color: #6f42c1 !important;
+            border: 1px solid transparent;
+            transition: filter .15s ease, box-shadow .15s ease, transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease;
+        }
+
+        .btn-emanet-light i {
+            color: inherit !important;
+        }
+
+        .btn-emanet-light:hover,
+        .btn-emanet-light:focus {
+            background-color: #5b38ad;
+            border-color: #5b38ad;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(18, 38, 63, .08);
+            transform: translateY(-1px);
+        }
+
+        .btn-emanet-light:active {
+            background-color: #4f3197;
+            border-color: #4f3197;
+            color: #fff !important;
+        }
+
+        .btn-light-success i {
+            color: inherit !important;
+        }
+
+        #custodiesTable .badge.bg-info,
+        #custodiesTable .badge.bg-success {
+            color: #fff !important;
+        }
+
+        .btn-custody {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            padding: .45rem .7rem !important;
+            height: 2.25rem !important;
+            min-width: 110px;
+            border-radius: .475rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .btn-custody i {
+            color: inherit !important;
+        }
+
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-xxl">
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-body pt-9 pb-0">
+                            <div class="d-flex flex-wrap flex-sm-nowrap">
+                                <div class="me-7 mb-4">
+                                    <div class="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
+                                        {% if customer.profile_picture %}
+                                            <img src="{{ customer.profile_picture.url }}" alt="image">
+                                        {% else %}
+                                            <img src="/media/default/profilee.webp" alt="image">
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="flex-grow-1 w-100">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1"
+                                                   style="letter-spacing:.5px;">
+                                                    <span class="js-fullname">{{ customer.first_name }} {{ customer.last_name }}</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mb-4">
+
+                                        {% if balance_type == 'debt' %}
+                                            <div class="col-12 col-md-6">
+                                                <div class="kpi kpi--red">
+                                                    <div class="kpi__icon"><i class="fa-solid fa-arrow-down"></i></div>
+                                                    <div class="kpi__body">
+                                                        <div class="kpi__label">Müşteri Borcu (HS)</div>
+                                                        <div class="kpi__value">{{ balance_hs|floatformat:3 }} HS</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <div class="kpi kpi--red">
+                                                    <div class="kpi__icon"><i class="fa-solid fa-turkish-lira-sign"></i>
+                                                    </div>
+                                                    <div class="kpi__body">
+                                                        <div class="kpi__label">Borç TL Karşılığı (Anlık Kur)</div>
+                                                        <div class="kpi__value">{{ balance_tl|floatformat:2 }} ₺</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        {% elif balance_type == 'credit' %}
+                                            <div class="col-12 col-md-6">
+                                                <div class="kpi kpi--green">
+                                                    <div class="kpi__icon"><i class="fa-solid fa-arrow-up"></i></div>
+                                                    <div class="kpi__body">
+                                                        <div class="kpi__label">Müşteri Alacağı (HS)</div>
+                                                        <div class="kpi__value">{{ balance_hs|floatformat:3 }} HS</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <div class="kpi kpi--green">
+                                                    <div class="kpi__icon"><i class="fa-solid fa-turkish-lira-sign"></i>
+                                                    </div>
+                                                    <div class="kpi__body">
+                                                        <div class="kpi__label">Alacak TL Karşılığı (Anlık Kur)</div>
+                                                        <div class="kpi__value">{{ balance_tl|floatformat:2 }} ₺</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        {% else %}
+                                            <div class="col-12 col-md-6">
+                                                <div class="kpi kpi--blue">
+                                                    <div class="kpi__icon"><i class="fa-solid fa-check-double"></i>
+                                                    </div>
+                                                    <div class="kpi__body">
+                                                        <div class="kpi__label">Bakiye Durumu</div>
+                                                        <div class="kpi__value">Borç / Alacak Yok</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+
+                                    </div>
+
+                                    <div class="d-flex justify-content-end align-items-center mb-5 gap-2">
+                                        <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                                data-bs-target="#debtCollectionModal">
+                                            <i class="fa-solid fa-money-bill-wave fs-2 me-2"></i> Borç Tahsilat / Ödeme
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5 active" data-bs-toggle="tab"
+                                       href="#customer_info">Müşteri Bilgileri</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#settings">Ayarlar</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#purchases">Alış İşlemleri</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#sales">Satış İşlemleri</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-warning ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#debts">Alacak/Borç İşlemleri</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#custodies">Emanet</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#repairs">Tamir</a>
+                                </li>
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                                       href="#payments">Ödemeler</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="customer_info" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10" id="kt_profile_details_view">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Müşteri Bilgileri</h3></div>
+                                </div>
+                                <div class="card-body p-9">
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Ad Soyad</label>
+                                        <div class="col-lg-8">
+                                            <span id="disp_name"
+                                                  class="fw-bold fs-6 text-gray-800">{{ customer.first_name }} {{ customer.last_name }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Müşteri Numarası</label>
+                                        <div class="col-lg-8"><span
+                                                class="fw-bold fs-6 text-gray-800">{{ customer.customer_number }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">E-Posta</label>
+                                        <div class="col-lg-8 d-flex align-items-center gap-3">
+                                            <span id="disp_email"
+                                                  class="fw-semibold text-gray-800 fs-6">{{ customer.email|default:"-" }}</span>
+                                            {% if customer.is_email_verified %}
+                                                <span class="badge bg-light-success text-success">Doğrulandı</span>
+                                            {% else %}
+                                                <span class="badge bg-light-danger text-danger">Doğrulanmadı</span>
+                                                {% if customer.email %}
+                                                    <button class="btn btn-sm btn-light-primary" type="button"
+                                                            onclick="sendCustomerVerify('email')">Doğrula
+                                                    </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Telefon</label>
+                                        <div class="col-lg-8 d-flex align-items-center gap-3">
+                                            <span id="disp_phone"
+                                                  class="fw-semibold text-gray-800 fs-6">{{ customer.phone|default:"-" }}</span>
+                                            {% if customer.is_phone_verified %}
+                                                <span class="badge bg-light-success text-success">Doğrulandı</span>
+                                            {% else %}
+                                                <span class="badge bg-light-danger text-danger">Doğrulanmadı</span>
+                                                {% if customer.phone %}
+                                                    <button class="btn btn-sm btn-light-primary" type="button"
+                                                            onclick="sendCustomerVerify('phone')">Doğrula
+                                                    </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">T.C. / Kimlik No</label>
+                                        <div class="col-lg-8"><span
+                                                class="fw-bold fs-6 text-gray-800">{{ customer.identification_number|default:"-" }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Cinsiyet</label>
+                                        <div class="col-lg-8">
+                                            <span id="disp_gender"
+                                                  class="fw-bold fs-6 text-gray-800">{{ customer.gender|default:"-" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% if customer.address %}
+                                        <div class="row mb-7">
+                                            <label class="col-lg-4 fw-semibold text-muted">Adres</label>
+                                            <div class="col-lg-8">
+                                                <span
+                                                        id="disp_address"
+                                                        class="fw-bold fs-6 text-gray-800">{{ customer.address }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if customer.identification_front_image or customer.identification_back_image %}
+                                        <div class="row mb-7">
+                                            <label class="col-lg-4 fw-semibold text-muted">Kimlik Fotoğrafları</label>
+                                            <div class="col-lg-8">
+                                                <div class="d-flex align-items-start gap-4 flex-wrap">
+                                                    {% if customer.identification_front_image %}
+                                                        <div class="d-flex flex-column align-items-center">
+                                                            <a href="{{ customer.identification_front_image.url }}"
+                                                               class="d-block overlay"
+                                                               data-fslightbox="identity_images"
+                                                               data-type="image">
+                                                                <div class="symbol w-150px h-100px position-relative bg-light border border-gray-300 rounded overflow-hidden">
+                                                                    <img src="{{ customer.identification_front_image.url }}"
+                                                                         class="w-100 h-100"
+                                                                         alt="Kimlik Ön Yüz"
+                                                                         style="object-fit: cover;">
+                                                                    <div class="overlay-layer bg-dark bg-opacity-25">
+                                                                        <i class="fa-solid fa-magnifying-glass text-white fs-3"></i>
+                                                                    </div>
+                                                                </div>
+                                                            </a>
+                                                            <span class="text-gray-600 fs-8 fw-bold mt-2">Ön Yüz</span>
+                                                        </div>
+                                                    {% endif %}
+
+                                                    {% if customer.identification_back_image %}
+                                                        <div class="d-flex flex-column align-items-center">
+                                                            <a href="{{ customer.identification_back_image.url }}"
+                                                               class="d-block overlay"
+                                                               data-fslightbox="identity_images"
+                                                               data-type="image">
+                                                                <div class="symbol w-150px h-100px position-relative bg-light border border-gray-300 rounded overflow-hidden">
+                                                                    <img src="{{ customer.identification_back_image.url }}"
+                                                                         class="w-100 h-100"
+                                                                         alt="Kimlik Arka Yüz"
+                                                                         style="object-fit: cover;">
+                                                                    <div class="overlay-layer bg-dark bg-opacity-25">
+                                                                        <i class="fa-solid fa-magnifying-glass text-white fs-3"></i>
+                                                                    </div>
+                                                                </div>
+                                                            </a>
+                                                            <span class="text-gray-600 fs-8 fw-bold mt-2">Arka Yüz</span>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Durum</label>
+                                        <div class="col-lg-8">
+                                            <span class="fw-bold fs-6 {% if customer.is_active %}text-success{% else %}text-danger{% endif %}">
+                                              {% if customer.is_active %}Aktif{% else %}Pasif{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="settings" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header border-0 cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Ayarlar</h3></div>
+                                </div>
+                                <div id="kt_account_settings_profile_details" class="collapse show">
+                                    <form method="post" action="{% url 'customers:add' %}"
+                                          enctype="multipart/form-data" id="kt_account_profile_details_form"
+                                          class="form">
+                                        {% csrf_token %}
+                                        <input type="hidden" id="record_id" name="record_id" value="{{ customer.id }}"/>
+
+                                        <div class="card-body border-top p-9">
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label required fw-semibold fs-6">Ad</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="text" name="first_name"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           placeholder="Ad"
+                                                           value="{{ customer.first_name|default_if_none:'' }}"
+                                                           required>
+                                                    <div class="invalid-feedback">Lütfen ad giriniz.</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label required fw-semibold fs-6">Soyad</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="text" name="last_name"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           placeholder="Soyad"
+                                                           value="{{ customer.last_name|default_if_none:'' }}"
+                                                           required>
+                                                    <div class="invalid-feedback">Lütfen soyad giriniz.</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">T.C. / Kimlik
+                                                    No</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="text" name="identification_number"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           placeholder="Kimlik No"
+                                                           value="{{ customer.identification_number|default_if_none:'' }}"
+                                                           pattern="\d{11}" maxlength="11">
+                                                    <div class="invalid-feedback">Kimlik numarası 11 haneli olmalıdır.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Telefon</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="tel" name="phone"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           placeholder="Telefon"
+                                                           value="{{ customer.phone|default_if_none:'' }}"
+                                                           required>
+                                                    <div class="invalid-feedback">Lütfen telefon giriniz.</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">E-Posta</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="email" name="email"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           placeholder="E-Posta"
+                                                           value="{{ customer.email|default_if_none:'' }}"
+                                                           required>
+                                                    <div class="invalid-feedback">Lütfen geçerli bir e-posta giriniz.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Cinsiyet</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <select name="gender"
+                                                            class="form-select form-select-lg form-select-solid">
+                                                        <option value="" {% if not customer.gender %}selected{% endif %}
+                                                                disabled>Seçiniz
+                                                        </option>
+                                                        <option value="Erkek"
+                                                                {% if customer.gender == "Erkek" %}selected{% endif %}>
+                                                            Erkek
+                                                        </option>
+                                                        <option value="Kadın"
+                                                                {% if customer.gender == "Kadın" %}selected{% endif %}>
+                                                            Kadın
+                                                        </option>
+                                                    </select>
+                                                    <div class="invalid-feedback">Lütfen cinsiyet seçiniz.</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Adres</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <textarea name="address" rows="3"
+                                                              class="form-control form-control-lg form-control-solid"
+                                                              placeholder="Adres">{{ customer.address|default_if_none:'' }}</textarea>
+                                                    <div class="invalid-feedback">Lütfen adres giriniz.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-footer d-flex justify-content-end py-6 px-9">
+                                            <button type="reset" class="btn btn-light btn-active-light-primary me-2">
+                                                İptal
+                                            </button>
+                                            <button type="submit" class="btn btn-primary"
+                                                    id="kt_account_profile_details_submit">Güncelle
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="purchases" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Alış İşlemleri</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="purchasesToolbar"
+                                         class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                        <div></div>
+                                        <div id="purchasesSearch"></div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table id="purchasesTable"
+                                               class="table align-middle table-row-dashed fs-6 gy-5">
+                                            <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                <th>İşlem No</th>
+                                                <th>İşlem</th>
+                                                <th>Yön</th>
+                                                <th>Çalışan</th>
+                                                <th>Ürün</th>
+                                                <th>Adet</th>
+                                                <th>Birim Fiyat</th>
+                                                <th>Gram</th>
+                                                <th>Tutar</th>
+                                                <th>Has Tutar</th>
+                                                <th>Tarih</th>
+                                                <th>Durum</th>
+                                                <th class="text-center">Aksiyon</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="sales" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Satış İşlemleri</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="salesToolbar"
+                                         class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                        <div></div>
+                                        <div id="salesSearch"></div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table id="salesTable" class="table align-middle table-row-dashed fs-6 gy-5">
+                                            <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                <th>İşlem No</th>
+                                                <th>İşlem</th>
+                                                <th>Yön</th>
+                                                <th>Çalışan</th>
+                                                <th>Ürün</th>
+                                                <th>Adet</th>
+                                                <th>Birim Fiyat</th>
+                                                <th>Gram</th>
+                                                <th>Tutar</th>
+                                                <th>Has Tutar</th>
+                                                <th>Tarih</th>
+                                                <th>Durum</th>
+                                                <th class="text-center">Aksiyon</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="debts" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Alacak/Borç İşlemleri</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="debtsToolbar"
+                                         class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-light-success fw-bold"
+                                                    id="btnPaySelected" disabled>
+                                                <i class="fa-solid fa-hand-holding-dollar me-1"></i> Seçili İşlemleri
+                                                Öde
+                                                <span class="badge badge-success ms-1" id="selectedCount"
+                                                      style="display:none;">0</span>
+                                            </button>
+                                        </div>
+                                        <div id="debtsSearch"></div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table id="debtsTable"
+                                               class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                                            <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-25px pe-2">
+                                                    <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                                        <input class="form-check-input" type="checkbox"
+                                                               id="debtsCheckAll"/>
+                                                    </div>
+                                                </th>
+                                                <th>İşlem No</th>
+                                                <th>İşlem</th>
+                                                <th>Çalışan</th>
+                                                <th>Ürün</th>
+                                                <th>Adet</th>
+                                                <th>Birim Fiyat</th>
+                                                <th>Gram</th>
+                                                <th>Tutar</th>
+                                                <th>Has Tutar</th>
+                                                <th>Kalan Borç/Alacak (HS)</th>
+                                                <th>Tarih</th>
+                                                <th>Durum</th>
+                                                <th class="text-center">Aksiyon</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="custodies" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Emanet</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="custodiesToolbar"
+                                         class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                        <div></div>
+                                        <div id="custodiesSearch"></div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table id="custodiesTable"
+                                               class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                                            <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                <th>İşlem No</th>
+                                                <th>Personel</th>
+                                                <th>Ürün</th>
+                                                <th>Adet</th>
+                                                <th>Gram</th>
+                                                <th>HS</th>
+                                                <th>Tarih</th>
+                                                <th>Durum</th>
+                                                <th>İşlem</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="repairs" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Tamir</h3></div>
+                                </div>
+                                <div class="card-body">
+
+                                    <div id="repairsToolbar"
+                                         class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                        <div></div>
+                                        <div id="repairsSearch"></div>
+                                    </div>
+
+                                    {% if repairs and repairs|length > 0 %}
+                                        <div class="table-responsive">
+                                            <table id="repairsTable"
+                                                   class="table align-middle table-row-dashed fs-6 gy-5">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th>Görsel</th>
+                                                    <th>Takip Kodu</th>
+                                                    <th>Ürün Türü</th>
+                                                    <th>Açıklama</th>
+                                                    <th>Durum</th>
+                                                    <th>Fiyat</th>
+                                                    <th>Gram</th>
+                                                    <th>Atölye</th>
+                                                    <th>Alım (Alan)</th>
+                                                    <th>Teslim (Eden)</th>
+                                                    <th>Alım Tarihi</th>
+                                                    <th>Güncellendi</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold">
+                                                {% for r in repairs %}
+                                                    <tr>
+                                                        <td>
+                                                            {% if r.image %}
+                                                                <img src="{{ r.image.url }}" alt="repair"
+                                                                     style="width:48px;height:48px;object-fit:cover;border-radius:6px;">
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ r.tracking_code|default:"-" }}</td>
+                                                        <td>{{ r.get_product_type_display|default:"-" }}</td>
+                                                        <td>{{ r.product_description|default:"-" }}</td>
+                                                        <td>
+                                                            <span class="
+                                                              {% if r.status == 'delivered' %}badge bg-light-success text-success
+                                                              {% elif r.status == 'ready_for_pickup' %}badge bg-light-primary text-primary
+                                                              {% elif r.status == 'workshop' %}badge bg-light-warning text-warning
+                                                              {% else %}badge bg-light-secondary text-gray-700{% endif %}">
+                                                              {{ r.get_status_display }}
+                                                            </span>
+                                                        </td>
+                                                        <td>{{ r.price|default:"-" }}</td>
+                                                        <td>{{ r.gram|default:"-" }}</td>
+                                                        <td>
+                                                            {% if r.workshop %}
+                                                                {{ r.workshop.company_name }}
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ r.received_by|default:"-" }}</td>
+                                                        <td>{{ r.delivered_by|default:"-" }}</td>
+                                                        <td data-order="{{ r.created_at|date:'Y-m-d H:i' }}">{{ r.created_at|date:'d.m.Y H:i' }}</td>
+                                                        <td data-order="{{ r.updated_at|date:'Y-m-d H:i' }}">{{ r.updated_at|date:'d.m.Y H:i' }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p>Tamir kaydı bulunmamaktadır.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="payments" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Ödemeler</h3></div>
+                                </div>
+                                <div class="card-body">
+
+                                    <div id="paymentsToolbar"
+                                         class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                        <div></div>
+                                        <div id="paymentsSearch"></div>
+                                    </div>
+
+                                    {% if payments %}
+                                        <div class="table-responsive">
+                                            <table id="paymentsTable"
+                                                   class="table align-middle table-row-dashed fs-6 gy-5">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th>İşlem</th>
+                                                    <th>Ödeme Numarası</th>
+                                                    <th>Ödeme Türü</th>
+                                                    <th>Miktar</th>
+                                                    <th>Tarih</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold">
+                                                {% for payment in payments %}
+                                                    <tr>
+                                                        <td>{% if payment.is_output %}Nakit Çıkış{% else %}Nakit
+                                                            Giriş{% endif %}</td>
+                                                        <td>{{ payment.process_no }}</td>
+                                                        <td>{{ payment.get_payment_type_display }}</td>
+                                                        <td>{{ payment.amount }}</td>
+                                                        <td data-order="{{ payment.date|date:'Y-m-d H:i' }}">{{ payment.date }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p>Ödeme bilgisi bulunmamaktadır.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="processDetailsModal" tabindex="-1"
+                         aria-labelledby="processDetailsModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down modal-fullscreen-sm-down">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="processDetailsModalLabel">İşlem Detayları Bilgi
+                                        Fişi</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                            aria-label="Kapat"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="printableArea">
+                                        <h3 class="title-fis" style="text-align:center; margin:5px 0;">İşlem Detayları
+                                            Bilgi Fişi</h3>
+                                        <div style="text-align:left;">
+                                            <p style="margin:2px 0;"><strong>Satış Yapan Personel:</strong> <span
+                                                    id="employeeName"></span></p>
+                                            <p style="margin:2px 0;"><strong>Müşteri:</strong> <span
+                                                    id="customerName"></span></p>
+                                            <p style="margin:2px 0;"><strong>Telefon Numarası:</strong> <span
+                                                    id="customerPhone"></span></p>
+                                            <p style="margin:2px 0;"><strong>Toplam Satış Tutarı:</strong> <span
+                                                    id="totalAmountSale" style="color:green;"></span></p>
+                                            <p style="margin:2px 0;"><strong>Toplam Alış/İade Tutarı:</strong> <span
+                                                    id="totalAmountPurchaseReturn" style="color:red;"></span></p>
+                                            <p style="margin:2px 0;"><strong>Net Toplam Tutar:</strong> <span
+                                                    id="totalAmount" style="color:blue;"></span></p>
+                                        </div>
+                                        <hr style="border:none;border-top:1px solid #000; margin:5px 0;"/>
+                                        <table id="processDetailsTable" style="width:100%; border-collapse:collapse;">
+                                            <thead>
+                                            <tr>
+                                                <th style="border:1px solid #000; padding:3px; text-align:left;">Ürün
+                                                </th>
+                                                <th style="border:1px solid #000; padding:3px; text-align:left;">Satış
+                                                    Has
+                                                </th>
+                                                <th style="border:1px solid #000; padding:3px; text-align:left;">Tutar
+                                                </th>
+                                                <th style="border:1px solid #000; padding:3px; text-align:left;">Tarih
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="modal-footer d-print-none">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat
+                                    </button>
+                                    <button type="button" class="btn btn-success" onclick="exportToExcel()">Excel
+                                        İndir
+                                    </button>
+                                    <button type="button" class="btn btn-danger" onclick="exportToPDF()">PDF İndir
+                                    </button>
+                                    <button type="button" class="btn btn-primary" onclick="printDetails()">Yazdır
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="addCustodyModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <form id="custodyForm" method="post" class="modal-content">
+                                {% csrf_token %}
+                                <input type="hidden" name="custody_id" value="">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Emanet Ekle</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Müşteri</label>
+                                        <select name="customer_id" class="form-select" required>
+                                            <option value="">Seçiniz</option>
+                                            {% for c in customers %}
+                                                <option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Adet</label>
+                                            <input type="number" class="form-control" name="quantity_piece" value="0">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Gram</label>
+                                            <input type="number" step="0.001" class="form-control" name="quantity_gram"
+                                                   value="0">
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Miktar (HS)</label>
+                                            <input type="number" step="0.001" class="form-control" name="amount_hs"
+                                                   value="0">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">İşlem No (opsiyonel)</label>
+                                            <input type="text" class="form-control" name="process_no">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Açıklama</label>
+                                        <textarea class="form-control" name="description" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button id="btnSaveCustody" type="submit" class="btn btn-primary">Kaydet</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Doğrulama Kodu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <p class="text-muted">Lütfen gönderilen 6 haneli kodu giriniz.</p>
+                    </div>
+                    <input type="text" id="verifyCodeInput" class="form-control text-center fs-2"
+                           placeholder="______" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                           autocomplete="one-time-code">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmCustomerVerify()">Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="debtCollectionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light-primary">
+                    <h3 class="modal-title fw-bold text-primary">Nakit İşlem (Tahsilat/Ödeme)</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-10">
+
+                    <div class="d-flex align-items-center bg-light-info rounded p-4 mb-5 border border-info border-dashed">
+                        <i class="fa-solid fa-wallet fs-2x text-info me-4"></i>
+                        <div class="d-flex flex-column flex-grow-1">
+                            <span class="fw-bold text-gray-800 fs-6 mb-1">Mevcut Bakiye Durumu</span>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fs-5 fw-bolder text-info" id="modalBalanceDisplay">0.000 HS</span>
+                                <span class="badge badge-light-info fw-bold fs-7"
+                                      id="modalBalanceStatus">Yükleniyor...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="debtCollectionForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                        <input type="hidden" id="rawBalanceHS" value="0">
+                        <input type="hidden" name="selected_processes" id="selectedProcesses" value="">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold required">İşlem Türü</label>
+                            <div class="row g-3" data-kt-buttons="true">
+                                <div class="col">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-success d-flex text-start p-4 active"
+                                           data-direction="collection">
+                                        <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
+                                            <input class="form-check-input" type="radio" name="direction"
+                                                   value="collection" checked="checked">
+                                        </span>
+                                        <span class="ms-3">
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">Tahsilat Yap</span>
+                                            <span class="fs-7 text-muted">Müşteriden para al</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="col">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-danger d-flex text-start p-4"
+                                           data-direction="payment">
+                                        <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
+                                            <input class="form-check-input" type="radio" name="direction"
+                                                   value="payment_to_customer">
+                                        </span>
+                                        <span class="ms-3">
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">Ödeme Yap</span>
+                                            <span class="fs-7 text-muted">Müşteriye para ver</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold required">Para Birimi</label>
+                                <select class="form-select form-select-solid fw-bold" name="currency_type"
+                                        id="currencyType">
+                                    <option value="TL">Türk Lirası (₺)</option>
+                                    <option value="HS">Has Altın (gr)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold required">Kur (Has Satış)</label>
+                                <input type="number" class="form-control form-control-solid fw-bold"
+                                       name="exchange_rate" id="exchangeRate"
+                                       step="0.01" value="{{ has_price|stringformat:'f'|default:'0' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold required">İşlem Tutarı</label>
+                            <div class="input-group input-group-solid">
+                                <input type="number"
+                                       class="form-control form-control-solid fs-4 fw-bolder text-gray-800"
+                                       name="amount" id="paymentAmount" step="0.01" placeholder="0.00">
+                                <button class="btn btn-primary fw-bold" type="button" id="btnPayAll">
+                                    <i class="fa-solid fa-check-double fs-4 me-1"></i> HEPSİNİ SEÇ
+                                </button>
+                            </div>
+                            <div class="mt-2 text-end">
+                                <span class="text-muted fw-bold fs-7">Karşılığı: </span>
+                                <span class="text-dark fw-bolder fs-6" id="conversionResult">0.00</span>
+                                <span class="text-dark fw-bold fs-7" id="conversionUnit">HS</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Açıklama</label>
+                            <textarea class="form-control form-control-solid" name="description" rows="2"
+                                      placeholder="İşlem notu..."></textarea>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light btn-active-light-primary" data-bs-dismiss="modal">İptal
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnSaveDebtCollection">
+                        <span class="indicator-label"><i class="fa-solid fa-save me-1"></i> Kaydet ve Bitir</span>
+                        <span class="indicator-progress">İşleniyor... <span
+                                class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fslightbox/3.0.9/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        function initCustomerDT(tableSel, toolbarSel, searchSel, transactionType, customerId) {
+            const dt = $(tableSel).DataTable({
+                dom: '<"top d-flex justify-content-end"f>rt<"bottom d-flex justify-content-between align-items-center mb-4"lp><"clear">',
+                info: false,
+                paging: true,
+                lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                pageLength: -1,
+                searchDelay: 400,
+                processing: true,
+                serverSide: true,
+                orderMulti: false,
+                autoWidth: false,
+                stateSave: true,
+                order: [[10, 'desc']],
+                initComplete: function () {
+                    $(`${tableSel}_filter`).appendTo(searchSel).addClass('mb-0');
+                },
+                ajax: {
+                    url: `/customers/detail/${customerId}/transactions`,
+                    type: 'GET',
+                    dataType: 'json',
+                    data: function (d) {
+                        d.transaction_type = transactionType;
+                    }
+                },
+                columns: [
+                    {
+                        data: "process_no",
+                        render: function (d) {
+                            return `<a href="javascript:void(0)" class="js-open-process-modal fw-bold text-primary" data-process-no="${d}">${d}</a>`;
+                        }
+                    },
+                    {
+                        data: "transaction_type", render: function (v) {
+                            return v === 'PURCHASE' ? '<span style="color:green;font-weight:700">Alış</span>'
+                                : v === 'SALE' ? '<span style="color:red;font-weight:700">Satış</span>'
+                                    : v;
+                        }
+                    },
+                    {data: "direction"},
+                    {data: "employee"},
+                    {data: "product"},
+                    {data: "piece"},
+                    {data: "unit_price", render: $.fn.dataTable.render.number('.', ',', 2, '', ' ₺')},
+                    {data: "gram", render: $.fn.dataTable.render.number('.', ',', 3, '')},
+                    {data: "amount", render: $.fn.dataTable.render.number('.', ',', 2, '', ' ₺')},
+                    {data: "price_hs", render: $.fn.dataTable.render.number('.', ',', 3, '')},
+                    {
+                        data: "date", render: function (d) {
+                            return new Date(d).toLocaleString('tr-TR');
+                        }
+                    },
+                    {
+                        data: "status", render: function (s) {
+                            return s === 'COMPLETED'
+                                ? "<span class='badge bg-light-success text-success'>Tamamlandı</span>"
+                                : s === 'PENDING'
+                                    ? "<span class='badge bg-light-warning text-warning'>Bekliyor</span>"
+                                    : s === 'IN_PROGRESS'
+                                        ? "<span class='badge bg-light-primary text-primary'>İşlemde</span>"
+                                        : `<span class='badge bg-light-secondary text-gray-700'>${(s || '-')}</span>`;
+                        }
+                    },
+                    {
+                        data: null, orderable: false, className: "text-center",
+                        render: function (_, __, full) {
+                            const no = full.process_no;
+                            const urlDetail = `/process/detail/${no}/`;
+                            const urlReceipt80 = `/process/receipt/${no}/?paper=80`;
+
+                            return `
+                                  <div class="d-flex justify-content-center gap-2">
+                                    <a href="${urlDetail}" class="btn btn-sm btn-light-primary" title="Detay / Fiş Görüntüle">
+                                      <i class="fa-solid fa-file-invoice"></i>
+                                    </a>
+
+                                    <a href="${urlReceipt80}" class="btn btn-sm btn-light-info" title="Termal Fiş (80mm)">
+                                      <i class="fa-solid fa-receipt"></i>
+                                    </a>
+                                  </div>`;
+                        }
+                    }
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+
+            return dt;
+        }
+
+        function initCustomerDebtsDT(tableSel, toolbarSel, searchSel, transactionType, customerId) {
+            const dt = $(tableSel).DataTable({
+                dom: '<"top d-flex justify-content-end"f>rt<"bottom d-flex justify-content-between align-items-center mb-4"lp><"clear">',
+                info: false,
+                paging: true,
+                lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                pageLength: -1,
+                searchDelay: 400,
+                processing: true,
+                serverSide: true,
+                orderMulti: false,
+                autoWidth: false,
+                stateSave: true,
+                order: [[11, 'desc']],
+                initComplete: function () {
+                    $(`${tableSel}_filter`).appendTo(searchSel).addClass('mb-0');
+                },
+                ajax: {
+                    url: `/customers/detail/${customerId}/transactions`,
+                    type: 'GET',
+                    dataType: 'json',
+                    data: function (d) {
+                        d.transaction_type = transactionType;
+                    }
+                },
+                columns: [
+                    {
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        className: "pe-2",
+                        render: function (data, type, row) {
+                            // Sepetin sadece ilk satırına checkbox koy
+                            if (!row.show_checkbox) {
+                                return '';
+                            }
+                            const hs = parseFloat(row.remaining_hs) || 0;
+                            const hasBalance = Math.abs(hs) > 0.001;
+                            return `<div class="form-check form-check-sm form-check-custom form-check-solid">
+                                    <input class="form-check-input debt-row-check" type="checkbox"
+                                           data-process-no="${row.process_no}"
+                                           data-remaining-hs="${row.remaining_hs}"
+                                           data-transaction-type="${row.transaction_type}"
+                                           ${hasBalance ? '' : 'disabled'} />
+                                </div>`;
+                        }
+                    },
+                    {
+                        data: "process_no",
+                        render: function (d) {
+                            return `<a href="javascript:void(0)" class="js-open-process-modal fw-bold text-primary" data-process-no="${d}">${d}</a>`;
+                        }
+                    },
+                    {
+                        data: "transaction_type", render: function (v) {
+                            return v === 'PURCHASE' ? '<span style="color:green;font-weight:700">Alış</span>'
+                                : v === 'SALE' ? '<span style="color:red;font-weight:700">Satış</span>'
+                                    : v;
+                        }
+                    },
+                    {data: "employee"},
+                    {data: "product"},
+                    {data: "piece"},
+                    {data: "unit_price", render: $.fn.dataTable.render.number('.', ',', 2, '', ' ₺')},
+                    {data: "gram", render: $.fn.dataTable.render.number('.', ',', 3, '')},
+                    {data: "amount", render: $.fn.dataTable.render.number('.', ',', 2, '', ' ₺')},
+                    {data: "price_hs", render: $.fn.dataTable.render.number('.', ',', 3, '')},
+                    {
+                        data: "remaining_hs",
+                        className: "text-center",
+                        render: function (d, type, row) {
+                            if (!row.show_checkbox) {
+                                return `<span class="text-muted fs-8"><i class="fa-solid fa-link me-1"></i> Üst işleme dahil</span>`;
+                            }
+                            let hs = parseFloat(d) || 0;
+
+                            if (hs > 0.001) {
+                                return `<span class="badge bg-light-danger text-danger fw-bold px-3 py-2" style="font-size: 0.95em;">${hs.toFixed(3)} HS<br>(Müşteri Borcu)</span>`;
+                            } else if (hs < -0.001) {
+                                return `<span class="badge bg-light-success text-success fw-bold px-3 py-2" style="font-size: 0.95em;">${Math.abs(hs).toFixed(3)} HS<br>(Müşteri Alacağı)</span>`;
+                            }
+                            return `<span class="text-muted fw-bold">0.000 HS</span>`;
+                        }
+                    },
+                    {
+                        data: "date", render: function (d) {
+                            return new Date(d).toLocaleString('tr-TR');
+                        }
+                    },
+                    {
+                        data: "status", render: function (s) {
+                            return s === 'COMPLETED' ? "<span class='badge bg-light-success text-success'>Tamamlandı</span>"
+                                : s === 'PENDING' ? "<span class='badge bg-light-warning text-warning'>Bekliyor</span>"
+                                    : s === 'IN_PROGRESS' ? "<span class='badge bg-light-primary text-primary'>İşlemde</span>"
+                                        : `<span class='badge bg-light-secondary text-gray-700'>${(s || '-')}</span>`;
+                        }
+                    },
+                    {
+                        data: null, orderable: false, className: "text-center",
+                        render: function (_, __, full) {
+                            const no = full.process_no;
+                            const urlDetail = `/process/detail/${no}/`;
+
+                            const urlReceipt80 = `/process/receipt/${no}/?paper=80`;
+
+                            return `
+                                  <div class="d-flex justify-content-center gap-2">
+                                    <a href="${urlDetail}" class="btn btn-sm btn-light-primary" title="Detay / Fiş Görüntüle">
+                                      <i class="fa-solid fa-file-invoice"></i>
+                                    </a>
+
+                                    <a href="${urlReceipt80}" class="btn btn-sm btn-light-info" title="Termal Fiş (80mm)">
+                                      <i class="fa-solid fa-receipt"></i>
+                                    </a>
+                                  </div>`;
+                        }
+                    }
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+            return dt;
+        }
+
+        function updateDebtSelectionUI() {
+            const checked = document.querySelectorAll('.debt-row-check:checked');
+            const btn = document.getElementById('btnPaySelected');
+            const badge = document.getElementById('selectedCount');
+
+            if (btn) {
+                btn.disabled = checked.length === 0;
+            }
+            if (badge) {
+                badge.textContent = checked.length;
+                badge.style.display = checked.length > 0 ? 'inline-block' : 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const customerId = "{{ customer.id }}";
+            window._dtPurch = initCustomerDT('#purchasesTable', '#purchasesToolbar', '#purchasesSearch', 'PURCHASE', customerId);
+            window._dtSales = initCustomerDT('#salesTable', '#salesToolbar', '#salesSearch', 'SALE', customerId);
+            window._dtDebts = initCustomerDebtsDT('#debtsTable', '#debtsToolbar', '#debtsSearch', 'DEBT', customerId);
+
+            $('#debtsTable').on('change', '.debt-row-check', function () {
+                updateDebtSelectionUI();
+                const allEnabled = document.querySelectorAll('.debt-row-check:not(:disabled)');
+                const allChecked = document.querySelectorAll('.debt-row-check:checked');
+                const masterCb = document.getElementById('debtsCheckAll');
+                if (masterCb) {
+                    masterCb.checked = allEnabled.length > 0 && allEnabled.length === allChecked.length;
+                    masterCb.indeterminate = allChecked.length > 0 && allChecked.length < allEnabled.length;
+                }
+            });
+
+            $('#debtsCheckAll').on('change', function () {
+                const isChecked = this.checked;
+                document.querySelectorAll('.debt-row-check:not(:disabled)').forEach(function (cb) {
+                    cb.checked = isChecked;
+                });
+                updateDebtSelectionUI();
+            });
+
+            $('#debtsTable').on('draw.dt', function () {
+                const masterCb = document.getElementById('debtsCheckAll');
+                if (masterCb) {
+                    masterCb.checked = false;
+                    masterCb.indeterminate = false;
+                }
+                updateDebtSelectionUI();
+            });
+
+            document.getElementById('btnPaySelected').addEventListener('click', function () {
+                const checked = document.querySelectorAll('.debt-row-check:checked');
+                if (checked.length === 0) return;
+
+                const processNos = [];
+                let totalRemainingHS = 0;
+
+                checked.forEach(function (cb) {
+                    processNos.push(cb.dataset.processNo);
+                    totalRemainingHS += Math.abs(parseFloat(cb.dataset.remainingHs) || 0);
+                });
+
+                const _balanceVal = parseFloat("{{ balance_hs|stringformat:'f' }}".replace(',', '.')) || 0;
+                const _isDebt = "{{ balance_type }}" === 'debt';
+                const customerDebtHS = _isDebt ? _balanceVal : 0;
+
+                function _openModalWithData(amountToPay) {
+                    document.getElementById('selectedProcesses').value = JSON.stringify(processNos);
+
+                    const currencySelect = document.getElementById('currencyType');
+                    if (currencySelect) currencySelect.value = 'HS';
+
+                    const amountInput = document.getElementById('paymentAmount');
+                    if (amountInput) amountInput.value = amountToPay.toFixed(3);
+
+                    const hasSaleChecked = Array.from(checked).some(cb => cb.dataset.transactionType === 'SALE');
+                    const hasPurchaseChecked = Array.from(checked).some(cb => ['PURCHASE', 'RETURN'].includes(cb.dataset.transactionType));
+
+                    const radioCollection = document.querySelector('input[name="direction"][value="collection"]');
+                    const radioPayment = document.querySelector('input[name="direction"][value="payment_to_customer"]');
+                    if (hasSaleChecked && !hasPurchaseChecked && radioCollection) {
+                        radioCollection.click();
+                    } else if (hasPurchaseChecked && !hasSaleChecked && radioPayment) {
+                        radioPayment.click();
+                    }
+
+                    const modalEl = document.getElementById('debtCollectionModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.show();
+
+                    if (currencySelect) currencySelect.dispatchEvent(new Event('change'));
+                    if (amountInput) amountInput.dispatchEvent(new Event('input'));
+                }
+
+                // DURUM 1: Borç Yok veya Müşteri Alacaklı
+                if (customerDebtHS <= 0.001) {
+                    Swal.fire({
+                        title: 'Uyarı',
+                        text: 'Bu müşterinin borcu bulunmamaktadır devam ederseniz borç alacak/verecek durumu oluşur.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Devam Et',
+                        cancelButtonText: 'İptal',
+                        customClass: {
+                            confirmButton: 'btn btn-warning',
+                            cancelButton: 'btn btn-light'
+                        }
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            // Onaylanırsa orijinal seçili tutarla modalı aç
+                            _openModalWithData(totalRemainingHS);
+                        }
+                    });
+                }
+                // DURUM 2: Seçilen Tutar Güncel Borçtan Fazla İse (UYARI)
+                else if (totalRemainingHS > customerDebtHS + 0.001) {
+                    Swal.fire({
+                        title: 'Dikkat',
+                        html: `Dikkat: Seçilen işlemlerin tutarı (<b>${totalRemainingHS.toFixed(3)} HS</b>), müşterinin güncel toplam borcundan (<b>${customerDebtHS.toFixed(3)} HS</b>) fazladır.<br><br>Müşterinin önceden yaptığı genel ödemeler olabilir. İşleme devam ederseniz müşteri alacaklı duruma geçecektir.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Devam Et',
+                        cancelButtonText: 'İptal',
+                        customClass: {
+                            confirmButton: 'btn btn-warning',
+                            cancelButton: 'btn btn-light'
+                        }
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            // Otomatik EŞİTLEME YAPILMIYOR, orijinal tutarla modal açılıyor.
+                            // Kuyumcu isterse inputtan manuel değiştirebilir.
+                            _openModalWithData(totalRemainingHS);
+                        }
+                    });
+                }
+                // DURUM 3: Normal Akış (Seçilen Tutar Borcu Aşmıyor)
+                else {
+                    _openModalWithData(totalRemainingHS);
+                }
+            });
+        });
+    </script>
+
+    <script>
+        $(document).on('click', '.js-open-process-modal', function () {
+            const processNo = $(this).data('process-no');
+
+            $.ajax({
+                url: '/process/get-process-details',
+                type: 'GET',
+                kpSkipLoader: true,
+                data: {process_no: processNo},
+                success: function (response) {
+                    if (!response.result) {
+                        Swal.fire('Hata!', response.error_msg || 'İşlem bulunamadı.', 'error');
+                        return;
+                    }
+
+                    const list = response.processes || [];
+                    const first = list[0] || {};
+
+                    $('#processDetailsModalLabel').text('İşlem Detayları - İşlem No: ' + processNo);
+                    $('#employeeName').text((first.employee__first_name || '') + ' ' + (first.employee__last_name || ''));
+                    $('#customerName').text(((first.customer__first_name || '-') + ' ' + (first.customer__last_name || '')).trim());
+                    $('#customerPhone').text(first.customer__phone || '-');
+
+                    const $tbody = $('#processDetailsTable tbody').empty();
+                    list.forEach(function (p) {
+                        $tbody.append(
+                            `<tr>
+                          <td>${p.product__name || ''}</td>
+                          <td>${p.price_hs ?? ''}</td>
+                          <td>${p.amount ?? ''}</td>
+                          <td>${new Date(p.date).toLocaleDateString('tr-TR')}</td>
+                       </tr>`
+                        );
+                    });
+
+                    $('#totalAmountSale').text(response.total_amount_sale ?? '0');
+                    $('#totalAmountPurchaseReturn').text(response.total_amount_purchase_return ?? '0');
+
+                    const total = Number(response.total_amount || 0);
+                    $('#totalAmount').text(total).css('color', total < 0 ? 'red' : '#32cd32');
+
+                    $('#processDetailsModal').modal('show');
+                },
+                error: function () {
+                    Swal.fire('Hata!', 'Sunucu hatası oluştu.', 'error');
+                }
+            });
+        });
+
+        function exportToExcel() {
+            const processNo = ($('#processDetailsModalLabel').text().split(': ')[1] || '').trim();
+            const dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            const wb = XLSX.utils.table_to_book(document.getElementById('processDetailsTable'), {sheet: 'İşlem Detayları'});
+            XLSX.writeFile(wb, `${processNo}_${dateText}.xlsx`);
+        }
+
+        function exportToPDF() {
+            const processNo = ($('#processDetailsModalLabel').text().split(': ')[1] || '').trim();
+            const dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            const printable = document.getElementById('printableArea');
+            const titleEl = document.querySelector('.title-fis');
+            const original = titleEl.style.fontSize;
+            titleEl.style.fontSize = '10px';
+
+            html2pdf().set({
+                margin: [1, 1, 1, 1],
+                filename: `${processNo}_${dateText}.pdf`,
+                image: {type: 'jpeg', quality: 0.98},
+                html2canvas: {scale: 2},
+                jsPDF: {unit: 'mm', format: [80, 100], orientation: 'portrait'}
+            }).from(printable).save().then(() => {
+                titleEl.style.fontSize = original;
+            });
+        }
+
+        function printDetails() {
+            const html = document.getElementById('printableArea').innerHTML;
+            const original = document.body.innerHTML;
+            document.body.innerHTML = html;
+            window.print();
+            document.body.innerHTML = original;
+            location.reload();
+        }
+    </script>
+
+    <script>
+        window.CURRENT_CUSTOMER_ID = "{{ customer.id }}";
+
+        function initCustomerCustodyDT(customerId) {
+            const dt = $('#custodiesTable').DataTable({
+                dom: '<"top d-flex justify-content-end"f>rt<"bottom d-flex justify-content-between align-items-center mb-4"lp><"clear">',
+                info: false,
+                paging: true,
+                lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                pageLength: -1,
+                searchDelay: 400,
+                processing: true,
+                serverSide: true,
+                orderMulti: false,
+                autoWidth: false,
+                stateSave: true,
+                initComplete: function () {
+                    $('#custodiesTable_filter').appendTo('#custodiesSearch').addClass('mb-0');
+                },
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+                ajax: {
+                    url: "{% url 'custody:get_all' %}",
+                    kpSkipLoader: true,
+                    data: function (d) {
+                        d.customer_id = "{{ customer.id }}";
+                    }
+                },
+                order: [[6, 'desc']],
+                columns: [
+                    {
+                        data: 'process_no',
+                        render: function (pno) {
+                            if (!pno || pno === '-') {
+                                return '<span class="text-muted">-</span>';
+                            }
+                            return `
+                                  <a href="javascript:void(0)"
+                                     class="js-open-process-modal fw-bold text-primary"
+                                     data-process-no="${pno}">
+                                    ${pno}
+                                  </a>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function (_d, type, row) {
+                            if (type !== 'display') {
+                                return row.is_returned
+                                    ? `${row.staff_received || ''} ${row.staff_delivered || ''}`.trim()
+                                    : (row.staff_received || '');
+                            }
+                            if (row.is_returned) {
+                                const a = row.staff_received || '-';
+                                const b = row.staff_delivered || '-';
+                                return `<span class="text-muted">${a}</span> <span class="mx-1">→</span> <span class="fw-semibold">${b}</span>`;
+                            }
+                            return row.staff_received || '-';
+                        }
+                    },
+                    {data: 'product'},
+                    {data: 'quantity_piece', className: 'text-end'},
+                    {data: 'quantity_gram', className: 'text-end'},
+                    {data: 'amount_hs', className: 'text-end'},
+                    {data: 'created_on'},
+                    {
+                        data: 'is_returned',
+                        className: 'text-center',
+                        render: function (d) {
+                            return d
+                                ? "<span class='badge bg-success'>Teslim Edildi</span>"
+                                : "<span class='badge bg-info'>Emanette</span>";
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function (_id, _t, row) {
+                            const isReturned = !!row.is_returned;
+                            const btnText = isReturned ? 'Emanete Al' : 'Teslim Et';
+                            const btnTitle = isReturned ? 'Teslim Edileni Geri Al' : 'Emaneti Teslim Et';
+                            const btnClass = isReturned ? 'btn-emanet-light' : 'btn-light-success';
+
+                            return `
+                                  <button type="button"
+                                          class="btn btn-custody ${btnClass} btn-sm"
+                                          title="${btnTitle}"
+                                          onclick="toggle_custody_status('${row.id}')">
+                                    <i class="fa-solid fa-circle-check me-1"></i>${btnText}
+                                  </button>`;
+                        }
+                    }
+                ]
+            });
+
+            return dt;
+        }
+
+        function toggle_custody_status(id) {
+            const dt = $('#custodiesTable').DataTable();
+            const rowData = dt.rows().data().toArray().find(r => String(r.id) === String(id)) || {};
+
+            const isReturned = !!rowData.is_returned;
+            const actionButton = isReturned ? 'Emanete Al' : 'Teslim Et';
+            const actionTitle = isReturned ? 'Geri Alınacak Miktar' : 'Teslim Edilecek Miktar';
+
+            let valGram = parseFloat(rowData.quantity_gram) || 0;
+            let valPiece = parseInt(rowData.quantity_piece) || 0;
+
+            let isGram = valGram > 0;
+            let maxVal = isGram ? valGram : valPiece;
+            let unitLabel = isGram ? "Gram" : "Adet";
+            let stepVal = isGram ? "0.001" : "1";
+            let defaultVal = maxVal;
+
+            Swal.fire({
+                title: actionTitle,
+                html: `
+                    <div class="mb-3 text-start">
+                        Toplam Mevcut: <strong>${maxVal} ${unitLabel}</strong>
+                        <br>
+                        <small class="text-muted">Ürün: ${rowData.product || '-'}</small>
+                    </div>
+                    <label class="form-label fw-bold">${unitLabel} Giriniz:</label>
+                `,
+                input: 'number',
+                inputValue: defaultVal,
+                inputAttributes: {
+                    min: 0,
+                    max: maxVal,
+                    step: stepVal
+                },
+                showCancelButton: true,
+                confirmButtonText: `Onayla ve ${actionButton}`,
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: isReturned ? '#6f42c1' : '#28a745',
+                showLoaderOnConfirm: true,
+                preConfirm: (amount) => {
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Lütfen geçerli bir miktar girin');
+                        return false;
+                    }
+                    if (parseFloat(amount) > parseFloat(maxVal)) {
+                        Swal.showValidationMessage(`Miktar ${maxVal} ${unitLabel} değerinden büyük olamaz.`);
+                        return false;
+                    }
+                    return $.post("{% url 'custody:change_status' %}", {
+                        id: id,
+                        transfer_amount: amount,
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                    }).then(response => {
+                        if (!response.result) {
+                            throw new Error(response.error_msg || "İşlem başarısız");
+                        }
+                        return response;
+                    }).catch(error => {
+                        Swal.showValidationMessage(`Hata: ${error}`)
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#custodiesTable').DataTable().ajax.reload(null, false);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'İşlem Başarılı',
+                        text: 'Miktar başarıyla transfer edildi.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const customerId = "{{ customer.id }}";
+            window._dtCustodies = initCustomerCustodyDT(customerId);
+        });
+
+        function edit_custody(id) {
+            const dt = $('#custodiesTable').DataTable();
+            const rowData = dt.rows().data().toArray().find(r => String(r.id) === String(id));
+            if (!rowData) {
+                Swal.fire('Hata!', 'Kayıt bulunamadı.', 'error');
+                return;
+            }
+
+            $('#addCustodyModal .modal-title').text('Emanet Güncelle');
+            $('[name="custody_id"]').val(rowData.id);
+
+            const cid = rowData.customer_id || window.CURRENT_CUSTOMER_ID;
+            const $sel = $('[name="customer_id"]');
+
+            if (!$sel.find(`option[value="${cid}"]`).length) {
+                const currentName = ($('.js-fullname').text() || '').trim();
+                $sel.append(`<option value="${cid}">${currentName || 'Mevcut Müşteri'}</option>`);
+            }
+
+            $sel.val(String(cid));
+
+            $('[name="quantity_piece"]').val(rowData.quantity_piece);
+            $('[name="quantity_gram"]').val(rowData.quantity_gram);
+            $('[name="amount_hs"]').val(rowData.amount_hs);
+            $('[name="process_no"]').val(rowData.process_no || '');
+            $('[name="description"]').val(rowData.description || '');
+
+            new bootstrap.Modal(document.getElementById('addCustodyModal')).show();
+        }
+
+        $('#addCustodyModal').on('hidden.bs.modal', function () {
+            $('#custodyForm')[0].reset();
+            $('#custodyForm').removeClass('was-validated');
+            $('[name="custody_id"]').val('');
+            $('#addCustodyModal .modal-title').text('Emanet Ekle');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+        });
+
+        $('#addCustodyModal').on('show.bs.modal', function () {
+            const isUpdate = Boolean($('[name="custody_id"]').val());
+            if (!isUpdate) {
+                $('[name="customer_id"]').val(String(CURRENT_CUSTOMER_ID)).trigger('change');
+            }
+        });
+
+        $('#custodyForm').on('submit', function (e) {
+            e.preventDefault();
+            const fd = new FormData(this);
+            const isUpdate = Boolean($('[name="custody_id"]').val());
+
+            $.ajax({
+                url: "{% url 'custody:add' %}",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: res => {
+                    if (res.result) {
+                        $('#addCustodyModal').modal('hide');
+                        $('#custodiesTable').DataTable().ajax.reload(null, false);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: isUpdate ? 'Kayıt başarıyla güncellendi.' : 'Kayıt başarıyla eklendi.',
+                            timer: 1200,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Hata', res.error_msg || 'Kaydedilemedi.', 'error');
+                    }
+                },
+                error: xhr => Swal.fire('Hata', xhr.responseText, 'error')
+            });
+        });
+
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function initStaticTable(tableId, searchId) {
+                if (!$(tableId).length) return;
+                $(tableId).DataTable({
+                    dom: '<"top d-flex justify-content-end"f>rt<"bottom d-flex justify-content-between align-items-center mb-4"lp><"clear">',
+                    info: false,
+                    paging: true,
+                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Tümü"]],
+                    pageLength: 10,
+                    order: [],
+                    language: {
+                        url: "/static/management/plugins/custom/datatables/TR.json"
+                    },
+                    initComplete: function () {
+                        $(tableId + '_filter').appendTo(searchId).addClass('mb-0');
+                    }
+                });
+            }
+
+            initStaticTable('#repairsTable', '#repairsSearch');
+            initStaticTable('#paymentsTable', '#paymentsSearch');
+        });
+    </script>
+    <script>
+        const PhoneUtil = {
+            format: function (phone) {
+                if (!phone) return '-';
+                let p = phone.toString().replace(/\D/g, '');
+                if (p.length === 10) return p.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, '0 ($1) $2 $3 $4');
+                if (p.length === 11 && p.startsWith('0')) return p.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '$1 ($2) $3 $4 $5');
+                return phone;
+            },
+            clean: function (val) {
+                let p = (val || '').replace(/\D/g, '');
+                if (p.startsWith('0')) p = p.substring(1);
+                if (p.startsWith('90') && p.length > 10) p = p.substring(2);
+                return p;
+            },
+            isValid: function (cleanPhone) {
+                return /^5\d{9}$/.test(cleanPhone);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('#disp_phone, .js-phone-format').forEach(el => {
+                el.textContent = PhoneUtil.format(el.textContent.trim());
+            });
+
+            const phoneInput = document.querySelector('input[name="phone"]');
+            if (phoneInput) {
+                phoneInput.value = PhoneUtil.format(phoneInput.value);
+                if (typeof $ !== 'undefined' && $.fn.inputmask) {
+                    $(phoneInput).inputmask({"mask": "0 (999) 999 99 99"});
+                }
+            }
+        });
+
+        $('#kt_account_profile_details_submit').on('click', function () {
+            $(this).prop("disabled", true);
+            $('#kt_account_profile_details_form').submit();
+        });
+
+        $('#kt_account_profile_details_form').on('submit', function (e) {
+            e.preventDefault();
+            const $form = $(this);
+            const $btn = $("#kt_account_profile_details_submit");
+
+            if ($form[0].checkValidity() === false) {
+                $form.addClass('was-validated');
+                $btn.prop("disabled", false);
+                return false;
+            }
+
+            const rawPhone = $form.find('input[name="phone"]').val();
+            const cleanPhone = PhoneUtil.clean(rawPhone);
+
+            if (!PhoneUtil.isValid(cleanPhone)) {
+                Swal.fire('Hata', 'Lütfen geçerli bir cep telefonu numarası girin. (5XX...)', 'error');
+                $btn.prop("disabled", false);
+                return false;
+            }
+
+            let formData = new FormData($form[0]);
+            formData.set('phone', cleanPhone);
+
+            $.ajax({
+                url: "{% url 'customers:add' %}",
+                type: "POST",
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    $btn.prop("disabled", false);
+
+                    if (data.result === true) {
+                        updateProfileUI(formData, cleanPhone);
+                        Swal.fire({
+                            title: 'Başarılı',
+                            text: 'Müşteri güncellendi',
+                            icon: 'success',
+                            timer: 1000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            const tabTrigger = document.querySelector('a[href="#customer_info"]');
+                            if (tabTrigger) new bootstrap.Tab(tabTrigger).show();
+                        });
+                    } else {
+                        Swal.fire('Hata', data.error_msg || 'Bir hata oluştu.', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    $btn.prop("disabled", false);
+                    Swal.fire('Hata', `Sunucu hatası: ${xhr.status}`, 'error');
+                }
+            });
+        });
+
+        function updateProfileUI(formData, cleanPhone) {
+            const first = formData.get('first_name') || '';
+            const last = formData.get('last_name') || '';
+            const full = (first + ' ' + last).trim();
+            const addr = (formData.get('address') || '').trim();
+
+            $('.js-fullname').text(full);
+            $('#disp_name').text(full || '-');
+            $('#disp_idno').text(formData.get('identification_number') || '-');
+            $('#disp_email').text(formData.get('email') || '-');
+            $('#disp_phone').text(PhoneUtil.format(cleanPhone) || '-');
+            $('#disp_gender').text(formData.get('gender') || '-');
+
+            if (addr) {
+                $('#disp_address').text(addr).closest('.row').show();
+            } else {
+                $('#disp_address').text('').closest('.row').hide();
+            }
+        }
+    </script>
+
+    <script>
+        const CUSTOMER_ID = "{{ customer.id }}";
+        let currentVerifyChannel = null;
+
+        const getCSRF = () => document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+
+        window.sendCustomerVerify = async function (channel) {
+            currentVerifyChannel = channel;
+            showLoadingAlert('Gönderiliyor...');
+
+            try {
+                const response = await fetch(`/customers/${CUSTOMER_ID}/verify/send`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF()},
+                    body: new URLSearchParams({'channel': channel})
+                });
+                const data = await response.json();
+                Swal.close();
+
+                if (data.result === true) {
+                    openVerifyModal();
+                    showToast('Kod gönderildi, lütfen giriniz.', 'success');
+                } else {
+                    showErrorAlert(data.error_msg);
+                }
+            } catch (err) {
+                Swal.close();
+                showErrorAlert('Sunucu ile iletişim kurulamadı.');
+            }
+        };
+
+        window.confirmCustomerVerify = async function () {
+            const codeInput = document.getElementById('verifyCodeInput');
+            const code = codeInput.value.trim();
+
+            if (code.length < 4) {
+                showToast('Lütfen geçerli bir kod giriniz.', 'warning');
+                return;
+            }
+            showLoadingAlert('Doğrulanıyor...');
+
+            try {
+                const response = await fetch(`/customers/${CUSTOMER_ID}/verify/confirm`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF()},
+                    body: new URLSearchParams({'channel': currentVerifyChannel, 'code': code})
+                });
+                const data = await response.json();
+
+                if (data.result === true) {
+                    bootstrap.Modal.getInstance(document.getElementById('verifyModal'))?.hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı!',
+                        text: 'Doğrulama işlemi tamamlandı.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => window.location.reload());
+                } else {
+                    Swal.close();
+                    showErrorAlert(data.error_msg || 'Kod hatalı.');
+                    codeInput.value = '';
+                    codeInput.focus();
+                }
+            } catch (err) {
+                Swal.close();
+                showErrorAlert('İstek başarısız.');
+            }
+        };
+
+        function openVerifyModal() {
+            const modalEl = document.getElementById('verifyModal');
+            const input = document.getElementById('verifyCodeInput');
+
+            input.value = '';
+            new bootstrap.Modal(modalEl).show();
+
+            setTimeout(() => input.focus(), 500);
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') confirmCustomerVerify();
+            };
+        }
+
+        function showLoadingAlert(title) {
+            Swal.fire({
+                title: title,
+                text: 'Lütfen bekleyiniz',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+        }
+
+        function showErrorAlert(msg) {
+            Swal.fire({icon: 'error', title: 'Hata', text: msg || 'Bir sorun oluştu.'});
+        }
+
+        function showToast(title, icon) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: icon,
+                title: title,
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const balanceVal = parseFloat("{{ balance_hs|stringformat:'f' }}".replace(',', '.')) || 0;
+            const isDebt = "{{ balance_type }}" === 'debt';
+            const signedBalanceHS = isDebt ? balanceVal : -balanceVal;
+            const modal = document.getElementById('debtCollectionModal');
+            const rawBalanceInput = document.getElementById('rawBalanceHS');
+            const modalDisplay = document.getElementById('modalBalanceDisplay');
+            const modalStatus = document.getElementById('modalBalanceStatus');
+            const radioCollection = document.querySelector('input[name="direction"][value="collection"]');
+            const radioPayment = document.querySelector('input[name="direction"][value="payment_to_customer"]');
+
+            if (modal) {
+                modal.addEventListener('show.bs.modal', function () {
+                    if (rawBalanceInput) rawBalanceInput.value = signedBalanceHS;
+
+                    if (modalDisplay) modalDisplay.innerText = Math.abs(signedBalanceHS).toFixed(3) + " HS";
+
+                    if (signedBalanceHS > 0.001) {
+                        if (modalStatus) {
+                            modalStatus.innerText = "Müşteri Borçlu";
+                            modalStatus.className = "badge badge-light-danger fw-bold fs-7";
+                        }
+                        if (modalDisplay) modalDisplay.className = "fs-5 fw-bolder text-danger";
+
+                        if (radioCollection) radioCollection.click();
+                    } else if (signedBalanceHS < -0.001) {
+                        if (modalStatus) {
+                            modalStatus.innerText = "Müşteri Alacaklı";
+                            modalStatus.className = "badge badge-light-success fw-bold fs-7";
+                        }
+                        if (modalDisplay) modalDisplay.className = "fs-5 fw-bolder text-success";
+
+                        if (radioPayment) radioPayment.click();
+                    } else {
+                        if (modalStatus) {
+                            modalStatus.innerText = "Bakiye Yok";
+                            modalStatus.className = "badge badge-light-secondary fw-bold fs-7";
+                        }
+                        if (modalDisplay) modalDisplay.className = "fs-5 fw-bolder text-gray-600";
+                        if (radioCollection) radioCollection.click();
+                    }
+
+                    const payInput = document.getElementById('paymentAmount');
+                    const convRes = document.getElementById('conversionResult');
+                    const selProcesses = document.getElementById('selectedProcesses');
+
+                    if (selProcesses && !selProcesses.value) {
+                        if (payInput) payInput.value = '';
+                        if (convRes) convRes.innerText = '0.00';
+                    }
+                });
+
+                modal.addEventListener('hidden.bs.modal', function () {
+                    document.getElementById('selectedProcesses').value = '';
+                });
+            }
+
+            const amountInput = document.getElementById('paymentAmount');
+            const currencySelect = document.getElementById('currencyType');
+            const rateInput = document.getElementById('exchangeRate');
+
+            function updateConversion() {
+                const val = parseFloat(amountInput.value) || 0;
+                const rate = parseFloat(rateInput.value) || 0;
+                const currency = currencySelect.value;
+
+                let result = 0;
+                let unit = '';
+
+                if (currency === 'TL') {
+                    unit = 'HS';
+                    if (rate > 0) result = val / rate;
+                } else {
+                    unit = '₺';
+                    result = val * rate;
+                }
+
+                const resEl = document.getElementById('conversionResult');
+                const unitEl = document.getElementById('conversionUnit');
+
+                if (resEl) resEl.innerText = currency === 'TL' ? result.toFixed(3) : result.toFixed(2);
+                if (unitEl) unitEl.innerText = unit;
+            }
+
+            if (amountInput) amountInput.addEventListener('input', updateConversion);
+            if (rateInput) rateInput.addEventListener('input', updateConversion);
+            if (currencySelect) currencySelect.addEventListener('change', updateConversion);
+
+            const btnPayAll = document.getElementById('btnPayAll');
+            if (btnPayAll) {
+                btnPayAll.addEventListener('click', function () {
+                    const currentHS = Math.abs(parseFloat(rawBalanceInput.value) || 0);
+                    const rate = parseFloat(rateInput.value) || 0;
+                    const currency = currencySelect.value;
+
+                    if (currentHS === 0) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'info',
+                            title: 'Bakiye zaten sıfır.',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        return;
+                    }
+
+                    let finalAmount = 0;
+
+                    if (currency === 'TL') {
+                        if (rate > 0) {
+                            finalAmount = currentHS * rate;
+                            finalAmount = Math.ceil(finalAmount * 100) / 100;
+                        } else {
+                            Swal.fire('Hata', 'Lütfen geçerli bir kur giriniz.', 'warning');
+                            return;
+                        }
+                    } else {
+                        finalAmount = currentHS;
+                    }
+
+                    amountInput.value = finalAmount;
+                    updateConversion();
+                });
+            }
+
+            const btnSave = document.getElementById('btnSaveDebtCollection');
+            if (btnSave) {
+                btnSave.addEventListener('click', function () {
+                    const btn = this;
+                    const form = document.getElementById('debtCollectionForm');
+
+                    if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+                        Swal.fire('Uyarı', 'Lütfen geçerli bir tutar giriniz.', 'warning');
+                        return;
+                    }
+
+                    const formData = new FormData(form);
+
+                    btn.setAttribute('data-kt-indicator', 'on');
+                    btn.disabled = true;
+
+                    $.ajax({
+                        url: "{% url 'customers:save_debt_collection' %}",
+                        type: "POST",
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function (response) {
+                            btn.removeAttribute('data-kt-indicator');
+                            btn.disabled = false;
+
+                            if (response.result) {
+                                Swal.fire({
+                                    text: "İşlem başarıyla kaydedildi.",
+                                    icon: "success",
+                                    buttonsStyling: false,
+                                    confirmButtonText: "Tamam",
+                                    customClass: {confirmButton: "btn btn-primary"}
+                                }).then(function () {
+                                    $('#debtCollectionModal').modal('hide');
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    text: response.error_msg || "Bir hata oluştu.",
+                                    icon: "error",
+                                    buttonsStyling: false,
+                                    confirmButtonText: "Tamam",
+                                    customClass: {confirmButton: "btn btn-danger"}
+                                });
+                            }
+                        },
+                        error: function () {
+                            btn.removeAttribute('data-kt-indicator');
+                            btn.disabled = false;
+                            Swal.fire({
+                                text: "Sunucu hatası oluştu.",
+                                icon: "error",
+                                buttonsStyling: false,
+                                confirmButtonText: "Tamam",
+                                customClass: {confirmButton: "btn btn-danger"}
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+{% endblock footer %}

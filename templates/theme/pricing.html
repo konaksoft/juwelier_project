@@ -1,0 +1,772 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}Fiyatlandırma | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus abonelik planları ile işletmenize en uygununu
+    seçin.{% endblock page_description %}
+{% block page_keywords %}kuyum plus fiyat, kuyumcu yazılım paketleri{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/fiyatlar/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus Fiyatlandırma{% endblock og_title %}
+{% block og_description %}Kuyum Plus paketleri ile tüm modülleri deneyimleyin.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/pricing.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/fiyatlar/{% endblock og_url %}
+{% block twitter_title %}Fiyatlar | Kuyum Plus{% endblock twitter_title %}
+
+{% block header %}
+    <style>
+        .btn:hover {
+            color: #fff !important
+        }
+
+        .btn:after {
+            content: "";
+            background: #fff !important;
+            transition: .3s;
+            z-index: -1;
+            height: 100%;
+            left: unset !important;
+            width: 0
+        }
+
+        :root {
+            --kp-gold: #f8bc27;
+            --kp-gold-2: #ffcd02;
+            --kp-ink: #0F1B2B;
+            --kp-muted: #6c757d;
+            --kp-ok: #16a34a;
+            --kp-no: #d32f2f;
+            --kp-border: #e9ecef;
+            --kp-icon: 1.15rem;
+        }
+
+        body {
+            font-size: 14px
+        }
+
+        .pricing-hero .title span {
+            color: var(--kp-gold);
+            text-decoration: underline wavy .08em;
+            text-underline-offset: .18em
+        }
+
+        .text-muted {
+            font-size: 15px !important
+        }
+
+        .kp-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 26px
+        }
+
+        .kp-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0
+        }
+
+        .kp-slider {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: #cfd4da;
+            transition: .2s;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, .12)
+        }
+
+        .kp-slider:before {
+            content: "";
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            transition: .2s;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, .18)
+        }
+
+        .kp-switch input:checked + .kp-slider {
+            background: linear-gradient(135deg, var(--kp-ink), #000)
+        }
+
+        .kp-switch input:checked + .kp-slider:before {
+            transform: translateX(26px)
+        }
+
+        .kp-segment {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem
+        }
+
+        .kp-segment .btn {
+            --py: .4rem;
+            --px: .4rem;
+            border-radius: 999px !important;
+            padding: var(--py) var(--px);
+            font-weight: 700;
+            line-height: 2;
+            border: 1px solid var(--kp-border);
+            background: #fff;
+            color: #0F1B2B;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, .03);
+            transition: transform .08s, box-shadow .15s, background .2s, border-color .2s
+        }
+
+        .kp-segment .btn-outline-secondary:hover,
+        .kp-segment .btn-outline-secondary:focus,
+        .kp-segment .btn-outline-secondary:active,
+        .kp-segment .btn-outline-secondary:focus-visible {
+            background: #fff !important;
+            color: #0F1B2B !important;
+            border-color: var(--kp-border) !important;
+            box-shadow: none !important
+        }
+
+        .kp-segment .btn-outline-secondary.active,
+        .kp-segment .btn-check:checked + .btn-outline-secondary {
+            background: #fff3c2 !important;
+            border-color: rgba(248, 188, 39, .6) !important;
+            color: #0F1B2B !important;
+            box-shadow: 0 6px 16px rgba(248, 188, 39, .22)
+        }
+
+        .kp-segment .btn-outline-secondary:not(.active):hover {
+            border-color: #d3d7dd;
+            transform: translateY(-1px)
+        }
+
+        @media (max-width: 576px) {
+            .kp-segment .btn {
+                --py: .32rem;
+                --px: .7rem;
+                font-size: .95rem
+            }
+        }
+
+        .kp-table-wrap {
+            border: 1px solid var(--kp-border);
+            border-radius: .75rem;
+            overflow-x: hidden;
+            overflow-y: visible;
+            position: relative
+        }
+
+        .kp-table {
+            table-layout: fixed;
+            width: 100%;
+            min-width: 0;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0
+        }
+
+        .kp-table th, .kp-table td {
+            vertical-align: middle;
+            text-align: center;
+            white-space: normal
+        }
+
+        .kp-table thead th {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            border-bottom: 1px solid var(--kp-border);
+            z-index: 2
+        }
+
+        .kp-table .first-col {
+            width: 260px;
+            text-align: left;
+            white-space: normal
+        }
+
+        .kp-planname {
+            display: block;
+            font-weight: 800;
+            letter-spacing: .2px
+        }
+
+        .kp-price {
+            display: block;
+            font-size: 1.05rem;
+            font-weight: 900;
+            line-height: 1.15
+        }
+
+        .kp-price sub {
+            display: inline-block;
+            font-size: .72rem;
+            color: var(--kp-muted)
+        }
+
+        .kp-year {
+            display: none
+        }
+
+        .kp-disc {
+            display: none;
+            margin-left: .35rem;
+            font-size: .75rem;
+            font-weight: 800;
+            color: #0b7a26;
+            background: #eaf8ef;
+            border: 1px solid #c8efd8;
+            border-radius: 999px;
+            padding: .05rem .45rem
+        }
+
+        .val-ok, .val-no {
+            font-size: var(--kp-icon);
+            line-height: 1
+        }
+
+        .val-ok {
+            color: var(--kp-ok);
+            font-weight: 900
+        }
+
+        .val-no {
+            color: var(--kp-no);
+            opacity: .95
+        }
+
+        .is-base {
+            background: linear-gradient(180deg, rgba(248, 188, 39, .07), rgba(248, 188, 39, .16)) !important;
+            box-shadow: inset 0 0 0 2px rgba(248, 188, 39, .5)
+        }
+
+        .diff {
+            background: #fff8df !important
+        }
+
+        .btn-kp {
+            --g1: var(--kp-gold);
+            --g2: var(--kp-gold-2);
+            background: linear-gradient(135deg, var(--g1), var(--g2));
+            color: #111;
+            border: 1px solid rgba(0, 0, 0, .15);
+            font-weight: 800;
+            border-radius: .6rem;
+            padding: .5rem .75rem;
+            box-shadow: 0 8px 18px rgba(248, 188, 39, .28);
+            transition: filter .15s, transform .08s, box-shadow .2s
+        }
+
+        .btn-kp:hover {
+            filter: brightness(.98);
+            transform: translateY(-1px)
+        }
+
+        .btn-kp:active {
+            transform: translateY(0);
+            filter: brightness(.96)
+        }
+
+        .btn-kp:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 .2rem rgba(248, 188, 39, .35)
+        }
+
+        .kp-ribbon {
+            display: inline-flex;
+            gap: .35rem;
+            align-items: center;
+            padding: .2rem .55rem;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #f9e29a, var(--kp-gold));
+            color: #111;
+            font-size: .7rem;
+            font-weight: 900
+        }
+
+        .kp-ribbon:before {
+            content: "★"
+        }
+
+        .kp-desktop {
+            display: block !important
+        }
+
+        .kp-mobile {
+            display: none !important
+        }
+
+        @media (max-width: 991.98px) {
+            .kp-table .first-col {
+                display: none !important
+            }
+
+            .kp-table thead th {
+                position: static
+            }
+
+            .kp-table thead tr,
+            .kp-table tbody tr,
+            .kp-table tfoot tr {
+                display: grid;
+                grid-template-columns:repeat(var(--kp-cols, 4), minmax(0, 1fr));
+            }
+
+            .kp-table thead th,
+            .kp-table tbody td,
+            .kp-table tfoot td {
+                display: block
+            }
+
+            .kp-table tbody tr {
+                position: relative
+            }
+
+            .kp-table tbody tr::before {
+                content: attr(data-feature);
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                padding: .6rem .9rem;
+                background: #f5f7fb;
+                border-bottom: 1px solid var(--kp-border);
+                font-weight: 700;
+                color: var(--kp-ink);
+                text-align: center;
+                z-index: 1;
+            }
+
+            .kp-table tbody td {
+                padding-top: 2.8rem;
+                vertical-align: top
+            }
+
+            .kp-table th, .kp-table td {
+                padding: .6rem .5rem;
+                font-size: .95rem
+            }
+
+            .kp-planname {
+                font-size: .95rem
+            }
+
+            .kp-price {
+                font-size: 1rem
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            :root {
+                --kp-icon: 1rem
+            }
+
+            .kp-table th, .kp-table td {
+                padding: .55rem .45rem;
+                font-size: .85rem
+            }
+
+            .kp-table tbody td {
+                padding-top: 2.6rem
+            }
+
+            .kp-table tbody tr::before {
+                padding: .5rem .8rem;
+                font-size: .85rem
+            }
+
+            .kp-planname {
+                font-size: .9rem
+            }
+
+            .kp-price {
+                font-size: .9rem
+            }
+
+            .kp-price sub {
+                font-size: .7rem
+            }
+
+            .kp-disc {
+                font-size: .7rem;
+                padding: .1rem .4rem
+            }
+
+            .btn-kp {
+                font-size: .8rem;
+                padding: .4rem .5rem
+            }
+
+            .kp-ribbon {
+                font-size: .65rem;
+                padding: .15rem .45rem
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .kp-table th, .kp-table td {
+                padding: .45rem .35rem;
+                font-size: .8rem
+            }
+
+            .kp-planname {
+                font-size: .85rem;
+                letter-spacing: 0
+            }
+
+            .kp-price {
+                font-size: .85rem
+            }
+
+            .btn-kp {
+                font-size: .75rem;
+                padding: .35rem .45rem
+            }
+        }
+
+        .kp-mobile-list {
+            display: flex;
+            flex-direction: column;
+            gap: .6rem
+        }
+
+        .mitem {
+            border: 1px solid var(--kp-border);
+            border-radius: .75rem;
+            background: #fff;
+            padding: .85rem 1rem
+        }
+
+        .m-title {
+            font-weight: 700;
+            margin-bottom: .35rem
+        }
+
+        .m-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem .5rem
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            border-radius: 999px;
+            padding: .28rem .55rem;
+            font-weight: 700;
+            border: 1px solid #e5e7eb;
+            font-size: .9rem
+        }
+
+        .chip .abbr {
+            display: inline-grid;
+            place-items: center;
+            width: 1.15rem;
+            height: 1.15rem;
+            border-radius: 999px;
+            background: rgba(15, 27, 43, .08);
+            font-size: .8rem;
+            font-weight: 900
+        }
+
+        .chip.ok {
+            background: #ecfdf5;
+            color: #065f46;
+            border-color: #d1fae5
+        }
+
+        .chip.no {
+            background: #fff1f2;
+            color: #b91c1c;
+            border-color: #fee2e2
+        }
+
+        .chip.is-base {
+            box-shadow: inset 0 0 0 2px rgba(248, 188, 39, .55)
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="container py-4 pricing-hero">
+        <div class="row gy-3 justify-content-center text-center">
+            <div class="col-12">
+                <h2 class="title">İşletmenize Uygun <span>Paket</span> Seçin</h2>
+            </div>
+
+            <div class="col-12 col-lg-auto d-flex align-items-center justify-content-center gap-2">
+                <span class="text-muted">Karşılaştırma temeli:</span>
+                <div class="btn-group kp-segment" role="group" aria-label="Baz plan">
+                    {% for p in packages %}
+                        <input type="radio" class="btn-check" name="basePlan" id="base-{{ p.code }}"
+                               value="{{ p.code }}" autocomplete="off" {% if p.code == base_code %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary {% if p.code == base_code %}active{% endif %}"
+                               for="base-{{ p.code }}">{{ p.name }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-12 col-md-auto d-flex align-items-center justify-content-center">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="showDiffOnly">
+                    <label class="form-check-label" for="showDiffOnly">Yalnız farkları göster</label>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-12 d-flex align-items-center justify-content-center">
+                    <small class="text-muted">Aylık</small>
+                    <label class="kp-switch mb-0 mx-3">
+                        <input type="checkbox" id="billingToggle">
+                        <span class="kp-slider"></span>
+                    </label>
+                    <small class="text-muted">Yıllık</small>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <p class="small text-muted mb-0">Her paket en az {{ min_term_global }} aylık satın alınabilir.</p>
+            </div>
+        </div>
+
+        <div class="row mt-4 kp-desktop">
+            <div class="col-12">
+                <div class="kp-table-wrap" style="--kp-cols: {{ packages|length }};">
+                    <table class="table table-bordered align-middle kp-table">
+                        <thead>
+                        <tr>
+                            <th class="first-col text-start">Özellik / Paket</th>
+                            {% for p in packages %}
+                                <th class="text-center"
+                                    data-col="{{ p.code }}"
+                                    data-curr="{{ p.currency_symbol }}"
+                                    data-month="
+                                            {% if p.month_display is not None %}{{ p.month_display|floatformat:"2" }}{% endif %}"
+                                    data-year="
+                                            {% if p.year_display is not None %}{{ p.year_display|floatformat:"2" }}{% endif %}">
+                                      <span class="kp-planname d-inline-flex gap-2 justify-content-center align-items-center">
+                                        {{ p.name }}
+                                          {% if p.is_recommended %}
+                                              <span class="kp-ribbon">{{ p.badge_text|default:"Önerilen" }}</span>
+                                          {% endif %}
+                                      </span>
+                                    <span class="kp-price">
+                                        <span class="kp-month">{{ p.month_display }} <sub>/ay</sub></span>
+                                        <span class="kp-year">{{ p.year_display }} <sub>/yıl</sub></span>
+                                        <span class="kp-disc"></span>
+                                    </span>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody id="matrix">
+                        {% for row in feature_rows %}
+                            <tr data-row data-feature="{{ row.feature.name }}">
+                                <td class="first-col fw-semibold">{{ row.feature.name }}</td>
+                                {% for cell in row.cells %}
+                                    <td data-col="{{ cell.package.code }}"
+                                        data-val="{% if cell.available %}1{% else %}0{% endif %}" class="text-center">
+                                        {% if cell.available %}<span class="val-ok">✓</span>{% else %}
+                                            <span class="val-no">—</span>{% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+
+                        <tfoot>
+                        <tr>
+                            <td class="first-col"></td>
+                            {% for p in packages %}
+                                <td class="text-center" data-col="{{ p.code }}">
+                                    <a href="tel:+902166068801" class="btn btn-kp w-100">{{ p.name }} ile Başla</a>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4 kp-mobile">
+            <div class="col-12">
+                <div id="kpMobileList" class="kp-mobile-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            function fmtTrim2(n) {
+                if (n === null || n === undefined || isNaN(n)) return '';
+                const v = Math.round(Number(n) * 100) / 100;
+                return v.toString().replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
+            }
+
+            function fmtMoney(curr, n) {
+                const t = fmtTrim2(n);
+                return t ? (curr ? curr + ' ' + t : t) : '—';
+            }
+
+
+            const toggle = document.getElementById('billingToggle');
+            const headCols = document.querySelectorAll('thead [data-col]');
+            const months = document.querySelectorAll('.kp-month');
+            const years = document.querySelectorAll('.kp-year');
+
+            function calcDiscount(m, y) {
+                m = Number(m);
+                y = Number(y);
+                if (!m || !y) return 0;
+                const base = m * 12;
+                if (base <= 0) return 0;
+                const d = (1 - (y / base)) * 100;
+                return Math.max(0, Math.round(d * 100) / 100);
+            }
+
+            function updateBilling() {
+                const yearly = toggle.checked;
+                years.forEach(e => e.style.display = yearly ? 'inline' : 'none');
+                months.forEach(e => e.style.display = yearly ? 'none' : 'inline');
+
+                headCols.forEach(th => {
+                    const discEl = th.querySelector('.kp-disc');
+                    if (!discEl) return;
+                    if (yearly) {
+                        const mStr = (th.dataset.month || '').trim();
+                        const yStr = (th.dataset.year || '').trim();
+                        if (mStr !== '' && yStr !== '') {
+                            const d = calcDiscount(mStr, yStr);
+                            if (d > 0) {
+                                discEl.textContent = '%' + (String(d).replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1')) + ' indirim';
+                                discEl.style.display = 'inline-flex';
+                            } else {
+                                discEl.style.display = 'none';
+                            }
+                        } else {
+                            discEl.style.display = 'none';
+                        }
+                    } else {
+                        discEl.style.display = 'none';
+                    }
+                });
+            }
+
+            function refreshHeaderPrices() {
+                headCols.forEach(th => {
+                    const mStr = (th.dataset.month || '').trim();
+                    const yStr = (th.dataset.year || '').trim();
+                    const curr = th.dataset.curr || '';
+                    const mEl = th.querySelector('.kp-month');
+                    const yEl = th.querySelector('.kp-year');
+
+                    if (mEl && mStr !== '') {
+                        mEl.innerHTML = (curr ? (curr + ' ' + fmtTrim2(mStr)) : fmtTrim2(mStr)) + ' <sub>/ay</sub>';
+                    }
+                    if (yEl && yStr !== '') {
+                        yEl.innerHTML = (curr ? (curr + ' ' + fmtTrim2(yStr)) : fmtTrim2(yStr)) + ' <sub>/yıl</sub>';
+                    }
+                });
+            }
+
+            const matrix = document.getElementById('matrix');
+            const rows = matrix.querySelectorAll('[data-row]');
+            const diffOnly = document.getElementById('showDiffOnly');
+
+            function getBase() {
+                const r = document.querySelector('input[name="basePlan"]:checked');
+                return (r && r.value) || '{{ base_code }}';
+            }
+
+            function markBaseCol() {
+                const base = getBase();
+                [...headCols, ...document.querySelectorAll('[data-col]')].forEach(c => c.classList.toggle('is-base', c.dataset.col === base));
+                markBaseOnMobile();
+            }
+
+            function updateDiff() {
+                const base = getBase();
+                rows.forEach((row, i) => {
+                    const baseCell = row.querySelector(`[data-col="${base}"]`);
+                    const baseVal = baseCell ? baseCell.getAttribute('data-val') : '1';
+                    row.querySelectorAll('[data-col]').forEach(c => c.classList.remove('diff'));
+                    row.classList.remove('d-none');
+                    const vals = [];
+                    row.querySelectorAll('[data-col]').forEach(c => {
+                        const v = c.getAttribute('data-val');
+                        vals.push(v);
+                        if (v !== baseVal) c.classList.add('diff');
+                    });
+                    const allEqual = vals.every(v => v === vals[0]);
+                    if (diffOnly.checked && allEqual) row.classList.add('d-none');
+                    const mItem = mobileItems[i];
+                    if (mItem) mItem.classList.toggle('d-none', diffOnly.checked && allEqual);
+                });
+            }
+
+            document.querySelectorAll('.kp-segment .btn-check').forEach(i => {
+                i.addEventListener('change', () => {
+                    document.querySelectorAll('.kp-segment .btn').forEach(l => l.classList.remove('active'));
+                    const lab = document.querySelector(`label[for="${i.id}"]`);
+                    if (lab) lab.classList.add('active');
+                    markBaseCol();
+                    updateDiff();
+                });
+            });
+
+            const mobileList = document.getElementById('kpMobileList');
+            const plans = [...headCols].map(th => ({
+                key: th.dataset.col,
+                name: th.querySelector('.kp-planname')?.textContent.trim() || th.dataset.col
+            }));
+            const mobileItems = [];
+            rows.forEach(row => {
+                const title = row.querySelector('.first-col')?.textContent.trim() || '';
+                const item = document.createElement('div');
+                item.className = 'mitem';
+                const t = document.createElement('div');
+                t.className = 'm-title';
+                t.textContent = title;
+                const chips = document.createElement('div');
+                chips.className = 'm-chips';
+                plans.forEach(p => {
+                    const cell = row.querySelector(`[data-col="${p.key}"]`);
+                    const val = cell ? cell.getAttribute('data-val') : '0';
+                    const chip = document.createElement('span');
+                    chip.className = 'chip ' + (val === '1' ? 'ok' : 'no');
+                    chip.dataset.col = p.key;
+                    chip.title = p.name;
+                    const abbr = document.createElement('span');
+                    abbr.className = 'abbr';
+                    abbr.textContent = p.name.charAt(0);
+                    const ic = document.createElement('span');
+                    ic.className = 'ic';
+                    ic.textContent = (val === '1' ? '✓' : '—');
+                    chip.appendChild(abbr);
+                    chip.appendChild(ic);
+                    chips.appendChild(chip);
+                });
+                item.appendChild(t);
+                item.appendChild(chips);
+                mobileList.appendChild(item);
+                mobileItems.push(item);
+            });
+
+            function markBaseOnMobile() {
+                const base = getBase();
+                mobileList.querySelectorAll('.chip').forEach(c => c.classList.toggle('is-base', c.dataset.col === base));
+            }
+
+            refreshHeaderPrices();
+            updateBilling();
+            markBaseCol();
+            updateDiff();
+
+            document.getElementById('billingToggle').addEventListener('change', updateBilling);
+            document.getElementById('showDiffOnly').addEventListener('change', updateDiff);
+        })();
+    </script>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

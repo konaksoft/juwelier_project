@@ -1,0 +1,1254 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .kpi {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid #e9eef5;
+            background: linear-gradient(180deg, #fff 0%, #fafbff 100%);
+            box-shadow: 0 4px 12px rgba(18, 38, 63, .05);
+            transition: transform .18s, box-shadow .18s;
+            height: 74px
+        }
+
+        .kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 38, 63, .08)
+        }
+
+        .kpi__icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 18px
+        }
+
+        .kpi__body {
+            line-height: 1.15
+        }
+
+        .kpi__label {
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            opacity: .85;
+            margin-bottom: 2px;
+            white-space: nowrap
+        }
+
+        .kpi__value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: .01em;
+            white-space: nowrap
+        }
+
+        .kpi--blue .kpi__icon {
+            background: rgba(0, 123, 255, .12);
+            color: #007bff
+        }
+
+        .kpi--green .kpi__icon {
+            background: rgba(40, 167, 69, .12);
+            color: #28a745
+        }
+
+        .kpi--orange .kpi__icon {
+            background: rgba(255, 159, 67, .15);
+            color: #ff9f43
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .3rem .55rem;
+            border-radius: .475rem;
+            background: #eef6ff;
+            color: #1971c2;
+            font-weight: 600;
+            margin: .15rem .2rem
+        }
+
+        .tag .btn-remove {
+            border: 0;
+            background: transparent;
+            line-height: 1;
+            cursor: pointer;
+            opacity: .8
+        }
+
+        .tag .btn-remove:hover {
+            opacity: 1
+        }
+
+        .was-validated .form-control:invalid,
+        .form-control.is-invalid,
+        .was-validated .form-select:invalid,
+        .form-select.is-invalid {
+            border-color: #dc3545 !important
+        }
+
+        .was-validated .form-control:invalid:focus,
+        .was-validated .form-select:invalid:focus {
+            box-shadow: 0 0 0 .25rem rgba(220, 53, 69, .25)
+        }
+
+        .is-invalid {
+            border-color: #dc3545 !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23dc3545' viewBox='0 0 16 16'%3E%3Cpath d='M8.982 1.566a1.13 1.13 0 0 0-1.964 0L.165 13.233c-.457.778.091 1.767.982 1.767h13.707c.89 0 1.438-.99.982-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-xxl">
+
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-body pt-9 pb-5">
+                            <div class="d-flex flex-wrap flex-sm-nowrap">
+                                <div class="flex-grow-1 w-100">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="fs-2 fw-bold me-3 js-leadname">{{ lead.full_name|default:"(İsimsiz Lead)" }}</span>
+                                                <span class="badge {% if lead.is_active %}bg-light-success text-success{% else %}bg-light-danger text-danger{% endif %} me-2">
+                                                    {% if lead.is_active %}Aktif{% else %}Pasif{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-4">
+                                            <div class="kpi kpi--blue">
+                                                <div class="kpi__icon"><i class="fa-solid fa-signal"></i></div>
+                                                <div class="kpi__body">
+                                                    <div class="kpi__label">Skor</div>
+                                                    <div class="kpi__value" id="disp_score">{{ lead.score }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <div class="kpi kpi--green">
+                                                <div class="kpi__icon"><i class="fa-solid fa-clock-rotate-left"></i>
+                                                </div>
+                                                <div class="kpi__body">
+                                                    <div class="kpi__label">Son Aktivite</div>
+                                                    <div class="kpi__value"
+                                                         id="disp_last_activity">{{ lead.last_activity_at|date:'d.m.Y H:i'|default:"-" }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <div class="kpi kpi--orange">
+                                                <div class="kpi__icon"><i class="fa-solid fa-calendar-plus"></i></div>
+                                                <div class="kpi__body">
+                                                    <div class="kpi__label">Oluşturulma</div>
+                                                    <div class="kpi__value">{{ lead.created_on|date:'d.m.Y H:i' }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mt-5">
+                                <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5 active"
+                                                             data-bs-toggle="tab" href="#info">Lead Bilgileri</a></li>
+                                <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                             data-bs-toggle="tab" href="#settings">Ayarlar</a></li>
+                                <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                             data-bs-toggle="tab" href="#activities">Aktiviteler</a>
+                                </li>
+                                <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                             data-bs-toggle="tab" href="#tags">Etiketler</a></li>
+                                <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                             data-bs-toggle="tab" href="#pipeline">Pipeline</a></li>
+                                <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                             data-bs-toggle="tab" href="#states"
+                                                             style="visibility: hidden">Durum</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="tab-content">
+                        <!-- INFO -->
+                        <div class="tab-pane fade show active" id="info" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Lead Bilgileri</h3></div>
+                                </div>
+                                <div class="card-body p-9">
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Ad Soyad</label>
+                                        <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-800 js-leadname"
+                                                                    id="info_fullname">{{ lead.full_name|default:"-" }}
+                                                                                        </span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Telefon</label>
+                                        <div class="col-lg-8">
+                                            <span class="fw-bold fs-6 text-gray-800" id="info_phone">
+                                              {% if lead.phone %}
+                                                  <a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}
+                                                  -{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">E-posta</label>
+                                        <div class="col-lg-8">
+                                            <span class="fw-bold fs-6 text-gray-800" id="info_email">
+                                              {% if lead.email %}
+                                                  <a href="mailto:{{ lead.email }}">{{ lead.email }}</a>{% else %}
+                                                  -{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Kanal</label>
+                                        <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-800"
+                                                                    id="info_channel">{{ lead.channel }}
+                                            {% if lead.channel_handle %} ({{ lead.channel_handle }}){% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Durum</label>
+                                        <div class="col-lg-8">
+                                            <span class="fw-bold fs-6 text-gray-800" id="info_status">
+                                                {{ lead.get_status_display|default:"-" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Kategori</label>
+                                        <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-800"
+                                                                    id="info_category">
+                                              {{ lead.get_category_display|default:"-" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Konum</label>
+                                        <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-800"
+                                                                    id="info_location">
+                                              {{ lead.city|default:"-" }} / {{ lead.district|default:"-" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-7">
+                                        <label class="col-lg-4 fw-semibold text-muted">Atanan</label>
+                                        <div class="col-lg-8">
+                                            <span class="fw-bold fs-6 text-gray-800" id="info_assigned_to">
+                                              {{ lead.assigned_to|default:"-" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="settings" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header border-0 cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Ayarlar</h3></div>
+                                </div>
+                                <div class="collapse show">
+                                    <form id="lead_settings_form" method="post" action="{% url 'leads:add' %}"
+                                          class="form" novalidate>
+                                        {% csrf_token %}
+                                        <input type="hidden" name="record_id" value="{{ lead.id }}"/>
+                                        <div class="card-body border-top p-9">
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Ad Soyad</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="text" name="full_name"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           value="{{ lead.full_name|default_if_none:'' }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Telefon</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="text" name="phone"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           value="{{ lead.phone|default_if_none:'' }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">E-Posta</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="email" name="email"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           value="{{ lead.email|default_if_none:'' }}" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Kanal</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <select name="channel"
+                                                            class="form-select form-select-lg form-select-solid">
+                                                        {% for val,label in channel_choices %}
+                                                            <option value="{{ val }}"
+                                                                    {% if lead.channel == val %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Kanal
+                                                    Kullanıcı</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="text" name="channel_handle"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           value="{{ lead.channel_handle|default_if_none:'' }}">
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">
+                                                    Durum</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <select name="status"
+                                                            class="form-select form-select-lg form-select-solid"
+                                                            id="settings_status_select">
+                                                        {% for val,label in status_choices %}
+                                                            <option value="{{ val }}"
+                                                                    {% if lead.status == val %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Kategori</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <select name="category"
+                                                            class="form-select form-select-lg form-select-solid">
+                                                        <option value="">Seçiniz</option>
+                                                        {% for val,label in category_choices %}
+                                                            <option value="{{ val }}"
+                                                                    {% if lead.category == val %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Şehir /
+                                                    İlçe</label>
+                                                <div class="col-lg-4 fv-row">
+                                                    <select name="city" id="settings_city"
+                                                            class="form-select form-select-lg form-select-solid"
+                                                            data-placeholder="Şehir Seçiniz">
+                                                        {% if lead.city %}
+                                                        {% endif %}
+                                                        <option value=""></option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-lg-4 fv-row">
+                                                    <select name="district" id="settings_district"
+                                                            class="form-select form-select-lg form-select-solid"
+                                                            data-placeholder="İlçe Seçiniz" disabled>
+                                                        <option value=""></option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Atanan</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <select name="assigned_to"
+                                                            class="form-select form-select-lg form-select-solid">
+                                                        <option value="">Seçiniz</option>
+                                                        {% for u in users %}
+                                                            <option value="{{ u.id }}"
+                                                                    {% if lead.assigned_to and lead.assigned_to.id == u.id %}selected{% endif %}>{{ u }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-6">
+                                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Skor</label>
+                                                <div class="col-lg-8 fv-row">
+                                                    <input type="number" name="score"
+                                                           class="form-control form-control-lg form-control-solid"
+                                                           value="{{ lead.score|default:0 }}">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-footer d-flex justify-content-end py-6 px-9">
+                                            <button type="reset" class="btn btn-light btn-active-light-primary me-2">
+                                                İptal
+                                            </button>
+                                            <button type="submit" class="btn btn-primary" id="btnLeadSave">Güncelle
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="activities" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+                                    <div class="card-title">
+                                        <h3 class="card-label fw-bold m-0">Aktivite Geçmişi</h3>
+                                    </div>
+                                    <div class="card-toolbar">
+                                        <button type="button" class="btn btn-sm btn-light-primary fw-bold"
+                                                data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                                            <i class="fa-solid fa-plus me-1"></i> Yeni Etkileşim
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline-label">
+                                        {% for activity in activities %}
+                                            <div class="timeline-item">
+                                                <div class="timeline-label fw-bold text-gray-800 fs-6"
+                                                     style="width: 70px;">
+                                                    {{ activity.activity_date|date:"H:i" }} <br>
+                                                    <span class="fs-8 text-muted fw-normal">{{ activity.activity_date|date:"d.m.Y" }}</span>
+                                                </div>
+
+                                                <div class="timeline-badge">
+                                                    {% if activity.activity_type == 'call' %}
+                                                        <i class="fa fa-phone text-gray-600 fs-3"></i>
+                                                    {% elif activity.activity_type == 'meeting' %}
+                                                        <i class="fa fa-users text-primary fs-3"></i>
+                                                    {% elif activity.activity_type == 'whatsapp' %}
+                                                        <i class="fab fa-whatsapp text-success fs-2"></i>
+                                                    {% elif activity.activity_type == 'presentation' %}
+                                                        <i class="fa fa-desktop text-warning fs-3"></i>
+                                                    {% elif activity.outcome == 'offer_requested' %}
+                                                        <i class="fa fa-file-invoice-dollar text-info fs-3"></i>
+                                                    {% else %}
+                                                        <i class="fa fa-circle text-muted fs-4"></i>
+                                                    {% endif %}
+                                                </div>
+
+                                                <div class="timeline-content d-flex flex-column ps-3 pe-3 w-100">
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <span class="fw-bold text-gray-800">{{ activity.get_activity_type_display }}</span>
+                                                        <span class="badge badge-light fw-bold">{{ activity.get_outcome_display|default:"-" }}</span>
+                                                    </div>
+
+                                                    <div class="text-gray-700 bg-light-secondary border border-gray-200 rounded p-3 fs-7">
+                                                        {{ activity.summary|linebreaksbr }}
+                                                    </div>
+                                                    <div class="text-muted fs-9 mt-1 fst-italic">
+                                                        {{ activity.created_by.first_name }} {{ activity.created_by.last_name }}
+                                                        tarafından
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% empty %}
+                                            <div class="text-center text-muted p-5">Henüz bir aktivite girilmemiş.</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tags" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Etiketler</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <form id="tagForm" class="mb-3">
+                                        {% csrf_token %}
+                                        <div class="row g-2">
+                                            <div class="col-md-10">
+                                                <input type="text" class="form-control" name="name"
+                                                       placeholder="Etiket adı (ör. sıcak, kampanya, vb.)" required>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-center">
+                                                <button class="btn btn-light-primary w-100" type="submit">Ekle</button>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <div id="tagsWrap">
+                                        {% if tags %}
+                                            {% for m in tags %}
+                                                <span class="tag" data-map-id="{{ m.id }}" data-tag-id="{{ m.tag.id }}">
+                                                    {{ m.tag.name }}
+                                                    <button class="btn-remove" title="Sil"
+                                                            onclick="removeTag('{{ m.id }}')"><i
+                                                            class="fa-solid fa-xmark"></i></button>
+                                                </span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-muted" id="tagsEmpty">Etiket yok.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="pipeline" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Pipeline Aşamaları</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <form id="stageForm" class="mb-4">
+                                        {% csrf_token %}
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <select name="to_status" class="form-select" required>
+                                                    {% for val,label in status_choices %}
+                                                        <option value="{{ val }}"
+                                                                {% if lead.status == val %}selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" name="note"
+                                                       placeholder="Not (opsiyonel)">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-light-primary w-100" type="submit">Aşamayı
+                                                    Değiştir
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    {% if stage_history %}
+                                        <div class="table-responsive">
+                                            <table class="table table-row-dashed align-middle" id="stageTable">
+                                                <thead>
+                                                <tr>
+                                                    <th>Kim</th>
+                                                    <th>Nereden</th>
+                                                    <th>Nereye</th>
+                                                    <th>Not</th>
+                                                    <th>Tarih</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for s in stage_history %}
+                                                    <tr>
+                                                        <td>{{ s.changed_by|default:"-" }}</td>
+                                                        <td>{{ s.get_from_status_display|default:"-" }}</td>
+                                                        <td><strong>{{ s.get_to_status_display }}</strong></td>
+                                                        <td>{{ s.note|default:"-" }}</td>
+                                                        <td>{{ s.changed_on|date:'d.m.Y H:i' }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-muted" id="stageEmpty">Aşama geçmişi yok.</div>
+                                        <table class="table d-none" id="stageTable">
+                                            <thead>
+                                            <tr>
+                                                <th>Kim</th>
+                                                <th>Nereden</th>
+                                                <th>Nereye</th>
+                                                <th>Not</th>
+                                                <th>Tarih</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="states" role="tabpanel">
+                            <div class="card mb-5 mb-xl-10">
+                                <div class="card-header cursor-pointer">
+                                    <div class="card-title m-0"><h3 class="fw-bold m-0">Durum</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <form id="stateForm" class="mb-4">
+                                        {% csrf_token %}
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <select name="state" class="form-select" required>
+                                                    {% for val,label in state_choices %}
+                                                        <option value="{{ val }}">{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" name="note"
+                                                       placeholder="Not (opsiyonel)">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-light-primary w-100" type="submit">Durumu
+                                                    Değiştir
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    {% if state_history %}
+                                        <div class="table-responsive">
+                                            <table class="table table-row-dashed align-middle" id="stateTable">
+                                                <thead>
+                                                <tr>
+                                                    <th>Durum</th>
+                                                    <th>Not</th>
+                                                    <th>Kim</th>
+                                                    <th>Tarih</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for s in state_history %}
+                                                    <tr>
+                                                        <td><strong>{{ s.get_state_display }}</strong></td>
+                                                        <td>{{ s.note|default:"-" }}</td>
+                                                        <td>{{ s.changed_by|default:"-" }}</td>
+                                                        <td>{{ s.changed_on|date:'d.m.Y H:i' }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-muted" id="stateEmpty">Durum geçmişi yok.</div>
+                                        <table class="table d-none" id="stateTable">
+                                            <thead>
+                                            <tr>
+                                                <th>Durum</th>
+                                                <th>Not</th>
+                                                <th>Kim</th>
+                                                <th>Tarih</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addActivityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">Yeni Etkileşim Gir</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">✕</div>
+                </div>
+                <div class="modal-body">
+                    <form id="activityForm">
+                        <div class="mb-5">
+                            <label class="form-label required fw-semibold">İşlem Tipi</label>
+                            <select name="activity_type" class="form-select form-select-solid" required>
+                                <option value="call" selected>Telefon Görüşmesi</option>
+                                <option value="whatsapp">WhatsApp / Mesaj</option>
+                                <option value="meeting">Ziyaret (Yüzyüze)</option>
+                                <option value="presentation">Sunum / Demo</option>
+                                <option value="email">E-Posta</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold">Sonuç / Durum</label>
+                            <select name="outcome" class="form-select form-select-solid">
+                                <option value="">Seçiniz...</option>
+                                <option value="positive">Olumlu / İlgilendi</option>
+                                <option value="offer_requested">🎯 Teklif İstedi</option>
+                                <option value="offer_decision_pending">⏳ Teklif Kararı Bekleniyor</option>
+                                <option value="demo_requested">🖥️ Demo İstedi</option>
+                                <option value="decision_pending">🤔 Karar Bekleniyor</option>
+                                <option value="scheduled">📅 Randevu Alındı</option>
+                                <option value="reached_voicemail">Ulaşılamadı</option>
+                                <option value="negative">Olumsuz / Kapandı</option>
+                            </select>
+                            <div class="form-text">"Teklif İstedi" seçerseniz, Müşteri Durumu otomatik "Teklif" olur.
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label required fw-semibold">Notlar / Talepler </label>
+                            <textarea name="summary" class="form-control form-control-solid" rows="4"
+                                      placeholder="Müşteri ne dedi? Özel talepleri neler?" required></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/select2/select2.min.css' %}">
+    <script src="{% static 'management/plugins/custom/select2/select2.min.js' %}"></script>
+
+    <script>
+        const LEAD_ID = "{{ lead.id }}";
+
+        const CURRENT_USER_NAME = "{{ request.user|default:'' }}";
+        const CURRENT_USER_EMAIL = "{{ request.user.email|default:'' }}";
+        let LAST_STATUS_VALUE = "{{ lead.status|default:'' }}";
+        let LAST_STATUS_LABEL = "{{ lead.get_status_display|default:'-'|escapejs }}";
+
+        const INITIAL_CITY_NAME = "{{ lead.city|default_if_none:''|escapejs }}";
+        const INITIAL_DISTRICT_NAME = "{{ lead.district|default_if_none:''|escapejs }}";
+        var cachedCities = [];
+
+        function csrf() {
+            const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return el ? el.value : '';
+        }
+
+        function jsonOrThrow(res) {
+            const ct = res.headers.get('content-type') || '';
+            if (!res.ok) return res.text().then(t => {
+                throw new Error(t || ('HTTP ' + res.status));
+            });
+            if (!ct.includes('application/json')) return res.text().then(t => {
+                try {
+                    return JSON.parse(t);
+                } catch {
+                    throw new Error('Geçersiz JSON yanıtı');
+                }
+            });
+            return res.json();
+        }
+
+        function loadCities(targetSelector) {
+            if (cachedCities.length > 0) {
+                renderCities(cachedCities, targetSelector);
+                return;
+            }
+            $.ajax({
+                url: "{% url 'locations:get-cities' %}",
+                type: "GET",
+                dataType: "json",
+                success: function (resp) {
+                    cachedCities = resp.data ? resp.data : resp;
+                    renderCities(cachedCities, targetSelector);
+                }
+            });
+        }
+
+        function renderCities(data, selector) {
+            let opts = '<option value="">Seçiniz</option>';
+            if (Array.isArray(data)) {
+                data.forEach(c => {
+                    opts += `<option value="${c.id}">${c.name}</option>`;
+                });
+            }
+            $(selector).html(opts).trigger('change.select2');
+
+            if (INITIAL_CITY_NAME && $(selector).val() === "") {
+                setSelect2ByText(selector, INITIAL_CITY_NAME);
+            }
+        }
+
+        function loadDistricts(cityId, targetSelector) {
+            if (!cityId) {
+                $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change');
+                return;
+            }
+            $.ajax({
+                url: "{% url 'locations:get-districts' %}",
+                type: "GET",
+                data: {city_id: cityId},
+                dataType: "json",
+                success: function (resp) {
+                    let opts = '<option value=""></option>';
+                    let dataList = resp.data ? resp.data : resp;
+                    if (Array.isArray(dataList)) {
+                        dataList.forEach(d => {
+                            opts += `<option value="${d.id}">${d.name}</option>`;
+                        });
+                    }
+                    $(targetSelector).html(opts).prop('disabled', false).trigger('change.select2');
+
+                    if (INITIAL_DISTRICT_NAME && !$(targetSelector).val()) {
+                        setSelect2ByText(targetSelector, INITIAL_DISTRICT_NAME);
+                    }
+                }
+            });
+        }
+
+        function setSelect2ByText(selector, text) {
+            if (!text) return;
+            let foundId = null;
+            $(selector + ' option').each(function () {
+                if ($(this).text().trim() === text.trim()) {
+                    foundId = $(this).val();
+                    return false;
+                }
+            });
+            if (foundId) {
+                $(selector).val(foundId).trigger('change');
+                if (selector === '#settings_city') {
+                    loadDistricts(foundId, '#settings_district');
+                }
+            }
+        }
+
+        function setTextIfExists(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function ensureTbody(table) {
+            if (!table) return null;
+            let tb = table.querySelector('tbody');
+            if (!tb) {
+                tb = document.createElement('tbody');
+                table.appendChild(tb);
+            }
+            return tb;
+        }
+
+        function selectedLabel(sel) {
+            if (!sel) return '';
+            const o = sel.options[sel.selectedIndex];
+            return o ? (o.textContent || o.innerText || o.value) : (sel.value || '');
+        }
+
+        function nowTR() {
+            const d = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function prependStageRowFromResponse(js, toLabel) {
+            const table = document.getElementById('stageTable');
+            if (!table) return;
+            table.classList.remove('d-none');
+            const tbody = ensureTbody(table);
+            if (!tbody) return;
+
+            const fromLabel = js.data.from_status_label || js.data.from_status || '-';
+            const label = toLabel || js.data.to_status_label || js.data.to_status || '-';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                        <td>${js.data.changed_by || (CURRENT_USER_EMAIL || CURRENT_USER_NAME || '-')}</td>
+                        <td>${fromLabel}</td>
+                        <td><strong>${label}</strong></td>
+                        <td>${(js.data.note && js.data.note.trim()) ? js.data.note : '-'}</td>
+                        <td>${js.data.changed_on || nowTR()}</td>
+                    `;
+            tbody.prepend(tr);
+
+            const empty = document.getElementById('stageEmpty');
+            if (empty) empty.classList.add('d-none');
+
+            setTextIfExists('disp_last_activity', nowTR());
+
+            LAST_STATUS_VALUE = js.data.to_status || LAST_STATUS_VALUE;
+            LAST_STATUS_LABEL = label || LAST_STATUS_LABEL;
+
+            try {
+                const pipelineSelect = document.querySelector('#stageForm select[name="to_status"]');
+                if (pipelineSelect) {
+                    pipelineSelect.value = js.data.to_status;
+                    Array.from(pipelineSelect.options).forEach(o => {
+                        o.defaultSelected = (o.value === js.data.to_status);
+                    });
+                }
+                const sel = document.getElementById('settings_status_select');
+                if (sel) sel.value = js.data.to_status;
+                setTextIfExists('info_status', label);
+                setTextIfExists('disp_status', label);
+            } catch (err) {
+                console.warn('UI sync error (stage):', err);
+            }
+        }
+
+        async function persistStageIfChanged(newVal, newLabel) {
+            if (!newVal || newVal === LAST_STATUS_VALUE) return;
+
+            const body = new URLSearchParams({
+                to_status: newVal,
+                note: "Ayarlar'dan güncellendi"
+            });
+
+            const res = await fetch("{% url 'leads:change-stage' lead.id %}", {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded'},
+                body,
+                credentials: 'same-origin'
+            }).then(jsonOrThrow);
+
+            if (!res.result) throw new Error(res.error_msg || 'Aşama değiştirilemedi');
+
+            prependStageRowFromResponse(res, newLabel);
+        }
+
+        function reflectPipelineFromSettings(statusValue, statusLabel) {
+            const pipelineSelect = document.querySelector('#stageForm select[name="to_status"]');
+            if (pipelineSelect) {
+                pipelineSelect.value = statusValue || '';
+                Array.from(pipelineSelect.options).forEach(o => {
+                    o.defaultSelected = (o.value === statusValue);
+                });
+            }
+            const table = document.getElementById('stageTable');
+            if (table) {
+                table.classList.remove('d-none');
+                const tbody = ensureTbody(table);
+                if (tbody) {
+                    const changedBy = (CURRENT_USER_EMAIL || CURRENT_USER_NAME || '-');
+                    const fromLabel = (LAST_STATUS_LABEL || '-');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                    <td>${changedBy}</td>
+                    <td>${fromLabel}</td>
+                    <td><strong>${statusLabel || '-'}</strong></td>
+                    <td>Ayarlar'dan güncellendi</td>
+                    <td>${nowTR()}</td>`;
+                    tbody.prepend(tr);
+                }
+            }
+            const empty = document.getElementById('stageEmpty');
+            if (empty) empty.classList.add('d-none');
+            setTextIfExists('disp_last_activity', nowTR());
+            LAST_STATUS_VALUE = statusValue || LAST_STATUS_VALUE;
+            LAST_STATUS_LABEL = statusLabel || LAST_STATUS_LABEL;
+        }
+
+        function syncInfoFromSettings(opts = {}) {
+            const f = document.getElementById('lead_settings_form');
+            if (!f) return;
+
+            const get = (n) => f.querySelector(`[name="${n}"]`);
+            const fullName = (get('full_name')?.value || '').trim();
+            const phone = (get('phone')?.value || '').trim();
+            const email = (get('email')?.value || '').trim();
+            const channelS = get('channel');
+            const channelL = selectedLabel(channelS) || (channelS?.value || '').trim();
+            const handle = (get('channel_handle')?.value || '').trim();
+            const statusS = document.getElementById('settings_status_select');
+            const statusL = selectedLabel(statusS) || (statusS?.value || '').trim();
+            const categoryS = get('category');
+            const categoryL = selectedLabel(categoryS) || (categoryS?.value || '').trim();
+            const cityText = $('#settings_city').find('option:selected').text();
+            const city = (cityText && cityText !== 'Seçiniz') ? cityText : '';
+            const districtText = $('#settings_district').find('option:selected').text();
+            const district = (districtText && districtText !== 'Seçiniz') ? districtText : '';
+            const assignedS = get('assigned_to');
+            const assignedL = selectedLabel(assignedS) || '';
+            const score = get('score')?.value ?? 0;
+
+            document.querySelectorAll('.js-leadname').forEach(el => {
+                if (el) el.textContent = fullName || '(İsimsiz Lead)';
+            });
+            const dispScore = document.getElementById('disp_score');
+            if (dispScore) dispScore.textContent = score;
+
+            const infoFull = document.getElementById('info_fullname');
+            if (infoFull) infoFull.textContent = fullName || '-';
+            const infoPhone = document.getElementById('info_phone');
+            if (infoPhone) infoPhone.innerHTML = phone ? `<a href="tel:${phone}">${phone}</a>` : '-';
+            const infoEmail = document.getElementById('info_email');
+            if (infoEmail) infoEmail.innerHTML = email ? `<a href="mailto:${email}">${email}</a>` : '-';
+            const infoChannel = document.getElementById('info_channel');
+            if (infoChannel) infoChannel.textContent = handle ? `${channelL} (${handle})` : (channelL || '-');
+            const infoStatus = document.getElementById('info_status');
+            if (infoStatus) infoStatus.textContent = statusL || '-';
+            const infoCat = document.getElementById('info_category');
+            if (infoCat) infoCat.textContent = categoryL || '-';
+            const infoLoc = document.getElementById('info_location');
+            if (infoLoc) infoLoc.textContent = `${city || '-'} / ${district || '-'}`;
+            const infoAss = document.getElementById('info_assigned_to');
+            if (infoAss) infoAss.textContent = assignedL || '-';
+
+            if (!opts.silentPipeline) {
+                reflectPipelineFromSettings(statusS?.value || '', statusL || '');
+            }
+        }
+
+        $(function () {
+            $('#settings_city, #settings_district').select2({
+                width: '100%',
+                language: 'tr',
+                allowClear: true,
+                dropdownParent: $('#settings')
+            });
+
+            loadCities('#settings_city');
+
+            $('#settings_city').on('change', function () {
+                let val = $(this).val();
+                $('#settings_district').val(null).empty().trigger('change').prop('disabled', true);
+                loadDistricts(val, '#settings_district');
+            });
+        });
+
+        document.getElementById('lead_settings_form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = this;
+            let valid = true;
+
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            const fullName = form.querySelector('[name="full_name"]');
+            const email = form.querySelector('[name="email"]');
+            if (!fullName.value.trim()) {
+                fullName.classList.add('is-invalid');
+                valid = false;
+            }
+            if (!email.value.trim()) {
+                email.classList.add('is-invalid');
+                valid = false;
+            }
+
+            if (!valid) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Eksik Bilgi',
+                    text: 'Lütfen Ad Soyad ve E-posta alanlarını doldurun.',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+            }
+
+            const btn = document.getElementById('btnLeadSave');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Kaydediliyor...';
+            }
+
+            const fd = new FormData(form);
+            if (!fd.get('record_id')) fd.append('record_id', "{{ lead.id }}");
+
+
+            if ($('#settings_city').val()) fd.set('city', $('#settings_city').val());
+            if ($('#settings_district').val()) fd.set('district', $('#settings_district').val());
+
+            try {
+                const saveRes = await fetch("{% url 'leads:add' %}", {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': csrf()},
+                    body: fd,
+                    credentials: 'same-origin'
+                }).then(jsonOrThrow);
+
+                if (!saveRes.result) {
+                    Swal.fire('Hata', saveRes.error_msg || 'Kaydedilemedi', 'error');
+                    return;
+                }
+
+                const statusSel = document.getElementById('settings_status_select');
+                const newStatusVal = statusSel?.value || '';
+                const newStatusLabel = selectedLabel(statusSel) || newStatusVal;
+
+                syncInfoFromSettings({silentPipeline: true});
+
+                if (saveRes.stage) {
+                    prependStageRowFromResponse({result: true, data: saveRes.stage}, saveRes.stage.to_status_label);
+                } else {
+                }
+
+                Swal.fire({
+                    title: 'Başarılı',
+                    text: 'Müşteri bilgileri güncellendi.',
+                    icon: 'success',
+                    timer: 1200,
+                    showConfirmButton: false
+                });
+
+            } catch (err) {
+                Swal.fire('Hata', err.message || 'İstek başarısız', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Güncelle';
+                }
+            }
+        });
+
+        document.getElementById('btnToggleActive')?.addEventListener('click', function () {
+            $.post("{% url 'leads:change-status' %}", {
+                ids: [LEAD_ID],
+                csrfmiddlewaretoken: csrf()
+            }, function (res) {
+                if (res.result) {
+                    Swal.fire({title: 'Güncellendi', icon: 'success', timer: 900, showConfirmButton: false})
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire('Hata', res.error_msg || 'Güncellenemedi', 'error');
+                }
+            });
+        });
+
+        document.getElementById('activityForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+
+            const fd = new FormData(this);
+
+            const url = "{% url 'leads:add-activity' lead.id %}";
+
+            fetch(url, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf()},
+                body: fd
+            })
+                .then(jsonOrThrow)
+                .then(res => {
+                    if (res.result) {
+                        Swal.fire({
+                            title: 'Kaydedildi',
+                            text: 'Aktivite başarıyla işlendi.',
+                            icon: 'success',
+                            timer: 1000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Hata', res.msg || 'Bir hata oluştu', 'error');
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Hata', err.message, 'error');
+                    btn.disabled = false;
+                });
+        });
+
+        document.getElementById('tagForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            const fd = new FormData(form);
+            fetch("{% url 'leads:tag-add' lead.id %}", {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf()},
+                body: fd,
+                credentials: 'same-origin'
+            })
+                .then(jsonOrThrow)
+                .then(js => {
+                    if (!js.result) {
+                        Swal.fire('Hata', js.error_msg || 'Etiket eklenemedi', 'error');
+                        return;
+                    }
+                    try {
+                        const wrap = document.getElementById('tagsWrap');
+                        if (!wrap) return;
+                        const empty = document.getElementById('tagsEmpty');
+                        if (empty) empty.remove();
+                        const span = document.createElement('span');
+                        span.className = 'tag';
+                        span.dataset.mapId = js.data.map_id;
+                        span.dataset.tagId = js.data.tag_id;
+                        span.innerHTML = `${js.data.name}
+                    <button class="btn-remove" title="Sil" onclick="removeTag('${js.data.map_id}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                        wrap.appendChild(span);
+                    } catch (err) {
+                        console.warn('UI update error (tag add):', err);
+                    }
+                    try {
+                        form.reset();
+                    } catch {
+                    }
+                    Swal.fire({title: 'Eklendi', icon: 'success', timer: 800, showConfirmButton: false});
+                })
+                .catch(err => Swal.fire('Hata', err.message || 'İstek başarısız', 'error'));
+        });
+
+        window.removeTag = function (mapId) {
+            fetch("{% url 'leads:tag-remove' lead.id %}", {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({map_id: mapId}),
+                credentials: 'same-origin'
+            })
+                .then(jsonOrThrow)
+                .then(js => {
+                    if (!js.result) {
+                        Swal.fire('Hata', js.error_msg || 'Silinemedi', 'error');
+                        return;
+                    }
+                    try {
+                        const el = document.querySelector(`.tag[data-map-id="${mapId}"]`);
+                        if (el) el.remove();
+                        if (!document.querySelector('#tagsWrap .tag')) {
+                            const div = document.createElement('div');
+                            div.className = 'text-muted';
+                            div.id = 'tagsEmpty';
+                            div.textContent = 'Etiket yok.';
+                            const wrap = document.getElementById('tagsWrap');
+                            if (wrap) wrap.appendChild(div);
+                        }
+                    } catch (err) {
+                        console.warn('UI update error (tag remove):', err);
+                    }
+                    Swal.fire({title: 'Silindi', icon: 'success', timer: 700, showConfirmButton: false});
+                })
+                .catch(err => Swal.fire('Hata', err.message || 'İstek başarısız', 'error'));
+        };
+
+        document.getElementById('stageForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            const fd = new FormData(form);
+
+            fetch("{% url 'leads:change-stage' lead.id %}", {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf()},
+                body: fd,
+                credentials: 'same-origin'
+            })
+                .then(jsonOrThrow)
+                .then(js => {
+                    if (!js.result) {
+                        Swal.fire('Hata', js.error_msg || 'Aşama değiştirilemedi', 'error');
+                        return;
+                    }
+                    prependStageRowFromResponse(js);
+                    Swal.fire({title: 'Güncellendi', icon: 'success', timer: 900, showConfirmButton: false});
+                })
+                .catch(err => Swal.fire('Hata', err.message || 'İstek başarısız', 'error'));
+        });
+
+        document.querySelector('a[href="#info"]')?.addEventListener('shown.bs.tab', () => {
+            syncInfoFromSettings({silentPipeline: true});
+        });
+    </script>
+
+{% endblock footer %}

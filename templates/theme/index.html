@@ -1,0 +1,1392 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}Kuyum Plus | Kuyumcu ERP Yazılımı{% endblock page_title %}
+{% block page_description %}Stok, satış, cari, barkodlama ve raporlama modülleriyle kuyumcu işlerinizi tek panelden
+    yönetin.{% endblock page_description %}
+{% block page_keywords %}kuyum plus,kuyumcu programı,kuyumcu erp,stok takibi,satış yönetimi,barkod
+    sistemi{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus - Profesyonel Kuyumcu Yönetim Yazılımı{% endblock og_title %}
+{% block og_description %}Kuyumculuk sektörüne özel dijital çözümlerle operasyonlarınızı hızlandırın ve kârlılığınızı
+    artırın.{% endblock og_description %}
+{% block og_image %}{% static 'theme/img/new_logo/1.png' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com{% endblock og_url %}
+{% block twitter_title %}Kuyum Plus | Ana Sayfa{% endblock twitter_title %}
+{% block twitter_description %}Kuyum Plus ile verimliliği artırın, stok ve satış süreçlerinizi
+    kolaylaştırın.{% endblock twitter_description %}
+
+
+{% block header %}
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
+    <script defer src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=DM+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <style>
+        :root {
+            --kp-gold: #c9a24e;
+            --kp-gold-light: #e8d5a3;
+            --kp-gold-bright: #f0c760;
+            --kp-dark: #0d0d0d;
+            --kp-dark-soft: #1a1a1a;
+            --kp-cream: #faf6ee;
+            --kp-text: #3a3a3a;
+            --kp-text-light: #7a7a7a;
+            --kp-font-display: 'Playfair Display', Georgia, serif;
+            --kp-font-body: 'DM Sans', -apple-system, sans-serif;
+        }
+
+        .kp-hero {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            background: var(--kp-dark);
+            overflow: hidden;
+            font-family: var(--kp-font-body);
+        }
+
+        .kp-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 50% at 20% 50%, rgba(201, 162, 78, 0.08) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 60% at 80% 30%, rgba(201, 162, 78, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .kp-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .kp-hero-swiper {
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .kp-hero-swiper .swiper-slide {
+            opacity: 0 !important;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .kp-hero-swiper .swiper-slide-active {
+            opacity: 1 !important;
+            visibility: visible;
+        }
+
+        .kp-slide {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 60px;
+            padding: 40px 0;
+            min-height: 80vh;
+        }
+
+        .kp-slide-content {
+            position: relative;
+            z-index: 3;
+        }
+
+        .kp-slide-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .kp-slide-tag::before {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 1px;
+            background: var(--kp-gold);
+        }
+
+        .kp-tag-text {
+            font-family: var(--kp-font-body);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--kp-gold);
+        }
+
+        .kp-slide-title {
+            font-family: var(--kp-font-display);
+            font-size: clamp(2.4rem, 4.5vw, 4rem);
+            font-weight: 700;
+            line-height: 1.1;
+            color: #ffffff;
+            margin-bottom: 24px;
+            letter-spacing: -0.01em;
+        }
+
+        .kp-slide-title em {
+            font-style: italic;
+            font-weight: 500;
+            background: linear-gradient(135deg, var(--kp-gold-bright), var(--kp-gold), var(--kp-gold-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .kp-slide-desc {
+            font-size: 1.3rem;
+            line-height: 1.75;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 40px;
+            max-width: 480px;
+            font-weight: 400;
+        }
+
+        .kp-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 36px;
+            background: transparent;
+            border: 1.5px solid var(--kp-gold);
+            color: var(--kp-gold);
+            font-family: var(--kp-font-body);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-decoration: none;
+            border-radius: 0;
+            position: relative;
+            overflow: hidden;
+            transition: color 0.4s ease, border-color 0.4s ease;
+            z-index: 1;
+        }
+
+        .kp-cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--kp-gold);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: -1;
+        }
+
+        .kp-cta:hover {
+            color: var(--kp-dark);
+            border-color: var(--kp-gold);
+        }
+
+        .kp-cta:hover::before {
+            transform: scaleX(1);
+        }
+
+        .kp-cta-arrow {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .kp-cta:hover .kp-cta-arrow {
+            transform: translateX(4px);
+        }
+
+        /* ── Right: Image ── */
+        .kp-slide-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .kp-img-frame {
+            position: relative;
+            width: 100%;
+            max-width: 520px;
+            aspect-ratio: 4/3;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .kp-img-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 1px solid rgba(201, 162, 78, 0.2);
+            border-radius: 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .kp-img-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Decorative corner accent */
+        .kp-img-accent {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 1.5px solid var(--kp-gold);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .kp-img-accent--tl {
+            top: -12px;
+            left: -12px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .kp-img-accent--br {
+            bottom: -12px;
+            right: -12px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .kp-img-glow {
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(201, 162, 78, 0.15) 0%, transparent 70%);
+            filter: blur(40px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .kp-hero-swiper .swiper-slide-active .kp-slide-tag {
+            animation: kpFadeUp 0.6s 0.1s both cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .kp-hero-swiper .swiper-slide-active .kp-slide-title {
+            animation: kpFadeUp 0.6s 0.2s both cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .kp-hero-swiper .swiper-slide-active .kp-slide-desc {
+            animation: kpFadeUp 0.6s 0.35s both cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .kp-hero-swiper .swiper-slide-active .kp-cta {
+            animation: kpFadeUp 0.6s 0.45s both cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .kp-hero-swiper .swiper-slide-active .kp-img-frame {
+            animation: kpScaleIn 0.8s 0.15s both cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes kpFadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes kpScaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .kp-nav {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            z-index: 10;
+        }
+
+        .kp-nav-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .kp-nav-btn:hover {
+            border-color: var(--kp-gold);
+            color: var(--kp-gold);
+            background: rgba(201, 162, 78, 0.08);
+        }
+
+        .kp-nav-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .kp-pagination {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kp-pagination .swiper-pagination-bullet {
+            width: 32px;
+            height: 2px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            opacity: 1;
+            transition: all 0.4s ease;
+        }
+
+        .kp-pagination .swiper-pagination-bullet-active {
+            width: 48px;
+            background: var(--kp-gold);
+        }
+
+        .kp-counter {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--kp-font-display);
+        }
+
+        .kp-counter-current {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--kp-gold);
+            line-height: 1;
+        }
+
+        .kp-counter-sep {
+            width: 20px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(-45deg);
+        }
+
+        .kp-counter-total {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 500;
+        }
+
+        .kp-vertical-label {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-family: var(--kp-font-body);
+            font-size: 10px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.15);
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        @media (max-width: 991px) {
+            .kp-slide {
+                grid-template-columns: 1fr;
+                gap: 40px;
+                min-height: auto;
+                padding: 100px 0 120px;
+            }
+
+            .kp-slide-visual {
+                order: -1;
+            }
+
+            .kp-img-frame {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .kp-slide-content {
+                text-align: center;
+            }
+
+            .kp-slide-tag {
+                justify-content: center;
+            }
+
+            .kp-slide-desc {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .kp-counter,
+            .kp-vertical-label {
+                display: none;
+            }
+
+            .kp-nav {
+                bottom: 30px;
+            }
+
+            .kp-img-accent {
+                display: none;
+            }
+        }
+
+        @media (max-width: 575px) {
+            .kp-slide {
+                padding: 80px 0 110px;
+                gap: 30px;
+            }
+
+            .kp-slide-title {
+                font-size: 2rem;
+            }
+
+            .kp-slide-desc {
+                font-size: 1.1rem;
+            }
+
+            .kp-img-frame {
+                max-width: 100%;
+            }
+        }
+
+
+        .brand-area {
+            background: #111;
+            padding: 30px 0;
+            position: relative;
+            border-top: 3px solid var(--kp-gold);
+            border-bottom: 1px solid #222;
+        }
+
+        .brand-area::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23c9a24e' fill-opacity='0.03' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .brand-title-wrapper {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .brand-title {
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--kp-gold);
+            font-weight: 700;
+            display: inline-block;
+            background: rgba(201, 162, 78, 0.1);
+            padding: 6px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(201, 162, 78, 0.3);
+        }
+
+        .swiper-brands {
+            padding: 10px 5px 20px 5px !important;
+        }
+
+        .brand-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(201, 162, 78, 0.15);
+            border-radius: 12px;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.4s ease;
+            height: 100%;
+            min-height: 230px;
+            backdrop-filter: blur(5px);
+        }
+
+        .brand-card:hover {
+            background: rgba(201, 162, 78, 0.08);
+            border-color: rgba(201, 162, 78, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .brand-logo {
+            height: 50px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .brand-logo img {
+            max-width: 110px;
+            max-height: 100%;
+            object-fit: contain;
+            filter: grayscale(100%) brightness(200%);
+            transition: 0.3s;
+        }
+
+        .brand-card:hover .brand-logo img {
+            filter: grayscale(0%) brightness(100%);
+        }
+
+        .no-logo-text {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .brand-quote {
+            flex-grow: 1;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .brand-quote::before {
+            content: '"';
+            font-size: 40px;
+            color: var(--kp-gold);
+            opacity: 0.2;
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: serif;
+        }
+
+        .quote-text {
+            color: #ccc;
+            font-style: italic;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            display: block;
+        }
+
+        .brand-person {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .person-icon {
+            color: var(--kp-gold);
+            font-size: 16px;
+            background: rgba(201, 162, 78, 0.1);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .person-info {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .person-info .name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .person-info .company {
+            color: var(--kp-gold);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .swiper-brands .swiper-wrapper {
+            align-items: stretch;
+        }
+
+        /* --- İSTATİSTİK ALANI --- */
+        .premium-stats-area {
+            background-color: #0f0f0f;
+            position: relative;
+            padding: 10px 0;
+            border-top: 1px solid #222;
+            margin-bottom: 125px;
+        }
+
+        .premium-stats-area::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle at center, rgba(201, 162, 78, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+        }
+
+        @media (min-width: 992px) {
+            .stat-item:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: 0;
+                top: 20%;
+                height: 60%;
+                width: 1px;
+                background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.1), transparent);
+            }
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            line-height: 70px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+            margin: 0 auto 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon img {
+            width: 36px;
+            height: 36px;
+            filter: brightness(0) invert(1);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--kp-gold);
+            line-height: 1;
+            margin-bottom: 10px;
+            display: block;
+            text-shadow: 0 0 20px rgba(201, 162, 78, 0.3);
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .row.mt-4 > [class*="col-"] {
+            display: flex;
+        }
+
+        .row.mt-4 .single-service-inner {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            border-radius: 16px;
+            transition: transform 0.3s;
+        }
+
+        .row.mt-4 .single-service-inner:hover {
+            transform: translateY(-5px);
+        }
+
+        .row.mt-4 .single-service-inner .thumb {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            max-height: 190px;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+
+        .row.mt-4 .single-service-inner .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .row.mt-4 .single-service-inner .details {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+
+        .row.mt-4 .single-service-inner .details .btn {
+            margin-top: auto;
+            padding: 12px 22px !important;
+            font-size: 14px !important;
+            min-width: 130px;
+            border-width: 2px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 991px) {
+            .brand-title {
+                font-size: 12px;
+            }
+
+            .brand-item img {
+                max-width: 100px;
+            }
+
+            .brand-card {
+                min-height: auto;
+                padding: 20px;
+            }
+
+            .stat-item {
+                margin-bottom: 30px;
+            }
+
+            .stat-number {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+
+{% endblock header %}
+
+{% block body %}
+
+
+    <section class="kp-hero">
+        <span class="kp-vertical-label">Kuyum Plus &mdash; Profesyonel Kuyumcu Yazılımı</span>
+
+        <div class="kp-counter">
+            <span class="kp-counter-current" id="kpCurrent">01</span>
+            <span class="kp-counter-sep"></span>
+            <span class="kp-counter-total" id="kpTotal">03</span>
+        </div>
+
+        <div class="container">
+            <div class="swiper kp-hero-swiper">
+                <div class="swiper-wrapper">
+
+                    <!-- ── SLIDE 1 ── -->
+                    <div class="swiper-slide">
+                        <div class="kp-slide">
+                            <div class="kp-slide-content">
+                                <div class="kp-slide-tag">
+                                    <span class="kp-tag-text">Profesyonel Yönetim</span>
+                                </div>
+                                <h2 class="kp-slide-title">
+                                    Kuyumcunuzu<br>
+                                    <em>Altın Standartlarında</em><br>
+                                    Yönetin
+                                </h2>
+                                <p class="kp-slide-desc">
+                                    Stok, satış, tamir ve cari hesaplarınızı tek bir panelden,
+                                    kusursuz bir hassasiyetle takip edin. Lüksü dijitalleştirdik.
+                                </p>
+                                <a href="{% url 'kuyumplus:hakkimizda' %}" class="kp-cta">
+                                    Hemen Keşfet
+                                    <svg class="kp-cta-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                         stroke-width="1.5">
+                                        <path d="M4 10h12M12 6l4 4-4 4"/>
+                                    </svg>
+                                </a>
+                            </div>
+                            <div class="kp-slide-visual">
+                                <div class="kp-img-glow"></div>
+                                <div class="kp-img-accent kp-img-accent--tl"></div>
+                                <div class="kp-img-accent kp-img-accent--br"></div>
+                                <div class="kp-img-frame">
+                                    <img src="{% static 'theme/media/banner.webp' %}" alt="Kuyum Plus Dashboard">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── SLIDE 2 ── -->
+                    <div class="swiper-slide">
+                        <div class="kp-slide">
+                            <div class="kp-slide-content">
+                                <div class="kp-slide-tag">
+                                    <span class="kp-tag-text">Yasal Uyumluluk</span>
+                                </div>
+                                <h2 class="kp-slide-title">
+                                    E-Fatura & MASAK<br>
+                                    <em>Tam Uyum</em>
+                                </h2>
+                                <p class="kp-slide-desc">
+                                    Yasal süreçleriniz otomatik işlesin, siz sadece müşterilerinize
+                                    ve vitrininize odaklanın. Hatasız, güvenli ve hızlı.
+                                </p>
+                                <a href="{% url 'kuyumplus:efatura' %}" class="kp-cta">
+                                    Detayları İncele
+                                    <svg class="kp-cta-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                         stroke-width="1.5">
+                                        <path d="M4 10h12M12 6l4 4-4 4"/>
+                                    </svg>
+                                </a>
+                            </div>
+                            <div class="kp-slide-visual">
+                                <div class="kp-img-glow"></div>
+                                <div class="kp-img-accent kp-img-accent--tl"></div>
+                                <div class="kp-img-accent kp-img-accent--br"></div>
+                                <div class="kp-img-frame">
+                                    <img src="{% static 'theme/media/efaturaEklendi.webp' %}" alt="E-Fatura Ekranı">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── SLIDE 3 ── -->
+                    <div class="swiper-slide">
+                        <div class="kp-slide">
+                            <div class="kp-slide-content">
+                                <div class="kp-slide-tag">
+                                    <span class="kp-tag-text">RFID Teknolojisi</span>
+                                </div>
+                                <h2 class="kp-slide-title">
+                                    Stoklarınızda<br>
+                                    <em>Sıfır Kayıp</em>
+                                </h2>
+                                <p class="kp-slide-desc">
+                                    RFID destekli akıllı sayım ile binlerce ürünü dakikalar içinde
+                                    sayın. Anlık stok görünürlüğü ile gücünüze güç katın.
+                                </p>
+                                <a href="{% url 'kuyumplus:egitim' %}" class="kp-cta">
+                                    Teknolojiyi Gör
+                                    <svg class="kp-cta-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                         stroke-width="1.5">
+                                        <path d="M4 10h12M12 6l4 4-4 4"/>
+                                    </svg>
+                                </a>
+                            </div>
+                            <div class="kp-slide-visual">
+                                <div class="kp-img-glow"></div>
+                                <div class="kp-img-accent kp-img-accent--tl"></div>
+                                <div class="kp-img-accent kp-img-accent--br"></div>
+                                <div class="kp-img-frame">
+                                    <img src="{% static 'theme/media/RFID sayım.webp' %}" alt="RFID Sayım Cihazı">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="kp-nav">
+                <div class="kp-nav-btn kp-prev">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 4l-6 6 6 6"/>
+                    </svg>
+                </div>
+                <div class="kp-pagination"></div>
+                <div class="kp-nav-btn kp-next">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M8 4l6 6-6 6"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {#    <div class="brand-area">#}
+    {#        <div class="container">#}
+    {#            <div class="brand-title-wrapper">#}
+    {#                <span class="brand-title">SEÇKİN KUYUMCULARIN TERCİHİ</span>#}
+    {#            </div>#}
+    {##}
+    {#            <div class="swiper swiper-brands">#}
+    {#                <div class="swiper-wrapper">#}
+    {#                    {% if testimonials %}#}
+    {#                        {% for item in testimonials %}#}
+    {#                            <div class="swiper-slide">#}
+    {#                                <div class="brand-card">#}
+    {#                                    <div class="brand-logo">#}
+    {#                                        {% if item.logo %}#}
+    {#                                            <img src="{{ item.logo.url }}" alt="{{ item.company_name }}">#}
+    {#                                        {% else %}#}
+    {#                                            <span class="no-logo-text">{{ item.company_name }}</span>#}
+    {#                                        {% endif %}#}
+    {#                                    </div>#}
+    {#                                    <div class="brand-quote">#}
+    {#                                        <span class="quote-text">{{ item.message|truncatechars:80 }}</span>#}
+    {#                                    </div>#}
+    {#                                    <div class="brand-person">#}
+    {#                                        <div class="person-icon"><i class="fa fa-user"></i></div>#}
+    {#                                        <div class="person-info">#}
+    {#                                            <span class="name">{{ item.full_name }}</span>#}
+    {#                                            <span class="company">{{ item.company_name }}</span>#}
+    {#                                        </div>#}
+    {#                                    </div>#}
+    {#                                </div>#}
+    {#                            </div>#}
+    {#                        {% endfor %}#}
+    {#                    {% else %}#}
+    {#                        <div class="swiper-slide">#}
+    {#                            <div class="brand-card">#}
+    {#                                <div class="brand-quote"><span class="quote-text">Stok sayımlarımız artık dakikalar sürüyor.</span></div>#}
+    {#                                <div class="brand-person"><div class="person-info"><span class="name">Mehmet Yılmaz</span><span class="company">Yılmazlar Gold</span></div></div>#}
+    {#                            </div>#}
+    {#                        </div>#}
+    {#                        <div class="swiper-slide">#}
+    {#                            <div class="brand-card">#}
+    {#                                <div class="brand-quote"><span class="quote-text">E-Fatura derdinden tamamen kurtulduk.</span></div>#}
+    {#                                <div class="brand-person"><div class="person-info"><span class="name">Ahmet Demir</span><span class="company">Demir Pırlanta</span></div></div>#}
+    {#                            </div>#}
+    {#                        </div>#}
+    {#                        <div class="swiper-slide">#}
+    {#                            <div class="brand-card">#}
+    {#                                <div class="brand-quote"><span class="quote-text">Teknik destek ekibi 7/24 yanımızda.</span></div>#}
+    {#                                <div class="brand-person"><div class="person-info"><span class="name">Selin Aras</span><span class="company">Aras Mücevherat</span></div></div>#}
+    {#                            </div>#}
+    {#                        </div>#}
+    {#                    {% endif %}#}
+    {#                </div>#}
+    {#            </div>#}
+    {#        </div>#}
+    {#    </div>#}
+
+    <div class="about-area pd-top-90 my-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="about-thumb-inner pe-xl-5 me-xl-5 wow animated fadeInLeft" data-wow-duration="1.5s"
+                         data-wow-delay="0.3s">
+                        <img class="animate-img-1 top_image_bounce " src="{% static 'theme/img/about/2.png' %}"
+                             alt="img">
+                        <img class="animate-img-2 left_image_bounce" src="{% static 'theme/img/about/3.png' %}"
+                             alt="img">
+                        <img class="animate-img-3 top_image_bounce " src="{% static 'theme/img/banner/5.svg' %}"
+                             alt="img">
+                        <img class="main-img my-image-size" src="{% static 'theme/media/image1.webp' %}" alt="img">
+                    </div>
+                </div>
+
+                <div class="col-lg-6 wow animated fadeInRight" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <div class="section-title mt-5 mt-lg-0">
+                        <h6 class="sub-title">Hakkımızda</h6>
+                        <h2 class="title"><span>Kuyum Plus</span> ile Tanışın!</h2>
+                        <p class="content mb-4 mb-xl-5">
+                            Konasoft’un 8 yıllık yazılım tecrübesiyle geliştirdiği Kuyum Plus, kuyumculuk sektörünün tüm
+                            süreçlerini tek platformda birleştiren en güçlü yönetim yazılımıdır. Modern arayüzü ve
+                            detaylı raporlama ekranlarıyla işinizi her zamankinden daha hızlı, kolay ve güvenli yönetin.
+                        </p>
+                        <div class="row">
+                            <div class="col-md-6 col-3">
+                                <div class="single-about-inner">
+                                    <div class="thumb mb-3"><img src="{% static 'theme/img/icon/2.png' %}" alt="img">
+                                    </div>
+                                    <div class="details"><h5 class="my-font-size">Detaylı Raporlama</h5></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-3">
+                                <div class="single-about-inner">
+                                    <div class="thumb mb-3"><img src="{% static 'theme/img/icon/phone (1).png' %}"
+                                                                 alt="img"></div>
+                                    <div class="details"><h5 class="my-font-size">7/24 Hızlı Destek</h5></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-2 col-3">
+                                <div class="single-about-inner">
+                                    <div class="thumb mb-3"><img src="{% static 'theme/img/icon/setting (2) (1).png' %}"
+                                                                 alt="img"></div>
+                                    <div class="details"><h5 class="my-font-size">Tamir Yönetimi</h5></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-2 col-3">
+                                <div class="single-about-inner">
+                                    <div class="thumb mb-3"><img src="{% static 'theme/img/icon/3.png' %}" alt="img">
+                                    </div>
+                                    <div class="details"><h5 class="my-font-size">Her Yerden Erişim</h5></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 pd-top-80 pd-bottom-120" style="background-color: #F8F9FC;padding-top: 3rem!important;">
+        <div class="section-title text-center">
+            <h6 class="sub-title">Modüller</h6>
+            <h2 class="title">Tüm İhtiyaçlarınız İçin Akıllı Modüller</h2></div>
+
+        <div class="col-lg-4 col-6 col-md-6">
+            <div class="single-service-inner text-center">
+                <div class="thumb"><img src="{% static 'theme/media/efaturaModul.webp' %}" alt="Masraf Modülü"></div>
+                <div class="details">
+                    <h5><a href="{% url 'kuyumplus:efatura' %}">E-Fatura Entegrasyonu</a></h5>
+                    <p>Tüm işlemlerinizi tek tıkla gerçekleştirin.</p>
+                    <a class="btn btn-border-base" href="{% url 'kuyumplus:efatura' %}">Detaylar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6 col-md-6">
+            <div class="single-service-inner text-center">
+                <div class="thumb"><img src="{% static 'theme/media/raporvegrafikmodul.webp' %}" alt="Raporlar"></div>
+                <div class="details">
+                    <h5><a href="{% url 'kuyumplus:raporlama' %}">Raporlar ve Grafikler</a></h5>
+                    <p>Rapor ve grafiklerle işinizi daha net görün.</p>
+                    <a class="btn btn-border-base" href="{% url 'kuyumplus:raporlama' %}">Detaylar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6 col-md-6">
+            <div class="single-service-inner text-center">
+                <div class="thumb"><img src="{% static 'theme/media/bardkoluUrunModulu.webp' %}" alt="Barkod"></div>
+                <div class="details">
+                    <h5><a href="{% url 'kuyumplus:satis-yonetimi' %}">Barkodlu Ürünler Modülü</a></h5>
+                    <p>Ürünleriniz için kolayca barkod oluşturun.</p>
+                    <a class="btn btn-border-base" href="{% url 'kuyumplus:satis-yonetimi' %}">Detaylar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6 col-md-6">
+            <div class="single-service-inner text-center">
+                <div class="thumb"><img src="{% static 'theme/media/urunTamiri.webp' %}" alt="Tamir"></div>
+                <div class="details">
+                    <h5><a href="{% url 'kuyumplus:teknik-destek' %}">Ürün Tamir Modülü</a></h5>
+                    <p>Tamirleri atölyelerde takip edin, bildirim gönderin.</p>
+                    <a class="btn btn-border-base" href="{% url 'kuyumplus:teknik-destek' %}">Detaylar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6 col-md-6">
+            <div class="single-service-inner text-center">
+                <div class="thumb"><img src="{% static 'theme/media/sayimModulu (1).webp' %}" alt="Sayım"></div>
+                <div class="details">
+                    <h5><a href="{% url 'kuyumplus:egitim' %}">Sayım Modülü</a></h5>
+                    <p>RFID destekli sayım ile hatasız stok kontrolü.</p>
+                    <a class="btn btn-border-base" href="{% url 'kuyumplus:egitim' %}">Detaylar </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6 col-md-6">
+            <div class="single-service-inner text-center">
+                <div class="thumb"><img src="{% static 'theme/media/wpLogo (1).webp' %}" alt="Whatsapp"></div>
+                <div class="details">
+                    <h5><a href="{% url 'kuyumplus:envanter-modul' %}">Whatsapp Entegrasyonu</a></h5>
+                    <p>Müşterilerinizi otomatik mesajlarla bilgilendirin.</p>
+                    <a class="btn btn-border-base" href="{% url 'kuyumplus:envanter-modul' %}">Detaylar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="faq-area faq-area-margin-top bg-cover pd-top-50 pd-bottom-90" style="background-color: white">
+        <div class="container">
+            <div class="row pd-top-120">
+                <div class="col-xl-5 col-lg-6 col-md-8 order-lg-last">
+                    <div class="about-thumb-inner pt-lg-3">
+                        <img class="main-img my-image-size" src="{% static 'theme/media/sss2.webp' %}"
+                             alt="SSS Görseli">
+                    </div>
+                </div>
+                <div class="col-xl-7 col-lg-6">
+                    <div class="section-title mb-0 mt-4 mt-lg-0">
+                        <h6 class="sub-title">SSS</h6>
+                        <h2 class="title">Sıkça Sorulan <span>Sorular</span></h2>
+                        <p class="content">Kuyum Plus Programı ile ilgili en çok merak edilen soruların yanıtlarını
+                            burada bulabilirsiniz.</p>
+                    </div>
+                    <div class="accordion accordion-inner style-2 accordion-icon-left mt-3" id="accordionExample">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseOne">Kuyum Plus Programı hangi işlemleri kolaylaştırır?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show"
+                                 data-bs-parent="#accordionExample">
+                                <div class="accordion-body">Kuyum Plus; hızlı işlem, raporlar ve grafikler, barkodlu
+                                    ürün takibi, ürün tamiri, sayım (RFID destekli), WhatsApp entegrasyonu ve daha
+                                    birçok modül sayesinde süreçlerinizi hızlı, pratik ve hatasız şekilde yürütmenizi
+                                    sağlar.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseTwo">Programın kullanımı kolay mı?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionExample">
+                                <div class="accordion-body">Evet, kullanıcı dostu arayüzü sayesinde tüm işlemleri birkaç
+                                    tıklama ile gerçekleştirebilirsiniz. Ayrıntılı rehber ve destek hizmetleri
+                                    sunuyoruz.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseThree">Program hangi cihazlarla uyumludur?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionExample">
+                                <div class="accordion-body">Kuyum Plus Programı; bilgisayar, tablet ve mobil cihazlarla
+                                    tam uyumludur. Dilediğiniz yerden işlerinizi yönetebilirsiniz.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseFour">Programda Whatsapp entegrasyonu var mı?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionExample">
+                                <div class="accordion-body">Evet, programda WhatsApp entegrasyonu bulunmaktadır.</div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFive">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseFive">Verilerim güvende mi?
+                                </button>
+                            </h2>
+                            <div id="collapseFive" class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionExample">
+                                <div class="accordion-body">Kesinlikle. Güçlü güvenlik altyapısı sayesinde verileriniz
+                                    koruma altındadır.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="premium-stats-area">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-6">
+                    <div class="stat-item wow animated fadeInUp" data-wow-delay="0.1s">
+                        <div class="stat-icon">
+                            <img src="/static/theme/img/icon/8.svg" alt="Sistem Uptime">
+                        </div>
+                        <span class="stat-number"><span class="counter">99</span>%</span>
+                        <span class="stat-label">Müşteri Memnuniyeti</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stat-item wow animated fadeInUp" data-wow-delay="0.2s">
+                        <div class="stat-icon">
+                            <img src="/static/theme/img/icon/7.svg" alt="Takip Edilen Ürün">
+                        </div>
+                        <span class="stat-number"><span class="counter">10</span>k+</span>
+                        <span class="stat-label">Takip Edilen Ürün</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stat-item wow animated fadeInUp" data-wow-delay="0.3s">
+                        <div class="stat-icon">
+                            <img src="/static/theme/img/icon/5.svg" alt="Aktif Kuyumcu">
+                        </div>
+                        <span class="stat-number"><span class="counter">35</span>+</span>
+                        <span class="stat-label">Aktif Kuyumcu</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="stat-item wow animated fadeInUp" data-wow-delay="0.4s">
+                        <div class="stat-icon">
+                            <img src="/static/theme/img/icon/6.svg" alt="Aylık Satış İşlemi">
+                        </div>
+                        <span class="stat-number"><span class="counter">1.2</span>k+</span>
+                        <span class="stat-label">Aylık İşlem</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="contact-area">
+        <div class="container">
+            <div class="contact-inner-1">
+                <img class="top_image_bounce animate-img-1 " src="/static/theme/img/banner/2.png" alt="img">
+                <img class="top_image_bounce animate-img-2 " src="/static/theme/img/about/6.png" alt="img">
+                <div class="row">
+                    <div class="col-lg-8 col-12 wow animated fadeInLeft" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                        <img class="w-100 my-image-size" src="/static/theme/media/sss.webp" alt="Kuyum Plus">
+                    </div>
+                    <div class="col-lg-4 col-12 wow animated fadeInRight" data-wow-duration="1.5s"
+                         data-wow-delay="0.3s">
+                        <div class="section-title mb-0">
+                            <h6 class="sub-title">İLETİŞİME GEÇİN</h6>
+                            <h2 class="title">Kuyum&nbsp;Plus&nbsp;ile <span>Dijital&nbsp;Dönüşüm</span> Başlasın</h2>
+                            <p class="content">Satış, stok ve finans süreçlerinizi tek platformda toplamak için bize
+                                mesaj bırakın.</p>
+                            <form class="mt-4" method="post" action="/iletisim/">
+                                <div class="row">
+                                    <div class="col-lg-6 col-6">
+                                        <div class="single-input-inner style-border"><input name="name" type="text"
+                                                                                            placeholder="Adınız"></div>
+                                    </div>
+                                    <div class="col-lg-6 col-6">
+                                        <div class="single-input-inner style-border"><input name="email" type="email"
+                                                                                            placeholder="E-posta"></div>
+                                    </div>
+                                    <div class="col-lg-6 col-6">
+                                        <div class="single-input-inner style-border"><input name="phone" type="text"
+                                                                                            placeholder="Telefon"></div>
+                                    </div>
+                                    <div class="col-lg-6 col-6">
+                                        <div class="single-input-inner style-border"><input name="subject" type="text"
+                                                                                            placeholder="Konu"></div>
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="single-input-inner style-border"><textarea name="message"
+                                                                                               placeholder="Mesajınız"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button class="btn btn-black mt-0 w-100 border-radius-5 " type="submit">Gönder
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="mt-4">
+                                <p class="mb-1"><strong>E-posta:</strong> <a href="mailto:destek@kuyumplus.com">destek@kuyumplus.com</a>
+                                </p>
+                                <p class="mb-0"><strong>GSM:</strong> <a href="tel:+905324894554">+90 532 489 4554</a>
+                                </p>
+                                <p class="mb-0"><strong>Telefon:</strong> <a href="tel:+902166068801">+90 216 606 88
+                                    01</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- HERO SLIDER ---
+            const totalSlides = document.querySelectorAll('.kp-hero-swiper .swiper-slide').length;
+            const counterCurrent = document.getElementById('kpCurrent');
+            const counterTotal = document.getElementById('kpTotal');
+
+            if (counterTotal) {
+                counterTotal.textContent = String(totalSlides).padStart(2, '0');
+            }
+
+            const heroSwiper = new Swiper('.kp-hero-swiper', {
+                loop: true,
+                speed: 800,
+                effect: 'fade',
+                fadeEffect: {
+                    crossFade: true
+                },
+                autoplay: {
+                    delay: 6000,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true
+                },
+                pagination: {
+                    el: '.kp-pagination',
+                    clickable: true
+                },
+                navigation: {
+                    nextEl: '.kp-next',
+                    prevEl: '.kp-prev'
+                },
+                on: {
+                    slideChange: function () {
+                        if (counterCurrent) {
+                            counterCurrent.textContent = String(this.realIndex + 1).padStart(2, '0');
+                        }
+                    }
+                }
+            });
+
+            // --- BRAND SLIDER (varsa) ---
+            if (document.querySelector('.swiper-brands')) {
+                new Swiper('.swiper-brands', {
+                    loop: true,
+                    speed: 800,
+                    autoplay: {delay: 4000, disableOnInteraction: false, pauseOnMouseEnter: true},
+                    slidesPerView: 1,
+                    spaceBetween: 10,
+                    breakpoints: {
+                        576: {slidesPerView: 2, spaceBetween: 20},
+                        992: {slidesPerView: 3, spaceBetween: 30},
+                        1200: {slidesPerView: 4, spaceBetween: 30},
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock body %}
+
+{% block footer %}
+{% endblock footer %}

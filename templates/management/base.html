@@ -1,0 +1,2535 @@
+{% load static %}
+{% load role_tags %}
+<!DOCTYPE html>
+<html lang="tr" data-bs-theme-mode="light">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Kuyum Plus | Profesyonel Kuyumcu Yönetim Yazılımı. Stok takibi, satış yönetimi, müşteri ve tedarikçi ilişkileri ile işinizi dijitalleştirin.">
+    <meta name="keywords"
+          content="kuyumcu programı, altın yönetim yazılımı, kuyumculuk ERP, stok takibi, muhasebe yazılımı, kuyumcu otomasyonu">
+    <meta name="author" content="Kuyum Plus Yazılım Ekibi">
+    <link rel="canonical" href="https://www.kuyumplus.com/">
+
+    <meta property="og:title" content="Kuyum Plus - Profesyonel Kuyumcu Yönetim Yazılımı">
+    <meta property="og:description"
+          content="Altın, gümüş ve değerli taş ticaretinde dijital dönüşümünüzü başlatın. Kuyum Plus ile iş süreçlerinizi hızlandırın.">
+    <meta property="og:image" content="https://www.kuyumplus.com/static/theme/img/new_logo/1.png">
+    <meta property="og:url" content="https://www.kuyumplus.com">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Kuyum Plus - Profesyonel Kuyumcu Yönetim Yazılımı">
+    <meta name="twitter:description"
+          content="Altın, gümüş ve değerli taş ticaretinde dijital dönüşümünüzü başlatın. Kuyum Plus ile iş süreçlerinizi hızlandırın.">
+    <meta name="twitter:image" content="https://www.kuyumplus.com/static/theme/img/new_logo/1.png">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Kuyum Plus | Profesyonel Kuyumcu Yönetim Yazılımı</title>
+
+    <link rel="shortcut icon" href="{% static 'theme/img/new_logo/1.png' %}" type="image/x-icon">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/>
+    <link href="{% static 'management/plugins/custom/fullcalendar/fullcalendar.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"
+          type="text/css"/>
+    <link href="{% static 'management/plugins/global/plugins.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static 'management/css/style.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <style>
+        .notification-pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); /* Bootstrap bg-danger rengi */
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+
+        @keyframes kpPulse1 {
+            0% {
+                transform: scale(1);
+                opacity: .25;
+            }
+            20% {
+                transform: scale(1.4);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: .25;
+            }
+        }
+
+        @keyframes kpPulse2 {
+            0% {
+                transform: scale(1);
+                opacity: .25;
+            }
+            35% {
+                transform: scale(1.4);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: .25;
+            }
+        }
+
+        @keyframes kpPulse3 {
+            0% {
+                transform: scale(1);
+                opacity: .25;
+            }
+            50% {
+                transform: scale(1.4);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: .25;
+            }
+        }
+    </style>
+    <style>
+        @media (max-width: 1223.98px) {
+            #kt_app_sidebar {
+                background: linear-gradient(135deg, #1F2C47 0%, #2A3D66 100%) !important;
+            }
+
+            #kt_app_sidebar .app-sidebar-wrapper,
+            #kt_app_sidebar .app-sidebar-menu-primary {
+                background: transparent !important;
+            }
+        }
+
+        #kt_app_header {
+            position: relative;
+            overflow: visible;
+        }
+
+        .app-header-mobile-logo {
+            position: absolute;
+            left: 50%;
+            top: 15px;
+            transform: translateX(-50%);
+            z-index: 999;
+        }
+
+        .app-header-mobile-logo img {
+            height: 40px;
+            width: auto;
+            display: block;
+        }
+
+        @media (max-width: 420px) {
+            .app-header-mobile-logo img {
+                height: 30px;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .drawer.drawer-on {
+                background: #1769a0 !important
+            }
+
+            .drawer.drawer-on .menu-title {
+                color: #e0dada;
+            }
+
+            #kt_app_wrapper {
+                margin-right: 0px !important;
+            }
+        }
+
+        .menu-title {
+            font-size: 1.1rem !important;
+            color: #FFCD02 !important;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none !important;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .flatpickr-weekend {
+            color: lightgray !important;
+        }
+
+        #kt_app_header {
+            height: 6em;
+        }
+
+        .theme-dark-show {
+            height: 5em;
+            width: 15em;
+        }
+
+        .theme-light-show {
+            height: 5em;
+            width: 16em;
+        }
+
+        .breadcrumb-item a span {
+            color: var(--bs-text-muted) !important;
+        }
+
+        .breadcrumb-item span {
+            color: var(--bs-text-muted) !important;
+        }
+
+        .text-dark {
+            color: var(--bs-card-title-color) !important;
+        }
+
+        .ki-outline {
+            color: #E0E5EF !important;
+        }
+
+        .menu-item .menu-link .menu-icon .svg-icon, .menu-item .menu-link .menu-icon i {
+            font-size: 1.5em !important;
+        }
+
+        #kt_header_user_menu_toggle.fixed {
+            display: none;
+        }
+
+        :root {
+            --kt-app-header-height: 6em;
+        }
+
+        #kt_app_header {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 103;
+        }
+
+        .kp-mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
+            border-top: 1px solid rgba(15, 27, 43, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 104;
+        }
+
+        .kp-mobile-bottom-nav-item {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: #E5E7EB; /* pasif gri */
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .kp-mobile-bottom-nav-item i {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .kp-mobile-bottom-nav-item span {
+            line-height: 1.1;
+        }
+
+        .kp-mobile-bottom-nav-item.active,
+        .kp-mobile-bottom-nav-item.active i {
+            color: #FFCD02;
+        }
+
+
+        .kp-mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(15, 27, 43, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 205, 2, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 104;
+            padding: 0 10px;
+        }
+
+        .kp-mobile-bottom-nav-item {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 8px 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .kp-mobile-bottom-nav-item i {
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .kp-mobile-bottom-nav-item span {
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .kp-mobile-bottom-nav-item.active {
+            color: #FFCD02;
+        }
+
+        .kp-mobile-bottom-nav-item.active i {
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .kp-mobile-bottom-nav-item::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #FFCD02, transparent);
+            transition: width 0.3s ease;
+        }
+
+        .kp-mobile-bottom-nav-item.active::before {
+            width: 40px;
+        }
+
+        /* Floating Menu Container */
+        .kp-floating-menu-container {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 103;
+            pointer-events: none;
+        }
+
+        .kp-floating-menu {
+            background: rgba(30, 30, 46, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3),
+            0 0 80px rgba(255, 205, 2, 0.05);
+            padding: 15px;
+            margin: 0 20px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: scale(0.7) translateY(20px);
+            transform-origin: center bottom;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: none;
+            max-width: calc(100vw - 40px);
+            width: auto;
+            min-width: 280px;
+        }
+
+        [data-bs-theme="light"] .kp-floating-menu {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15),
+            0 0 80px rgba(255, 205, 2, 0.1);
+        }
+
+        .kp-floating-menu.active {
+            display: block;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .kp-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        @media (max-width: 380px) {
+            .kp-menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .kp-menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-bs-theme="light"] .kp-menu-item {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #1e1e2e;
+        }
+
+        .kp-menu-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 205, 2, 0.2), transparent);
+            transform: translate(-50%, -50%);
+            transition: all 0.4s ease;
+        }
+
+        .kp-menu-item:active::before {
+            width: 100px;
+            height: 100px;
+        }
+
+        .kp-menu-item i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #FFCD02;
+            transition: transform 0.3s ease;
+        }
+
+        .kp-menu-item span {
+            font-size: 11px;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .kp-menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .kp-menu-item:active i {
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        .kp-menu-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 102;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .kp-menu-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @keyframes menuItemAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .kp-floating-menu.active .kp-menu-item {
+            animation: menuItemAppear 0.4s ease forwards;
+        }
+
+        .kp-floating-menu.active .kp-menu-item:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .kp-floating-menu.active .kp-menu-item:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .kp-floating-menu.active .kp-menu-item:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .kp-floating-menu.active .kp-menu-item:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .kp-floating-menu.active .kp-menu-item:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .kp-floating-menu.active .kp-menu-item:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        @media (min-width: 1367px) {
+            #kt_app_sidebar {
+                position: fixed !important;
+                top: var(--kt-app-header-height);
+                left: 0;
+                width: 220px;
+                height: calc(100vh - var(--kt-app-header-height));
+                overflow-y: auto;
+                z-index: 102;
+                display: block !important;
+            }
+
+            #kt_app_wrapper {
+                margin-left: 220px !important;
+            }
+
+            #kt_app_root,
+            #kt_app_page,
+            #kt_app_wrapper {
+                transform: none !important;
+            }
+
+            .kp-mobile-bottom-nav,
+            .kp-floating-menu-container,
+            .kp-menu-overlay {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1366.98px) {
+
+            #kt_app_sidebar {
+                display: none !important;
+            }
+
+            #kt_app_sidebar_toggle,
+            #kt_app_sidebar_mobile_toggle {
+                display: none !important;
+            }
+
+            #kt_app_wrapper {
+                margin-left: 0 !important;
+            }
+
+            #kt_app_page,
+            #kt_app_root,
+            body.app-default {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+            }
+
+            body.app-default[data-kt-app-sidebar-enabled="true"] {
+                --kt-app-sidebar-width: 0px;
+            }
+
+            body.app-default {
+                padding-bottom: 70px;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .kp-live-btn-mobile {
+                position: absolute !important;
+                right: calc(75% + 50px);
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 1000;
+                margin-right: 0 !important;
+            }
+        }
+    </style>
+    {% block header %}
+    {% endblock header %}
+</head>
+
+<body id="kt_app_body"
+      data-kt-app-header-fixed="true"
+      data-kt-app-header-fixed-mobile="true"
+      data-kt-app-sidebar-enabled="true"
+      data-kt-app-sidebar-fixed="true"
+      data-kt-app-sidebar-hoverable="true"
+      data-kt-app-sidebar-push-toolbar="true"
+      data-kt-app-sidebar-push-footer="true"
+      data-kt-app-aside-enabled="true"
+      data-kt-app-aside-fixed="true"
+      data-kt-app-aside-push-toolbar="true"
+      data-kt-app-aside-push-footer="true"
+      class="app-default"
+        {% if pavo_terminal %}
+      data-pavo-ip="{{ pavo_terminal.ip }}"
+      data-pavo-port="{{ pavo_terminal.port|default_if_none:'' }}"
+      data-pavo-secure="{% if pavo_terminal.secure %}1{% else %}0{% endif %}"
+      data-pavo-serial="{{ pavo_terminal.serial_number }}"
+      data-pavo-fp="{{ pavo_terminal.fingerprint }}"
+        {% endif %}
+>
+<script>
+    var defaultThemeMode = "light";
+    var themeMode;
+
+    if (document.documentElement) {
+        if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
+            themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
+        } else {
+            if (localStorage.getItem("data-bs-theme") !== null) {
+                themeMode = localStorage.getItem("data-bs-theme");
+            } else {
+                themeMode = defaultThemeMode;
+            }
+        }
+
+        document.documentElement.setAttribute("data-bs-theme", themeMode);
+    }
+</script>
+<noscript>
+    <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5FS8GGP" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe>
+</noscript>
+
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page  flex-column flex-column-fluid " id="kt_app_page" style="var(--bs-root-card-border-color)">
+        <div id="kt_app_header" class="app-header  d-flex flex-column flex-stack ">
+            <div class="d-flex flex-stack flex-grow-1">
+                <div class="app-header-logo d-flex align-items-center " id="kt_app_header_logo"
+                     style="margin-right: 115px;margin-left: 2rem;">
+                    <div class="btn btn-icon btn-active-color-primary w-35px h-35px ms-3 me-2 d-flex d-lg-none"
+                         id="kt_app_sidebar_mobile_toggle">
+                        <i class="ki-outline ki-abstract-14 fs-2"></i></div>
+                    <div id="kt_app_sidebar_toggle"
+                         class="app-sidebar-toggle btn btn-sm btn-icon bg-body btn-color-gray-500 btn-active-color-primary w-30px h-30px ms-n2 me-4 d-none d-lg-flex"
+                         data-kt-toggle="true" data-kt-toggle-state="active" data-kt-toggle-target="body"
+                         data-kt-toggle-name="app-sidebar-minimize" style="display:none!important;">
+                        <i class="ki-outline ki-abstract-14 fs-3 mt-1"></i>
+                    </div>
+                    <a href="{% url 'accounts:profile' %}" class="app-sidebar-logo" style="margin-top: 5px">
+                        <img alt="Logo" src="{% static 'theme/img/new_logo/1.png' %}"
+                             class=" theme-light-show"/>
+                        <img alt="Logo" src="{% static 'theme/img/new_logo/2.png' %}"
+                             class="theme-dark-show"/>
+                    </a>
+                </div>
+                <a href="{% url 'accounts:profile' %}"
+                   class="app-header-mobile-logo d-lg-none">
+                    <img src="{% static 'theme/img/new_logo/1.png' %}" alt="Logo">
+                </a>
+                <div class="app-navbar flex-grow-1 justify-content-end" id="kt_app_header_navbar">
+                    <div class="app-navbar-item d-flex align-items-stretch flex-lg-grow-1">
+                    </div>
+                    {#                    <div class="app-navbar-item d-none d-lg-flex me-2">#}
+                    {#                        <a href="{% url 'invoices:dashboard' %}" target="_blank" rel="noopener"#}
+                    {#                           class="btn btn-light-primary btn-sm d-flex align-items-center gap-2">#}
+                    {#                            <i class="fa-solid fa-file-invoice"></i>#}
+                    {#                            <span class="d-none d-md-inline">Fatura Portalı</span>#}
+                    {#                        </a>#}
+                    {#                    </div>#}
+                    <div class="app-navbar-item d-flex me-2 kp-live-btn-mobile">
+                        <a href="{% url 'live_board:index' %}" target="_blank"
+                           class="btn btn-light-warning btn-sm d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-tv"></i>
+                            <span class="d-none d-md-inline">Canlı Piyasa</span>
+                        </a>
+                    </div>
+                    <div class="app-navbar-item d-flex me-2">
+                        <button type="button" id="kp_pos_toggle_btn"
+                                class="btn btn-light-primary btn-sm d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-plug"></i>
+                            <span class="d-none d-md-inline">POS Bağla</span>
+                        </button>
+                    </div>
+
+                    {% if  request.user.role.name == 'Geliştirme Ekibi' or request.user.store_id %}
+                        <div class="app-navbar-item d-flex me-2">
+                            <a href="/supports/index" type="button" id="destek_btn"
+                               class="btn btn-light-primary btn-sm d-flex align-items-center gap-2 position-relative">
+
+                                <i class="fa-solid fa-headset"></i>
+                                <span class="d-none d-md-inline">Destek</span>
+
+
+                                {% if unread_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                          style="font-size: 0.65rem; padding: 0.35em 0.6em;">
+                {{ unread_count }}
+                <span class="visually-hidden">Okunmamış mesaj</span>
+            </span>
+                                {% endif %}
+
+
+                            </a>
+                        </div>
+                    {% endif %}
+
+
+
+                    <div class="app-navbar-item ms-2 ms-lg-6" id="kt_header_user_menu_toggle"
+                         style="margin-right: 10px;">
+                        <div class="cursor-pointer symbol symbol-circle symbol-30px symbol-lg-45px"
+                             data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
+                             data-kt-menu-attach="parent"
+                             data-kt-menu-placement="bottom-end">
+                            {% if request.user.avatar == 'accounts/user.png' %}
+                                <img class="h-45px w-45px rounded"
+                                     src="{% static 'management/media/avatars/blank.png' %}" alt="user"/>
+                            {% else %}
+                                <img class="rounded" src="/media/{{ request.user.avatar }}"
+                                     alt="user"/>
+                            {% endif %}
+                        </div>
+                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-275px"
+                             data-kt-menu="true">
+                            <div class="menu-item px-3">
+                                <div class="menu-content d-flex align-items-center px-3">
+                                    <div class="symbol symbol-50px me-5">
+                                        {% if request.user.avatar == 'accounts/user.png' %}
+                                            <img class="h-30px w-30px rounded"
+                                                 src="{% static 'management/media/avatars/blank.png' %}"
+                                                 alt="logo"/>
+                                        {% else %}
+                                            <img class="h-30px w-30px rounded"
+                                                 src="/media/{{ request.user.avatar }}"
+                                                 alt="logo"/>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <div class="fw-bold d-flex align-items-center fs-5">
+                                            {{ request.user.get_full_name }}
+                                        </div>
+
+                                        <a href="#" class="fw-semibold text-muted text-hover-primary fs-7">
+                                            {{ request.user.email }}</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="separator my-2"></div>
+                            <div class="menu-item px-5">
+                                <a href="{% url 'accounts:profile' %}" class="menu-link px-5">
+                                    Profilim
+                                </a>
+                            </div>
+                            <div class="menu-item px-5">
+                                <a href="{% url 'masak:index' %}" class="menu-link px-5">
+                                    Masak
+                                </a>
+                            </div>
+                            <div class="separator my-2"></div>
+                            <div class="menu-item px-5" data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
+                                 data-kt-menu-placement="left-start" data-kt-menu-offset="-15px, 0">
+                                <a href="#" class="menu-link px-5">
+                                <span class="menu-title position-relative">
+                                    Mod
+                                    <span class="ms-5 position-absolute translate-middle-y top-50 end-0">
+                                        <i class="ki-outline ki-night-day theme-light-show fs-2"></i>
+                                        <i class="ki-outline ki-moon theme-dark-show fs-2"></i>
+                                    </span>
+                                </span>
+                                </a>
+                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-title-gray-700 menu-icon-gray-500 menu-active-bg menu-state-color fw-semibold py-4 fs-base w-150px"
+                                     data-kt-menu="true" data-kt-element="theme-mode-menu">
+                                    <div class="menu-item px-3 my-0">
+                                        <a href="#" class="menu-link px-3 py-2" data-kt-element="mode"
+                                           data-kt-value="light">
+                                            <span class="menu-icon" data-kt-element="icon">
+                                                <i class="ki-outline ki-night-day fs-2"></i>
+                                            </span>
+                                            <span class="menu-title">Gündüz</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3 my-0">
+                                        <a href="#" class="menu-link px-3 py-2" data-kt-element="mode"
+                                           data-kt-value="dark">
+                                                <span class="menu-icon" data-kt-element="icon">
+                                                    <i class="ki-outline ki-moon fs-2"></i>
+                                                </span>
+                                            Gece
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="menu-item px-5">
+                                <a href="{% url 'accounts:logout' %}"
+                                   class="menu-link px-5">
+                                    Çıkış </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="app-header-separator"></div>
+        </div>
+
+        <div class="app-wrapper  flex-column flex-row-fluid " id="kt_app_wrapper"
+             style="margin-right: 0px !important;">
+            <div id="kt_app_sidebar" class="app-sidebar  flex-column"
+                 data-kt-drawer="true" data-kt-drawer-name="app-sidebar"
+                 data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true"
+                 data-kt-drawer-width="220px" data-kt-drawer-direction="start"
+                 data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+                <div class="app-sidebar-wrapper " style="margin-top: 20px;">
+                    <div id="kt_app_sidebar_wrapper" style="max-height:750px"
+                         class="my-5 hover-scroll-y my-5 my-lg-2 mx-4"
+                         data-kt-scroll="true"
+                         data-kt-scroll-activate="{default: false, lg: true}"
+                         data-kt-scroll-height="auto"
+                         data-kt-scroll-dependencies="#kt_app_header"
+                         data-kt-scroll-wrappers="#kt_app_sidebar_wrapper"
+                         data-kt-scroll-offset="5px">
+
+                        <div id="kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false"
+                             class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary px-3 mb-5">
+
+                            {# ========== 1. GRUP: SAYFALAR / İŞLEM EKRANLARI (Order 0-3) ========== #}
+                            {% if request.user|menu_allowed:'ABC1001D' or request.user|menu_allowed:'ABC1310D' or request.user|menu_allowed:'ABC1030D' or request.user|menu_allowed:'ABC1062D' %}
+                                <div class="menu-item pt-2.25 pb-px mt-4">
+                                    <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">İşlem Ekranları</span>
+                                </div>
+
+
+
+                                {# Order 1 #}
+                                {% if request.user|menu_allowed:'ABC1310D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'transactions-board:retail-index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-store fs-2"></i></span>
+                                            <span class="menu-title">Perakende İşlem Ekranı</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 2 #}
+                                {% if request.user|menu_allowed:'ABC1030D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'transactions-board:wholesale-index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-warehouse fs-2"></i></span>
+                                            <span class="menu-title">Toptan İşlem Ekranı</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 3 #}
+                                {% if request.user|menu_allowed:'ABC1062D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'transactions-board:operations-index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-clipboard-check fs-2"></i></span>
+                                            <span class="menu-title">İşlemler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+
+                            {# ========== 2. GRUP: ÜRÜN YÖNETİMİ (Order 4-9) ========== #}
+                            {% if request.user|menu_allowed:'ABC1003D' or request.user|menu_allowed:'ABC1007D' or request.user|menu_allowed:'ABC1008D' or request.user|menu_allowed:'ABC1908D' or request.user|menu_allowed:'ABC1006D' or request.user|menu_allowed:'ABC1009D' %}
+                                <div class="menu-item pt-2.25 pb-px mt-4">
+                                    <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Ürün Yönetimi</span>
+                                </div>
+
+                                {# Order 4 #}
+                                {% if request.user|menu_allowed:'ABC1003D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'products:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-boxes-stacked fs-2"></i></span>
+                                            <span class="menu-title">Ürünler ve Stok</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 5 #}
+                                {% if request.user|menu_allowed:'ABC1007D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'gold-purchases:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-barcode fs-2"></i></span>
+                                            <span class="menu-title">Barkodlu Ürünler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 6 #}
+                                {% if request.user|menu_allowed:'ABC1008D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'scraps:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-recycle fs-2"></i></span>
+                                            <span class="menu-title">Hurda/Mal Yönetimi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 6b — ONARIM FAZI 4 / ADIM 4: Gümüş izole sayfa #}
+                                {% if request.user|menu_allowed:'ABC1008D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'scraps:silver_index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-coins fs-2"></i></span>
+                                            <span class="menu-title">Gümüş Yönetimi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 7 #}
+                                {% if request.user|menu_allowed:'ABC1908D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'bracelets:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fas fa-circle-notch fs-2"></i></span>
+                                            <span class="menu-title">Bilezikler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 8 #}
+                                {% if request.user|menu_allowed:'ABC1006D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'repairs:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-screwdriver-wrench fs-2"></i></span>
+                                            <span class="menu-title">Ürün Tamir</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 9 #}
+                                {% if request.user|menu_allowed:'ABC1009D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'counts:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-hourglass fs-2"></i></span>
+                                            <span class="menu-title">Sayım</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+
+                            {# ========== 3. GRUP: CARİ VE RAPORLAMA (Order 10-12) ========== #}
+                            {% if request.user|menu_allowed:'ABC1002D' or request.user|menu_allowed:'ABC1010D' or request.user|menu_allowed:'ABC1706D' or request.user|menu_allowed:'ABC1017D' %}
+                                <div class="menu-item pt-2.25 pb-px mt-4">
+                                    <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Cari Yönetimi</span>
+                                </div>
+
+                                {# Order 10 #}
+                                {% if request.user|menu_allowed:'ABC1002D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'dashboard:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-chart-simple fs-2"></i></span>
+                                            <span class="menu-title">Raporlar</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 11 #}
+                                {% if request.user|menu_allowed:'ABC1010D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'process:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-list-check fs-2"></i></span>
+                                            <span class="menu-title">İşlem Özetleri</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 12 #}
+                                {% if request.user|menu_allowed:'ABCD005D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'invoices:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fas fa-file-invoice-dollar fs-2"></i></span>
+                                            <span class="menu-title">Faturalar</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 12a — Kasa Yönetimi (İç Kasa) #}
+                                {% if request.user|menu_allowed:'ABC1017D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'bank-management:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fas fa-vault fs-2"></i></span>
+                                            <span class="menu-title">Kasa Yönetimi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 12b — Açık Bankacılık (Mutabakat) #}
+                                {% if request.user|menu_allowed:'ABCD005D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'banking:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fas fa-building-columns fs-2"></i></span>
+                                            <span class="menu-title">Açık Bankacılık</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+
+                            {# ========== 4. GRUP: MAĞAZA YÖNETİMİ (Order 13-18) ========== #}
+                            {% if request.user|menu_allowed:'ABC1011D' or request.user|menu_allowed:'ABC1544D' or request.user|menu_allowed:'ABC1012D' or request.user|menu_allowed:'ABC1015D' or request.user|menu_allowed:'ABC1016D' or request.user.store_id %}
+                                <div class="menu-item pt-2.25 pb-px mt-4">
+                                    <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Mağaza</span>
+                                </div>
+
+                                {# Order 13 #}
+                                {% if request.user|menu_allowed:'ABC1011D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'suppliers:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-truck fs-2"></i></span>
+                                            <span class="menu-title">Tedarikçiler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 14 #}
+                                {% if request.user|menu_allowed:'ABC1544D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'custody:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-handshake fs-2"></i></span>
+                                            <span class="menu-title">Emanet Yönetimi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 15 #}
+                                {% if request.user|menu_allowed:'ABC1012D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'workshops:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-industry fs-2"></i></span>
+                                            <span class="menu-title">Atölyeler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 16 #}
+                                {% if request.user|menu_allowed:'ABC1015D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'customers:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-users fs-2"></i></span>
+                                            <span class="menu-title">Müşteriler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# Order 17 #}
+                                {% if request.user|menu_allowed:'ABC1016D' %}
+                                    <div class="menu-item">
+                                        <a href="
+
+                                                {% if request.user.store_id %}{% url 'stores:store-detail' request.user.store_id %}{% else %}{% url 'stores:index' %}{% endif %}"
+                                           class="menu-link">
+                                            <span class="menu-icon"><i class="fas fa-store-alt fs-2"></i></span>
+                                            <span class="menu-title">Mağaza Yönetimi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+
+                            {% endif %}
+
+                            {# ========== ADMIN & CRM (SABİT KISIMLAR) ========== #}
+
+                            {# BAŞLIK KONTROLÜ: Kullanıcı Superuser ise VEYA aşağıdaki kodlardan herhangi birine sahipse başlığı göster #}
+                            {% if request.user.is_superuser or request.user|menu_allowed:'ABC9001D' or request.user|menu_allowed:'ABC9002D' or request.user|menu_allowed:'ABC9003D' or request.user|menu_allowed:'ABC9004D' or request.user|menu_allowed:'ABC9005D' or request.user|menu_allowed:'ABC9006D' or request.user|menu_allowed:'ABC9007D' or request.user|menu_allowed:'ABC9008D' %}
+                                <div class="menu-item pt-2.25 pb-px mt-4">
+                                    <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Admin Yönetimi</span>
+                                </div>
+
+                                {# 1. Whatsapp Yönetimi (ABC9001D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9001D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'whatsapp:dashboard' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-comment-dots fs-2"></i></span>
+                                            <span class="menu-title">Whatsapp</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                {% if request.user.is_superuser %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'masak:upload_page' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-file-contract"></i></span>
+                                            <span class="menu-title">Masak  Listesi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+
+                                {# 2. Rol Yönetimi (ABC9002D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9002D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'roles:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-user-shield fs-2"></i></span>
+                                            <span class="menu-title">Rol Yönetimi</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 3. Paket Yönetimi (ABC9003D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9003D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'packages:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-boxes-packing fs-2"></i></span>
+                                            <span class="menu-title">Paketler</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="{% url 'packages:module-index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-cubes fs-2"></i></span>
+                                            <span class="menu-title">SaaS Modüller</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 4. Cihazlar (ABC9004D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9004D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'devices:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-microchip fs-2"></i></span>
+                                            <span class="menu-title">Cihazlar</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 5. Kullanıcılar / Admin (ABC9005D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9005D' %}
+                                    <div class="menu-item">
+                                        <a class="menu-link" href="{% url 'accounts:staffs-index' %}">
+                                            <span class="menu-icon"><i class="fa-solid fa-users-gear"></i></span>
+                                            <span class="menu-title">Kullanıcılar</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 6. Referanslar (ABC9006D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9006D' %}
+                                    <div class="menu-item">
+                                        <a class="menu-link" href="{% url 'testimonials:index' %}">
+                                            <span class="menu-icon"><i class="fa-solid fa-star fs-2"></i></span>
+                                            <span class="menu-title">Referanslar</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 7. Sözleşmeler (ABC9007D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9007D' %}
+                                    <div class="menu-item">
+                                        <a class="menu-link" href="{% url 'contracts:index' %}">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-file-signature fs-2"></i></span>
+                                            <span class="menu-title">Sözleşmeler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 8. Siparişler (ABC9008D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABCD005D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'orders:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-cart-shopping fs-2"></i></span>
+                                            <span class="menu-title">Siparişler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                {# 8. Siparişler (ABC9008D) #}
+                                {% if request.user|menu_allowed:'ABCD005D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'supports:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-cart-shopping fs-2"></i></span>
+                                            <span class="menu-title">Destek Talepleri (Personel)</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                            {% endif %}
+                            {% if request.user.is_superuser %}
+                                <div class="menu-item">
+                                    <a href="{% url 'supports:index' %}" class="menu-link">
+                                        <span class="menu-icon"><i class="fa-solid fa-headset fs-2"></i></span>
+                                        <span class="menu-title">Destek Talepleri (Admin)</span>
+                                    </a>
+                                </div>
+                            {% endif %}
+
+
+                            {# ========== 6. GRUP: CRM ========== #}
+
+                            {# BAŞLIK KONTROLÜ: Superuser ise VEYA altındaki menülerden en az birine yetkisi varsa #}
+                            {% if request.user.is_superuser or request.user|menu_allowed:'ABC9010D' or request.user|menu_allowed:'ABC9011D' or request.user|menu_allowed:'ABC9012D' or request.user|menu_allowed:'ABC9013D' %}
+                                <div class="menu-item pt-2.25 pb-px mt-4">
+                                    <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">CRM</span>
+                                </div>
+
+                                {# ---> GÜNCELLENEN DERNEKLER MENÜSÜ <--- #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'CHAMBERS_INDEX_VIEW' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'chambers:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-building-ngo fs-2"></i></span>
+                                            <span class="menu-title">Dernekler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 1. Firmalar (ABC9010D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9010D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'stores:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-building fs-2"></i></span>
+                                            <span class="menu-title">Firmalar</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 2. Teklifler (ABC9011D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9011D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'proposals:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i
+                                                    class="fa-solid fa-file-contract fs-2"></i></span>
+                                            <span class="menu-title">Teklifler</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 3. Potansiyel Müşteriler (ABC9012D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9012D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'leads:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-user-tag fs-2"></i></span>
+                                            <span class="menu-title">Potansiyel Müşteriler</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="{% url 'leads:applications' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-inbox fs-2"></i></span>
+                                            <span class="menu-title">Paket Başvuruları</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                                {# 4. İletişim (ABC9013D) #}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9013D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'contact-forms:index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-address-book fs-2"></i></span>
+                                            <span class="menu-title">İletişim</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+
+                            {% endif %}
+
+                            <div class="menu-item pt-2.25 pb-px mt-4">
+                                <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">&nbsp;</span>
+                            </div>
+                            <div class="menu-item">
+                                <a href="{% url 'accounts:logout' %}" class="menu-link">
+                                    <span class="menu-icon"><i class="bi bi-box-arrow-in-right fs-2"></i></span>
+                                    <span class="menu-title">Çıkış</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% block body %}{% endblock body %}
+
+            <nav class="kp-mobile-bottom-nav">
+                {% if request.user.is_superuser %}
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="admin">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admin</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="crm">
+                        <i class="fa-solid fa-briefcase"></i>
+                        <span>CRM</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="profile">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Profil</span>
+                    </button>
+
+                {% elif request.user.is_staff %}
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="crm">
+                        <i class="fa-solid fa-briefcase"></i>
+                        <span>CRM</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="profile">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Profil</span>
+                    </button>
+
+                {% else %}
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="pages">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span>Sayfalar</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="product">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Ürün</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="cari">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Cari</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="store">
+                        <i class="fa-solid fa-store"></i>
+                        <span>Mağaza</span>
+                    </button>
+                    <button type="button" class="kp-mobile-bottom-nav-item" data-menu-toggle="profile">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Profil</span>
+                    </button>
+                {% endif %}
+            </nav>
+
+            <div class="kp-floating-menu-container">
+            </div>
+
+
+            {#            <div id="kt_app_footer" class="app-footer " style="background-color: transparent;">#}
+            {#                <div class="app-container  container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3 ">#}
+            {#                    <div class="text-gray-900 order-2 order-md-1">#}
+            {#                        <span class="text-muted fw-semibold me-1">2025©</span>#}
+            {#                        <a href="#" target="_blank"#}
+            {#                           class="text-gray-800 text-hover-primary">Kuyum Plus</a>#}
+            {#                    </div>#}
+            {#                    <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">#}
+            {#                        <li class="menu-item"><a href="#" target="_blank"#}
+            {#                                                 class="menu-link px-2">Anasayfa</a>#}
+            {#                        </li>#}
+            {#                    </ul>#}
+            {#                </div>#}
+            {#            </div>#}
+        </div>
+    </div>
+</div>
+
+<div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true">
+    <i class="ki-outline ki-arrow-up"></i>
+</div>
+<div id="globalLoadingOverlay"
+     class="position-fixed top-0 start-0 w-100 h-100 d-none"
+     style="z-index:2000;background:rgba(10,17,30,.96);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;">
+    <div class="d-flex flex-column align-items-center justify-content-center text-center px-4">
+        <div style="width:180px;height:auto;margin-bottom:1.5rem;">
+            <img src="/static/theme/img/new_logo/1.png"
+                 alt="KuyumPlus"
+                 style="max-width:100%;height:auto;filter:drop-shadow(0 0 18px rgba(255,215,0,.45));">
+        </div>
+        <div class="mb-3 fw-semibold" style="color:#f9fafb;font-size:1.05rem;" id="kpLoadingText">
+            İşleminiz yapılıyor, lütfen bekleyin...
+        </div>
+        <div class="progress w-100"
+             style="max-width:260px;height:8px;border-radius:999px;background:rgba(15,23,42,.8);overflow:hidden;">
+            <div id="kpLoadingBar"
+                 class="progress-bar progress-bar-striped progress-bar-animated"
+                 role="progressbar"
+                 style="width:0%;background:linear-gradient(90deg,#fbbf24,#f97316,#facc15);">
+            </div>
+        </div>
+        <div class="mt-3" style="display:flex;gap:.45rem;justify-content:center;">
+            <span style="width:8px;height:8px;border-radius:999px;background:#facc15;opacity:.35;animation:kpPulse1 1.2s infinite;"></span>
+            <span style="width:8px;height:8px;border-radius:999px;background:#facc15;opacity:.35;animation:kpPulse2 1.2s infinite;"></span>
+            <span style="width:8px;height:8px;border-radius:999px;background:#facc15;opacity:.35;animation:kpPulse3 1.2s infinite;"></span>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'management/plugins/global/plugins.bundle.js' %}"></script>
+<script src="{% static 'management/js/scripts.bundle.js' %}"></script>
+
+<script src="{% static 'management/plugins/custom/fullcalendar/fullcalendar.bundle.js' %}"></script>
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/geodata/continentsLow.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/geodata/usaLow.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/geodata/worldTimeZonesLow.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/geodata/worldTimeZoneAreasLow.js"></script>
+
+<script src="{% static 'management/plugins/global/plugins.bundle.js' %}"></script>
+<script src="{% static 'management/js/scripts.bundle.js' %}"></script>
+<script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+<script src="{% static 'management/js/widgets.bundle.js' %}"></script>
+<script src="{% static 'management/js/custom/widgets.js' %}"></script>
+<script src="{% static 'management/js/custom/apps/chat/chat.js' %}"></script>
+<script src="{% static 'management/js/custom/utilities/modals/upgrade-plan.js' %}"></script>
+<script src="{% static 'management/js/custom/utilities/modals/create-app.js' %}"></script>
+<script src="{% static 'management/js/custom/utilities/modals/new-target.js' %}"></script>
+<script src="{% static 'management/js/custom/utilities/modals/new-card.js' %}"></script>
+<script src="{% static 'management/js/custom/utilities/modals/users-search.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/de.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const userMenuToggle = document.getElementById('kt_header_user_menu_toggle');
+        const offset = userMenuToggle.offsetTop;
+
+        window.addEventListener('scroll', function () {
+            if (window.pageYOffset > offset) {
+                userMenuToggle.classList.add('fixed');
+            } else {
+                userMenuToggle.classList.remove('fixed');
+            }
+        });
+    });
+
+    $(document).ready(function () {
+        {% if messages %}
+            {% for message in messages %}
+                Swal.fire({
+                    icon: '{{ message.tags }}',
+                    title: 'Bildirim',
+                    text: '{{ message }}',
+                    confirmButtonText: 'Tamam'
+                });
+            {% endfor %}
+        {% endif %}
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const themeToggleLinks = document.querySelectorAll('[data-kt-element="mode"]');
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        themeToggleLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-kt-value') === savedTheme) {
+                link.classList.add('active');
+            }
+        });
+
+        themeToggleLinks.forEach(link => {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                const selectedTheme = link.getAttribute('data-kt-value');
+                document.documentElement.setAttribute('data-bs-theme', selectedTheme);
+                localStorage.setItem('theme', selectedTheme);
+                themeToggleLinks.forEach(link => link.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+    });
+
+
+</script>
+
+<script>
+    (function preventZoom() {
+        // iOS Safari pinch
+        document.addEventListener('touchstart', function (e) {
+            if (e.touches && e.touches.length > 1) e.preventDefault();
+        }, {passive: false});
+
+        // iOS Safari double-tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (e) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 350) e.preventDefault();
+            lastTouchEnd = now;
+        }, {passive: false});
+
+        // Safari gesture events (destek varsa)
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => {
+            document.addEventListener(ev, function (e) {
+                e.preventDefault();
+            }, {passive: false});
+        });
+
+        // Desktop tarayıcılarda Ctrl/Meta + (+/-/=)
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && ['+', '-', '='].includes(e.key)) e.preventDefault();
+        });
+
+        // Viewport meta yoksa ekle/uygula
+        const vp = document.querySelector('meta[name="viewport"]');
+        if (!vp) {
+            const meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+            document.head.appendChild(meta);
+        }
+    })();
+    (function flexMinWidthFix() {
+        const css = document.createElement('style');
+        css.textContent = `
+    .d-flex, .flex, .row, .product-item { min-width: 0; }
+    .product-name { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  `;
+        document.head.appendChild(css);
+    })();
+    (function selectAllOnFocus() {
+        // Seçim yapılacak input tipleri
+        const SELECTABLE_TYPES = new Set([
+            'text', 'search', 'tel', 'url', 'password', 'email', 'number'
+        ]);
+
+        // Lock mekanizması: el.select() yeni focusin tetiklemesin diye bayrak
+        var isSelecting = false;
+
+        function isSelectableInput(el) {
+            if (!el || el.tagName !== 'INPUT' || !SELECTABLE_TYPES.has(el.type) || el.readOnly || el.disabled) {
+                return false;
+            }
+            // SweetAlert, Flatpickr ve Select2 içindeki input'ları yoksay
+            if (el.closest('.swal2-container') || el.closest('.flatpickr-calendar') || el.classList.contains('flatpickr-input')) {
+                return false;
+            }
+            return true;
+        }
+
+        // Odaklanınca tamamını seç
+        document.addEventListener('focusin', function (e) {
+            // Lock aktifse sonsuz döngüyü engelle
+            if (isSelecting) return;
+
+            var el = e.target;
+
+            // SweetAlert, Flatpickr kapsam dışı kontrolü (textarea için de)
+            if (el && (el.closest('.swal2-container') || el.closest('.flatpickr-calendar') || el.classList.contains('flatpickr-input'))) {
+                return;
+            }
+
+            if (isSelectableInput(el) || (el && el.tagName === 'TEXTAREA' && !el.readOnly && !el.disabled)) {
+                setTimeout(function () {
+                    try {
+                        isSelecting = true;
+                        el.select();
+                    } catch (_) {
+                    } finally {
+                        isSelecting = false;
+                    }
+                }, 0);
+            }
+        });
+
+        // Mouseup, mobilde/masaüstünde seçimleri sıfırlayabildiği için engelle
+        document.addEventListener('mouseup', function (e) {
+            var el = e.target;
+            // SweetAlert, Flatpickr içindekileri atla
+            if (el && (el.closest('.swal2-container') || el.closest('.flatpickr-calendar') || el.classList.contains('flatpickr-input'))) {
+                return;
+            }
+            if (isSelectableInput(el) || (el && el.tagName === 'TEXTAREA')) {
+                e.preventDefault(); // seçimi koru
+            }
+        }, true);
+    })();
+
+    // --- BOOTSTRAP FOCUS TRAP KILLER (GLOBAL) ---
+    // Select2, SweetAlert ve Flatpickr'ın Bootstrap modalları ile çakışıp sonsuz döngüye (Maximum call stack) girmesini kesin olarak engeller.
+    $(document).on('shown.bs.modal', function () {
+        $(document).off('focusin.bs.modal');
+    });
+    (function forceNumericForNumberInputs() {
+        function isNumInput(el) {
+            return el && el.tagName === 'INPUT' && (el.getAttribute('type') || '').toLowerCase() === 'number';
+        }
+
+        function decimalsFor(el) {
+            const attr = el.getAttribute('data-decimals');
+            if (attr != null) return Number(attr);
+            const step = el.getAttribute('step');
+            if (!step || step === 'any') return null;
+            const dot = step.indexOf('.');
+            return dot === -1 ? 0 : (step.length - dot - 1);
+        }
+
+        function allowNegative(el) {
+            if (el.dataset.allowNegative === 'true') return true;
+            const min = el.getAttribute('min');
+            return min != null && Number(min) < 0;
+        }
+
+        function sanitize(raw, decs, negOk) {
+            let v = String(raw || '').replace(/,/g, '.');                 // TR virgül -> .
+            v = v.replace(negOk ? /[^0-9.\-]/g : /[^0-9.]/g, '');        // yalnızca rakam/nokta/(opsiyonel -)
+            if (negOk) {                                                 // eksi sadece başta 1 tane
+                const neg = v.startsWith('-');
+                v = v.replace(/-/g, '');
+                if (neg) v = '-' + v;
+            } else v = v.replace(/-/g, '');
+            const i = v.indexOf('.');                                    // nokta sadece 1 tane
+            if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '');
+            if (typeof decs === 'number' && decs >= 0 && i !== -1) v = v.slice(0, i + 1 + decs); // ondalık sınır
+            return v;
+        }
+
+        // 1) Harf girişini daha oluşmadan engelle (soft klavye dahil)
+        document.addEventListener('beforeinput', function (e) {
+            const el = e.target;
+            if (!isNumInput(el)) return;
+            // silme işlemlerini bırak
+            if (e.inputType && e.inputType.startsWith('delete')) return;
+            // composition (IME) veri yoksa geç
+            if (!('data' in e) || e.data == null) return;
+
+            const decs = decimalsFor(el);
+            const negOk = allowNegative(el);
+            const canMinus = negOk && (el.selectionStart || 0) === 0 && !el.value.includes('-');
+
+            for (const ch of e.data) {
+                const digit = ch >= '0' && ch <= '9';
+                const dot = (ch === '.' || ch === ',');
+                const minus = (ch === '-');
+                if (digit) continue;
+                if (dot) {
+                    // zaten nokta varsa veya ondalık yasaksa engelle
+                    if (decs === 0) {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (el.value.includes('.') || el.value.includes(',')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    continue;
+                }
+                if (minus) {
+                    if (!canMinus) {
+                        e.preventDefault();
+                        return;
+                    }
+                    continue;
+                }
+                // e/E/+ gibi tüm diğerleri engel
+                e.preventDefault();
+                return;
+            }
+        }, {capture: true});
+
+        // 2) Yapıştırma temizlik
+        document.addEventListener('paste', function (e) {
+            const el = e.target;
+            if (!isNumInput(el)) return;
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+            const clean = sanitize(text, decimalsFor(el), allowNegative(el));
+            const s = el.selectionStart ?? el.value.length;
+            const t = el.selectionEnd ?? el.value.length;
+            el.value = el.value.slice(0, s) + clean + el.value.slice(t);
+            const pos = s + clean.length;
+            try {
+                el.setSelectionRange(pos, pos);
+            } catch {
+            }
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+        }, {capture: true});
+
+
+        // 4) Mobilde decimal klavye aç
+        document.addEventListener('focusin', function (e) {
+            const el = e.target;
+            if (!isNumInput(el)) return;
+            el.setAttribute('inputmode', 'decimal');
+        }, {capture: true});
+    })();
+    (function () {
+        if (window.__TR_DECIMAL_PATCHED__) return;
+        window.__TR_DECIMAL_PATCHED__ = true;
+        // 1) parseFloat'ı virgülü de anlayacak şekilde sar
+        const _pf = window.parseFloat;
+        window.parseFloat = function patchedParseFloat(input) {
+            if (typeof input === 'string') {
+                let s = input.trim().replace(/\s|\u00A0/g, '');
+                if (!s) return _pf(s);
+
+                const hasComma = s.includes(',');
+                const hasDot = s.includes('.');
+
+                if (hasComma && hasDot) {
+                    // En sağdaki ayırıcıyı ondalık kabul et, diğerlerini binlik say
+                    const lc = s.lastIndexOf(',');
+                    const ld = s.lastIndexOf('.');
+                    const di = Math.max(lc, ld);
+                    const ip = s.slice(0, di).replace(/[.,]/g, '');
+                    const fp = s.slice(di + 1).replace(/[^\d]/g, '');
+                    s = ip + (fp ? '.' + fp : '');
+                } else if (hasComma) {
+                    // Sadece virgül varsa → ondalık
+                    s = s.replace(/\./g, '').replace(',', '.');
+                } else {
+                    // Çoklu nokta varsa, sonuncuyu ondalık bırak
+                    const parts = s.split('.');
+                    if (parts.length > 2) {
+                        const frac = parts.pop().replace(/[^\d]/g, '');
+                        s = parts.join('').replace(/[^\d-]/g, '') + (frac ? '.' + frac : '');
+                    }
+                }
+                return _pf(s);
+            }
+            return _pf(input);
+        };
+
+        // 2) number inputlarda yazılan virgülü anında noktaya çevir (UI hatasını engelle)
+        document.addEventListener('input', function (e) {
+            const el = e.target;
+            if (el.matches('input[type="number"], input[data-decimal]')) {
+                if (el.value && el.value.indexOf(',') !== -1) {
+                    const pos = el.selectionStart;
+                    el.value = el.value.replace(/,/g, '.');
+                    try {
+                        el.setSelectionRange(pos, pos);
+                    } catch (_) {
+                    }
+                }
+            }
+        }, true);
+
+        // 3) Form submit’te tüm sayı inputlarını normalize et (backend için noktalı gönder)
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (!form || !form.querySelectorAll) return;
+            form.querySelectorAll('input[type="number"], input[data-decimal], input[data-numeric]')
+                .forEach(function (inp) {
+                    if (typeof inp.value === 'string') {
+                        // Hafif temizlik + virgülü noktaya çevir
+                        let v = inp.value.trim().replace(/\s|\u00A0/g, '').replace(/,/g, '.');
+                        // Birden fazla nokta varsa sonuncuyu ondalık kabul et
+                        const parts = v.split('.');
+                        if (parts.length > 2) {
+                            const frac = parts.pop().replace(/[^\d]/g, '');
+                            v = parts.join('').replace(/[^\d-]/g, '') + (frac ? '.' + frac : '');
+                        }
+                        inp.value = v;
+                    }
+                });
+        }, true);
+    })();
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[type="number"]:not([step])')
+            .forEach(function (el) {
+                el.setAttribute('step', 'any');
+            });
+    });
+</script>
+<script>
+    var kpLoadingTimer = null;
+    var kpLoadingDelayTimer = null;
+    var kpActiveAjaxWithLoader = 0;
+
+    function showGlobalLoader(message) {
+        var overlay = $('#globalLoadingOverlay');
+        if (!overlay.length) {
+            return;
+        }
+        if (kpLoadingTimer) {
+            clearInterval(kpLoadingTimer);
+            kpLoadingTimer = null;
+        }
+        $('#kpLoadingText').text(message || 'İşleminiz yapılıyor, lütfen bekleyin...');
+        overlay.removeClass('d-none');
+        var bar = $('#kpLoadingBar');
+        var w = 0;
+        bar.css('width', '0%');
+        kpLoadingTimer = setInterval(function () {
+            if (w < 85) {
+                w += 3;
+                bar.css('width', w + '%');
+            }
+        }, 180);
+    }
+
+    function hideGlobalLoader() {
+        var overlay = $('#globalLoadingOverlay');
+        if (!overlay.length) {
+            return;
+        }
+        var bar = $('#kpLoadingBar');
+        if (kpLoadingTimer) {
+            clearInterval(kpLoadingTimer);
+            kpLoadingTimer = null;
+        }
+        bar.css('width', '100%');
+        setTimeout(function () {
+            overlay.addClass('d-none');
+            bar.css('width', '0%');
+        }, 260);
+    }
+
+    $(document).on('click', '.menu-link', function (e) {
+        var href = $(this).attr('href');
+        var target = $(this).attr('target');
+
+        if (!href || href === '#' || href.startsWith('javascript') || target === '_blank') {
+            return;
+        }
+
+        if (e.ctrlKey || e.metaKey) {
+            return;
+        }
+
+        showGlobalLoader('Sayfa Yükleniyor...');
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        // event.persisted: Sayfa bfcache'den (geri tuşu ile) geldiyse true döner (Modern tarayıcılar ve Safari)
+        // performance.navigation.type === 2: Sayfaya geçmişten dönüldüğünü belirtir (Eski tarayıcılar)
+        var isBackNavigation = event.persisted ||
+            (window.performance && window.performance.navigation && window.performance.navigation.type === 2);
+
+        if (isBackNavigation) {
+            hideGlobalLoader();
+        }
+    });
+
+    /*
+    $(document).ajaxSend(function (event, xhr, settings) {
+        if (settings && settings.kpSkipLoader === true) {
+            xhr._kpSkipLoader = true;
+            return;
+        }
+        kpActiveAjaxWithLoader += 1;
+        if (kpLoadingDelayTimer) {
+            clearTimeout(kpLoadingDelayTimer);
+        }
+        kpLoadingDelayTimer = setTimeout(function () {
+            if (kpActiveAjaxWithLoader > 0) {
+                showGlobalLoader();
+            }
+        }, 400);
+    });
+
+    $(document).ajaxComplete(function (event, xhr, settings) {
+        if (xhr && xhr._kpSkipLoader) {
+            return;
+        }
+        if (kpActiveAjaxWithLoader > 0) {
+            kpActiveAjaxWithLoader -= 1;
+        }
+        if (kpActiveAjaxWithLoader === 0) {
+            if (kpLoadingDelayTimer) {
+                clearTimeout(kpLoadingDelayTimer);
+                kpLoadingDelayTimer = null;
+            }
+            hideGlobalLoader();
+        }
+    });
+    */
+</script>
+
+<script>
+    window.__pavoConnected = !!window.__pavoConnected;
+    window.__pavoLastError = window.__pavoLastError || null;
+    window.__pavoLastResult = window.__pavoLastResult || null;
+
+    function pavoHasAndroidBridge() {
+        return typeof window.PavoAndroid !== "undefined"
+            && window.PavoAndroid
+            && typeof window.PavoAndroid.pair === "function";
+    }
+
+    function pavoHasIosBridge() {
+        try {
+            return typeof window.webkit !== "undefined"
+                && window.webkit
+                && window.webkit.messageHandlers
+                && window.webkit.messageHandlers.PavoIOS;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function pavoNormalizeResult(resultJson) {
+        var obj = null;
+        if (typeof resultJson === "string") {
+            try {
+                obj = JSON.parse(resultJson);
+            } catch (e) {
+                obj = {HasError: true, Message: "Geçersiz POS cevabı", Raw: String(resultJson)};
+            }
+        } else if (resultJson && typeof resultJson === "object") {
+            obj = resultJson;
+        }
+        if (!obj) obj = {};
+        if (typeof obj.HasError === "undefined") obj.HasError = false;
+        return obj;
+    }
+
+    function pavoConnectionUpdateFromResult(resultJson) {
+        var obj = pavoNormalizeResult(resultJson);
+        window.__pavoLastResult = obj;
+        var ok = !obj.HasError;
+        window.__pavoConnected = ok;
+        if (obj.HasError) {
+            window.__pavoLastError = obj;
+        } else {
+            window.__pavoLastError = null;
+        }
+        try {
+            var ev = new CustomEvent("pavoConnectionChanged", {detail: {connected: ok, result: obj}});
+            window.dispatchEvent(ev);
+        } catch (e2) {
+        }
+    }
+
+    function pavoShowError(obj, title) {
+        title = title || "POS Bağlantı Hatası";
+        var msg = (obj && (obj.Message || obj.Error || obj.detail)) || "POS cihazı ile iletişim kurulamadı.";
+        if (obj && obj.Code) {
+            msg += " (Kod: " + obj.Code + ")";
+        }
+        if (typeof Swal !== "undefined" && Swal.fire) {
+            Swal.fire({icon: "error", title: title, text: msg, confirmButtonText: "Tamam"});
+        } else {
+            alert(title + "\n\n" + msg);
+        }
+    }
+
+    function pavoReadConfigFromBody() {
+        var body = document.getElementById("kt_app_body");
+        if (!body) return null;
+        var ip = body.getAttribute("data-pavo-ip") || "";
+        var serial = body.getAttribute("data-pavo-serial") || "";
+        var fingerprint = body.getAttribute("data-pavo-fp") || "";
+        if (!ip || !serial || !fingerprint) return null;
+        var secureFlag = body.getAttribute("data-pavo-secure");
+        var portStr = body.getAttribute("data-pavo-port") || "";
+        var secure = secureFlag === "1";
+        var port = parseInt(portStr || (secure ? "4567" : "4568"));
+        if (!port || port <= 0 || port > 65535) {
+            port = secure ? 4567 : 4568;
+        }
+        return {
+            ip: ip,
+            port: port,
+            secure: secure,
+            serialNumber: serial,
+            fingerprint: fingerprint
+        };
+    }
+
+    function pavoAutoConfigureFromBody() {
+        var cfg = pavoReadConfigFromBody();
+        if (!cfg) return;
+
+        if (pavoHasAndroidBridge() && window.PavoAndroid.configure) {
+            try {
+                window.PavoAndroid.configure(cfg.ip, cfg.port, cfg.secure, cfg.serialNumber, cfg.fingerprint);
+            } catch (e) {
+            }
+        }
+
+        if (pavoHasIosBridge()) {
+            try {
+                window.webkit.messageHandlers.PavoIOS.postMessage({
+                    action: "configure",
+                    payload: cfg,
+                    callback: null
+                });
+            } catch (e2) {
+            }
+        }
+    }
+
+    if (typeof window.pavoPairCallback === "undefined") {
+        window.pavoPairCallback = function (resultJson) {
+            var obj = pavoNormalizeResult(resultJson);
+            pavoConnectionUpdateFromResult(obj);
+            if (obj.HasError) {
+                pavoShowError(obj, "POS Bağlantı Başarısız");
+            }
+        };
+    }
+
+    if (typeof window.PavoPos === "undefined") {
+        window.PavoPos = {
+            isSupported: function () {
+                return pavoHasAndroidBridge() || pavoHasIosBridge();
+            },
+            isConnected: function () {
+                return !!window.__pavoConnected;
+            },
+            lastError: function () {
+                return window.__pavoLastError || null;
+            },
+            pair: function () {
+                return new Promise(function (resolve, reject) {
+                    if (!window.PavoPos.isSupported()) {
+                        var err = {
+                            HasError: true,
+                            Message: "POS bağlantısı sadece mobil uygulama içindeki WebView üzerinden kullanılabilir."
+                        };
+                        pavoConnectionUpdateFromResult(err);
+                        pavoShowError(err, "POS Uygun Değil");
+                        reject(err);
+                        return;
+                    }
+
+                    var cbName = "_pavoPairInternal_" + Date.now();
+                    window[cbName] = function (resultJson) {
+                        delete window[cbName];
+                        var obj = pavoNormalizeResult(resultJson);
+                        pavoConnectionUpdateFromResult(obj);
+                        if (obj.HasError) {
+                            pavoShowError(obj, "POS Bağlantı Başarısız");
+                            reject(obj);
+                        } else {
+                            resolve(obj);
+                        }
+                    };
+
+                    try {
+                        if (pavoHasAndroidBridge()) {
+                            window.PavoAndroid.pair(cbName);
+                        } else if (pavoHasIosBridge()) {
+                            var cfg = pavoReadConfigFromBody();
+                            window.webkit.messageHandlers.PavoIOS.postMessage({
+                                action: "pair",
+                                payload: cfg,
+                                callback: cbName
+                            });
+                        } else {
+                            delete window[cbName];
+                            var err2 = {
+                                HasError: true,
+                                Message: "POS köprüsü bulunamadı."
+                            };
+                            pavoConnectionUpdateFromResult(err2);
+                            pavoShowError(err2, "POS Bağlantı Hatası");
+                            reject(err2);
+                        }
+                    } catch (e) {
+                        delete window[cbName];
+                        var err3 = {HasError: true, Message: "POS native katmanına erişilemedi: " + e};
+                        pavoConnectionUpdateFromResult(err3);
+                        pavoShowError(err3, "POS Bağlantı Hatası");
+                        reject(err3);
+                    }
+                });
+            },
+            ensureConnected: function () {
+                if (window.__pavoConnected) {
+                    return Promise.resolve(true);
+                }
+                return this.pair().then(function () {
+                    return true;
+                });
+            }
+        };
+    }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        pavoAutoConfigureFromBody();
+
+        var btn = document.getElementById("kp_pos_toggle_btn");
+        if (!btn) return;
+
+        function setState(connected) {
+            btn.dataset.connected = connected ? "1" : "0";
+            if (connected) {
+                btn.classList.remove("btn-light-primary");
+                btn.classList.add("btn-light-danger");
+                btn.innerHTML =
+                    '<i class="fa-solid fa-plug-circle-xmark"></i>' +
+                    '<span class="d-none d-md-inline">Bağlantıyı Kes</span>';
+            } else {
+                btn.classList.remove("btn-light-danger");
+                btn.classList.add("btn-light-primary");
+                btn.innerHTML =
+                    '<i class="fa-solid fa-plug"></i>' +
+                    '<span class="d-none d-md-inline">POS Bağla</span>';
+            }
+        }
+
+        window.addEventListener("pavoConnectionChanged", function (e) {
+            var c = false;
+            if (e && e.detail && typeof e.detail.connected !== "undefined") {
+                c = !!e.detail.connected;
+            }
+            setState(c);
+        });
+
+        setState(window.PavoPos && window.PavoPos.isConnected ? window.PavoPos.isConnected() : false);
+
+        btn.addEventListener("click", function () {
+            var connected = btn.dataset.connected === "1";
+
+            if (!window.PavoPos || !window.PavoPos.isSupported || !window.PavoPos.isSupported()) {
+                var err = {
+                    HasError: true,
+                    Message: "POS bağlantısı sadece mobil uygulamadaki WebView üzerinden kullanılabilir."
+                };
+                pavoShowError(err, "POS Uygun Değil");
+                return;
+            }
+
+            if (!connected) {
+                showGlobalLoader("POS bağlantısı kuruluyor...");
+
+                // 15 saniyelik zaman aşımı sayacı oluşturuyoruz
+                var timeoutPromise = new Promise(function (resolve, reject) {
+                    setTimeout(function () {
+                        reject({
+                            HasError: true,
+                            Message: "POS cihazından yanıt alınamadı. Lütfen cihazın açık ve aynı ağda olduğundan emin olun."
+                        });
+                    }, 15000);
+                });
+
+                // Gerçek bağlantı isteği ile zaman aşımını yarıştırıyoruz
+                Promise.race([window.PavoPos.ensureConnected(), timeoutPromise])
+                    .then(function () {
+                        // Başarılı olursa zaten event tetiklenip buton güncellenecek
+                    })
+                    .catch(function (error) {
+                        // Hata veya Zaman Aşımı durumunda
+                        console.error("POS Bağlantı Hatası:", error);
+                        pavoShowError(error, "Bağlantı Hatası");
+
+                        // Hata durumunda state'i resetle
+                        window.__pavoConnected = false;
+                        setState(false);
+                    })
+                    .finally(function () {
+                        hideGlobalLoader();
+                    });
+
+            } else {
+                window.__pavoConnected = false;
+                window.__pavoLastError = null;
+                try {
+                    var ev = new CustomEvent("pavoConnectionChanged", {detail: {connected: false}});
+                    window.dispatchEvent(ev);
+                } catch (e2) {
+                }
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const menuData = {
+            pages: [
+
+                {% if request.user|menu_allowed:'ABC1310D' %}
+                    {icon: 'fa-store', text: 'Perakende', url: "{% url 'transactions-board:retail-index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1030D' %}
+                    {icon: 'fa-warehouse', text: 'Toptan', url: "{% url 'transactions-board:wholesale-index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1062D' %}
+                    {
+                        icon: 'fa-clipboard-check',
+                        text: 'İşlemler',
+                        url: "{% url 'transactions-board:operations-index' %}"
+                    },
+                {% endif %}
+            ],
+
+            product: [
+                {% if request.user|menu_allowed:'ABC1003D' %}
+                    {icon: 'fa-boxes-stacked', text: 'Stok', url: "{% url 'products:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1007D' %}
+                    {icon: 'fa-barcode', text: 'Barkodlu', url: "{% url 'gold-purchases:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1008D' %}
+                    {icon: 'fa-recycle', text: 'Hurdalar', url: "{% url 'scraps:index' %}"},
+                    {icon: 'fa-coins', text: 'Gümüş', url: "{% url 'scraps:silver_index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1908D' %}
+                    {icon: 'fa-circle-notch', text: 'Bilezikler', url: "{% url 'bracelets:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1006D' %}
+                    {icon: 'fa-screwdriver-wrench', text: 'Tamir', url: "{% url 'repairs:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1009D' %}
+                    {icon: 'fa-hourglass', text: 'Sayım', url: "{% url 'counts:index' %}"},
+                {% endif %}
+            ],
+
+            cari: [
+                {% if request.user|menu_allowed:'ABC1002D' %}
+                    {icon: 'fa-chart-simple', text: 'Raporlar', url: "{% url 'dashboard:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1010D' %}
+                    {icon: 'fa-list-check', text: 'Özetler', url: "{% url 'process:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1706D' %}
+                    {icon: 'fa-file-invoice-dollar', text: 'Faturalar', url: "{% url 'invoices:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1706D' %}
+                    {icon: 'fa-vault', text: 'Kasa Yönetimi', url: "{% url 'bank-management:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1706D' %}
+                    {icon: 'fa-building-columns', text: 'Bankacılık', url: "{% url 'banking:index' %}"},
+                {% endif %}
+            ],
+
+            store: [
+                {% if request.user|menu_allowed:'ABC1011D' %}
+                    {icon: 'fa-truck', text: 'Tedarikçi', url: "{% url 'suppliers:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1544D' %}
+                    {icon: 'fa-handshake', text: 'Emanet', url: "{% url 'custody:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1012D' %}
+                    {icon: 'fa-industry', text: 'Atölyeler', url: "{% url 'workshops:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1015D' %}
+                    {icon: 'fa-users', text: 'Müşteriler', url: "{% url 'customers:index' %}"},
+                {% endif %}
+                {% if request.user|menu_allowed:'ABC1016D'%}
+                    {
+                        icon: 'fa-store-alt',
+                        text: 'Mağaza Ynt.',
+                        url: "{% if request.user.store_id %}{% url 'stores:store-detail' request.user.store_id %}{% else %}{% url 'stores:index' %}{% endif %}"
+                    },
+                {% endif %}
+                {% if request.user.store_id %}
+                    {icon: 'fa-shield-halved', text: 'Personel Rolleri', url: "{% url 'stores:store-roles-list' %}"},
+                {% endif %}
+            ],
+
+            admin: [
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9001D' %}
+                    {icon: 'fa-comment-dots', text: 'Whatsapp', url: "{% url 'whatsapp:dashboard' %}"},
+                {% endif %}
+                {% if request.user.is_superuser %}
+                    {icon: 'fa-file-contract', text: 'Masak', url: "{% url 'masak:upload_page' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9002D' %}
+                    {icon: 'fa-user-lock', text: 'Roller', url: "{% url 'roles:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9003D' %}
+                    {icon: 'fa-boxes-packing', text: 'Paketler', url: "{% url 'packages:index' %}"},
+                    {icon: 'fa-cubes', text: 'SaaS Modüller', url: "{% url 'packages:module-index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9004D' %}
+                    {icon: 'fa-microchip', text: 'Cihazlar', url: "{% url 'devices:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9005D' %}
+                    {icon: 'fa-users-gear', text: 'Kullanıcılar', url: "{% url 'accounts:staffs-index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9006D' %}
+                    {icon: 'fa-star', text: 'Referanslar', url: "{% url 'testimonials:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9007D' %}
+                    {icon: 'fa-file-signature', text: 'Sözleşmeler', url: "{% url 'contracts:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9008D' %}
+                    {icon: 'fa-cart-shopping', text: 'Siparişler', url: "{% url 'orders:index' %}"},
+                {% endif %}
+            ],
+
+            crm: [
+                {% if request.user.is_superuser or request.user|menu_allowed:'CHAMBERS_INDEX_VIEW' %}
+                    {icon: 'fa-building-ngo', text: 'Dernekler', url: "{% url 'chambers:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9010D' %}
+                    {icon: 'fa-building fs-2', text: 'Firmalar', url: "{% url 'stores:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9011D' %}
+                    {icon: 'fa-file-invoice', text: 'Teklifler', url: "{% url 'proposals:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9012D' %}
+                    {icon: 'fa-user-plus', text: 'Potansiyel', url: "{% url 'leads:index' %}"},
+                {% endif %}
+                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9013D' %}
+                    {icon: 'fa-address-book', text: 'İletişim', url: "{% url 'contact-forms:index' %}"},
+                {% endif %}
+            ],
+
+            profile: [
+                {icon: 'fa-user-edit', text: 'Profilim', url: "{% url 'accounts:profile' %}"},
+                {% if request.user.is_superuser %}
+                    {icon: 'fa-history', text: 'Aktiviteler', url: "{% url 'activity-logs:index' %}"},
+                {% endif %}
+                {icon: 'fa-sign-out-alt', text: 'Çıkış', url: "{% url 'accounts:logout' %}"},
+            ]
+        };
+
+        const container = document.querySelector('.kp-floating-menu-container');
+        // Eğer container yoksa hata vermemesi için kontrol
+        if (!container) return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'kp-menu-overlay';
+        document.body.appendChild(overlay);
+
+        const menuButtons = document.querySelectorAll('[data-menu-toggle]');
+        let activeMenu = null;
+
+        menuButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const menuType = this.dataset.menuToggle;
+
+                if (activeMenu === menuType) {
+                    closeMenu();
+                    return;
+                }
+
+                openMenu(menuType, this);
+            });
+        });
+
+        function openMenu(type, button) {
+            closeMenu();
+
+            const items = menuData[type];
+            // Eğer o menü tipinde eleman yoksa açma
+            if (!items || items.length === 0) return;
+
+            const menu = document.createElement('div');
+            menu.className = 'kp-floating-menu';
+
+            const grid = document.createElement('div');
+            grid.className = 'kp-menu-grid';
+
+            items.forEach(item => {
+                const link = document.createElement('a');
+                link.href = item.url;
+                link.className = 'kp-menu-item';
+                link.innerHTML = `
+                <i class="fa-solid ${item.icon}"></i>
+                <span>${item.text}</span>
+            `;
+                grid.appendChild(link);
+            });
+
+            menu.appendChild(grid);
+            container.innerHTML = '';
+            container.appendChild(menu);
+
+            button.classList.add('active');
+            overlay.classList.add('active');
+
+            // Animasyon için küçük gecikme
+            requestAnimationFrame(() => {
+                menu.classList.add('active');
+            });
+
+            activeMenu = type;
+        }
+
+        function closeMenu() {
+            const menu = container.querySelector('.kp-floating-menu');
+            if (menu) {
+                menu.classList.remove('active');
+                setTimeout(() => menu.remove(), 300);
+            }
+
+            menuButtons.forEach(btn => btn.classList.remove('active'));
+            overlay.classList.remove('active');
+            activeMenu = null;
+        }
+
+        overlay.addEventListener('click', closeMenu);
+    });
+</script>
+<script>
+    (function kpNativeDownloads() {
+        if (window.__KP_NATIVE_DOWNLOADS__) return;
+        window.__KP_NATIVE_DOWNLOADS__ = true;
+
+        function hasAndroidBridge() {
+            return typeof window.KuyumPlusAndroid !== 'undefined'
+                && window.KuyumPlusAndroid
+                && typeof window.KuyumPlusAndroid.download === 'function';
+        }
+
+        function hasIOSBridge() {
+            try {
+                return typeof window.webkit !== 'undefined'
+                    && window.webkit
+                    && window.webkit.messageHandlers
+                    && window.webkit.messageHandlers.KuyumPlusDownload;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function absolutize(url) {
+            try {
+                return new URL(url, window.location.href).toString();
+            } catch (e) {
+                return url;
+            }
+        }
+
+        function isDownloadLike(url, contentType) {
+            var u = String(url || '').toLowerCase();
+            var ct = String(contentType || '').toLowerCase();
+            if (ct.includes('application/pdf')) return true;
+            if (ct.includes('application/vnd.ms-excel')) return true;
+            if (ct.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) return true;
+            if (ct.includes('application/octet-stream')) return true;
+            if (u.includes('download=1') || u.includes('export=1') || u.includes('attachment=1')) return true;
+            if (u.endsWith('.pdf') || u.endsWith('.xls') || u.endsWith('.xlsx') || u.endsWith('.csv')) return true;
+            return false;
+        }
+
+        function nativeDownload(url, filename, mimeType, headers) {
+            var fullUrl = absolutize(url);
+            var fn = filename || '';
+            var mt = mimeType || '';
+
+            if (hasAndroidBridge()) {
+                try {
+                    KuyumPlusAndroid.download(fullUrl, fn, mt, JSON.stringify(headers || {}));
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            if (hasIOSBridge()) {
+                try {
+                    window.webkit.messageHandlers.KuyumPlusDownload.postMessage({
+                        url: fullUrl,
+                        filename: fn,
+                        mimeType: mt,
+                        headers: headers || {}
+                    });
+                    return true;
+                } catch (e2) {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        function getCookieHeaderFor(url) {
+            try {
+                var u = new URL(url, window.location.href);
+                var host = u.hostname;
+                var all = document.cookie || '';
+                if (!all) return '';
+                return all;
+            } catch (e) {
+                return document.cookie || '';
+            }
+        }
+
+        function triggerDownloadByNavigating(url) {
+            window.location.href = absolutize(url);
+        }
+
+        function interceptClick(e) {
+            var el = e.target;
+            while (el && el !== document.documentElement) {
+                if (el.tagName === 'A' && el.getAttribute('href')) break;
+                el = el.parentElement;
+            }
+            if (!el || !el.getAttribute) return;
+
+            var href = el.getAttribute('href');
+            if (!href || href === '#' || href.startsWith('javascript:')) return;
+
+            var full = absolutize(href);
+
+            var dlAttr = el.hasAttribute('download');
+            var targetBlank = (el.getAttribute('target') || '').toLowerCase() === '_blank';
+
+            var should = dlAttr || targetBlank || isDownloadLike(full, '');
+            if (!should) return;
+
+            var headers = {};
+            var cookie = getCookieHeaderFor(full);
+            if (cookie) headers['Cookie'] = cookie;
+
+            var ok = nativeDownload(full, el.getAttribute('download') || '', '', headers);
+            if (ok) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }
+
+        function patchWindowOpen() {
+            var _open = window.open;
+            window.open = function (url, target, features) {
+                if (!url) return _open.call(window, url, target, features);
+
+                var full = absolutize(url);
+                if (isDownloadLike(full, '')) {
+                    var headers = {};
+                    var cookie = getCookieHeaderFor(full);
+                    if (cookie) headers['Cookie'] = cookie;
+
+                    var ok = nativeDownload(full, '', '', headers);
+                    if (ok) return null;
+                }
+                return _open.call(window, url, target, features);
+            };
+        }
+
+        function patchAjaxPdfBlob() {
+            if (!window.jQuery || !window.jQuery.ajax) return;
+            jQuery(document).ajaxSuccess(function (_ev, _xhr, settings) {
+                try {
+                    var url = settings && settings.url ? String(settings.url) : '';
+                    if (!url) return;
+                    if (isDownloadLike(url, '')) {
+                        triggerDownloadByNavigating(url);
+                    }
+                } catch (e) {
+                }
+            });
+        }
+
+        document.addEventListener('click', interceptClick, true);
+        patchWindowOpen();
+        patchAjaxPdfBlob();
+
+        window.KPDownload = {
+            download: function (url, filename, mimeType) {
+                var headers = {};
+                var cookie = getCookieHeaderFor(url);
+                if (cookie) headers['Cookie'] = cookie;
+
+                var ok = nativeDownload(url, filename || '', mimeType || '', headers);
+                if (!ok) triggerDownloadByNavigating(url);
+                return ok;
+            }
+        };
+    })();
+</script>
+
+{% block footer %}
+{% endblock footer %}
+
+{% if request.user.store_id %}
+    <script>
+        // =====================================================================
+    </script>
+{% endif %}
+
+</body>
+</html>

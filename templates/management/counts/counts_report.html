@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>Sayim Raporu</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+            margin-bottom: 1.5cm;
+            @frame footer_frame {
+            -pdf-frame-content: footerContent;
+            bottom: 0cm;
+            margin-left: 1cm;
+            margin-right: 1cm;
+            height: 1cm;
+        }
+        }
+
+        body {
+            font-family: sans-serif;
+            font-size: 9pt;
+            color: #000;
+        }
+
+        /* Basliklar */
+        .header-tbl {
+            width: 100%;
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+        }
+
+        .company {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        .report-title {
+            font-size: 12pt;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Meta */
+        .meta-tbl {
+            width: 100%;
+            font-size: 8pt;
+            margin-bottom: 10px;
+        }
+
+        /* Ozet */
+        .sum-box {
+            border: 1px solid #000;
+            background-color: #f2f2f2;
+            padding: 5px;
+            margin-bottom: 20px;
+        }
+
+        .sum-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+
+        .sum-tbl th {
+            text-align: center;
+            border-bottom: 1px solid #999;
+            padding: 3px;
+            font-size: 8pt;
+        }
+
+        .sum-tbl td {
+            text-align: center;
+            padding: 5px;
+            border-right: 1px solid #ccc;
+        }
+
+        .sum-tbl td:last-child {
+            border-right: none;
+        }
+
+        .c-red {
+            color: #cc0000;
+            font-weight: bold;
+        }
+
+        .c-green {
+            color: #008800;
+            font-weight: bold;
+        }
+
+        /* TABLO STiLLERi */
+        .section-title {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            padding-bottom: 2px;
+            border-bottom: 1px solid #000;
+        }
+
+        .category-title {
+            font-size: 9pt;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 3px;
+            padding: 2px 6px;
+            background-color: #e8e8e8;
+            border-left: 3px solid #555;
+        }
+
+        .data-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8pt;
+            margin-bottom: 10px;
+        }
+
+        .data-tbl th {
+            color: #fff;
+            padding: 4px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .data-tbl td {
+            border-bottom: 1px solid #ddd;
+            padding: 2px 4px;
+            vertical-align: middle;
+        }
+
+        .data-tbl tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Tablo Baslik Renkleri */
+        .th-missing {
+            background-color: #cc0000;
+        }
+
+        .th-error {
+            background-color: #e65100;
+        }
+
+        .th-found {
+            background-color: #2e7d32;
+        }
+
+        .text-r {
+            text-align: right;
+        }
+
+        .text-c {
+            text-align: center;
+        }
+
+        /* Footer */
+        .footer-text {
+            text-align: center;
+            font-size: 7pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="footerContent">
+    <div class="footer-text">
+        {{ report_date }} - {{ company_name }} | Sayfa
+        <pdf:pagenumber> /
+            <pdf:pagecount>
+    </div>
+</div>
+
+<table class="header-tbl">
+    <tr>
+        <td class="company">{{ company_name }}</td>
+        <td class="report-title">STOK SAYIM RAPORU</td>
+    </tr>
+</table>
+
+<table class="meta-tbl">
+    <tr>
+        <td><b>Rapor No:</b> {{ report_no }}</td>
+        <td class="text-r"><b>Yetkili:</b> {{ authorized }}</td>
+    </tr>
+    <tr>
+        <td><b>Tarih:</b> {{ report_date }}</td>
+        <td class="text-r"><b>Magaza:</b> {{ store_id }}</td>
+    </tr>
+    {% if scope_type and scope_type != 'ALL' %}
+    <tr>
+        <td colspan="2">
+            <b>Sayim Kapsami:</b>
+            {% if scope_label %}{{ scope_label }}{% else %}{{ scope_type }}{% endif %}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+
+<div class="sum-box">
+    <table class="sum-tbl">
+        <thead>
+        <tr>
+            <th width="25%">DURUM</th>
+            <th width="25%">ADET</th>
+            <th width="25%">GRAM (BRUT)</th>
+            <th width="25%">HAS (MALIYET)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td style="text-align:left;"><b>SISTEM STOK</b></td>
+            <td><b>{{ summary.total_qty }}</b></td>
+            <td>{{ summary.total_gram }}</td>
+            <td>{{ summary.total_has }}</td>
+        </tr>
+        <tr>
+            <td style="text-align:left;" class="c-red"><b>EKSIK / KAYIP</b></td>
+            <td class="c-red">{{ summary.missing_qty }}</td>
+            <td class="c-red">{{ summary.missing_gram }}</td>
+            <td class="c-red">{{ summary.missing_has }}</td>
+        </tr>
+        <tr>
+            <td style="text-align:left;" class="c-green"><b>BULUNAN</b></td>
+            <td class="c-green">{{ summary.found_qty }}</td>
+            <td class="c-green">{{ summary.found_gram }}</td>
+            <td class="c-green">{{ summary.found_has }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+{# ─── 1. EKSIK / KAYIP URUNLER (KATEGORi GRUPLU) ─── #}
+{% if missing_groups %}
+    <div class="section-title" style="color: #cc0000;">1. EKSIK / KAYIP URUNLER LISTESI ({{ summary.missing_qty }}
+        Adet)
+    </div>
+    {% for group in missing_groups %}
+        <div class="category-title">{{ group.category }} ({{ group.count }} Adet)</div>
+        <table class="data-tbl">
+            <thead>
+            <tr>
+                <th class="th-missing" width="20%">BARKOD</th>
+                <th class="th-missing" width="40%">URUN ADI / TIPI</th>
+                <th class="th-missing text-r" width="20%">GRAM</th>
+                <th class="th-missing text-r" width="20%">HAS DEGER</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in group.items %}
+                <tr>
+                    <td><b>{{ row.barcode }}</b></td>
+                    <td>{{ row.name }}</td>
+                    <td class="text-r">{{ row.gram }}</td>
+                    <td class="text-r">{{ row.has }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+{% else %}
+    <div class="section-title" style="color: #cc0000;">1. EKSIK URUN YOK</div>
+    <div style="font-size: 8pt; margin-bottom: 10px;">Tebrikler! Sistemdeki tum urunler eksiksiz sayildi.</div>
+{% endif %}
+
+{# ─── 2. HATALI / YABANCI URUNLER (KATEGORi GRUPLU) ─── #}
+{% if error_groups %}
+    <div class="section-title" style="color: #e65100;">2. HATALI / YABANCI URUNLER LISTESI ({{ summary.error_qty }}
+        Adet)
+    </div>
+    {% for group in error_groups %}
+        <div class="category-title">{{ group.category }} ({{ group.count }} Adet)</div>
+        <table class="data-tbl">
+            <thead>
+            <tr>
+                <th class="th-error" width="20%">BARKOD</th>
+                <th class="th-error" width="40%">ACIKLAMA</th>
+                <th class="th-error text-r" width="20%">GRAM</th>
+                <th class="th-error text-r" width="20%">HAS DEGER</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in group.items %}
+                <tr>
+                    <td><b>{{ row.barcode }}</b></td>
+                    <td>{{ row.name }}</td>
+                    <td class="text-r">{{ row.gram }}</td>
+                    <td class="text-r">{{ row.has }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+{% endif %}
+
+{# ─── 3. BULUNAN URUNLER (KATEGORi GRUPLU) ─── #}
+{% if found_groups %}
+    <div class="section-title" style="color: #2e7d32;">3. BULUNAN / ONAYLANAN URUNLER LISTESI
+        ({{ summary.found_qty }}
+        Adet)
+    </div>
+    {% for group in found_groups %}
+        <div class="category-title">{{ group.category }} ({{ group.count }} Adet)</div>
+        <table class="data-tbl">
+            <thead>
+            <tr>
+                <th class="th-found" width="20%">BARKOD</th>
+                <th class="th-found" width="40%">URUN ADI / TIPI</th>
+                <th class="th-found text-r" width="20%">GRAM</th>
+                <th class="th-found text-r" width="20%">HAS DEGER</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in group.items %}
+                <tr>
+                    <td><b>{{ row.barcode }}</b></td>
+                    <td>{{ row.name }}</td>
+                    <td class="text-r">{{ row.gram }}</td>
+                    <td class="text-r">{{ row.has }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+{% endif %}
+
+<table style="width:100%; margin-top:30px; font-size:8pt;">
+    <tr>
+        <td width="50%" align="center">
+            Sayimi Yapan<br><br>_________________
+        </td>
+        <td width="50%" align="center">
+            Magaza Muduru<br><br>_________________
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

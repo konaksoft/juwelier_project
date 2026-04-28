@@ -1,0 +1,536 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        #table_model_wrapper .top {
+            display: none;
+        }
+
+        #tableToolbar .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem;
+        }
+
+        .bg-admin-dark {
+            background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+            color: white;
+        }
+
+        .bg-gold-gradient {
+            background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 100%);
+            color: #3e2723;
+            border: 1px solid #b8860b;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .form-select.select2-hidden-accessible {
+            display: none;
+        }
+
+        .date-preset-btn.active {
+            background-color: #ffffff !important;
+            color: #3E97FF !important;
+            box-shadow: 0 .1rem 1rem .25rem rgba(0, 0, 0, .05) !important;
+        }
+
+        .flatpickr-custom-trigger {
+            opacity: 0;
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="container-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar">
+                <div class="card shadow-sm w-100 my-margin">
+                    <div class="card-body">
+                        <div class="app-container container-xxl d-flex flex-stack flex-wrap gap-2">
+                            <div class="page-title d-flex flex-column justify-content-center me-3">
+                                <h1 class="page-heading text-gray-900 fw-bold fs-3">Destek Yönetim Paneli</h1>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center position-relative me-2">
+                                    <i class="fa-solid fa-magnifying-glass position-absolute ms-4 fs-7 text-gray-400"></i>
+                                    <input type="text" id="adminCustomSearch"
+                                           class="form-control form-control-sm form-control-solid w-250px ps-12"
+                                           placeholder="Talep No Ara..."/>
+                                </div>
+                                <div class="w-200px">
+                                    <select id="filterUserSelect" class="form-select form-select-sm form-select-solid"
+                                            data-control="select2" data-placeholder="Personel Filtrele">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+
+                                <div class="d-flex bg-light rounded p-1">
+                                    <input type="hidden" id="filterStartDate">
+                                    <input type="hidden" id="filterEndDate">
+                                    <div class="position-relative">
+                                        <input type="text" id="flatpickr_range" class="flatpickr-custom-trigger">
+                                        <button type="button"
+                                                class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2"
+                                                id="btnCustomDate">
+                                            <i class="fa-solid fa-calendar-days me-2 fs-8"></i>Özel
+                                        </button>
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn active"
+                                            data-range="all">Tümü
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                            data-range="today">Bugün
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                            data-range="week">Bu Hafta
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+                            <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5 active"
+                                                         data-bs-toggle="tab" href="#all">Tümü</a></li>
+                            <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                         data-bs-toggle="tab" href="#wait">Bekleyen</a></li>
+                            <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                         data-bs-toggle="tab" href="#start">Başlayan</a></li>
+                            <li class="nav-item mt-2"><a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                                         data-bs-toggle="tab" href="#result">Tamamlanan</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+                <div class="tab-content">
+                    <div class="tab-pane fade active show" id="all" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="model_table_all" class="table align-middle table-row-dashed fs-6">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-10px pe-2">#</th>
+                                            <th class="text-start">Talep No</th>
+                                            <th class="text-start">Durum</th>
+                                            <th class="text-start">Firma</th>
+                                            <th class="text-start">Talep Eden</th>
+                                            <th class="text-start">Konu</th>
+                                            <th class="text-center">Öncelik</th>
+                                            <th class="text-start">Kategori</th>
+                                            <th class="text-start">Oluşturma Tarihi</th>
+                                            <th class="text-start">İlgilenen Personel</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="wait" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="model_table_wait" class="table align-middle table-row-dashed fs-6">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-10px pe-2">#</th>
+                                            <th class="text-start">Talep No</th>
+                                            <th class="text-start">Durum</th>
+                                            <th class="text-start">Firma</th>
+                                            <th class="text-start">Talep Eden</th>
+                                            <th class="text-start">Konu</th>
+                                            <th class="text-center">Öncelik</th>
+                                            <th class="text-start">Kategori</th>
+                                            <th class="text-start">Oluşturma Tarihi</th>
+                                            <th class="text-start">İlgilenen Personel</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="start" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="model_table_start" class="table align-middle table-row-dashed fs-6">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-10px pe-2">#</th>
+                                            <th class="text-start">Talep No</th>
+                                            <th class="text-start">Durum</th>
+                                            <th class="text-start">Firma</th>
+                                            <th class="text-start">Talep Eden</th>
+                                            <th class="text-start">Konu</th>
+                                            <th class="text-center">Öncelik</th>
+                                            <th class="text-start">Kategori</th>
+                                            <th class="text-start">Oluşturma Tarihi</th>
+                                            <th class="text-start">İlgilenen Personel</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="result" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="model_table_result" class="table align-middle table-row-dashed fs-6">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-10px pe-2">#</th>
+                                            <th class="text-start">Talep No</th>
+                                            <th class="text-start">Durum</th>
+                                            <th class="text-start">Firma</th>
+                                            <th class="text-start">Talep Eden</th>
+                                            <th class="text-start">Konu</th>
+                                            <th class="text-center">Öncelik</th>
+                                            <th class="text-start">Kategori</th>
+                                            <th class="text-start">Oluşturma Tarihi</th>
+                                            <th class="text-start">İlgilenen Personel</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="personelAddModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg mw-500px">
+            <div class="modal-content">
+                <div class="modal-header bg-admin-dark">
+                    <h5 class="modal-title text-white">Personel Atama Ekranı</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" id="personelForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="request_id" name="request_id">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="required form-label">Öncelik Durumu</label>
+                                <select class="form-select" name="priority" data-control="select2"
+                                        data-hide-search="true" data-dropdown-parent="#personelAddModal">
+                                    <option value="LOW">Düşük</option>
+                                    <option value="MEDIUM" selected>Orta</option>
+                                    <option value="HIGH">Yüksek</option>
+                                    <option value="CRITICAL">Kritik</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="required form-label">Personeller</label>
+                                <select required class="form-select" id="personels_select" data-control="select2"
+                                        name="personel" data-dropdown-parent="#personelAddModal"
+                                        data-placeholder="Personel seçiniz"></select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" data-bs-dismiss="modal" type="button">İptal</button>
+                    <button class="btn bg-admin-dark text-white" id="btnPersonel" type="button">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+
+    <script>
+        function formatDate(date) {
+            let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
+
+        function setDateFilter(start, end, btnElement) {
+            $('#filterStartDate').val(start);
+            $('#filterEndDate').val(end);
+            $('.date-preset-btn, #btnCustomDate').removeClass('bg-white shadow-sm text-primary');
+            if (btnElement) $(btnElement).addClass('bg-white shadow-sm text-primary');
+            reloadActiveTable();
+        }
+
+        function reloadActiveTable() {
+            var activeTab = $(".tab-pane.active table").attr('id');
+            if (activeTab && $.fn.DataTable.isDataTable('#' + activeTab)) {
+                $('#' + activeTab).DataTable().draw();
+            }
+        }
+
+        var tables = {wait: null, start: null, result: null, all: null};
+
+        function initTable(tableId, filterType) {
+            return $(tableId).DataTable({
+                info: true, paging: true, searchDelay: 400, processing: true, serverSide: true,
+                order: [[8, "desc"]],
+                ajax: {
+                    url: "{% url 'supports:get-all-admin' %}",
+                    data: function (d) {
+                        d.filter = filterType;
+                        d.start_date = $('#filterStartDate').val();
+                        d.end_date = $('#filterEndDate').val();
+                        d.filter_user = $('#filterUserSelect').val();
+                    }
+                },
+                columns: [
+                    {
+                        data: "id", orderable: false, className: "text-center", render: function (data) {
+                            return `<div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" value="${data}" /></div>`;
+                        }
+                    },
+                    {
+                        data: "ticket_no",
+                        className: "text-gray-800 fw-bold",
+                        render: function (data, type, row) {
+                            return `<a href="/supports/index-detail/${row.id}" class="text-gray-800 text-hover-primary fw-bold">#${data}</a>`;
+                        }
+                    },
+                    {
+                        data: "status", render: function (data) {
+                            let statusMap = {
+                                'pending': {class: 'bg-light-warning text-warning', text: 'Beklemede'},
+                                'assigned': {class: 'bg-light-info text-info', text: 'Personel Atandı'},
+                                'in_progress': {class: 'bg-light-primary text-primary', text: 'İşlemde'},
+                                'resolved': {class: 'bg-light-success text-success', text: 'Tamamlandı'},
+                                'stopped': {class: 'bg-light-danger text-danger', text: 'Durduruldu'}
+                            };
+                            let s = statusMap[data.toLowerCase()] || {class: 'bg-light-secondary', text: data};
+                            return `<span class='badge ${s.class}'>${s.text}</span>`;
+                        }
+                    },
+                    {
+                        data: "personel_request__store__store_id", render: function (data, type, row) {
+                            let html = `<span class="text-gray-800 fw-bold">${data}</span>`;
+                            if (row.unread_count > 0) {
+                                html += `<span class="badge badge-circle badge-danger ms-2 w-20px h-20px fs-9">${row.unread_count}</span>`;
+                            }
+                            return html;
+                        }
+                    },
+                    {data: "personel_request__username"},
+                    {data: "title"},
+                    {
+                        data: "priority", className: "text-center", render: function (data) {
+                            var badges = {
+                                'LOW': {'class': 'badge-light-success', 'text': 'Düşük'},
+                                'MEDIUM': {'class': 'badge-light-info', 'text': 'Orta'},
+                                'HIGH': {'class': 'badge-light-warning', 'text': 'Yüksek'},
+                                'CRITICAL': {'class': 'badge-light-danger', 'text': 'Kritik'}
+                            };
+                            var priority = badges[data] || {'class': 'badge-light-info', 'text': 'Orta'};
+                            var icon = data === 'CRITICAL' ? '<i class="fas fa-exclamation-circle text-danger me-1"></i>' : '';
+                            return `<span class="badge ${priority.class} fs-8 fw-bold">${icon}${priority.text}</span>`;
+                        }
+                    },
+                    {
+                        data: "category", render: function (data) {
+                            return {
+                                'error': 'Hata',
+                                'developer': 'Geliştirme',
+                                'support': 'Teknik Destek'
+                            }[data] || data;
+                        }
+                    },
+                    {
+                        data: "created_at", render: function (data) {
+                            return moment(data).format('DD.MM.YYYY HH:mm');
+                        }
+                    },
+                    {
+                        data: "assigned_staff__username", render: function (data, type, row) {
+                            if (data) {
+                                if (row.is_self_assigned) {
+                                    return `<div class="d-flex align-items-center">
+                                        <span class="text-gray-800 fw-bold me-2">${data}</span>
+                                        <span class="badge badge-circle badge-light-primary w-25px h-25px"
+                                              data-bs-toggle="tooltip"
+                                              title="Personel talebi kendi üstlendi">
+                                            <i class="fas fa-hand-paper fs-8 text-primary"></i>
+                                        </span>
+                                    </div>`;
+                                }
+                                return `<span class="text-gray-800 fw-bold">${data}</span>`;
+                            }
+
+                            if (row.status !== "RESOLVED") {
+                                return `<button class="btn btn-sm btn-info personel-ata bg-admin-dark"
+                            data-id="${row.id}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#personelAddModal">Personel Ata</button>`;
+                            }
+
+                            return '-';
+                        }
+                    }
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+        }
+
+        $(document).ready(function () {
+            const fp = flatpickr("#flatpickr_range", {
+                mode: "range", locale: "tr", dateFormat: "Y-m-d", altInput: true,
+                onClose: function (selectedDates, dateStr, instance) {
+                    if (selectedDates.length === 2) {
+                        setDateFilter(instance.formatDate(selectedDates[0], "Y-m-d"), instance.formatDate(selectedDates[1], "Y-m-d"));
+                        $('.date-preset-btn').removeClass('bg-white shadow-sm text-primary');
+                        $('#btnCustomDate').addClass('bg-white shadow-sm text-primary');
+                        $('#btnCustomDate').html(`<i class="fa-solid fa-calendar-check me-2 fs-8"></i> ${instance.formatDate(selectedDates[0], "d.m")} - ${instance.formatDate(selectedDates[1], "d.m")}`);
+                    }
+                }
+            });
+
+            $('#btnCustomDate').on('click', function (e) {
+                e.stopPropagation();
+                fp.open();
+            });
+
+            $('.date-preset-btn').on('click', function () {
+                fp.clear();
+                $('#btnCustomDate').html('<i class="fa-solid fa-calendar-days me-2 fs-8"></i>Özel');
+                const range = $(this).data('range');
+                const today = new Date();
+                let start = '', end = '';
+
+                if (range === 'today') {
+                    start = formatDate(today);
+                    end = formatDate(today);
+                } else if (range === 'week') {
+                    let day = today.getDay();
+                    let diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                    let monday = new Date(today);
+                    monday.setDate(diff);
+                    let sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6);
+                    start = formatDate(monday);
+                    end = formatDate(sunday);
+                }
+                setDateFilter(start, end, this);
+            });
+
+            $('#filterUserSelect').select2({minimumResultsForSearch: 5, allowClear: true});
+
+            $.ajax({
+                url: "/supports/get-personels", type: "POST", headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                success: function (res) {
+                    var $select = $("#filterUserSelect");
+                    $select.empty().append(new Option("", "", false, false));
+                    res.data.forEach(function (item) {
+                        $select.append(new Option(item.first_name + ' ' + item.last_name, item.id));
+                    });
+                }
+            });
+
+            $('#filterUserSelect').on('change', function () {
+                reloadActiveTable();
+            });
+
+            tables.all = initTable('#model_table_all', 'all');
+
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var target = $(e.target).attr("href").replace('#', '');
+                if (tables[target]) {
+                    tables[target].ajax.reload();
+                } else {
+                    tables[target] = initTable('#model_table_' + target, target);
+                }
+            });
+
+            $('#personelAddModal').on('show.bs.modal', function (e) {
+                var btn = $(e.relatedTarget);
+                var requestId = btn.data('id');
+                $('#request_id').val(requestId);
+
+                $.ajax({
+                    url: "/supports/get-personels", type: "POST",
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (res) {
+                        var $select = $("#personels_select");
+                        $select.empty().append(new Option("", "", false, false));
+                        res.data.forEach(function (item) {
+                            $select.append(new Option(item.first_name + ' ' + item.last_name, item.id));
+                        });
+                    }
+                });
+            });
+
+            $("#btnPersonel").click(function () {
+                var form = $("#personelForm");
+                if (!form[0].checkValidity()) {
+                    form[0].reportValidity();
+                    return;
+                }
+
+                $.ajax({
+                    url: "/supports/set-personel", type: "POST", data: form.serialize(),
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (data) {
+                        if (data.result) {
+                            $("#personelAddModal").modal("hide");
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open');
+                            $('body').css('padding-right', '');
+
+                            Swal.fire({
+                                icon: 'success', title: 'Başarılı', text: 'Personel atandı.',
+                                timer: 1500, showConfirmButton: false
+                            }).then(() => {
+                                reloadActiveTable();
+                            });
+                        } else {
+                            Swal.fire('Hata', data.error_msg, 'error');
+                        }
+                    }
+                });
+            });
+
+            $('#adminCustomSearch').on('keyup', function () {
+                var activeTabId = $(".tab-pane.active table").attr('id');
+                var tabKey = activeTabId.replace('model_table_', '');
+                if (tables[tabKey]) {
+                    tables[tabKey].search(this.value).draw();
+                }
+            });
+        });
+    </script>
+{% endblock footer %}

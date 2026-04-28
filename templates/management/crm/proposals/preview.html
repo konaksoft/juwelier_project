@@ -1,0 +1,864 @@
+{# templates/management/crm/proposals/preview.html #}
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --accent-color: #d97706;
+            --text-color: #374151;
+            --light-bg: #f3f4f6;
+            --border-color: #e5e7eb;
+            --info-bg: #eff6ff;
+            --info-border: #3b82f6;
+        }
+
+        body {
+            background-color: #f9fafb;
+        }
+
+        .invoice-box {
+            background: white;
+            padding: 0;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            font-size: 13px;
+            line-height: 1.5;
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            color: var(--text-color);
+            max-width: 210mm;
+            min-height: 296mm; /* A4 Yüksekliği */
+            margin: auto;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+
+            /* Footer'ı alta sabitlemek için Flex yapısı */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        .brand-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--accent-color);
+        }
+
+        .brand-logo img {
+            max-height: 45px;
+            width: auto;
+            display: block;
+        }
+
+        .brand-logo-text h1 {
+            margin: 0;
+            font-size: 24px;
+            color: white;
+        }
+
+        .brand-logo-text span {
+            color: var(--accent-color);
+        }
+
+        .company-contact {
+            text-align: right;
+            font-size: 12px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .company-contact i {
+            color: var(--accent-color);
+            margin-right: 5px;
+            width: 15px;
+            text-align: center;
+        }
+
+        /* --- Info Bar --- */
+        .proposal-info-bar {
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 13px;
+        }
+
+        /* --- Content --- */
+        .content-wrapper {
+            padding: 20px;
+            flex: 1; /* Footer'ı aşağı iter */
+        }
+
+        .recipient-box {
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .recipient-header {
+            position: absolute;
+            top: -9px;
+            left: 15px;
+            background: white;
+            padding: 0 8px;
+            font-size: 11px;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .recipient-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .recipient-details {
+            font-size: 12px;
+            color: #4b5563;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .rd-item {
+            margin-bottom: 2px;
+        }
+
+        .rd-label {
+            font-weight: 600;
+            color: #6b7280;
+            margin-right: 5px;
+        }
+
+        /* --- Table --- */
+        .invoice-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 20px;
+        }
+
+        .invoice-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+
+        .invoice-table th:first-child {
+            border-top-left-radius: 6px;
+        }
+
+        .invoice-table th:last-child {
+            border-top-right-radius: 6px;
+        }
+
+        .invoice-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: #4b5563;
+            font-size: 12px;
+        }
+
+        .invoice-table tr:last-child td {
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .invoice-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        /* --- Totals --- */
+        .totals-wrapper {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .totals-box {
+            width: 280px;
+        }
+
+        .totals-box table {
+            width: 100%;
+        }
+
+        .totals-box td {
+            padding: 4px 0;
+            text-align: right;
+        }
+
+        .totals-box .label {
+            color: #6b7280;
+            padding-right: 15px;
+            font-size: 12px;
+        }
+
+        .totals-box .value {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 13px;
+        }
+
+        .grand-total-row {
+            border-top: 2px solid var(--accent-color);
+            margin-top: 5px;
+            padding-top: 5px;
+        }
+
+        .grand-total-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary-color);
+            padding-right: 15px;
+        }
+
+        .grand-total-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        /* --- Notices --- */
+        .special-notice {
+            margin-top: 20px;
+            padding: 12px;
+            background-color: var(--info-bg);
+            border-left: 4px solid var(--info-border);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #1e40af;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .notes-section {
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #fffbeb;
+            border-left: 4px solid var(--accent-color);
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* --- Footer --- */
+        .invoice-footer {
+            margin-top: 20px !important;
+            background-color: #f8fafc;
+            padding: 15px 15px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .footer-logo img {
+            height: 35px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .footer-address {
+            font-size: 11px;
+            color: #4b5563;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .footer-copyright {
+            font-size: 10px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 8px;
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        /* --- Contract & Signature Section --- */
+        .contract-approval-area {
+            margin-top: 30px;
+            page-break-inside: avoid; /* Baskıda bu bloğu bölme */
+            border-top: 2px dashed #cbd5e1;
+            padding-top: 20px;
+        }
+
+        .contract-ref-box {
+            text-align: center;
+            border: 2px solid #334155;
+            background-color: #f1f5f9;
+            padding: 10px;
+            font-weight: 700;
+            font-size: 12px;
+            color: #0f172a;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .handwriting-request {
+            margin-bottom: 20px;
+        }
+
+        .handwriting-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #b91c1c; /* Dikkat çekmesi için kırmızı ton */
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .handwriting-input-box {
+            border: 1px solid #94a3b8;
+            height: 40px; /* El yazısı için boşluk */
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-style: italic;
+            color: #cbd5e1;
+            font-size: 11px;
+        }
+
+        .signatures-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .sig-box {
+            border: 1px solid #cbd5e1;
+            padding: 15px;
+            min-height: 120px;
+            position: relative;
+        }
+
+        .sig-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary-color);
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .sig-content {
+            font-size: 11px;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .sig-placeholder {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        /* ==========================================================================
+           TEK SAYFA BASKI AYARLARI (GÜNCELLENMİŞ VE SABİTLENMİŞ)
+           ========================================================================== */
+        @media print {
+            /* Tarayıcı kenar boşluklarını ve otomatik eklenen header/footer'ı temizle */
+            @page {
+                size: A4;
+                margin: 0 !important;
+            }
+
+            /* HTML ve BODY etiketlerinin kenar boşluklarını sıfırla */
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: 100%;
+                background-color: white; /* Arka planı beyaz yap */
+            }
+
+            /* Diğer her şeyi gizle */
+            body * {
+                visibility: hidden;
+            }
+
+            #kt_app_sidebar, #kt_app_header, .app-toolbar, .btn-print-actions {
+                display: none !important;
+            }
+
+            /* Sadece yazdırılacak alanı göster */
+            #printableArea, #printableArea * {
+                visibility: visible;
+            }
+
+            /* Ana Kapsayıcıyı Sabitle */
+            #printableArea {
+                position: fixed; /* Absolute yerine Fixed kullanarak tepeye çivile */
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%; /* Sayfanın tamamını kapla */
+                margin: 0 !important;
+                padding: 0 !important;
+                border-radius: 0;
+                box-shadow: none;
+
+                /* Footer sabitleme için flex yapısı */
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+
+                /* Tek sayfaya sığdırma için küçültme */
+                zoom: 90%;
+
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: white;
+            }
+
+            /* İçerik Sıkıştırma */
+            .brand-header {
+                padding: 15px 25px !important;
+                margin-top: 0 !important;
+            }
+
+            .brand-logo img {
+                max-height: 40px !important;
+            }
+
+            .proposal-info-bar {
+                padding: 8px 25px !important;
+            }
+
+            .content-wrapper {
+                padding: 20px 25px !important;
+                flex: 1;
+            }
+
+            .recipient-box {
+                margin-bottom: 15px !important;
+                padding: 10px !important;
+                border: 1px solid #ccc !important;
+            }
+
+            .recipient-name {
+                font-size: 14px !important;
+                margin-bottom: 4px !important;
+            }
+
+            h3 {
+                margin-bottom: 10px !important;
+                font-size: 16px !important;
+                padding-bottom: 5px !important;
+            }
+
+            .invoice-table {
+                margin-bottom: 15px !important;
+            }
+
+            .invoice-table th, .invoice-table td {
+                padding: 5px 8px !important;
+                font-size: 11px !important;
+            }
+
+            .special-notice {
+                margin-top: 30px !important;
+                padding: 8px !important;
+            }
+
+            .notes-section {
+                margin-top: 10px !important;
+                padding: 8px !important;
+            }
+
+            .invoice-footer {
+                padding: 10px !important;
+                margin-top: 0 !important;
+            }
+
+            .footer-logo img {
+                height: 25px !important;
+            }
+
+            .footer-address {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+
+            <div class="app-toolbar py-3 py-lg-6 btn-print-actions">
+                <div class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            Teklif Önizleme
+                        </h1>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'proposals:index' %}" class="btn btn-light btn-sm">Listeye Dön</a>
+                        <a href="{% url 'proposals:add' %}?id={{ proposal.id }}" class="btn btn-light-primary btn-sm">Düzenle</a>
+                        <button onclick="window.print()" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-print"></i> Yazdır / PDF İndir
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-content flex-column-fluid">
+                <div class="app-container container-xxl">
+
+                    <div class="invoice-box" id="printableArea">
+
+                        <div class="brand-header">
+                            <div class="brand-logo">
+                                <img src="{% static 'theme/img/new_logo/1.png' %}" alt="Kuyum Plus"
+                                     onerror="this.style.display='none'; document.querySelector('.brand-logo-text').style.display='block'">
+
+                                <div class="brand-logo-text" style="display:none;">
+                                    <h1>KUYUM<span>PLUS</span></h1>
+                                </div>
+                            </div>
+                            <div class="company-contact">
+                                <div><i class="fa-solid fa-phone"></i> 0 216 606 88 01</div>
+                                <div><i class="fa-solid fa-envelope"></i> destek@kuyumplus.com</div>
+                                <div><i class="fa-solid fa-globe"></i> www.kuyumplus.com</div>
+                            </div>
+                        </div>
+
+                        <div class="proposal-info-bar">
+                            <div class="info-item">
+                                <span class="info-label">Teklif No</span>
+                                <span class="info-value">#{{ proposal.proposal_no }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Teklif Tarihi</span>
+                                <span class="info-value">{{ proposal.date|date:"d.m.Y" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Geçerlilik Tarihi</span>
+                                <span class="info-value">{{ proposal.valid_until|date:"d.m.Y" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Durum</span>
+                                <span class="info-value">
+                                {% if proposal.status == 'approved' %}
+                                    <span style="color: #059669;">Onaylandı</span>
+                                {% elif proposal.status == 'pending' %}
+                                    <span style="color: #d97706;">Beklemede</span>
+                                {% else %}
+                                    {{ proposal.get_status_display }}
+                                {% endif %}
+                            </span>
+                            </div>
+                        </div>
+
+                        <div class="content-wrapper">
+
+                            <div class="recipient-box">
+                                <div class="recipient-header">SAYIN / FİRMA BİLGİLERİ</div>
+
+                                {% if proposal.company %}
+                                    <span class="recipient-name">{{ proposal.company.title }}</span>
+                                    <div class="recipient-details">
+                                        {% if proposal.company.address or proposal.company.district or proposal.company.city %}
+                                            <div class="rd-item">
+                                                <span class="rd-label">Adres:</span>
+                                                {{ proposal.company.address|default:"" }}
+                                                {% if proposal.company.district or proposal.company.city %}
+                                                    <br>{{ proposal.company.district }} / {{ proposal.company.city }}
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+
+                                        <div>
+                                            {% if proposal.company.tax_office %}
+                                                <div class="rd-item">
+                                                    <span class="rd-label">Vergi Dairesi:</span> {{ proposal.company.tax_office }}
+                                                </div>
+                                            {% endif %}
+
+                                            {% if proposal.company.tax_number %}
+                                                <div class="rd-item">
+                                                    <span class="rd-label">VKN/TCKN:</span> {{ proposal.company.tax_number }}
+                                                </div>
+                                            {% endif %}
+
+                                            {% if proposal.company.email %}
+                                                <div class="rd-item">
+                                                    <span class="rd-label">E-Posta:</span> {{ proposal.company.email }}
+                                                </div>
+                                            {% endif %}
+
+                                            {% if proposal.company.phone %}
+                                                <div class="rd-item">
+                                                    <span class="rd-label">Telefon:</span> {{ proposal.company.phone }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                {% elif proposal.lead %}
+                                    <span class="recipient-name">{{ proposal.lead.full_name }}</span>
+                                    <div class="recipient-details" style="grid-template-columns: 1fr;">
+
+                                        {% if proposal.lead.phone %}
+                                            <div class="rd-item">
+                                                <span class="rd-label">Tel:</span> {{ proposal.lead.phone }}
+                                            </div>
+                                        {% endif %}
+
+                                        {% if proposal.lead.email %}
+                                            <div class="rd-item">
+                                                <span class="rd-label">E-Posta:</span> {{ proposal.lead.email }}
+                                            </div>
+                                        {% endif %}
+
+                                        <div class="rd-item" style="font-style: italic; color:#999; margin-top:5px;">
+                                            (Müşteri Adayı)
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span>Seçili Müşteri Yok</span>
+                                {% endif %}
+                            </div>
+
+                            <h3 style="margin-bottom: 10px; color: var(--primary-color); font-size: 16px; border-bottom: 2px solid #f1f5f9; padding-bottom: 5px;">
+                                {{ proposal.title }}
+                            </h3>
+
+                            <table class="invoice-table">
+                                <thead>
+                                <tr>
+                                    <th style="width: 45%">Hizmet / Ürün Açıklaması</th>
+                                    <th style="width: 10%; text-align: center;">Adet</th>
+                                    <th style="width: 20%; text-align: right;">Birim Fiyat</th>
+                                    <th style="width: 25%; text-align: right;">Tutar</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tbody>
+                                {% for item in proposal.items.all %}
+                                    <tr>
+                                        <td>
+                                            {% if item.store_name %}
+                                                <div style="font-size: 11px; font-weight: 700; color: #b45309; text-transform: uppercase; margin-bottom: 2px;">
+                                                    <i class="fa-solid fa-store"
+                                                       style="font-size: 9px;"></i> {{ item.store_name }}
+                                                </div>
+                                            {% endif %}
+
+                                            <strong style="color: #111827;">
+                                                {% if item.package %}
+                                                    {{ item.package.name }}
+                                                {% elif item.device %}
+                                                    {{ item.device.name }}
+                                                {% else %}
+                                                    Hizmet Bedeli
+                                                {% endif %}
+                                            </strong>
+                                            <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">{{ item.description }}</div>
+                                            {% if item.package %}
+                                                <div style="font-size: 10px; color: #d97706;">
+                                                    <i class="fa-solid fa-sync" style="font-size:9px;"></i> Yıllık
+                                                    Bakım: %{{ item.package.maintenance_percent|floatformat:0 }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align: center; font-weight: 500;">{{ item.quantity }}</td>
+                                        <td style="text-align: right;">{{ item.unit_price|floatformat:2 }} {{ proposal.currency }}</td>
+                                        <td style="text-align: right; font-weight: 600; color: var(--primary-color);">{{ item.total_price|floatformat:2 }} {{ proposal.currency }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                                </tbody>
+                            </table>
+
+                            <div class="totals-wrapper">
+                                <div class="totals-box">
+                                    <table>
+                                        <tr>
+                                            <td class="label">Ara Toplam</td>
+                                            <td class="value">{{ proposal.subtotal|floatformat:2 }} {{ proposal.currency }}</td>
+                                        </tr>
+                                        {% if proposal.discount_value > 0 %}
+                                            <tr>
+                                                <td class="label" style="color: #ef4444;">İskonto</td>
+                                                <td class="value" style="color: #ef4444;">
+                                                    - {{ proposal.discount_value|floatformat:2 }} {{ proposal.currency }}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="label" style="font-weight:600;">İskontolu Toplam</td>
+                                                <td class="value" style="font-weight:700;">
+                                                    {{ proposal.discounted_subtotal|floatformat:2 }} {{ proposal.currency }}
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                        {% if proposal.tax_rate and proposal.tax_rate > 0 %}
+                                            <tr>
+                                                <td class="label">KDV (%{{ proposal.tax_rate|floatformat:0 }})</td>
+                                                <td class="value">{{ proposal.tax_amount|floatformat:2 }} {{ proposal.currency }}</td>
+                                            </tr>
+                                        {% endif %}
+                                        <tr class="grand-total-row">
+                                            <td class="grand-total-label">GENEL TOPLAM</td>
+                                            <td class="grand-total-value">{{ proposal.grand_total|floatformat:2 }} {{ proposal.currency }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="special-notice">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <div>
+                                    <strong>Pavo Cihazı ve GMU Entegrasyonu Hakkında Bilgilendirme:</strong>
+                                    <p style="margin: 5px 0 0 0; line-height: 1.5;">
+                                        Pavo cihazı ile birlikte GMÖEBYS (Güvenli Mobil Ödeme ve Elektronik Belge
+                                        Yönetim Sistemi)
+                                        kullanımı durumunda, bu hizmet yıllık olarak
+                                        ücretlendirilmektedir.
+                                        Bu fiyat her yıl güncellenmekte olup, 2026 ve sonrası için fiyat değişikliği
+                                        hakkı saklıdır.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {% if proposal.notes %}
+
+
+                                <div class="notes-section">
+                                    <strong style="color: #92400e; display:block; margin-bottom: 2px;">Notlar &
+                                        Şartlar:</strong>
+                                    <p style="white-space: pre-line; font-size: 11px; color: #78350f; margin: 0;">{{ proposal.notes }}</p>
+                                </div>
+                            {% endif %}
+                            <div class="contract-approval-area">
+
+                                <div class="contract-ref-box">
+                                    BU BELGE, ...... / ...... / 20...... TARİHLİ HİZMET SÖZLEŞMESİNİN AYRILMAZ BİR
+                                    EKİDİR.
+                                </div>
+
+                                <div class="handwriting-request">
+                                    <span class="handwriting-label">
+                                        <i class="fa-solid fa-pen-nib"></i> LÜTFEN AŞAĞIDAKİ KUTUCUĞA EL YAZINIZ İLE <u>"............ PAKET TALEP EDİYORUM"</u> YAZINIZ.
+                                    </span>
+                                    <div class="handwriting-input-box">
+                                        (Buraya el yazınız ile paket talebinizi yazınız...)
+                                    </div>
+                                </div>
+
+                                <div class="signatures-grid">
+                                    <div class="sig-box">
+                                        <div class="sig-header">YÜKLENİCİ (KONASOFT)</div>
+                                        <div class="sig-content">
+                                            <strong>Konasoft Yazılım</strong><br>
+                                            Kaşe / İmza
+                                        </div>
+                                    </div>
+
+                                    <div class="sig-box">
+                                        <div class="sig-header">MÜŞTERİ ONAYI</div>
+                                        <div class="sig-content">
+                                            <strong>
+                                                {% if proposal.company %}
+                                                    {{ proposal.company.title }}
+                                                {% elif proposal.lead %}
+                                                    {{ proposal.lead.full_name }}
+                                                {% endif %}
+                                            </strong>
+                                            <br>
+                                            Tarih: ..... / ..... / 20.....
+                                        </div>
+                                        <div class="sig-placeholder">
+                                            İmza
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="text-align: right; font-size: 9px; color: #64748b; margin-top: 5px; font-style: italic;">
+                                    * Lütfen sözleşmenin ve eklerinin her sayfasını imzalayınız.
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="invoice-footer">
+                            <div class="footer-logo">
+                                <img src="{% static 'management/img/konasoft_logo.png' %}" alt="Konasoft Yazılım"
+                                     onerror="this.style.display='none'">
+                            </div>
+
+                            <div class="footer-address">
+                                Yenişehir Mah. Sümbül Sk. No: 6-1/79 Sweet Life Center • Pendik - İstanbul
+                            </div>
+
+                            <div class="footer-copyright">
+                                &copy; Konasoft 2025 | Tüm Hakları Saklıdır — Kuyum Plus, Konasoft ürünüdür. <br>
+                                <span style="opacity: 0.6; font-size: 9px;">
+                                    Teklif Oluşturan: {{ proposal.created_by.first_name }} {{ proposal.created_by.last_name }}
+                                    ({{ proposal.created_at|date:"d.m.Y H:i" }})
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Müşteri adını belirle
+            var clientName = "";
+            {% if proposal.company %}
+                clientName = "{{ proposal.company.title }}";
+            {% elif proposal.lead %}
+                clientName = "{{ proposal.lead.full_name }}";
+            {% endif %}
+
+            // Dosya adını ayarla: Teklif-NO-MUSTERI
+            document.title = "Teklif-{{ proposal.proposal_no }}-" + clientName;
+        });
+    </script>
+{% endblock body %}

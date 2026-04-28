@@ -1,0 +1,373 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .toolbar-btn-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.7rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        /* Uzun mesajların tabloyu bozmasını engelle */
+        table.dataTable td {
+            word-wrap: break-word;
+            white-space: normal !important;
+            max-width: 300px;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card custom-toolbar-card w-100 mx-4">
+                    <div class="card-body py-4">
+                        <div class="d-flex flex-stack flex-wrap gap-2">
+                            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                    MASAK & Risk Kontrol Paneli
+                                </h1>
+                                <span class="text-muted fs-7 fw-semibold mt-1">Şüpheli işlem bildirimleri ve kara liste yönetimi</span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                {% if request.user.is_superuser %}
+                                    <a href="{% url 'masak:upload_page' %}"
+                                       class="btn btn-light-primary btn-sm toolbar-btn-size">
+                                        <i class="fa-solid fa-file-import"></i> Resmi Veri Yükle
+                                    </a>
+                                {% endif %}
+
+                                <button type="button" class="btn btn-danger btn-sm toolbar-btn-size"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addBlacklistModal">
+                                    <i class="fa-solid fa-ban"></i> Yeni Şüpheli Ekle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content_container" class="app-container container-fluid mt-4">
+
+                <div class="card">
+                    <div class="card-header card-header-stretch">
+                        <div class="card-title">
+                            <h3 class="card-label">Kayıtlar & Listeler</h3>
+                        </div>
+                        <div class="card-toolbar">
+                            <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-bs-toggle="tab" href="#tab_logs">
+                                        <i class="fa-solid fa-clock-rotate-left me-2"></i>Sorgu Geçmişi
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#tab_blacklist">
+                                        <i class="fa-solid fa-list-ul me-2"></i>Mağaza Kara Listesi
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="tab-content" id="myTabContent">
+
+                            <div class="tab-pane fade show active" id="tab_logs" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table id="dt_logs" class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th style="min-width: 130px;">Tarih</th>
+                                            <th>Sorgulayan</th>
+                                            <th>Sorgulanan İsim</th>
+                                            <th>Sorgulanan TCKN</th>
+                                            <th>Sonuç</th>
+                                            <th style="min-width: 200px;">Mesaj</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab_blacklist" role="tabpanel">
+                                <div class="d-flex justify-content-end mb-3">
+                                    <button type="button" class="btn btn-light-danger btn-sm" id="btnDeleteBlacklist">
+                                        <i class="fa-solid fa-trash"></i> Seçilileri Sil
+                                    </button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="dt_blacklist"
+                                           class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-10px pe-2">
+                                                <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="checkAllBlacklist"/>
+                                                </div>
+                                            </th>
+                                            <th>Ad Soyad</th>
+                                            <th>TCKN / VKN</th>
+                                            <th>Sebep</th>
+                                            <th>Eklenme Tarihi</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addBlacklistModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Kara Listeye Ekle</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="blacklistForm">
+                        {% csrf_token %}
+                        <div class="alert alert-warning d-flex align-items-center p-5 mb-5">
+                            <i class="fa-solid fa-triangle-exclamation fs-2hx text-warning me-4"></i>
+                            <div class="d-flex flex-column">
+                                <h4 class="mb-1 text-dark">Uyarı</h4>
+                                <span>Buraya eklediğiniz kişiler, tüm satış ekranlarında "Şüpheli" olarak işaretlenecektir.</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label required">TC Kimlik / VKN / Pasaport</label>
+                            <input type="text" class="form-control" name="identification_number" required maxlength="50"
+                                   placeholder="Örn: 11111111111">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Ad Soyad / Unvan</label>
+                            <input type="text" class="form-control" name="full_name" required
+                                   placeholder="Örn: Ahmet Yılmaz">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sebep / Açıklama</label>
+                            <textarea class="form-control" name="reason" rows="3"
+                                      placeholder="Örn: Sahte para girişimi..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-danger" id="btnSaveBlacklist">
+                        <span class="indicator-label">Kaydet</span>
+                        <span class="indicator-progress">Lütfen bekleyin... <span
+                                class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            // --- 1. LOGLAR DATATABLE ---
+            var dtLogs = $("#dt_logs").DataTable({
+                processing: true,
+                serverSide: true,
+                ordering: false, // Server-side sıralama backend'de yapılıyor
+                order: [], // Default sıralamayı kapat
+                ajax: {
+                    url: "{% url 'masak:get_logs' %}",
+                    type: "GET",
+                    error: function (xhr, error, thrown) {
+                        console.error("Loglar yüklenemedi:", error);
+                    }
+                },
+                columns: [
+                    {data: 'created_at'},
+                    {data: 'performed_by'},
+                    {data: 'queried_name'},
+                    {data: 'queried_tckn'},
+                    {data: 'status'},
+                    {data: 'message'}
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+                dom: "<'row'<'col-sm-6 d-flex align-items-center justify-conten-start'l><'col-sm-6 d-flex align-items-center justify-content-end'f>>" +
+                    "<'table-responsive'tr>" +
+                    "<'row'<'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i><'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>>"
+            });
+
+            // --- 2. KARA LİSTE DATATABLE ---
+            var dtBlacklist = $("#dt_blacklist").DataTable({
+                processing: true,
+                serverSide: true,
+                ordering: false,
+                order: [],
+                ajax: {
+                    url: "{% url 'masak:get_blacklist' %}",
+                    type: "GET"
+                },
+                columns: [
+                    {
+                        data: 'id',
+                        render: function (data) {
+                            return `<div class="form-check form-check-sm form-check-custom form-check-solid">
+                                    <input class="form-check-input row-checkbox" type="checkbox" value="${data}">
+                                </div>`;
+                        },
+                        orderable: false
+                    },
+                    {data: 'full_name'},
+                    {data: 'identification_number'},
+                    {data: 'reason'},
+                    {data: 'created_at'}
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+                dom: "<'row'<'col-sm-6 d-flex align-items-center justify-conten-start'l><'col-sm-6 d-flex align-items-center justify-content-end'f>>" +
+                    "<'table-responsive'tr>" +
+                    "<'row'<'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i><'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>>"
+            });
+
+            // Sekme değişince tabloları yeniden çiz (responsive sorunu için)
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                dtLogs.columns.adjust().draw();
+                dtBlacklist.columns.adjust().draw();
+            });
+
+            // --- 3. KARA LİSTE EKLEME ---
+            $('#btnSaveBlacklist').click(function () {
+                var form = $('#blacklistForm');
+
+                // HTML5 Validasyon Kontrolü
+                if (!form[0].checkValidity()) {
+                    form[0].reportValidity();
+                    return;
+                }
+
+                var btn = $(this);
+                btn.attr('data-kt-indicator', 'on');
+                btn.prop('disabled', true);
+
+                $.ajax({
+                    url: "{% url 'masak:add_blacklist' %}",
+                    type: "POST",
+                    data: form.serialize(),
+                    success: function (response) {
+                        btn.removeAttr('data-kt-indicator');
+                        btn.prop('disabled', false);
+
+                        if (response.result) {
+                            Swal.fire({
+                                text: 'Kayıt başarıyla kara listeye eklendi.',
+                                icon: 'success',
+                                buttonsStyling: false,
+                                confirmButtonText: "Tamam",
+                                customClass: {confirmButton: "btn btn-primary"}
+                            });
+
+                            window.location.reload();
+
+                        } else {
+                            Swal.fire({
+                                title: 'Hata',
+                                text: response.error_msg || 'Bir hata oluştu',
+                                icon: 'error',
+                                buttonsStyling: false,
+                                confirmButtonText: "Tamam",
+                                customClass: {confirmButton: "btn btn-danger"}
+                            });
+                        }
+                    },
+                    error: function (xhr) {
+                        btn.removeAttr('data-kt-indicator');
+                        btn.prop('disabled', false);
+                        Swal.fire('Hata', 'Sunucu ile iletişim hatası.', 'error');
+                    }
+                });
+            });
+
+            // --- 4. TOPLU SİLME (Kara Liste) ---
+            $('#checkAllBlacklist').change(function () {
+                $('.row-checkbox').prop('checked', $(this).prop('checked'));
+            });
+
+            $('#btnDeleteBlacklist').click(function () {
+                var ids = [];
+                $('.row-checkbox:checked').each(function () {
+                    ids.push($(this).val());
+                });
+
+                if (ids.length === 0) {
+                    Swal.fire({
+                        text: 'Lütfen silinecek kayıtları seçin.',
+                        icon: 'warning',
+                        buttonsStyling: false,
+                        confirmButtonText: "Tamam",
+                        customClass: {confirmButton: "btn btn-primary"}
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "Seçili " + ids.length + " kayıt kara listeden silinecek!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'İptal',
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-danger",
+                        cancelButton: "btn btn-light"
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "{% url 'masak:delete_blacklist' %}",
+                            type: "POST",
+                            data: {
+                                'ids[]': ids,
+                                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                            },
+                            success: function (response) {
+                                if (response.result) {
+                                    Swal.fire({
+                                        text: 'Kayıtlar silindi.',
+                                        icon: 'success',
+                                        buttonsStyling: false,
+                                        confirmButtonText: "Tamam",
+                                        customClass: {confirmButton: "btn btn-primary"}
+                                    });
+                                    window.location.reload();
+                                    $('#checkAllBlacklist').prop('checked', false);
+                                } else {
+                                    Swal.fire('Hata', response.error_msg, 'error');
+                                }
+                            },
+                            error: function () {
+                                Swal.fire('Hata', 'Silme işlemi sırasında hata oluştu.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

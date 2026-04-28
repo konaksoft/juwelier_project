@@ -1,0 +1,538 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        .breadcrumb-slim {
+            padding-top: 4rem !important;
+            padding-bottom: 4rem !important;
+        }
+
+        @media (max-width: 575.98px) {
+            .breadcrumb-slim {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+                padding-left: 15px !important;
+                padding-right: 15px !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.2rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: .8rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            article {
+                margin: 1rem !important;
+                padding: 1rem !important;
+                max-width: 100% !important;
+            }
+
+            article h6,
+            article p,
+            article ul {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding-left: 0 !important;
+            }
+        }
+
+        article {
+            max-width: 87rem;
+            margin-left: 3rem;
+            padding: 3rem;
+        }
+
+        article li {
+            margin-left: 1rem;
+        }
+
+        article h6 {
+            margin-left: 20px;
+            font-weight: bold;
+            color: dimgray;
+            line-height: 1;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            display: inline-block;
+        }
+
+        article p {
+            margin-left: 20px;
+            margin-top: 0;
+            margin-bottom: 1em;
+        }
+
+        article p, article ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+            color: gray;
+            line-height: 1.6;
+        }
+
+        article ul {
+            list-style: disc;
+            margin-left: 100px;
+        }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div
+            class="breadcrumb-area bg-cover breadcrumb-slim text-white"
+            style="margin: 0; background-color: #F8F9FC; padding: 1rem 0.5rem;">
+        <div class="container px-2">
+            <h2 class="page-title mb-0" style="color: black">Kullanım Koşulları Sözleşmemiz</h2>
+        </div>
+    </div>
+    <article>
+        <h6>MADDE 1 – Giriş</h6>
+        <p>İşbu sözleşmede <strong>Konasoft Yazılım A.Ş.</strong> (“Hizmet Sağlayıcı”) tarafından
+            https://www.kuyumplus.com/ (veya https://www.konasoft.com/) web sitesi
+            (“Web Sitesi”) kanalıyla Hizmet Alıcılara sunulan <strong>Kuyum Plus</strong> hizmetlerinin Hizmet Alıcılar
+            tarafından Web Sitesi
+            kanalıyla sipariş edilmesi ve bunların satışına ilişkin hüküm ve şartları belirlenmektedir.</p>
+        <p>
+            Hizmet Sağlayıcı ve Hizmet Alıcı bundan böyle tek başına “Taraf” ve birlikte “Taraflar” olarak
+            anılacaktır.</p>
+        <p>“Başlangıç Paketi” adı altında verilen <strong>Kuyum Plus Kuyumcu Yönetim Yazılımı</strong>'nın
+            içeriği aşağıdaki gibidir:</p>
+        <ol>
+            <li>Stok Yönetimi (Altın, Pırlanta, Saat vb.)</li>
+            <li>Hızlı Satış Ekranı</li>
+            <li>Müşteri Kayıt Sistemi</li>
+            <li>Barkod Basımı ve Yönetimi</li>
+            <li>Tek Kullanıcı Erişimi</li>
+        </ol>
+        <p>“Standart Paket” adı altında, “Başlangıç Paketi”’ndekilere ek olarak verilen yazılımın içeriği aşağıdaki
+            gibidir:</p>
+        <ol>
+            <li>Sınırsız Kullanıcı Tanımlama</li>
+            <li>Cari Hesap Takibi (Veresiye/Emanet)</li>
+            <li>Kasa (Gelir/Gider) Yönetimi</li>
+            <li>Hurda ve Has Altın Takibi</li>
+            <li>Otomatik Kur Entegrasyonu</li>
+            <li>Çoklu Şube Yönetimi</li>
+            <li>Gelişmiş Raporlama ve Analiz</li>
+        </ol>
+        <h6>MADDE 2 – Tanımlar</h6>
+        <p>Bu sözleşmede aşağıda belirtilen terimler kullanılmaktadır:</p>
+        <ol>
+            <li>
+                <strong>Hizmet Sağlayıcı</strong> – <strong>Yenişehir Mahallesi Sümbül Sokak No: 6-1/79 Sweet Life
+                Center Pendik - İstanbul</strong> adresinde mukim <strong>Konasoft Yazılım A.Ş.</strong>’yi ifade eder.
+            </li>
+            <li>
+                <strong>Hizmet Alıcı</strong> – Hizmet Sağlayıcının paket hizmetlerini kullanan ve işbu sözleşmedeki
+                şartlar çerçevesinde bu hizmetleri sipariş edecek olan, söz konusu hizmetlerin verilmesi için
+                imzalanacak sözleşmenin tarafı olan ve işbu sözleşmeye uymakla yükümlü her türlü gerçek kişi, işletme
+                veya tüzel
+                kişiyi ifade eder.
+            </li>
+            <li>
+                <strong>Kuyum Plus (“Yazılım” veya “Sistem”)</strong> – Web sitesi ve/veya Kuyum Plus mobil
+                uygulamaları üzerinden, kuyumculuk işletmelerinin stok, satış, cari, kasa, personel ve finansal
+                verilerini
+                yönetmesi maksadıyla sunulan işletme yönetim uygulamasını ifade eder.
+            </li>
+            <li>
+                <strong>Kullanıcı</strong> – Sisteme Hizmet Alıcı tarafından yetkilendirilerek erişim sağlayan işletme
+                personeli veya yöneticileridir.
+            </li>
+            <li>
+                <strong>Hizmet/Hizmetler</strong> – Her türlü yasal hakları Hizmet Sağlayıcıya ait olan ve Hizmet
+                Alıcı'ya
+                sunulan Kuyumcu Yönetim Yazılımıdır.
+            </li>
+            <li>
+                <strong>Müşteri</strong> – Hizmet Alıcı'nın ticari ilişki içerisinde olduğu, sisteme kaydettiği
+                perakende veya toptan müşterileri ifade eder.
+            </li>
+            <li>
+                <strong>Profil</strong> – Hizmet Alıcı’nın işletmesine, Kullanıcılarına ve Müşterilerine ilişkin bilgi
+                ve verileri ifade
+                eder.
+            </li>
+            <li>
+                <strong>Paket/Paketler</strong> – Hizmet Alıcı’nın somut ihtiyaçları dikkate alınarak, işbu sözleşmede
+                belirtilen ödeme koşulları gerçekleştiğinde belirli bir süre için Hizmet Alıcı’nın kullanımına
+                sunulan ek fonksiyonlar grubunu ifade eder. (“Başlangıç Paketi”, “Standart Paket” ve “Profesyonel Paket”
+                birlikte “Paketler” olarak anılacaktır.)
+            </li>
+            <li>
+                <strong>Sipariş</strong> – Paket siparişi vermek için doldurulan, Hizmet Alıcı tarafından onaylanan ve
+                Paket alma koşullarını tanımlayan formu ifade eder. Siparişin geçilmesi bu sözleşmenin uygulanmasını
+                kabul
+                etmek anlamına gelir.
+            </li>
+            <li>
+                <strong>Ödeme Dönemi</strong> – Hizmet Alıcı’nın kendisine sağlanan hizmetler için ödeme yaptığı dönemi
+                ifade eder.
+            </li>
+            <li>
+                <strong>Sözleşme</strong> – Taraflar arasında Sipariş verme yoluyla, işbu sözleşmede belirtilen şartlar
+                dâhilinde Paket hizmetinin sağlanması için imzalanan sözleşmeyi ifade eder.
+            </li>
+            <li>
+                <strong>Sms</strong> – Hizmet Alıcı tarafından Kuyum Plus arayüzü kullanılarak, metni Hizmet Alıcı
+                tarafından belirlenmiş ve yasal yükümlülüğü tamamen Hizmet Alıcıya ait olan, gönderim altyapısı ve
+                faturalandırılması anlaşmalı telekomünikasyon firmaları tarafından sağlanan sms gönderim sistemini ifade
+                eder.
+            </li>
+            <li>
+                Hizmet Alıcı, Uygulama’dan faydalanmak için Şirket tarafından talep edilen bilgileri tam, doğru ve
+                güncel
+                bir şekilde sağlayarak işbu Sözleşme’yi onaylaması gerektiğini bildiğini beyan eder.
+            </li>
+            <li>
+                Hizmet Alıcı/Kullanıcı, 18 yaşını doldurmuş olduğunu ve işbu Sözleşme’yi akdetmek için gereken yasal
+                ehliyete sahip
+                bulunduğunu beyan eder. Kullanıcı’nın Site’ye bir işletme adına erişiyor olması hâlinde gerekli yetkiye
+                sahip olduğunu kabul ve beyan eder.
+            </li>
+        </ol>
+        <h6>MADDE 3 – Sözleşmeleri İmzalama ve Sonlandırma Prosedürü</h6>
+        <ol>
+            <li>
+                <p> Taraflar arasında sözleşme imzalanmadan önce, Hizmet Alıcı işbu sözleşmeye göre bir Sipariş verip
+                    Hizmet Sağlayıcı’ya imzalı/onaylı olarak iletir; Hizmet Sağlayıcı da teslim alındığını teyit
+                    eder.</p>
+                <strong>Siparişin iletilme şekilleri:</strong>
+                <ul>
+                    <li>İmzalı siparişin Hizmet Sağlayıcı tarafından belirtilen iletişim kanallarına gönderilmesi veya
+                    </li>
+                    <li>İmzalı siparişin bilgi@konasoft.com (veya destek@kuyumplus.com) e-mail adresine gönderilmesi
+                        veya
+                    </li>
+                    <li>Siparişin Web Sitesi ve/veya Kuyum Plus mobil uygulaması üzeriden Hizmet Alıcı tarafından
+                        dijital ortamda, kayıt işlemi sırasında veya sonrasında “sözleşmeyi okudum, kabul ediyorum”
+                        bölümünde belirtilen şartları okuyup onaylamak suretiyle, işlemi gerçekleştirdiği IP adresi
+                        Hizmet Sağlayıcı tarafından kayıt altına alınarak kabul edilmesi.
+                    </li>
+                </ul>
+            </li>
+            <li>Hizmet Alıcı sistemi kullanmaya devam ettiği süre boyunca, sözleşmenin en güncel halindeki şartları
+                sağlamaya devam ettiğini, sisteme kendi hesabı veya oluşturduğu alt hesaplar üzerinden giriş yapılmak
+                suretiyle kullanmaya devam edilmesinin sözleşmenin en güncel halindeki şartları kabul ettiği anlamına
+                geleceğini taahhüt eder.
+            </li>
+            <li>Hizmet Alıcı Profilini oluştururken sağladığı ad soyad, adres, telefon numarası, e-posta adresi, firma
+                adı, firma bilgileri vb. bilgilerin doğruluğundan sorumludur.
+            </li>
+            <li>Paketler’in güncel fiyatları Web Sitesindeki fiyat listesinden temin edilebilir. Hizmet
+                Sağlayıcı fiyat listesini herhangi bir zamanda tek taraflı olarak değiştirme hakkını saklı tutar. Fiyat
+                listesindeki değişiklikler Hizmet Alıcı için güncel sözleşmenin uzatılmasıyla geçerli olacaktır.
+            </li>
+            <li>Sözleşmenin geçerlilik süresi 12 aydır. Sözleşmenin geçerlilik süresinin sona ermesi üzerine,
+                Taraflar’dan biri sözleşmeyi uzatmak istemediğini diğer Taraf’a bildirmediği sürece Sözleşme, aksi
+                Taraflarca veya bu Sözleşme kapsamında belirlenmediği sürece, aynı koşullarla ve fesih bildirimi
+                yapılana kadar bir aylık sürelerle yenilenir. Bildirim en geç sözleşmenin bitimine 1 ay kala
+                yapılmalıdır.
+            </li>
+            <li>Siparişin alınmasından sonra Hizmet Sağlayıcı, Siparişi yerine getirmek için gerekli teknik ve insan
+                kaynaklarını kullanarak hizmetleri vermeye başlar. Hizmet Sağlayıcı tarafından hizmetlerin devreye
+                alınması, Hizmet Alıcı’nın Siparişinin kabul edildiği anlamına gelir.
+            </li>
+            <li>Hizmet Alıcı her zaman için sözleşmeyi Hizmet Sağlayıcıya bildirim yaparak tek taraflı feshetme hakkına
+                sahiptir. Sözleşme, Hizmet Sağlayıcının fesih bildirimini aldığı ilgili hizmet ayının sonunda
+                sonlanacaktır.
+            </li>
+            <li>Hizmet Alıcı’nın sözleşmede öngörülen yükümlülüklerini yerine getirmemesi durumunda Hizmet Sağlayıcı
+                mahkemeye başvurmaya ve ihbar süresinin uygulanmasına gerek olmaksızın Sözleşmeyi derhal tek taraflı
+                olarak ve tazminatsız sonlandırma hakkına sahip olacaktır. Böyle bir durumda Hizmet Alıcı’dan Madde 9’da
+                tanımlanan cezai tazminat ile ilgili hükümler uygulanacaktır.
+            </li>
+            <li>İşbu Sözleşme kapsamında belirtilen bildirimlerin alındığı tarih bildirimin Hizmet Sağlayıcının veya
+                Hizmet Alıcının belirtilen adreslerinde teslim alındığı tarih olarak kabul edilecektir.
+                Bildirimlerin yazılı olması gerekir, aksi halde bildirimler geçersiz sayılacaktır.
+                Şu kadar ki TTK 18/3 hükümleri saklıdır. Adres değişikliklerinin diğer Taraf’a 10 gün
+                içerisinde bildirilmemesi durumunda bu madde kapsamında belirtilen adreslere yapılan tebligatlar usulüne
+                uygun olarak yapılmış sayılacaktır.
+            </li>
+            <li>Hizmet Alıcı siparişte belirtilen Paket hizmetinin ilgili olduğu Profilde yer alan bilgi ve
+                materyallerin doğruluğunu ve bu bilgilerin hiçbir yasa hükmünü ve/veya üçüncü şahısların haklarını ihlal
+                etmediğini beyan ve taahhüt eder. İşbu beyan ve taahhüte aykırı bir durumun ortaya çıkması halinde 3.
+                kişilerden gelecekler dahil her türlü talepten bizzat Hizmet Alıcı sorumlu olup Hizmet Sağlayıcının rücu
+                hakkı saklıdır.
+            </li>
+            <li>Hizmet Alıcı, Profil oluşturmak veya fonksiyonları üzerindeki blokajı kaldırmak için gerekli
+                materyalleri zamanında temin edecektir.
+            </li>
+            <li>Hizmet Alıcı birden fazla Şube/Profil için “Başlangıç Paket”, “Standart Paket” ve “Profesyonel Paket”
+                satın
+                aldığı takdirde, Paket hizmetinin verilmeye başlama zamanı satın alınan Profiller’den biri için bu
+                hizmetlerin verilmeye başlandığı tarih olarak kabul edilecektir.
+            </li>
+            <li>Taraflar, Hizmet Sağlayıcının hizmet sunumunu gerçekleştireceği web sitesinin (alan adı da dahil)
+                tasarımını, arayüzlerini, panellerini, görsellerini ve fonksiyonlarını Hizmet Sağlayıcının
+                değiştirebileceği konusunda mutabıktırlar. Taraflar, web sitesindeki tasarım ve görsellerin tüm fikri
+                mülkiyet haklarına Hizmet Sağlayıcının sahip olacağı konusunda mutabıktırlar. Hizmet Alıcıya ilişkin
+                sunulan bilgilerin Hizmet Sağlayıcı veya bağlı kişi veya şirketleri (ana ortakları veya hakim ortakları)
+                tarafından arşiv, yedekleme, bilgi saklama ve istatistiki sebeplerle işlenebileceğini ve bunların iş
+                geliştirme amacıyla Hizmet Sağlayıcı tarafından iş ortakları ile paylaşabileceğini Hizmet Alıcı kabul
+                eder.
+            </li>
+            <li>Hizmet, Profiller, yazılım sistemi ve “Başlangıç Paket”, “Standart Paket”, “Profesyonel Paket” ile
+                ilgili fonksiyonlara ilişkin telif hakları da dahil her türlü fikri mülkiyet hakları Hizmet Sağlayıcıya
+                aittir.
+            </li>
+            <li>Hizmet Sağlayıcı tarafından yapılan tüm işlere ilişkin telif hakları ile fikri mülkiyet hakları ile
+                korunan diğer işlerin ve materyallerin bağımsız parçaları olan unsurlara ilişkin telif hakları
+                oluşturuldukları tarihten itibaren Hizmet Sağlayıcıya aittir.
+            </li>
+            <li>Hizmet Alıcı hizmetlerde sergilenen grafik tasarımlarla ve Hizmetlerle ilgili herhangi bir hak sahibi
+                olmayacaktır.
+            </li>
+            <li>Hizmet Alıcı girişimsel faaliyetlerin yürütülmesi ile ilgili Hizmetleri kullandığını teyid eder.
+                Tüketicinin korunmasına ilişkin mevzuat uygulanmaz.
+            </li>
+        </ol>
+        <h6>MADDE 4 – Ödeme Şartları</h6>
+        <ol>
+            <li>Paket hizmetler için Hizmet Alıcı tarafından ödenecek bedel her bir Siparişte belirtilecektir.</li>
+            <li>İşbu hizmetlerin temini için ilk fatura Hizmet Alıcı’nın hizmetleri almaya başladığı tarihten itibaren
+                düzenlenecek olup, müteakip faturalar da İlk Fatura Tarihini takip eden 1 er ay (veya yıllık)
+                aralıklarla
+                düzenlenecektir. Hizmet Alıcı düzenlenen her bir fatura bedelini fatura düzenlenmesini takip eden 14 gün
+                içerisinde ödemekle yükümlü olacaktır. Hizmet aktivasyonu, ilk faturanın ödenmesine müteakiben
+                yapılacaktır.
+            </li>
+            <li>Hizmet Alıcı’nın Hizmet Sağlayıcı tarafından lisanslı ödeme aracı kuruluşları veya mukim bankaların
+                altyapısını kullanarak oluşturulan online ödeme sistemi ve/veya mail order yoluyla sağladığı kredi kartı
+                bilgileri ile işbu Sözleşme kapsamında Hizmetin yürürlükte olduğu süre boyunca ya da sözleşmenin ilgili
+                hükümleri gereği Sözleşmenin sona ermesi akabinde düzenleyeceği her bir faturanın tahsilatı otomatik
+                olarak gerçekleştirilecektir.
+            </li>
+            <li>Hizmet Sağlayıcı, Hizmet Alıcıya kendi takdirinde olmak üzere indirim sağlayabilir. İndirimin temini ve
+                tutarı Hizmet Sağlayıcı tarafından önerilen ek fonksiyonlara bağlıdır. Hizmet Sağlayıcı kendi takdirine
+                bağlı olmak üzere
+                daha önce uyguladığı indirimi her zaman sonlandırma hakkına sahiptir.
+            </li>
+            <li>Hizmet Sağlayıcının faturalarında belirtilen Paket hizmetlerinin fiyatı, sağlanan indirimler hariç,
+                herhangi bir stopaj veya kesinti yapılmadan KDV dahil bedel üzerinden tam olarak ödenmelidir.
+            </li>
+            <li>Hizmetler için belirtilen ödemenin vadesinde gerçekleştirilmemesi halinde Madde § 9 dördüncü bentte
+                tanımlanan cezai tazminata ilişkin hükümler aynen uygulanır. Hizmet Sağlayıcının cezai tazminatı aşan
+                zararlarını talep etme hakkı saklıdır.
+            </li>
+            <li>Kullanıcı’nın hesabının 3 (üç) ay boyunca pasif olması veya ödemesinin yapılmaması halinde Şirket işbu
+                Sözleşme’yi
+                feshedebilecektir.
+            </li>
+        </ol>
+        <h6>MADDE 5 – Verilen Hizmetlerin Türü ve Kapsamı</h6>
+        <ol>
+            <li>Paket hizmeti, siparişte gösterilen Hizmet Alıcıların işletme Profillerine yüklenir.</li>
+            <li>Profiller’inde Paket hizmetinin aktif hale getirilmesi gereken Hizmet Alıcı’lar web sitesine
+                kaydedilmeli ve ayrıca bu kişiler Hizmet Sağlayıcı tarafından belirtilen şartlar doğrultusunda yetki
+                almalıdır.
+            </li>
+        </ol>
+
+
+        <h6>MADDE 6 – Paket Hizmetlerinin Verildiği Şartlar</h6>
+        <ol>
+            <li>
+                Hizmet Sağlayıcı:
+                <ul>
+                    <li>Sözleşmenin geçerlilik süresi içerisinde Hizmet Alıcı tarafından gösterilen Profiller’deki
+                        hizmetlerini aktive edecek ve tutacaktır;
+                    </li>
+                    <li>Hizmet Alıcı’nın Profilindeki verilerin düzenlenmesine ilişkin paneli aktive edecektir;</li>
+                    <li>Paketlerin aktif duruma getirildiği Profilin kurulumunda, paketin aktivasyon tarihini izleyen
+                        süreçte uzaktan destek sağlayacaktır.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                Hizmet Alıcı:
+                <ul>
+                    <li>Ödemelerini zamanında yapacak;</li>
+                    <li>Profilde ve stoklarında tam ve doğru bilgiler tutacak;</li>
+                    <li>Sisteme girdiği Müşteri kişisel verileri (KVKK) için müşterilerden gerekli izinleri alacak,
+                        gerekli izinleri almadan kayıt ettiği kişisel verilerden kaynaklı Hizmet Sağlayıcıya gelebilecek
+                        her türlü yasal ve cezai yaptırımdan tamamen ve yalnızca Hizmet Alıcı olarak kendisinin sorumlu
+                        olduğunu kabul etmiş sayılacak;
+                    </li>
+                    <li>SMS hizmeti kapsamında gönderim yapacağı SMS’lerin yasal olarak belirtilen şartları (İYS vb.)
+                        sağladığına
+                        emin olacak ve yasal yükümlülüğün kendinde olacağını kabul edecektir.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                Taraflardan her biri diğer Taraf hakkında bu Sözleşmenin ifası dolayısıyla öğrendiği, üçüncü kişilerce
+                yasal yollarla zaten bilinenler dışındaki tüm bilgileri sır olarak kabul etmeyi taahhüt eder.
+            </li>
+            <li>
+                Bu sözleşmeden kaynaklanan bilgilerin gerek Hizmet Alıcı ve gerekse 3. kişiler tarafından kullanılması
+                veya açıklanması ve sözleşmenin ifası ile ilgili olmayan amaçlar için alınması durumunda Hizmet Alıcı
+                her türlü zarar ve talepten bizzat sorumludur.
+            </li>
+            <li>
+                Hizmet Alıcı, Hizmet Sağlayıcının IT sistemini bu Sözleşme kapsamı dışında kullanamaz. Hizmet Alıcı’nın
+                Hizmet Sağlayıcının IT sistemine bağlantı için gerekli ekipmanına
+                ilişkin teknik şartlar şunlardır:
+                <ul>
+                    <li>İnternet erişimi,</li>
+                    <li>Cep telefonu numarası ve e-posta adresi,</li>
+                    <li>Web tarayıcısı,</li>
+                    <li>İnternet erişimi olan bilgisayar, tablet veya akıllı telefon,</li>
+                    <li>(Gerekirse) Barkod yazıcı ve okuyucu donanımları.</li>
+                </ul>
+            </li>
+            <li>
+                Paket hizmeti süreklilik esasına göre temin edilir. Hizmet Alıcı bu hizmetlerin verilişinin askıya
+                alınmasını talep etme hakkına sahip değildir.
+            </li>
+            <li>
+                Hizmet Sağlayıcı Paket hizmeti bedellerinin tamamı veya bir kısmının Hizmet Alıcı tarafından geç
+                ödenmesi durumunda hizmetlere erişimi durdurmak hakkına sahip olacaktır.
+            </li>
+        </ol>
+
+        <h6>MADDE 7 – Kuyum Plus Yönetim Yazılımı Lisansı</h6>
+        <ol>
+            <li>
+                Kuyum Plus Yönetim Yazılımı’nın aktive edilmesi üzerine Hizmet Sağlayıcı Hizmet Alıcıya,
+                sözleşmenin geçerlilik süresi ile sınırlı, gayrimünhasır ve yalnızca 7.2 maddesinde belirtilen
+                kullanımlara ilişkin olmak üzere web sitesinde kullanmak üzere bir lisans vermektedir. Bu lisansın amacı
+                Hizmet Alıcı’nın web sitesi ve özel mobil uygulamalar üzerinden Yönetim Yazılımı’na
+                erişmesini sağlamaktır.
+            </li>
+            <li>
+                Bu lisans yalnızca aşağıda belirtilen kullanımlar için verilmektedir:
+                <ol>
+                    <li>Yazılımın Hizmet Alıcı tarafından seçilen yerde ve zamanda İnternet üzerinden kullanımı.</li>
+                    <li>Yazılımın düzgün çalışması için gerekli bilgisayar belleğinde geçici çoğaltımı (örn. tarayıcı
+                        önbelleği).
+                    </li>
+                </ol>
+            </li>
+            <li>
+                Lisans Hizmet Sağlayıcı tarafından Hizmet Alıcıya erişme izni verildiği andan Sözleşme sona erinceye
+                veya iptal edilinceye kadar sınırlı süreli olarak düzenlenmiştir.
+            </li>
+            <li>
+                Aşağıdakiler de dahil olmak üzere Yazılım ile ilgili olarak Hizmet Alıcı’nın
+                uygunsuz veya bu sözleşmeyi ihlal eden davranışları olması durumunda Hizmet Sağlayıcı Yazılım'a erişimi
+                bloke etme hakkına sahip olacaktır:
+                <ol>
+                    <li>Yazılımın başka kullanıcıların internet kullanımına zarar verecek şekilde kullanılması</li>
+                    <li>Spam mail/sms gönderilmesi</li>
+                    <li>Müşteri veya çalışan bilgilerinin kötüye kullanımı</li>
+                    <li>Yazılımın kaynak kodu ile oynanması veya tersine mühendislik</li>
+                    <li>Yazılımı yetkisiz şekilde çoğaltma girişimleri</li>
+                    <li>Hizmet Sağlayıcının kişisel çıkarlarının ihlali</li>
+                    <li>Sözleşmenin ihlali</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h6>MADDE 8 – Kişisel Bilgiler ve Veriler</h6>
+        <ol>
+            <li>Hizmet Alıcı sisteme girdiği ad soyad, telefon numarası, e-posta adresi, adres, TC Kimlik No, doğum
+                tarihi vb. her türlü kişisel bilgilerin tutulması, depolanması ve işlenmesi için ilgili
+                bilgilerin sahiplerinden gerekli izinleri almış olmak yükümlülüğündedir.
+            </li>
+            <li>Hizmet Alıcı sisteme girdiği kişisel bilgilerle alakalı Hizmet Sağlayıcı’nın yalnızca bir altyapı
+                sağlayıcısı olarak rol aldığını ve Hizmet Sağlayıcı’nın Veri Sorumluluğu bağlamında hiçbir yükümlülüğü
+                bulunmadığını kabul eder.
+            </li>
+            <li>Hizmet Alıcı profili altında oluşturduğu hesaplar aracılığıyla ortakları, çalışanları veya herhangi bir
+                üçüncü kişi veya kişiler tarafından sisteme girilen kişisel veriler konusunda tamamen ve yalnızca
+                kendisi sorumlu olduğunu kabul eder.
+            </li>
+            <li>Hizmet Alıcı sisteme giriş yaptığı kendi hesabının ve Profili altında oluşturduğu, ortakları,
+                çalışanları ve diğer üçüncü kişi veya kişiler tarafından kullanılan diğer kullanıcı hesaplarının giriş
+                bilgilerinin güvenliğinden tamamen ve yalnızca kendisi sorumludur.
+            </li>
+            <li>Hizmet Sağlayıcı kendisine Hizmet Alıcı tarafından verilen kişisel bilgilerin işlenmesini Hizmet Alıcı
+                ile ayrı bir sözleşme yapılmasına gerek olmaksızın üçüncü şahıslara (Sunucu hizmetleri vb.) devredebilir
+                ve Hizmet Alıcı bu
+                hususu peşinen kabul eder.
+            </li>
+        </ol>
+
+
+        <h6>MADDE 9 – Sözleşme Çerçevesinde Sorumluluk, Sözleşmenin Erken Feshi</h6>
+        <ol>
+            <li>Hizmet Sağlayıcının bu Sözleşme kapsamındaki Paket hizmetlerinin verilememesi veya gerektiği gibi
+                verilememesinden kaynaklanan zararlardan sorumlu olmayacaktır.
+            </li>
+            <li>Hizmet Sağlayıcı, Hizmet Alıcı’nın uğrayacağı kar kaybı veya dolaylı zararlardan hiçbir şekilde sorumlu
+                olmayacaktır.
+            </li>
+            <li>İşbu sözleşmenin Madde 3 § 3’te belirtilen süresinin sonundan önce ve Hizmet Sağlayıcının sorumlu
+                olmadığı nedenlerle feshedilmesi durumunda, Hizmet Sağlayıcı Hizmet Alıcıya Kurulum Bedeli’ni ve fesih
+                tarihine kadar olan üyelik kapsamında yapılan indirimleri fatura eder.
+            </li>
+            <li>Hizmet Alıcı, işbu Sözleşme kapsamında aldığı Hizmetler kapsamında Hizmet Alıcı tarafından düzenlenen
+                faturalardan birini 14 (ondört) günlük ödeme vadesinin dolmasına müteakip 29 (yirmi dokuz) gün
+                içerisinde ödemediği takdirde, herhangi bir ihtara gerek olmaksızın temerrüde düşecektir. Hizmet
+                Sağlayıcı bu durumda Hizmetler’i tek taraflı olarak durdurur ve/veya sözleşmeyi fesheder.
+            </li>
+            <li>İşbu Sözleşme kapsamında uygulanan ceza Hizmet Sağlayıcının Hizmet Alıcıya verdiği hizmetler nedeniyle
+                uğradığı zararın tamamını karşılamıyorsa, Hizmet Sağlayıcı, cezai tazminatı aşan zararlarını talep etmek
+                hakkına sahip olacaktır.
+            </li>
+        </ol>
+
+        <h6>MADDE 10 – Son hükümler</h6>
+        <ol>
+            <li>Hizmet Sağlayıcı işbu sözleşmede belirtilen hizmetlerin veriliş şekliyle ilgili olarak tek taraflı
+                değişiklik yapma hakkına sahiptir.
+            </li>
+            <li>Hizmet Sağlayıcı, IT ekipmanı üzerinde koruyucu bakım ve onarım işlemleri yapmak hakkına sahiptir. Bu
+                işlemler Paket hizmetlerde geçici aksaklığa yol açabilir. Hizmet
+                Sağlayıcı çalışmaların geceleri veya hafta sonunda yapılması için elinden
+                gelen çabayı gösterecektir.
+            </li>
+            <li>Mücbir sebep halinin 10 günden fazla sürmesi halinde,
+                Taraflar iyi niyetle durumu değerlendirerek birlikte veya ayrı ayrı fesih kararı alabileceklerdir.
+            </li>
+            <li>Bu sözleşmede düzenlenmemiş olan hususlar Türkiye Cumhuriyeti’nin ilgili yasalarına tabi olacaktır.</li>
+            <li>Taraflar arasındaki işbu sözleşmeden kaynaklanan her türlü ihtilaf <strong>İstanbul Anadolu Mahkemeleri
+                ve İcra Daireleri</strong> tarafından çözümlenecektir.
+            </li>
+        </ol>
+
+    </article>
+{% endblock body %}
+{% block footer %}
+{% endblock footer %}

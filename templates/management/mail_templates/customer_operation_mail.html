@@ -1,0 +1,398 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ subject }}</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", Arial, sans-serif;
+            background: #f4f6f9;
+            color: #232a33;
+            line-height: 1.7
+        }
+
+        a {
+            color: #126de5;
+            text-decoration: none
+        }
+
+        img {
+            border: 0;
+            line-height: 100%;
+            height: auto;
+            display: inline-block
+        }
+
+        .o_block {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 12px;
+        }
+
+        .o_card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e9edf3;
+            box-shadow: 0 4px 12px rgba(18, 28, 45, .06);
+            padding: 24px 28px;
+            margin-bottom: 10px;
+        }
+
+        .o_center {
+            text-align: center
+        }
+
+        .o_heading {
+            font-weight: 700;
+            color: #1f2a37;
+            margin: 0;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .o_sub {
+            color: #6b7583;
+            font-size: 14px;
+            margin: 0;
+            margin-top: 8px;
+        }
+
+        .o_text {
+            font-size: 15px;
+            margin: 0;
+            margin-bottom: 16px;
+        }
+
+        .muted {
+            color: #6e7783
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th, td {
+            border: 1px solid #e8edf2;
+            padding: 10px 12px;
+            font-size: 14px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #f7f9fc;
+            color: #374151;
+            font-weight: 600
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #fbfcfe
+        }
+
+        .num {
+            text-align: right;
+            white-space: nowrap
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 12px;
+            line-height: 1.4
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, rgba(17, 24, 39, .05), rgba(17, 24, 39, .12), rgba(17, 24, 39, .05));
+            margin: 18px 0;
+            border: 0
+        }
+
+        .header {
+            border-radius: 12px 12px 0 0
+        }
+
+        .footer {
+            border-radius: 0 0 12px 12px;
+            margin-top: 10px;
+            padding-top: 24px;
+            padding-bottom: 24px;
+        }
+
+        @media (max-width: 640px) {
+            .o_card {
+                padding: 20px 18px;
+            }
+
+            .o_heading {
+                font-size: 22px !important
+            }
+
+            .o_text {
+                font-size: 14px !important
+            }
+
+            th, td {
+                padding: 8px 10px !important
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #0b1220;
+                color: #dbe2ef
+            }
+
+            .o_card {
+                background: #0f172a;
+                border-color: #1f2937;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .35)
+            }
+
+            .o_heading {
+                color: #e5e7eb
+            }
+
+            .o_sub, .muted {
+                color: #97a3b6
+            }
+
+            th {
+                background: #111a2e;
+                color: #e5e7eb;
+                border-color: #223047
+            }
+
+            td {
+                border-color: #223047
+            }
+
+            tbody tr:nth-child(odd) {
+                background: #0e1629
+            }
+
+            .divider {
+                background: #1e293b
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="o_block">
+
+    <div class="o_card header o_center">
+        <a href="https://www.kuyumplus.com">
+            <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="160" alt="KuyumPlus">
+        </a>
+        <p class="o_sub">İşlem Bilgilendirme</p>
+
+        {% if summary.has_debt %}
+            <span class="pill" style="background:#fff7ed;color:#b45309;border:1px solid #fde68a">Ödeme Bekliyor</span>
+        {% elif custody and custody.piece > 0 %}
+            <span class="pill" style="background:#eef4ff;color:#1d4ed8;border:1px solid #c7d2fe">Emanette</span>
+        {% else %}
+            <span class="pill" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0">Tamamlandı</span>
+        {% endif %}
+    </div>
+
+    <div class="o_card" style="margin-top:10px;">
+        <h2 class="o_heading">{{ subject }}</h2>
+        <p class="o_text">
+            Merhaba {{ customer.first_name }} {{ customer.last_name }},<br>
+            İşleminize ait özet bilgileri aşağıda bulabilirsiniz.
+        </p>
+
+        <table role="presentation" style="border:0;">
+            <tr>
+                <td style="border:0;padding:0 0 6px 0;">
+                    <p class="o_text" style="margin:0;"><strong>İşlem No:</strong> {{ process_no }}</p>
+                </td>
+            </tr>
+            <tr>
+                <td style="border:0;padding:0 0 6px 0;">
+                    <p class="o_text muted" style="margin:0;"><span class="muted">Tarih:</span> {{ date_str }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <hr class="divider">
+
+        <table>
+            <thead>
+            <tr>
+                <th style="width:50%;">Ürün</th>
+                <th style="width:25%;">Miktar</th>
+                <th class="num" style="width:25%;">Tutar (TL)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for it in items %}
+                <tr>
+                    <td>{{ it.product_name }}</td>
+                    <td>{{ it.qty_str }}</td>
+                    <td class="num">{{ it.amount_tl }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% if payments and payments.has_any %}
+            <h3 class="o_heading" style="font-size:18px;margin:18px 0 8px;">Ödeme Özeti</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Tür</th>
+                    <th class="num">Tutar (TL)</th>
+                    <th>Detay</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% if payments.cash > 0 %}
+                    <tr>
+                        <td>Nakit</td>
+                        <td class="num">{{ payments.cash|floatformat:2 }}</td>
+                        <td>{{ payments.direction_text }}</td>
+                    </tr>
+                {% endif %}
+
+                {% if payments.transfer > 0 %}
+                    <tr>
+                        <td>Havale / EFT</td>
+                        <td class="num">{{ payments.transfer|floatformat:2 }}</td>
+                        <td>
+                            {% if payments.transfer_bank %}Banka: {{ payments.transfer_bank }} • {% endif %}
+                            {{ payments.direction_text }}
+                        </td>
+                    </tr>
+                {% endif %}
+
+                {% if payments.credit_card > 0 %}
+                    <tr>
+                        <td>Kredi Kartı</td>
+                        <td class="num">{{ payments.credit_card|floatformat:2 }}</td>
+                        <td>
+                            {% if payments.card_bank %}Banka: {{ payments.card_bank }}{% endif %}
+                            {% if payments.installment > 1 %} • {{ payments.installment }} taksit{% endif %}
+                            • {{ payments.direction_text }}
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        <h3 style="margin:14px 0 6px; font-size:18px; font-weight:700;">Toplam</h3>
+        <table role="presentation" style="width:100%;border-collapse:collapse;">
+            <tr>
+                <td style="border:none;">Genel Toplam</td>
+                <td style="border:none; text-align:right;">{{ totals.net_tl_abs }} TL</td>
+            </tr>
+            <tr>
+                <td style="border:none;">Ödenen</td>
+                <td style="border:none; text-align:right;">{{ summary.paid_tl }} TL</td>
+            </tr>
+            {% if summary.balance_tl_raw > 0 %}
+                <tr>
+                    <td style="border:none;">Kalan</td>
+                    <td style="border:none; text-align:right; font-weight:bold;">{{ summary.balance_tl }} TL</td>
+                </tr>
+            {% endif %}
+            {% if summary.net_hs and summary.net_hs != "0,000" %}
+                <tr>
+                    <td style="border:none; color:#6e7783;">Net (HAS)</td>
+                    <td style="border:none; text-align:right; color:#6e7783;">{{ summary.net_hs }}</td>
+                </tr>
+            {% endif %}
+        </table>
+
+        {% if summary.payment_text %}
+            <p class="o_text muted" style="margin-top:10px;">Ödeme yöntemi: <strong>{{ summary.payment_text }}</strong>
+            </p>
+        {% endif %}
+
+        {% if custody %}
+            <hr class="divider">
+            <h3 class="o_heading" style="font-size:18px;margin:0 0 8px;">Emanet Bilgisi</h3>
+            <p class="o_text" style="margin:0 0 8px;">
+                Ürün(ler)iniz şu an <strong>emanette</strong> tutulmaktadır. Dilediğiniz zaman teslim alabilirsiniz.
+            </p>
+            <table>
+                <tbody>
+                {% if custody.piece > 0 %}
+                    <tr>
+                        <th style="width:40%;">Adet</th>
+                        <td>{{ custody.piece }}</td>
+                    </tr>
+                {% endif %}
+                {% if custody.gram and custody.gram != "0,000" %}
+                    <tr>
+                        <th>Gram</th>
+                        <td>{{ custody.gram }}</td>
+                    </tr>
+                {% endif %}
+                {% if custody.description %}
+                    <tr>
+                        <th>Açıklama</th>
+                        <td>{{ custody.description }}</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if summary.note %}
+            <p class="o_text muted" style="margin-top:12px; font-style: italic;">Not: {{ summary.note }}</p>
+        {% endif %}
+
+        {% if detail_url %}
+            <div style="text-align:center; margin-top:20px;">
+                <a href="{{ detail_url }}"
+                   style="display:inline-block; background:#111827; color:#fff; padding:10px 20px; text-decoration:none; border-radius:6px; font-weight:600;">Detayları
+                    Görüntüle</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="o_card footer o_center">
+        <table role="presentation" width="100%" style="border:0;border-collapse:collapse;">
+            <tr>
+                <td style="border:0;padding:0;vertical-align:middle; text-align: left;">
+                    <a href="https://www.kuyumplus.com" style="display:inline-block;">
+                        <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="120"
+                             alt="KuyumPlus">
+                    </a>
+                </td>
+                <td style="border:0;padding:0;text-align:right;vertical-align:middle;">
+                    <a href="https://www.instagram.com/kuyum_plus" style="text-decoration:none; margin-left: 10px;">
+                        <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" width="24" height="24"
+                             alt="Instagram">
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <div style="margin-top: 15px;">
+            <a href="tel:+902166068801"
+               style="display:inline-block; text-decoration:none; color:#334155; font-weight:600; font-size:14px; margin-right: 15px;">0
+                216 606 88 01</a>
+            <a href="mailto:destek@kuyumplus.com"
+               style="display:inline-block; text-decoration:none; color:#334155; font-weight:600; font-size:14px;">destek@kuyumplus.com</a>
+        </div>
+
+        <p class="muted" style="font-size:13px; margin:15px 0 4px 0;">Yenişehir Mah. Sümbül Sk. No: 6-1/79 Sweet Life
+            Center • Pendik - İstanbul</p>
+        <p class="muted" style="font-size:13px; margin:0;">© 2025 KuyumPlus. Tüm hakları saklıdır.</p>
+    </div>
+
+</div>
+</body>
+</html>

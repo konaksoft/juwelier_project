@@ -1,0 +1,435 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Tedarikçi Detay Raporu</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+            @frame footer_frame {
+            -pdf-frame-content: footerContent;
+            bottom: 0cm;
+            margin-left: 1cm;
+            margin-right: 1cm;
+            height: 1cm;
+        }
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+
+        /* Renkler */
+        .color-primary {
+            color: #0F1B2B;
+        }
+
+        .color-gold {
+            color: #d4af37;
+        }
+
+        .bg-gold {
+            background-color: #d4af37;
+            color: #fff;
+        }
+
+        .bg-dark {
+            background-color: #0F1B2B;
+            color: #fff;
+        }
+
+        /* Tablo Yapıları */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            vertical-align: top;
+        }
+
+        /* Başlık Alanı */
+        .header-line {
+            border-bottom: 2px solid #d4af37;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .report-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #0F1B2B;
+        }
+
+        .meta-info {
+            text-align: right;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        /* Firma Kutusu */
+        .supplier-box {
+            border: 1px solid #eee;
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .sup-name {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #0F1B2B;
+            margin-bottom: 5px;
+        }
+
+        /* KPI Kutuları */
+        .kpi-table {
+            margin-bottom: 25px;
+        }
+
+        .kpi-cell {
+            width: 25%;
+            padding: 5px;
+        }
+
+        .kpi-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            background-color: #fff;
+            border-bottom: 3px solid #d4af37;
+        }
+
+        .kpi-label {
+            font-size: 8pt;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        .kpi-val {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #0F1B2B;
+            margin-top: 5px;
+        }
+
+        /* Veri Tabloları */
+        .data-table {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .data-table th {
+            background-color: #0F1B2B;
+            color: #d4af37;
+            padding: 6px;
+            font-size: 9pt;
+            text-align: left;
+        }
+
+        .data-table td {
+            border-bottom: 1px solid #eee;
+            padding: 6px;
+            font-size: 9pt;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .section-header {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #d4af37;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        /* Bakiye Durumu */
+        .balance-box {
+            text-align: right;
+            font-size: 12pt;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #f0f0f0;
+            margin-top: 10px;
+        }
+
+        /* Renk Yardımcıları */
+        .text-success {
+            color: #28c76f;
+        }
+
+        .text-danger {
+            color: #dc3545;
+        }
+
+        .text-muted {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-line">
+    <table border="0">
+        <tr>
+            <td style="width: 50%;">
+                <div class="report-title">{{ company_name }}</div>
+                <div style="font-size: 10pt; color: #d4af37;">TEDARİKÇİ DETAY RAPORU</div>
+            </td>
+            <td style="width: 50%; text-align: right;">
+                <div class="meta-info">
+                    <strong>Rapor Tarihi:</strong> {{ report_date }}<br>
+                    <strong>Rapor No:</strong> {{ report_no }}<br>
+                    <strong>Oluşturan:</strong> {{ authorized }}
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<table style="width: 100%; margin-bottom: 20px;">
+    <tr>
+        <td style="width: 55%; padding-right: 15px;">
+            <div class="supplier-box">
+                <div class="sup-name">{{ record.company_name }}</div>
+                <table border="0">
+                    <tr>
+                        <td>
+                            <strong>Yetkili:</strong> {{ record.person_name }} {{ record.person_surname }}<br>
+                            <strong>Telefon:</strong> {{ record.phone|default:"-" }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top:5px;">
+                            <strong>Vergi:</strong> {{ record.tax_office.name }} - {{ record.tax_number }}<br>
+                            <strong>Konum:</strong> {{ record.city.name }} / {{ record.district.name }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+
+        <td style="width: 45%;">
+            <div class="section-header" style="margin-top: 0; font-size: 10pt;">GÜNCEL BAKİYELER</div>
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Döviz</th>
+                    <th class="text-end">Net Durum</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for bal in balance_list %}
+                    <tr>
+                        <td style="font-weight: bold;">{{ bal.currency }}</td>
+                        <td class="text-end">
+                            {% if bal.net > 0 %}
+                                <span class="text-success">{{ bal.net|floatformat:2 }} (ALACAK)</span>
+                            {% elif bal.net < 0 %}
+                                <span class="text-danger">{{ bal.net|stringformat:"+f"|slice:"1:"|floatformat:2 }} (BORÇ)</span>
+                            {% else %}
+                                <span class="text-muted">0,00</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">Bakiye kaydı yok.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table class="kpi-table" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+        <td class="kpi-cell">
+            <div class="kpi-box">
+                <div class="kpi-label">Toplam Hacim</div>
+                <div class="kpi-val" style="color: #d4af37;">{{ kpi_volume|floatformat:2 }} Gr</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box">
+                <div class="kpi-label">Toplam İşlem</div>
+                <div class="kpi-val">{{ kpi_tx_count }} Adet</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box">
+                <div class="kpi-label">İade Oranı</div>
+                <div class="kpi-val {% if kpi_return_rate > 5 %}text-danger{% else %}text-success{% endif %}">
+                    % {{ kpi_return_rate|floatformat:2 }}
+                </div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box">
+                <div class="kpi-label">Son Hareket</div>
+                <div class="kpi-val" style="font-size: 11pt; padding-top:4px;">
+                    {{ kpi_last_date|date:"d.m.Y"|default:"-" }}
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div class="section-header">En Çok Çalışılan Ürün Grupları</div>
+<table class="data-table">
+    <thead>
+    <tr>
+        <th width="40%">Ürün Adı</th>
+        <th width="30%">Kategori</th>
+        <th width="15%" class="text-end">Adet</th>
+        <th width="15%" class="text-end">Hacim</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for prod in top_products %}
+        <tr>
+            <td>{{ prod.product__name }}</td>
+            <td>{{ prod.product__category__name|default:"-" }}</td>
+            <td class="text-end">{{ prod.total_qty|default:"0" }}</td>
+            <td class="text-end" style="font-weight: bold; color: #d4af37;">{{ prod.total_gr|floatformat:2 }} Gr</td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="4" style="text-align:center; color:#777;">Veri yok.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<br>
+
+<div class="section-header">Son 50 Finansal Hareket</div>
+<table class="data-table">
+    <thead>
+    <tr>
+        <th width="15%">Tarih</th>
+        <th width="15%">Belge No</th>
+        <th width="10%">Yön</th>
+        <th width="30%">Açıklama / Ürün</th>
+        <th width="10%" class="text-end">Miktar</th>
+        <th width="20%" class="text-end">Tutar (HS)</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for p in transactions %}
+        <tr>
+            <td>{{ p.date|date:"d.m.Y H:i" }}</td>
+            {# FAZ 11 / SYNC-03: process_no monospace + vurgu (eşleştirme için) #}
+            <td style="font-family: monospace; font-size: 8pt; color: #555;">{{ p.process_no }}</td>
+            <td>
+                {% if p.transaction_type in 'PURCHASE,STOCK_IN,ORDER_IN' %}
+                    <span class="text-danger" style="font-size:8pt;">▼ GİRİŞ</span>
+                {% else %}
+                    <span class="text-success" style="font-size:8pt;">▲ ÇIKIŞ</span>
+                {% endif %}
+            </td>
+            <td>{{ p.product.name|default:p.get_transaction_type_display|truncatechars:25 }}</td>
+            <td class="text-end">
+                {% if p.product.is_gram_bullion %}
+                    {{ p.gram|floatformat:2 }} Gr
+                {% else %}
+                    {{ p.piece }} Ad
+                {% endif %}
+            </td>
+            <td class="text-end" style="font-weight:bold;">
+                {{ p.price_hs|floatformat:2 }}
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="6" style="text-align:center; color:#777;">Hareket yok.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{# ════════════════════════════════════════════════════════════════════ #}
+{# FAZ 11 / BL-04 — MUTABAKAT DÜZELTMELERİ (Adjustment Entries)         #}
+{# ════════════════════════════════════════════════════════════════════ #}
+{# ADJ- prefix'li SupplierLedger kayıtları burada ayrı bölüm olarak     #}
+{# listelenir. Immutable Ledger uyumlu — her kayıt düzeltme fişidir.    #}
+{# ════════════════════════════════════════════════════════════════════ #}
+{% if adjustment_entries %}
+    <div class="section-header" style="margin-top: 25px; background: #fff5e6; color: #b56500;">
+        Mutabakat Düzeltmeleri (Cari Sıfırlama / Eşitleme)
+    </div>
+    <table class="data-table">
+        <thead>
+        <tr style="background: #fff5e6;">
+            <th width="15%">Tarih</th>
+            <th width="22%">Düzeltme Fişi No</th>
+            <th width="10%">Yön</th>
+            <th width="10%">Para Birimi</th>
+            <th width="13%" class="text-end">Tutar</th>
+            <th width="30%">Açıklama</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for adj in adjustment_entries %}
+            <tr>
+                <td>{{ adj.created_on|date:"d.m.Y H:i" }}</td>
+                <td style="font-family: monospace; font-size: 8pt;">{{ adj.process_no }}</td>
+                <td>
+                    {% if adj.transaction_type == 'ENTRY' %}
+                        <span class="text-danger" style="font-size:8pt;">▼ ENTRY</span>
+                    {% else %}
+                        <span class="text-success" style="font-size:8pt;">▲ EXIT</span>
+                    {% endif %}
+                </td>
+                <td><strong>{{ adj.currency }}</strong></td>
+                <td class="text-end" style="font-weight:bold;">
+                    {{ adj.amount_value|floatformat:3 }}
+                </td>
+                <td style="font-size: 8pt; color: #555;">
+                    {{ adj.description|default:"-"|truncatechars:60 }}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div style="font-size: 7pt; color: #888; margin-top: 5px; font-style: italic;">
+        Yukarıdaki kayıtlar Immutable Ledger uyumlu mutabakat düzeltmesidir.
+        Mevcut hareketler silinmemiş, ters yönde yeni kayıt açılmıştır.
+    </div>
+{% endif %}
+
+<table style="width: 100%; margin-top: 50px;">
+    <tr>
+        <td width="50%" align="center">
+            <div style="width: 80%; border-top: 1px solid #333; padding-top: 5px;">
+                <strong>TESLİM EDEN (FİRMA)</strong><br><br>
+                İmza / Kaşe
+            </div>
+        </td>
+        <td width="50%" align="center">
+            <div style="width: 80%; border-top: 1px solid #333; padding-top: 5px;">
+                <strong>TESLİM ALAN (KUYUMCU)</strong><br>
+                {{ company_name }}<br>
+                İmza
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div id="footerContent"
+     style="text-align: center; color: #888; font-size: 8pt; border-top: 1px solid #ccc; padding-top: 5px;">
+    Kuyum Plus Kuyumculuk Yönetim Sistemi tarafından otomatik olarak oluşturulmuştur. | Sayfa
+    <pdf:pagenumber>
+</div>
+
+</body>
+</html>

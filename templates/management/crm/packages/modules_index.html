@@ -1,0 +1,281 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        #kt_datatable_example_1_wrapper .top {
+            display: none !important
+        }
+
+        .toolbar-btn-size {
+            width: 6.5rem;
+            height: 2.7rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .my-margin {
+            margin-top: 1rem;
+            margin-bottom: 0;
+            margin-right: .4rem;
+            margin-left: .4rem
+        }
+
+        .module-icon-cell i {
+            font-size: 1.15rem;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #f1f1f4;
+            color: #5e6278;
+        }
+
+        .badge-dep {
+            background: rgba(0, 158, 247, .1);
+            color: #009ef7;
+            font-weight: 600;
+            font-size: .75rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .badge-perm {
+            background: rgba(80, 205, 137, .1);
+            color: #50cd89;
+            font-weight: 600;
+            font-size: .75rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                    <div class="card shadow-sm w-100 my-margin">
+                        <div class="card-body">
+                            <div id="kt_app_toolbar_container"
+                                 class="app-container container-xxl d-flex flex-stack">
+                                <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                    <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                        SaaS Modüller
+                                    </h1>
+                                    <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                                        <li class="breadcrumb-item text-muted">
+                                            <a href="{% url 'packages:index' %}" class="text-muted text-hover-primary">Paketler</a>
+                                        </li>
+                                        <li class="breadcrumb-item">
+                                            <span class="bullet bg-gray-400 w-5px h-2px"></span>
+                                        </li>
+                                        <li class="breadcrumb-item text-muted">Modüller</li>
+                                    </ul>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                    <a href="{% url 'packages:index' %}" class="btn btn-light toolbar-btn-size">
+                                        <i class="fa-solid fa-box me-1"></i><span
+                                            class="d-none d-lg-inline">Paketler</span>
+                                    </a>
+                                    <a href="{% url 'packages:module-create' %}"
+                                       class="btn btn-primary toolbar-btn-size">
+                                        <i class="ki-duotone ki-plus fs-2"></i><span
+                                            class="d-none d-lg-inline ms-1">Ekle</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <div id="tableToolbar"
+                                     class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                    <div class="d-flex toolbar-buttons my-margin1" style="gap:.6rem">
+                                        <button type="button" class="btn btn-light-danger toolbar-btn-size"
+                                                id="deleteSelected" title="Pasife Al">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-light-success toolbar-btn-size"
+                                                id="changeStatusSelected" title="Durum Değiştir">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </button>
+                                    </div>
+                                    <div id="dataTableSearch"></div>
+                                </div>
+
+                                <table id="kt_datatable_example_1"
+                                       class="table align-middle table-row-dashed fs-6 gy-5">
+                                    <thead>
+                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                        <th class="w-10px pe-2">
+                                            <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                <input class="form-check-input" type="checkbox" id="checkAll">
+                                            </div>
+                                        </th>
+                                        <th>Modül</th>
+                                        <th class="text-end">Lisans Bedeli</th>
+                                        <th class="text-center">Kur</th>
+                                        <th class="text-center">Çekirdek</th>
+                                        <th class="text-center">Sıra</th>
+                                        <th class="text-center">Bağımlılık</th>
+                                        <th class="text-center">Yetki</th>
+                                        <th class="text-center">Durum</th>
+                                        <th class="text-end min-w-100px">İşlemler</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        let dt;
+
+        var KTDatatablesServerSide = function () {
+            var initDatatable = function () {
+                dt = $("#kt_datatable_example_1").DataTable({
+                    dom: '<\'top d-flex justify-content-end\'f>rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
+                    serverSide: true,
+                    processing: true,
+                    ajax: "{% url 'packages:module-get-all' %}",
+                    initComplete: function () {
+                        $('#kt_datatable_example_1_filter').appendTo('#dataTableSearch').addClass('mb-0');
+                    },
+                    columns: [
+                        {
+                            data: "id", orderable: false, className: "text-center",
+                            render: (data) => `<input class="form-check-input row-checkbox" type="checkbox" value="${data}">`
+                        },
+                        {
+                            data: "name",
+                            render: function (data, type, row) {
+                                return `<div class="d-flex align-items-center">
+                                    <span class="module-icon-cell me-3"><i class="${row.icon}"></i></span>
+                                    <div>
+                                        <a href="/packages/modules/${row.id}/edit" class="text-gray-800 text-hover-primary fw-bold">${data}</a>
+                                        <div class="text-muted fs-7">${row.slug}</div>
+                                    </div>
+                                </div>`;
+                            }
+                        },
+                        {data: "license_price", className: "text-end fw-bold text-primary"},
+                        {data: "currency", className: "text-center"},
+                        {
+                            data: "is_core", className: "text-center",
+                            render: (val) => val
+                                ? `<span class="badge badge-light-warning">Çekirdek</span>`
+                                : `<span class="text-muted">—</span>`
+                        },
+                        {data: "order", className: "text-center"},
+                        {
+                            data: "dep_count", className: "text-center",
+                            render: (val) => val > 0 ? `<span class="badge-dep">${val} bağımlılık</span>` : '<span class="text-muted">—</span>'
+                        },
+                        {
+                            data: "perm_count", className: "text-center",
+                            render: (val) => val > 0 ? `<span class="badge-perm">${val} yetki</span>` : '<span class="text-muted">—</span>'
+                        },
+                        {
+                            data: "is_active", className: "text-center",
+                            render: (val) => val
+                                ? `<span class="badge badge-light-success">Aktif</span>`
+                                : `<span class="badge badge-light-danger">Pasif</span>`
+                        },
+                        {
+                            data: null, className: "text-end", orderable: false,
+                            render: function (data, type, row) {
+                                return `<a href="/packages/modules/${row.id}/edit" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Düzenle">
+                                    <i class="ki-duotone ki-pencil fs-2"></i>
+                                </a>`;
+                            }
+                        }
+                    ],
+                    order: [[5, 'asc']],
+                    language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+                });
+
+                $('#checkAll').change(function () {
+                    $('.row-checkbox').prop('checked', this.checked);
+                });
+            };
+
+            return {
+                init: function () {
+                    initDatatable();
+                }
+            }
+        }();
+
+        KTUtil.onDOMContentLoaded(function () {
+            KTDatatablesServerSide.init();
+        });
+
+        $('#deleteSelected').click(function () {
+            const ids = $('.row-checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+            if (!ids.length) return Swal.fire('Uyarı', 'Seçim yapınız.', 'warning');
+
+            Swal.fire({
+                title: 'Pasife Al',
+                text: 'Seçili modüller pasife alınacak. Devam edilsin mi?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet',
+                cancelButtonText: 'İptal',
+                confirmButtonColor: '#f1416c'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    $.post("{% url 'packages:module-delete' %}", {
+                        ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
+                    }, function (resp) {
+                        if (resp.result) {
+                            dt.ajax.reload();
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: 'Modüller pasife alındı', showConfirmButton: false, timer: 2000
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        $('#changeStatusSelected').click(function () {
+            const ids = $('.row-checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+            if (!ids.length) return Swal.fire('Uyarı', 'Seçim yapınız.', 'warning');
+
+            $.post("{% url 'packages:module-change-status' %}", {
+                ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
+            }, function (resp) {
+                if (resp.result) {
+                    dt.ajax.reload();
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'success',
+                        title: 'Durumlar güncellendi', showConfirmButton: false, timer: 2000
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock footer %}

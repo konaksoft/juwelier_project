@@ -1,0 +1,584 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+{% endblock header %}
+{% block body %}
+
+    <div class="app-main flex-column flex-row-fluid " id="kt_app_main"
+         style="border-style: groove;border-radius: 10px;border-color: aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            Toptancılar</h1>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 gap-lg-3">
+                        <div id="kt_toolbar_container"
+                             class="container-xxl d-flex flex-stack flex-wrap"
+                             style="max-width: 100%;">
+                            <div class="page-title d-flex flex-column me-3">
+                                <div id="kt_datatable_example_buttons" class="d-none"></div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                <button type="button" class="btn btn-light-danger me-3"
+                                        data-bs-toggle="tooltip" id="deleteSelected">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                                <button type="button" class="btn btn-light-success me-3"
+                                        data-bs-toggle="tooltip" title="Durum Değiştir"
+                                        id="changeStatusSelected">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-light-primary"
+                                        data-kt-menu-trigger="click"
+                                        data-kt-menu-placement="bottom-end">
+                                    <i class="fa-solid fa-download"></i>
+                                    Raporlar
+                                </button>
+                                <div id="kt_datatable_example_export_menu"
+                                     class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                     data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3"
+                                           data-kt-export="copy">
+                                            Panoya Kopyala
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3"
+                                           data-kt-export="excel">
+                                            Dışa Aktar Excel
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" data-kt-export="csv">
+                                            Dışa Aktar CSV
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="#" class="menu-link px-3" data-kt-export="pdf">
+                                            Dışa Aktar PDF
+                                        </a>
+                                    </div>
+                                </div>
+                                <a href="#" class="btn btn-primary"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#addModal">
+                                    <i class="ki-duotone ki-plus fs-2"></i>
+                                    Ekle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="kt_app_content" class="app-content  flex-column-fluid ">
+                <div id="kt_app_content_container" class=" container-fluid ">
+                    <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl"
+                         style="max-width: 100%;">
+                        <div class="content flex-row-fluid" id="kt_content">
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card ">
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+
+                                                <div class="d-flex flex-stack mb-5">
+                                                    <div class="d-flex justify-content-end align-items-center d-none"
+                                                         data-kt-docs-table-toolbar="selected">
+                                                    </div>
+                                                </div>
+                                                <table id="kt_datatable_example_1"
+                                                       class="table align-middle table-row-dashed fs-6 gy-5">
+                                                    <thead>
+                                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                        <th class="w-10px pe-2 " data-dt-column="0"
+                                                            rowspan="1" colspan="1" aria-label="">
+                                                            <span class="dt-column-title">
+                                                                <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               data-kt-check="true"
+                                                                               data-kt-check-target="#kt_table_rows .form-check-input">
+                                                                </div>
+                                                            </span>
+                                                            <span class="dt-column-order"></span>
+                                                        </th>
+                                                        <th>Mağaza</th>
+                                                        <th>isim</th>
+                                                        <th>Telefon</th>
+                                                        <th>Adres</th>
+                                                        <th>Müşteri Tipi</th>
+                                                        <th>Şirket</th>
+                                                        <th>Açıklama</th>
+                                                        <th>Durum</th>
+                                                        <th class="text-end min-w-100px">İşlemler</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="text-gray-600 fw-semibold">
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" tabindex="-1" id="addModal">
+            <div class="modal-dialog modal-dialog-centered mw-900px">
+                <div class="modal-content" style="padding: 25px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Yeni</h3>
+                        <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"
+                             aria-label="Kapat">
+                            <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span
+                                    class="path2"></span></i>
+                        </div>
+                    </div>
+                    <form id="add-form" method="post" autocomplete="off" data-toggle="validator"
+                          enctype="multipart/form-data" role="form">
+                        {% csrf_token %}
+                        <input type="hidden" name="record_id" id="record_id">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="name"
+                                           name="name"
+                                           required/>
+                                    <label for="name">Ad</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="phone" name="phone" required
+                                           data-inputmask="'mask': '999-999-9999'"/>
+                                    <label for="phone">Telefon Numarası</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="address"
+                                           name="address"
+                                           required/>
+                                    <label for="address">Adres</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="customer_type"
+                                           name="customer_type"
+                                           required/>
+                                    <label for="customer_type">Müşteri Tipi</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="company"
+                                           name="company"
+                                           required/>
+                                    <label for="company">Şirket</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Açıklama</label>
+                                <textarea class="form-control" id="description" name="description" rows="4"
+                                >{{ record.description }}</textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="d-md-flex align-items-center mt-3">
+                                        <div class="ms-auto mt-3 mt-md-0">
+                                            <a href="#" class="btn btn-light-danger"
+                                               data-bs-dismiss="modal">İptal</a>
+                                            <button type="button" id="btnSave"
+                                                    class="btn btn-light-success">
+                                                Kaydet
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+{% block footer %}
+    <script>
+        let dt;
+        var KTDatatablesServerSide = function () {
+            var table;
+            var filterPayment;
+            var initDatatable = function () {
+                dt = $("#kt_datatable_example_1").DataTable({
+                    "dom": '<"top"f>rt<"bottom"ilp><"clear">',
+                    "info": true,
+                    "paging": true,
+                    searchDelay: 400,
+                    processing: true,
+                    serverSide: true,
+                    "orderMulti": false,
+                    "autoWidth": false,
+                    stateSave: true,
+                    select: {
+                        style: 'multi',
+                        selector: 'td:first-child input[type="checkbox"]',
+                        className: 'row-selected'
+                    },
+                    "ajax": {
+                        "url": "/wholesalers/get-all",
+                        "type": "GET",
+                        "dataType": "json"
+                    },
+                    "columns": [
+                        {
+                            data: "id",
+                            orderable: false,
+                            className: "text-center",
+                            render: function (data, type, row, meta) {
+                                return '<input class="form-check-input" type="checkbox" value="' + row.id + '" ' +
+                                    'data-kt-check="true" ' +
+                                    'data-kt-check-target="#kt_table_rows .form-check-input" ' +
+                                    'data-id="' + row.id + '">';
+                            }
+                        },
+                        {
+                            "data": "store__name",
+                        },
+                        {
+                            "data": "name",
+                        },
+                        {
+                            "data": "phone",
+                        },
+                        {
+                            "data": "address",
+                        },
+                        {
+                            "data": "customer_type",
+                        },
+                        {
+                            "data": "company",
+                        },
+                        {
+                            "data": "description",
+                        },
+                        {
+                            "data": "is_active",
+                            "width": "150px",
+                            "class": "text-center",
+                            "render": function (data, type, row, meta) {
+                                if (type === "display") {
+                                    if (data === true) {
+                                        return "<span class='mb-1 badge font-medium bg-light-success text-success'>Aktif</span>";
+                                    }
+                                    return "<span class='mb-1 badge font-medium bg-light-danger text-danger'>Pasif</span>";
+                                }
+                                return data;
+                            }
+                        },
+                        {
+                            data: "id",
+                            orderable: false,
+                            className: "text-end",
+                            render: function (data, type, row) {
+                                return `<a href="#" 
+                                           onclick="edit_record('${row.id}', '${row.name}','${row.phone}','${row.address}', '${row.customer_type}','${row.company}','${row.description}')" 
+                                           class="btn btn-light btn-active-light-primary btn-sm" 
+                                           title="Detay Göster">
+                                            <i class="ki-duotone ki-entrance-left" style="font-size: 1.7em;">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                        </a>`;
+                            }
+                        }
+                    ],
+                    language: {
+                        url: "/static/management/plugins/custom/datatables/TR.json",
+                    },
+                    createdRow: function (row, data, dataIndex) {
+                        $(row).find('td:eq(4)').attr('data-filter', data.type);
+                    }
+                });
+
+                $('#kt_datatable_example_1 th .form-check-input').on('change', function () {
+                    var isChecked = $(this).is(':checked');
+                    $('#kt_datatable_example_1 .form-check-input').prop('checked', isChecked);
+                });
+
+                table = dt.$;
+
+                dt.on('draw', function () {
+                    initToggleToolbar();
+                    toggleToolbars();
+                    KTMenu.createInstances();
+                });
+
+
+                var deleteSelectedRows = function () {
+                    var selectedRows = dt.rows({selected: true}).data().toArray();
+                    var ids = [];
+                    for (var i = 0; i < selectedRows.length; i++) {
+                        ids.push(selectedRows[i].id);
+                    }
+                    if (ids.length === 0) {
+                        Swal.fire({
+                            title: 'Hata!',
+                            text: 'Lütfen en az bir kayıt seçin.',
+                            icon: 'error',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                        return;
+                    }
+                    $.post("/wholesalers/delete", {
+                        ids: ids,
+                        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                    }, function (data) {
+                        if (data.result) {
+                            Swal.fire({
+                                title: 'Silindi',
+                                text: 'Seçili kayıtlar başarıyla silindi.',
+                                icon: 'success',
+                                timer: 1000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                dt.ajax.reload(null, false);
+                            });
+                        } else if (data.error) {
+                            Swal.fire('Hata!', 'Hata: ' + data.error_msg, 'error');
+                        }
+                    });
+                };
+
+                $('#deleteSelected').on('click', function () {
+                    deleteSelectedRows();
+                });
+
+                var changeStatusSelectedRows = function () {
+                    var selectedRows = dt.rows({selected: true}).data().toArray();
+                    var ids = [];
+                    for (var i = 0; i < selectedRows.length; i++) {
+                        ids.push(selectedRows[i].id);
+                    }
+                    if (ids.length === 0) {
+                        Swal.fire({
+                            title: 'Hata!',
+                            text: 'Lütfen en az bir kayıt seçin.',
+                            icon: 'error',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                        return;
+                    }
+                    $.ajax({
+                        url: "/wholesalers/change-status",
+                        type: "POST",
+                        data: {
+                            ids: ids,
+                            csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                        },
+                        success: function (data) {
+                            if (data.result === true) {
+                                Swal.fire({
+                                    title: 'Güncellendi',
+                                    text: 'Kayıtlar Başarıyla Güncellendi',
+                                    icon: 'success',
+                                    timer: 1000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    dt.ajax.reload(null, false);
+                                });
+                            } else if (data.error === true) {
+                                Swal.fire('Hata!', 'Hata: ' + data.error_msg, 'error');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            Swal.fire('Hata!', 'Bir hata oluştu: ' + error, 'error');
+                        }
+                    });
+
+                };
+                $('#changeStatusSelected').on('click', function () {
+                    changeStatusSelectedRows();
+                });
+                dt.on('column-reorder', function () {
+                    dt.ajax.reload();
+                });
+            }
+
+            var exportButtons = function () {
+                const documentTitle = 'Toptancı Tablosu';
+                var buttons = new $.fn.dataTable.Buttons(dt, {
+                    buttons: [
+                        {
+                            extend: 'copyHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        },
+                        {
+                            extend: 'excelHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        },
+                        {
+                            extend: 'csvHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            title: documentTitle,
+                            exportOptions: {
+                                columns: ':not(:last-child)'
+                            }
+                        }
+                    ]
+                }).container().appendTo($('#kt_datatable_example_buttons'));
+
+                const exportButtons = document.querySelectorAll('#kt_datatable_example_export_menu [data-kt-export]');
+                exportButtons.forEach(exportButton => {
+                    exportButton.addEventListener('click', e => {
+                        e.preventDefault();
+                        const exportValue = e.target.getAttribute('data-kt-export');
+                        const target = document.querySelector('.dt-buttons .buttons-' + exportValue);
+                        target.click();
+                    });
+                });
+            }
+            var initToggleToolbar = function () {
+                const container = document.querySelector('#kt_datatable_example_1');
+                const checkboxes = container.querySelectorAll('[type="checkbox"]');
+
+
+                checkboxes.forEach(c => {
+                    c.addEventListener('click', function () {
+                        setTimeout(function () {
+                            toggleToolbars();
+                        }, 50);
+                    });
+                });
+            }
+
+            var toggleToolbars = function () {
+                const container = document.querySelector('#kt_datatable_example_1');
+                const allCheckboxes = container.querySelectorAll('tbody [type="checkbox"]');
+                let checkedState = false;
+                let count = 0;
+
+                allCheckboxes.forEach(c => {
+                    if (c.checked) {
+                        checkedState = true;
+                        count++;
+                    }
+                });
+            }
+
+            return {
+                init: function () {
+                    initDatatable();
+                    initToggleToolbar();
+                    exportButtons();
+
+                }
+            }
+        }();
+
+        KTUtil.onDOMContentLoaded(function () {
+            KTDatatablesServerSide.init();
+        });
+
+        let edit_record = function (id, name, phone, address, customer_type, company, description) {
+            $("#addModal").modal('show');
+            $("#name").val(name);
+            $("#phone").val(phone);
+            $("#address").val(address);
+            $("#customer_type").val(customer_type);
+            $("#company").val(company);
+            $("#description").val(description);
+            $("#record_id").val(id);
+            $("#addModal .modal-title").text("Güncelle");
+        };
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#addModal').on('hidden.bs.modal', function () {
+                $('#add-form')[0].reset();
+                $('#add-form').removeClass('was-validated');
+                $('#record_id').val('');
+                $("#addModal .modal-title").text("Yeni");
+            });
+
+            $('#btnSave').click(function () {
+                $(this).prop("disabled", true);
+                $('#add-form').submit();
+            });
+
+            $('#add-form').submit(function (e) {
+                if ($("#add-form")[0].checkValidity() === false) {
+                    $("#add-form").addClass('was-validated');
+                    $("#btnSave").prop("disabled", false)
+                    return false;
+                }
+
+                let formData = new FormData($(this)[0]);
+                $.ajax({
+                    url: "{% url 'wholesalers:add' %}",
+                    type: "POST",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success(data) {
+                        if (data.result === true) {
+                            let successMessage = $('#record_id').val() ? 'Kayıt Güncellendi' : 'Kayıt eklendi';
+                            Swal.fire({
+                                title: 'Başarılı',
+                                text: successMessage,
+                                icon: 'success',
+                                timer: 1000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                $("#addModal").modal('hide');
+                                setTimeout(function () {
+                                    $('.modal-backdrop').remove();
+                                    $('body').removeClass('modal-open');
+                                    $('body').css('overflow', 'auto');
+                                    $('body').css('padding-right', '');
+                                }, 500);
+
+                                $('#add-form')[0].reset();
+                                $('#add-form').removeClass('was-validated');
+                                dt.ajax.reload(null, false);
+
+                            });
+                        } else if (data.error === true) {
+                            Swal.fire('Hata', data.error_msg, 'error');
+                        }
+                        $("#btnSave").prop("disabled", false);
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        alert("Error: " + xhr.status + " " + thrownError);
+                        $("#btnSave").prop("disabled", false);
+                    }
+                });
+                e.preventDefault();
+            });
+        });
+    </script>
+{% endblock footer %}

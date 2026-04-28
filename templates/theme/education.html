@@ -1,0 +1,192 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}Eğitim Modülü | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Video akademi, canlı webinar ve sertifikalı sınıf eğitimiyle Kuyum Plus'ı verimli
+    kullanmanız için ihtiyacınız olan tüm kaynaklar tek yerde.{% endblock page_description %}
+{% block page_keywords %}kuyum plus eğitim,video akademi,canlı webinar,sertifikalı eğitim,kullanıcı
+    kılavuzu{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/egitim/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus Eğitim Modülü{% endblock og_title %}
+{% block og_description %}Kapsamlı video dersler ve canlı destek oturumlarıyla ekibinizi
+    güçlendirin.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/education_image1.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/egitim/{% endblock og_url %}
+{% block twitter_title %}Eğitim | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}Video akademi, webinar ve sınıf eğitimiyle hızla
+    uzmanlaşın.{% endblock twitter_description %}
+{% block header %}
+    <style>
+        @media (max-width: 575.98px) {
+            .my-space {
+                margin-top: 1rem !important;
+            }
+
+            .my-image-size {
+                width: 100% !important;
+                height: 20rem !important;
+            }
+
+            .bg-gray {
+                padding: 1rem !important;
+            }
+
+            .banner-inner h2.title {
+                font-size: 1.6rem !important;
+                line-height: 1.3;
+                text-align: center !important;
+            }
+
+            .banner-inner h6.subtitle {
+                font-size: 0.7rem !important;
+                text-align: center !important;
+            }
+
+
+            .img-right {
+                max-width: 100%;
+                height: auto;
+                margin-bottom: 1rem;
+            }
+
+            .banner-inner {
+                text-align: center !important;
+            }
+
+            .banner-area .col-lg-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .my-padding {
+                padding-bottom: 0 !important;
+            }
+
+            .my-padding1 {
+                padding: 2rem 0 !important;
+            }
+        }
+
+
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="banner-area bg-relative banner-area-3">
+        <div class="container custom-container">
+            <div class="bg-gray">
+                <img class="img-right " src="{% static 'theme/media/education_image1.webp' %}" alt="Eğitim Kuyum Plus">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-6 align-self-center">
+                            <div class="banner-inner" style="z-index:4;">
+                                <h6 class="subtitle wow animated fadeInLeft" data-wow-duration="1.5s"
+                                    data-wow-delay="0.3s">SAYIM MODÜLÜ</h6>
+                                <h2 class="title wow animated fadeInLeft" data-wow-duration="1.5s"
+                                    data-wow-delay="0.4s">Say, <span>Kontrol Et</span>, Güvence Altına Al</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="about-area pd-top-60 pd-bottom-60 my-padding">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-5 wow fadeInLeft" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <img class="w-100 border-radius-5 my-image-size"
+                         src="{% static 'theme/media/education_image2.webp' %}"
+                         alt="Eğitim Portalı">
+                </div>
+                <div class="col-lg-7 wow fadeInRight" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <div class="section-title mt-4 mt-lg-0">
+                        <h6 class="sub-title">Hızlı Başlangıç</h6>
+                        <h2 class="title">Kapsamlı <span>Sayım Raporu</span> & Canlı Takip</h2>
+                        <p class="content">Bulunan, eksik ve hatalı ürünleri anlık olarak görüntüleyin. Barkod veya RFID
+                            ile yapılan sayımlarınızı 7/24 raporlayın. Günlük ve haftalık sayım raporlarınızı tek
+                            ekrandan takip ederek eksiksiz stok kontrolü sağlayın.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="service-area bg-cover pd-top-90 pd-bottom-60 my-padding1"
+         style="background-image:url('/static/theme/img/bg/3.png');">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-3 col-6 mb-4 wow fadeInUp" data-wow-delay="0.1s"><img
+                        src="{% static 'theme/media/rfid.webp' %}" width="65" class="mb-3"
+                        alt="Video Dersler">
+                    <h6>RFID ile Sayım</h6></div>
+                <div class="col-md-3 col-6 mb-4 wow fadeInUp" data-wow-delay="0.2s"><img
+                        src="{% static 'theme/media/barcode.webp' %}" width="65" class="mb-3" alt="Webinar">
+                    <h6>Barkodlu Sayım</h6></div>
+                <div class="col-md-3 col-6 mb-4 wow fadeInUp" data-wow-delay="0.3s"><img
+                        src="{% static 'theme/media/infographic.webp' %}" width="65" class="mb-3"
+                        alt="Sertifika"><h6>Anlık Raporlama</h6></div>
+                <div class="col-md-3 col-6 mb-4 wow fadeInUp" data-wow-delay="0.4s"><img
+                        src="{% static 'theme/media/warning.webp' %}" width="65" class="mb-3"
+                        alt="Doküman Merkezi"><h6>Otomatik Uyarılar</h6></div>
+            </div>
+        </div>
+    </div>
+    <div class="faq-area pd-top-90 pd-bottom-0 my-padding1">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 order-lg-last"><img class="w-100 border-radius-5 my-image-size"
+                                                     src="{% static 'theme/media/education_image3.webp' %}"
+                                                     alt="Eğitim SSS">
+            </div>
+            <div class="col-lg-6 order-lg-first">
+                <div class="section-title mb-4"><h6 class="sub-title my-space">SSS</h6>
+                    <h2 class="title">Sayım <span>Soruları</span></h2></div>
+                <div class="accordion accordion-inner style-2 accordion-icon-left" id="eduFAQ">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="qAccess">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#cAccess" aria-expanded="true" aria-controls="cAccess">RFID
+                                sayımı nasıl başlatabilirim?
+                            </button>
+                        </h2>
+                        <div id="cAccess" class="accordion-collapse collapse show" aria-labelledby="qAccess"
+                             data-bs-parent="#eduFAQ">
+                            <div class="accordion-body">Üst menüden “Sayımı Başlat” butonuna tıklayarak RFID
+                                cihazınızı bağlayabilir ve hızlı sayımı başlatabilirsiniz.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="qCert">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#cCert" aria-expanded="false" aria-controls="cCert">Barkodlu
+                                sayım hangi durumlarda tercih edilmeli?
+                            </button>
+                        </h2>
+                        <div id="cCert" class="accordion-collapse collapse" aria-labelledby="qCert"
+                             data-bs-parent="#eduFAQ">
+                            <div class="accordion-body">Küçük ölçekli ürünlerde veya tek tek detaylı kontrol
+                                gerektiğinde barkodlu sayım daha uygun olur.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="qOnsite">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#cOnsite" aria-expanded="false" aria-controls="cOnsite">Hatalı
+                                veya eksik ürünler nasıl görüntülenir?
+                            </button>
+                        </h2>
+                        <div id="cOnsite" class="accordion-collapse collapse" aria-labelledby="qOnsite"
+                             data-bs-parent="#eduFAQ">
+                            <div class="accordion-body">Sayım tamamlandığında ekran üçe ayrılır: Bulunanlar, Hatalılar,
+                                Eksikler. Buradan anında kontrol edebilirsiniz.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

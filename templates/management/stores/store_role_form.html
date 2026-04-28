@@ -1,0 +1,401 @@
+{# templates/management/stores/store_role_form.html #}
+{# FAZ 4-5: Mağaza Bazlı Rol Oluşturma / Düzenleme — Restriction Model (Grup Bazlı) #}
+{# Kuyumcu bireysel yetki kodlarını görmez; yalnızca özellik gruplarını açıp kapatır. #}
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* ── Feature Group Card ── */
+        .feature-card {
+            border: 2px solid #e4e6ef;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            height: 100%;
+            background: #fff;
+        }
+        .feature-card:hover {
+            border-color: #b5b5c3;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
+        }
+        .feature-card.active {
+            border-color: #50cd89;
+            background-color: #f0faf4;
+            box-shadow: 0 0.25rem 1rem rgba(80, 205, 137, 0.15);
+        }
+        .feature-card .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.625rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f1f1f4;
+            transition: background-color 0.2s ease;
+        }
+        .feature-card.active .feature-icon {
+            background-color: #e8f5e9;
+        }
+        .feature-card .feature-icon i {
+            font-size: 1.5rem;
+            color: #7e8299;
+            transition: color 0.2s ease;
+        }
+        .feature-card.active .feature-icon i {
+            color: #50cd89;
+        }
+        .feature-card .form-check-input {
+            width: 1.35rem;
+            height: 1.35rem;
+        }
+        .feature-card .form-check-input:checked {
+            background-color: #50cd89;
+            border-color: #50cd89;
+        }
+
+        /* ── Counter Badge ── */
+        .active-counter {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            {# ── Toolbar ── #}
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            {{ title }}
+                        </h1>
+                        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                            <li class="breadcrumb-item text-muted">
+                                <a href="#" class="text-muted text-hover-primary">{{ store.title|default:"Mağaza" }}</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <span class="bullet bg-gray-500 w-5px h-2px"></span>
+                            </li>
+                            <li class="breadcrumb-item text-muted">
+                                <a href="{% url 'stores:store-roles-list' %}" class="text-muted text-hover-primary">Roller</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <span class="bullet bg-gray-500 w-5px h-2px"></span>
+                            </li>
+                            <li class="breadcrumb-item text-muted">
+                                {% if form_action == 'update' %}Düzenle{% else %}Yeni Oluştur{% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'stores:store-roles-list' %}" class="btn btn-light">
+                            <i class="ki-duotone ki-arrow-left fs-3"><span class="path1"></span><span class="path2"></span></i>
+                            Geri Dön
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {# ── Content ── #}
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-xxl">
+
+                    {# Flash mesajları #}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-dismissible alert-{{ message.tags }} d-flex align-items-center p-5 mb-5">
+                                {% if message.tags == 'success' %}
+                                    <i class="ki-duotone ki-shield-tick fs-2hx text-success me-4">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="ki-duotone ki-cross-circle fs-2hx text-danger me-4">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                {% else %}
+                                    <i class="ki-duotone ki-information-5 fs-2hx text-warning me-4">
+                                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                    </i>
+                                {% endif %}
+                                <div class="d-flex flex-column">
+                                    <span>{{ message }}</span>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form id="storeRoleForm" method="post" autocomplete="off">
+                        {% csrf_token %}
+
+                        <div class="row g-5">
+                            {# ── SOL KOLON: Rol Bilgileri + Kullanıcılar ── #}
+                            <div class="col-12 col-xl-4">
+                                <div class="card mb-5">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Rol Bilgileri</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-5">
+                                            <label class="form-label required">Rol Adı</label>
+                                            <input type="text" name="name" class="form-control"
+                                                   maxlength="100" required
+                                                   placeholder="Örn: Satış Personeli"
+                                                   value="{% if record %}{{ record.name }}{% endif %}">
+                                        </div>
+                                        <div class="mb-5">
+                                            <label class="form-label">Açıklama</label>
+                                            <textarea name="description" class="form-control"
+                                                      rows="3"
+                                                      placeholder="Rolün kısa açıklaması...">{% if record %}{{ record.description|default_if_none:'' }}{% endif %}</textarea>
+                                        </div>
+
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary" id="btnSave">
+                                                <i class="ki-duotone ki-save-2 fs-2 me-1">
+                                                    <span class="path1"></span><span class="path2"></span>
+                                                </i>
+                                                {% if form_action == 'update' %}Güncelle{% else %}Oluştur{% endif %}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Rol düzenlemede: atanmış kullanıcılar tablosu #}
+                                {% if form_action == 'update' and role_users %}
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Bu Role Atanmış Kullanıcılar</h3>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive" style="max-height: 300px; overflow: auto;">
+                                                <table class="table table-sm table-striped align-middle mb-0">
+                                                    <thead>
+                                                    <tr>
+                                                        <th class="ps-4">Ad Soyad</th>
+                                                        <th>E-posta</th>
+                                                        <th class="text-center">Durum</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for u in role_users %}
+                                                        <tr>
+                                                            <td class="ps-4">
+                                                                <div class="d-flex flex-column">
+                                                                    <span class="fw-bold">{{ u.first_name }}</span>
+                                                                    <small class="text-muted">{{ u.username }}</small>
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ u.email }}</td>
+                                                            <td class="text-center">
+                                                                {% if u.is_active %}
+                                                                    <span class="badge badge-light-success">Aktif</span>
+                                                                {% else %}
+                                                                    <span class="badge badge-light-danger">Pasif</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            {# ── SAĞ KOLON: Özellik Grupları (Restriction Model) ── #}
+                            <div class="col-12 col-xl-8">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h3 class="card-title mb-0">
+                                            Özellikler
+                                            <span class="badge badge-light-primary ms-2 active-counter" id="activeCounter">
+                                                0 / {{ feature_groups|length }}
+                                            </span>
+                                        </h3>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-light-primary" type="button" id="btnSelectAll">
+                                                Tümünü Aç
+                                            </button>
+                                            <button class="btn btn-sm btn-light-danger" type="button" id="btnClearAll">
+                                                Tümünü Kapat
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body">
+                                        {# Bilgilendirme kutusu #}
+                                        <div class="alert alert-dismissible bg-light-info border border-info d-flex flex-column flex-sm-row p-5 mb-5">
+                                            <i class="ki-duotone ki-shield-tick fs-2hx text-info me-4 mb-5 mb-sm-0">
+                                                <span class="path1"></span><span class="path2"></span>
+                                            </i>
+                                            <div class="d-flex flex-column pe-0 pe-sm-10">
+                                                <h5 class="mb-1">Özellik Yönetimi</h5>
+                                                <span>
+                                                    Personelin erişebileceği özellikleri açıp kapatın.
+                                                    Açık olan modüllere ait <strong>tüm yetkiler</strong> otomatik olarak atanır.
+                                                </span>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        </div>
+
+                                        {% if feature_groups %}
+                                            <div class="row g-4" id="featureContainer">
+                                                {% for fg in feature_groups %}
+                                                    <div class="col-12 col-sm-6 col-lg-4">
+                                                        <label class="feature-card d-block{% if fg.is_checked %} active{% endif %}"
+                                                               for="group_{{ fg.slug }}">
+                                                            <div class="d-flex align-items-start justify-content-between mb-3">
+                                                                <div class="feature-icon">
+                                                                    <i class="ki-duotone {{ fg.icon }}">
+                                                                        <span class="path1"></span><span class="path2"></span>
+                                                                        <span class="path3"></span><span class="path4"></span>
+                                                                    </i>
+                                                                </div>
+                                                                <div class="form-check form-switch form-check-custom form-check-solid">
+                                                                    <input class="form-check-input feature-toggle"
+                                                                           type="checkbox"
+                                                                           id="group_{{ fg.slug }}"
+                                                                           name="group_names[]"
+                                                                           value="{{ fg.slug }}"
+                                                                           {% if fg.is_checked %}checked{% endif %}>
+                                                                </div>
+                                                            </div>
+                                                            <h6 class="fw-bold text-gray-800 mb-1">{{ fg.label }}</h6>
+                                                            <span class="text-muted fs-8">{{ fg.perm_count }} yetki içerir</span>
+                                                        </label>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center py-10">
+                                                <i class="ki-duotone ki-lock fs-3x text-muted mb-3">
+                                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                </i>
+                                                <div class="text-muted fw-bold">
+                                                    Mağazanızın yetki havuzunda atanabilecek özellik bulunamadı.
+                                                </div>
+                                                <div class="text-muted fs-7 mt-2">
+                                                    Paket veya modül seçiminizi kontrol ediniz.
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if feature_groups %}
+                                        <div class="card-footer d-flex justify-content-between align-items-center">
+                                            <span class="text-muted fs-7">
+                                                <i class="ki-duotone ki-information-5 fs-5 text-gray-500 me-1">
+                                                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                                </i>
+                                                Açık modüllere ait tüm yetkiler personele otomatik atanır.
+                                            </span>
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'stores:store-roles-list' %}" class="btn btn-light">Vazgeç</a>
+                                                <button type="submit" class="btn btn-success">
+                                                    <i class="ki-duotone ki-save-2 fs-4 me-1">
+                                                        <span class="path1"></span><span class="path2"></span>
+                                                    </i>
+                                                    {% if form_action == 'update' %}Değişiklikleri Kaydet{% else %}Rolü Oluştur{% endif %}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toggles = document.querySelectorAll('.feature-toggle');
+            var counter = document.getElementById('activeCounter');
+            var total = toggles.length;
+
+            // ─────────────────────────────────────────────
+            //  Sayaç Güncelleme
+            // ─────────────────────────────────────────────
+            function updateCounter() {
+                var active = 0;
+                for (var i = 0; i < toggles.length; i++) {
+                    if (toggles[i].checked) active++;
+                }
+                if (counter) {
+                    counter.textContent = active + ' / ' + total;
+                    if (active > 0) {
+                        counter.classList.remove('badge-light-primary');
+                        counter.classList.add('badge-primary');
+                    } else {
+                        counter.classList.remove('badge-primary');
+                        counter.classList.add('badge-light-primary');
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────
+            //  Toggle değişim: card görselini güncelle
+            // ─────────────────────────────────────────────
+            for (var i = 0; i < toggles.length; i++) {
+                toggles[i].addEventListener('change', function () {
+                    var card = this.closest('.feature-card');
+                    if (card) {
+                        if (this.checked) {
+                            card.classList.add('active');
+                        } else {
+                            card.classList.remove('active');
+                        }
+                    }
+                    updateCounter();
+                });
+            }
+
+            // ─────────────────────────────────────────────
+            //  Tümünü Aç
+            // ─────────────────────────────────────────────
+            var btnSelectAll = document.getElementById('btnSelectAll');
+            if (btnSelectAll) {
+                btnSelectAll.addEventListener('click', function () {
+                    for (var k = 0; k < toggles.length; k++) {
+                        toggles[k].checked = true;
+                        var c = toggles[k].closest('.feature-card');
+                        if (c) c.classList.add('active');
+                    }
+                    updateCounter();
+                });
+            }
+
+            // ─────────────────────────────────────────────
+            //  Tümünü Kapat
+            // ─────────────────────────────────────────────
+            var btnClearAll = document.getElementById('btnClearAll');
+            if (btnClearAll) {
+                btnClearAll.addEventListener('click', function () {
+                    for (var k = 0; k < toggles.length; k++) {
+                        toggles[k].checked = false;
+                        var c = toggles[k].closest('.feature-card');
+                        if (c) c.classList.remove('active');
+                    }
+                    updateCounter();
+                });
+            }
+
+            // ─────────────────────────────────────────────
+            //  İlk yükleme sayaç güncelleme
+            // ─────────────────────────────────────────────
+            updateCounter();
+        });
+    </script>
+{% endblock footer %}

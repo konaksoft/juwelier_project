@@ -1,0 +1,379 @@
+<!-- FILE: templates/management/prints/repair_thermal.html -->
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>Tamir Alındı Fişi – {{ header.tracking_code }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --w: {{ label_w|default:"72" }}mm;
+            --pad: 2mm;
+            /* Tüm standart metinler için ortak boyut */
+            --fs: 14px;
+        }
+
+        @page {
+            size: var(--w) auto;
+            margin: 0;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Helvetica Neue", Helvetica, sans-serif;
+            font-size: var(--fs);
+            font-weight: 700; /* TÜM YAZILAR KALIN OLDU */
+            line-height: 1.4;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            background: #fff;
+        }
+
+        .ticket {
+            width: var(--w);
+            margin: 0 auto;
+            padding: var(--pad);
+            word-break: break-word;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .brand {
+            font-weight: 900; /* Başlıklar ekstra kalın */
+            font-size: 20px;  /* Başlıklar daha büyük */
+            letter-spacing: .5px;
+            margin-bottom: 4px;
+        }
+
+        /* Solukluk efekti termal yazıcılar için kaldırıldı, tam siyah yapıldı */
+        .muted {
+            opacity: 1;
+        }
+
+        /* Küçük yazılar iptal edildi, hepsi standart boyutla aynı yapıldı */
+        .small, .tiny {
+            font-size: var(--fs);
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        .mono {
+            font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            letter-spacing: .2px;
+        }
+
+        .kline {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            page-break-inside: avoid;
+            flex-wrap: wrap;
+        }
+
+        .kline .k {
+            color: #000;
+            flex: 0 0 auto;
+            font-weight: 700;
+        }
+
+        .kline .v {
+            font-weight: 700;
+            flex: 1 1 auto;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        hr {
+            border: 0;
+            border-top: 2px dashed #000; /* Çizgiler de biraz daha belirginleştirildi */
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 2px 0;
+            page-break-inside: avoid;
+        }
+
+        .r {
+            text-align: right;
+        }
+
+        .sign {
+            margin-top: 10px;
+            page-break-inside: avoid;
+        }
+
+        .sig {
+            height: 30px;
+            border-bottom: 1px solid #000;
+            margin: 6px 0 4px;
+        }
+
+        .note {
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        .no-print {
+            display: block;
+        }
+
+        .no-print.actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .no-print.actions button {
+            appearance: none;
+            border: 2px solid #111;
+            background: #fff;
+            color: #000;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .no-print.actions button:active {
+            transform: translateY(1px);
+        }
+
+        @media print {
+            .no-print,
+            .no-print *,
+            button,
+            [role="button"] {
+                display: none !important;
+                visibility: hidden !important;
+                height: 0 !important;
+                overflow: hidden !important;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+<div class="ticket" id="kpTicketRoot">
+    <div class="center">
+        {% if store_meta.company_title or store_meta.branch_title %}
+            <div class="brand">{{ store_meta.company_title|default:"" }}</div>
+            {% if store_meta.branch_title %}
+                <div class="tiny muted">{{ store_meta.branch_title }}</div>
+            {% endif %}
+            <div class="tiny muted">Kuyum Plus • Tamir Alındı Fişi</div>
+        {% else %}
+            <div class="brand">TAMİR ALINDI FİŞİ</div>
+        {% endif %}
+    </div>
+
+    <hr/>
+
+    <div class="kline">
+        <div class="k">Takip Kodu</div>
+        <div class="v mono">{{ header.tracking_code }}</div>
+    </div>
+
+    {% if store_meta.company_title %}
+        <div class="kline">
+            <div class="k">Firma</div>
+            <div class="v">{{ store_meta.company_title }}</div>
+        </div>
+    {% endif %}
+
+    {% if store_meta.branch_title %}
+        <div class="kline">
+            <div class="k">Şube</div>
+            <div class="v">{{ store_meta.branch_title }}</div>
+        </div>
+    {% endif %}
+
+    <div class="kline">
+        <div class="k">Fiş Tarihi</div>
+        <div class="v">{{ header.date_str }}</div>
+    </div>
+
+    <div class="kline">
+        <div class="k">Müşteri</div>
+        <div class="v">{{ header.customer_full }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Telefon</div>
+        <div class="v">{{ header.customer_phone }}</div>
+    </div>
+
+    <hr/>
+
+    <div class="kline">
+        <div class="k">Ürün Türü</div>
+        <div class="v">{{ product.product_type }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Gram</div>
+        <div class="v">{{ product.gram }} gr</div>
+    </div>
+    <div class="kline">
+        <div class="k">Öngörü Fiyat</div>
+        <div class="v">{{ product.price }} TL</div>
+    </div>
+
+    {% if workshop_name %}
+        <div class="kline">
+            <div class="k">Atölye</div>
+            <div class="v">{{ workshop_name }}</div>
+        </div>
+    {% endif %}
+
+    <div class="small note" style="margin-top:6px">
+        TAMİR NOTU: {{ product.description|default:"-" }}
+    </div>
+
+    <hr/>
+
+    <div class="kline">
+        <div class="k">Durum</div>
+        <div class="v">{{ status_display }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Teslim Alan</div>
+        <div class="v">{{ received_by_name }}</div>
+    </div>
+
+    {% if delivered_by_name %}
+        <div class="kline">
+            <div class="k">Teslim Eden</div>
+            <div class="v">{{ delivered_by_name }}</div>
+        </div>
+    {% endif %}
+
+    <hr/>
+
+    <div class="tiny muted">
+        • Ürün muayene edilerek onarım için alınmıştır. Nihai fiyat, işlem sonucunda değişebilir.<br/><br/>
+        • Müşteri fişi saklamalıdır. Teslimatta takip kodu/kimlik ibrazı istenebilir.<br/><br/>
+        • 30 gün içinde teslim alınmayan ürünlerde işçilik/emanet bedeli uygulanabilir.
+    </div>
+
+    <div class="sign">
+        <div class="kline">
+            <div style="width:48%">
+                <div class="sig"></div>
+                <div class="tiny center">Müşteri İmza</div>
+            </div>
+            <div style="width:48%">
+                <div class="sig"></div>
+                <div class="tiny center">Mağaza Yetkilisi</div>
+            </div>
+        </div>
+    </div>
+
+    {% if store_meta.address or store_meta.phone %}
+        <hr/>
+        <div class="tiny muted">
+            {% if store_meta.address %}{{ store_meta.address }}{% endif %}
+            {% if store_meta.phone %} • Tel: {{ store_meta.phone }}{% endif %}
+        </div>
+    {% endif %}
+
+    <div class="no-print actions">
+        <button type="button" onclick="window.print()">Tarayıcıdan Yazdır</button>
+        <button type="button" onclick="pavoPrintTicket()">Cihazdan Yazdır</button>
+    </div>
+</div>
+
+<script>
+    function hasAndroidBridge() {
+        return typeof window.PavoAndroid !== "undefined"
+            && window.PavoAndroid !== null
+            && typeof window.PavoAndroid.printOut === "function";
+    }
+
+    function hasIOSBridge() {
+        return typeof window.webkit !== "undefined"
+            && window.webkit !== null
+            && window.webkit.messageHandlers
+            && window.webkit.messageHandlers.PavoIOS
+            && typeof window.webkit.messageHandlers.PavoIOS.postMessage === "function";
+    }
+
+    function pavoPrintTicket() {
+        var root = document.getElementById("kpTicketRoot");
+        if (!root) {
+            alert("Fiş içeriği bulunamadı.");
+            return;
+        }
+
+        var noPrintEls = root.querySelectorAll(".no-print");
+        var prev = [];
+        for (var i = 0; i < noPrintEls.length; i++) {
+            prev.push(noPrintEls[i].style.display);
+            noPrintEls[i].style.display = "none";
+        }
+
+        html2canvas(root, {scale: 2, useCORS: true}).then(function (canvas) {
+            var dataUrl = canvas.toDataURL("image/png");
+            var base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+
+            try {
+                if (hasAndroidBridge()) {
+                    window.PavoAndroid.printOut(base64, "pavoPrintCallback");
+                } else if (hasIOSBridge()) {
+                    window.webkit.messageHandlers.PavoIOS.postMessage({
+                        action: "printOut",
+                        callbackName: "pavoPrintCallback",
+                        imageBase64: base64
+                    });
+                } else {
+                    alert("Pavo yazdırma köprüsü bulunamadı. (Android: PavoAndroid.printOut / iOS: webkit.messageHandlers.PavoIOS)");
+                }
+            } catch (e) {
+                alert("Pavo yazdırma çağrısı başarısız: " + e);
+            }
+        }).catch(function () {
+            alert("Fiş görüntüsü oluşturulamadı.");
+        }).finally(function () {
+            for (var i = 0; i < noPrintEls.length; i++) {
+                noPrintEls[i].style.display = prev[i] || "";
+            }
+        });
+    }
+
+    window.pavoPrintCallback = function (resultJson) {
+        try {
+            var obj = JSON.parse(resultJson);
+            if (obj && obj.HasError) {
+                alert("Yazdırma hatası: " + (obj.Message || ""));
+            }
+        } catch (e) {
+            alert("Cihaz yanıtı okunamadı.");
+        }
+    };
+
+    {% if auto_print %}
+        window.addEventListener("load", function () {
+            setTimeout(function () {
+                window.print();
+            }, 250);
+        });
+    {% endif %}
+</script>
+</body>
+</html>

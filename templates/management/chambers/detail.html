@@ -1,0 +1,1212 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/select2/select2.min.css' %}">
+    <script src="{% static 'management/plugins/custom/select2/select2.min.js' %}"></script>
+
+    <style>
+        .form-floating .select2-container--default .select2-selection--single {
+            height: calc(3.5rem + 2px);
+            padding: .9rem 2.25rem .9rem .75rem;
+            display: flex;
+            align-items: center;
+            border: 1px solid #e4e6ef;
+        }
+
+        .form-floating .select2-selection__rendered {
+            line-height: 1.25rem;
+            padding-left: 0;
+            color: #5e6278;
+        }
+
+        .form-floating .select2-selection__arrow {
+            height: 100% !important;
+            top: 0 !important;
+            right: 10px !important;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .was-validated .form-control:invalid,
+        .form-control.is-invalid {
+            border-color: #dc3545 !important;
+        }
+
+        .required:after {
+            content: "*";
+            position: relative;
+            font-size: inherit;
+            color: #dc3545;
+            padding-left: 0.25rem;
+            font-weight: 600;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="card mb-5 mb-xl-10">
+        <div class="card-body pt-9 pb-0">
+            <div class="d-flex flex-wrap flex-sm-nowrap">
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                        <div class="d-flex flex-column">
+                            <div class="d-flex align-items-center mb-2">
+                                <a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">
+                                    {{ record.name|default:"Dernek / Oda Adı" }}
+                                </a>
+                                {% if record.is_active %}
+                                    <span class="badge badge-light-success fw-bold ms-2">Aktif</span>
+                                {% else %}
+                                    <span class="badge badge-light-danger fw-bold ms-2">Pasif</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
+                                <a href="#"
+                                   class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
+                                    <i class="fa-solid fa-user-tie me-2"></i> {{ record.president_name|default:"Başkan Bilgisi Yok" }}
+                                </a>
+                                {% if record.city %}
+                                    <a href="#"
+                                       class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
+                                        <i class="fa-solid fa-location-dot me-2"></i> {{ record.city.name }}
+                                        {% if record.district %}/ {{ record.district.name }}{% endif %}
+                                    </a>
+                                {% endif %}
+                                {% if record.email %}
+                                    <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary mb-2">
+                                        <i class="fa-solid fa-envelope me-2"></i> {{ record.email }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap">
+                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-building text-primary fs-3 me-2"></i>
+                                <div class="fs-2 fw-bold" data-kt-countup="true"
+                                     data-kt-countup-value="{{ record.companies.count|default:'0' }}">0
+                                </div>
+                            </div>
+                            <div class="fw-semibold fs-6 text-gray-500">Kayıtlı Üye Firma</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+                <li class="nav-item mt-2">
+                    <a class="nav-link text-active-primary ms-0 me-10 py-5 active" data-bs-toggle="tab" href="#info">
+                        <i class="fa-solid fa-circle-info fs-4 me-2"></i> Dernek Bilgileri
+                    </a>
+                </li>
+                <li class="nav-item mt-2">
+                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab" href="#settings">
+                        <i class="fa-solid fa-gear fs-4 me-2"></i> Ayarlar
+                    </a>
+                </li>
+                <li class="nav-item mt-2">
+                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                       href="#connected_companies">
+                        <i class="fa-solid fa-building fs-4 me-2"></i> Bağlı Firmalar
+                    </a>
+                </li>
+                <li class="nav-item mt-2">
+                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab" href="#price_source">
+                        <i class="fa-solid fa-coins fs-4 me-2"></i> Fiyat Kaynağı
+                    </a>
+                </li>
+                <li class="nav-item mt-2">
+                    <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab"
+                       href="#chamber_products">
+                        <i class="fa-solid fa-tags fs-4 me-2"></i> Ürünler ve Fiyatlar
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="info" role="tabpanel">
+            <div class="card mb-5 mb-xl-10" id="kt_profile_details_view">
+                <div class="card-header cursor-pointer">
+                    <div class="card-title m-0"><h3 class="fw-bold m-0">Dernek / Oda Detayları</h3></div>
+                </div>
+                <div class="card-body p-9">
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">Oda/Dernek Adı</label>
+                        <div class="col-lg-8"><span
+                                class="fw-bold fs-6 text-gray-800">{{ record.name|default:'-' }}</span></div>
+                    </div>
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">Başkan</label>
+                        <div class="col-lg-8"><span
+                                class="fw-bold fs-6 text-gray-800">{{ record.president_name|default:'-' }}</span></div>
+                    </div>
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">İletişim Bilgileri</label>
+                        <div class="col-lg-8">
+                            <span class="fw-semibold text-gray-800 fs-6 d-block mb-1"><i
+                                    class="fa-solid fa-phone me-2"></i> {{ record.phone|default:'Belirtilmemiş' }}</span>
+                            <span class="fw-semibold text-gray-800 fs-6 d-block mb-1"><i
+                                    class="fa-solid fa-envelope me-2"></i> {{ record.email|default:'Belirtilmemiş' }}</span>
+                            <span class="fw-semibold text-gray-800 fs-6 d-block"><i
+                                    class="fa-solid fa-globe me-2"></i> {{ record.website|default:'Belirtilmemiş' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="separator my-8"></div>
+                    <h5 class="mb-6">Resmi ve Lokasyon Bilgileri</h5>
+
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">İl / İlçe</label>
+                        <div class="col-lg-8">
+                            <span class="fw-bold fs-6 text-gray-800">{{ record.city.name|default:'-' }} / {{ record.district.name|default:'-' }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">Açık Adres</label>
+                        <div class="col-lg-8"><span
+                                class="fw-bold fs-6 text-gray-800">{{ record.address|default:'-' }}</span></div>
+                    </div>
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">Vergi Dairesi / VKN</label>
+                        <div class="col-lg-8">
+                            <span class="fw-bold fs-6 text-gray-800">{{ record.tax_office.name|default:'-' }} / {{ record.tax_number|default:'-' }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">Kütük / Sicil No</label>
+                        <div class="col-lg-8">
+                            <span class="fw-bold fs-6 text-gray-800">{{ record.registry_number|default:'-' }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-7">
+                        <label class="col-lg-4 fw-semibold text-muted">Notlar</label>
+                        <div class="col-lg-8">
+                            <span class="fw-semibold fs-6 text-gray-800">{{ record.description|default:'-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="settings" role="tabpanel">
+            <div class="card mb-5 mb-xl-10">
+                <div class="card-header border-0 cursor-pointer">
+                    <div class="card-title m-0"><h3 class="fw-bold m-0">Bilgileri Güncelle</h3></div>
+                </div>
+                <div class="collapse show">
+                    <form method="post" id="kt_chamber_settings_form" class="form" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="record_id" value="{{ record.id }}"/>
+
+                        <div class="card-body border-top p-9">
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label required fw-semibold fs-6">Oda/Dernek Adı</label>
+                                <div class="col-lg-8 fv-row">
+                                    <input type="text" name="name"
+                                           class="form-control form-control-lg form-control-solid"
+                                           value="{{ record.name|default:'' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Başkan Adı Soyadı</label>
+                                <div class="col-lg-8 fv-row">
+                                    <input type="text" name="president_name"
+                                           class="form-control form-control-lg form-control-solid"
+                                           value="{{ record.president_name|default:'' }}">
+                                </div>
+                            </div>
+
+                            <!-- BAŞKAN KULLANICI HESABI ATAMA -->
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">
+                                    <span>Başkan Kullanıcı Hesabı</span>
+                                    <i class="fa-solid fa-circle-info ms-1 text-gray-400" data-bs-toggle="tooltip"
+                                       title="Derneğe giriş yapacak kullanıcı hesabı. CHAMBER rolüne sahip olmalıdır."></i>
+                                </label>
+                                <div class="col-lg-8 fv-row">
+                                    <div class="d-flex gap-2 align-items-start">
+                                        <div class="flex-grow-1">
+                                            <select id="president_user_select" class="form-select form-select-solid"
+                                                    data-placeholder="Kullanıcı arayın...">
+                                                <option></option>
+                                                {% if record.president_user %}
+                                                    <option value="{{ record.president_user.id }}" selected>
+                                                        {{ record.president_user.get_full_name }} ({{ record.president_user.username }})
+                                                    </option>
+                                                {% endif %}
+                                            </select>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-light-success flex-shrink-0" id="btnAssignPresident">
+                                            <i class="fa-solid fa-user-check"></i> Ata
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light-primary flex-shrink-0"
+                                                data-bs-toggle="modal" data-bs-target="#modal_quick_president">
+                                            <i class="fa-solid fa-user-plus"></i> Yeni Oluştur
+                                        </button>
+                                    </div>
+                                    {% if record.president_user %}
+                                        <div class="form-text mt-2">
+                                            <span class="badge badge-light-success">Atanmış:</span>
+                                            <span class="fw-semibold ms-1" id="current_president_display">
+                                                {{ record.president_user.get_full_name }} ({{ record.president_user.email }})
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <div class="form-text mt-2 text-warning" id="current_president_display">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Henüz bir başkan kullanıcısı atanmamış.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Telefon / E-Posta</label>
+                                <div class="col-lg-4 fv-row">
+                                    <input type="tel" name="phone"
+                                           class="form-control form-control-lg form-control-solid" placeholder="Telefon"
+                                           value="{{ record.phone|default:'' }}">
+                                </div>
+                                <div class="col-lg-4 fv-row">
+                                    <input type="email" name="email"
+                                           class="form-control form-control-lg form-control-solid" placeholder="E-Posta"
+                                           value="{{ record.email|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Web Sitesi</label>
+                                <div class="col-lg-8 fv-row">
+                                    <input type="url" name="website"
+                                           class="form-control form-control-lg form-control-solid"
+                                           placeholder="https://" value="{{ record.website|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Şehir / İlçe</label>
+                                <div class="col-lg-4 fv-row">
+                                    <div class="form-floating">
+                                        <select class="form-select form-select-solid geo-select" id="city" name="city"
+                                                data-placeholder="İl seçin"></select>
+                                        <label for="city">İl</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4 fv-row">
+                                    <div class="form-floating">
+                                        <select class="form-select form-select-solid geo-select" id="district"
+                                                name="district" data-placeholder="İlçe seçin" disabled></select>
+                                        <label for="district">İlçe</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Vergi Dairesi / VKN</label>
+                                <div class="col-lg-4 fv-row">
+                                    <div class="form-floating">
+                                        <select class="form-select form-select-solid geo-select" id="tax_office"
+                                                name="tax_office" data-placeholder="Vergi Dairesi seçin"
+                                                disabled></select>
+                                        <label for="tax_office">Vergi Dairesi</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4 fv-row">
+                                    <input type="text" name="tax_number"
+                                           class="form-control form-control-lg form-control-solid mt-2 mt-lg-0"
+                                           placeholder="Vergi No" value="{{ record.tax_number|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Kütük / Sicil No</label>
+                                <div class="col-lg-8 fv-row">
+                                    <input type="text" name="registry_number"
+                                           class="form-control form-control-lg form-control-solid"
+                                           value="{{ record.registry_number|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Açık Adres</label>
+                                <div class="col-lg-8 fv-row">
+                                    <textarea name="address" rows="3"
+                                              class="form-control form-control-lg form-control-solid">{{ record.address|default:'' }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="row mb-6">
+                                <label class="col-lg-4 col-form-label fw-semibold fs-6">Notlar / Açıklama</label>
+                                <div class="col-lg-8 fv-row">
+                                    <textarea name="description" rows="3"
+                                              class="form-control form-control-lg form-control-solid">{{ record.description|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer d-flex justify-content-end py-6 px-9">
+                            <button type="submit" class="btn btn-primary" id="btnSettingsSave">Değişiklikleri Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="connected_companies" role="tabpanel">
+            <div class="card mb-5 mb-xl-10">
+                <div class="card-header border-0 cursor-pointer">
+                    <div class="card-title m-0"><h3 class="fw-bold m-0">Kayıtlı Üye Firmalar</h3></div>
+                    <div class="card-toolbar">
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modal_add_company">
+                            <i class="fa-solid fa-plus"></i> Üye Ekle
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-9">
+                    <div class="table-responsive">
+                        <table id="kt_datatable_companies" class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                            <thead>
+                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                <th>Ticari Unvan / Ad Soyad</th>
+                                <th>Telefon</th>
+                                <th>İl / İlçe</th>
+                                <th class="text-center">Durum</th>
+                                <th class="text-end">İşlemler</th>
+                            </tr>
+                            </thead>
+                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="price_source" role="tabpanel">
+            <div class="card mb-5 mb-xl-10">
+                <div class="card-header border-0 cursor-pointer">
+                    <div class="card-title m-0"><h3 class="fw-bold m-0">Entegrasyon & Fiyat Kaynağı Ayarları</h3></div>
+                </div>
+                <div class="card-body p-9">
+                    <div class="alert alert-dismissible bg-light-primary border border-primary d-flex flex-column flex-sm-row p-5 mb-10">
+                        <i class="fa-solid fa-circle-info fs-2hx text-primary me-4 mb-5 mb-sm-0"></i>
+                        <div class="d-flex flex-column pe-0 pe-sm-10">
+                            <h5 class="mb-1 text-primary">Yakında Yeni Kaynaklar Eklenecektir</h5>
+                            <span>Kuyumcuların altın fiyatlarını çekeceği kaynak altyapısı (Merkez Bankası, Sağlamoğlu vb.) geliştirme aşamasındadır. Şimdilik sadece <strong>Harem Altın</strong> aktiftir.</span>
+                        </div>
+                    </div>
+
+                    <form id="price_source_form" class="form">
+                        <div class="row mb-6">
+                            <label class="col-lg-4 col-form-label fw-semibold fs-6">Aktif Fiyat Kaynağı
+                                Sağlayıcısı</label>
+                            <div class="col-lg-8 fv-row">
+                                <select name="api_source" class="form-select form-select-lg form-select-solid"
+                                        data-control="select2" data-hide-search="true">
+                                    <option value="harem" selected>Harem Altın (Aktif)</option>
+                                    <option value="merkez_bankasi" disabled>T.C. Merkez Bankası (Yakında)</option>
+                                    <option value="saglamoglu" disabled>Sağlamoğlu Altın (Yakında)</option>
+                                    <option value="nadircold" disabled>Nadir Gold (Yakında)</option>
+                                </select>
+                                <div class="form-text mt-2">Bu derneğe bağlı üyelerin ekranlarında referans alınacak kur
+                                    merkezini belirler.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-8">
+                            <div class="col-lg-12 d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary"
+                                        onclick="Swal.fire('Bilgi', 'Şu anda sistem varsayılan olarak Harem Altın kullanmaktadır. Diğer modüller aktif edildiğinde bu alandan değişiklik yapabilirsiniz.', 'info')">
+                                    Ayarı Uygula
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="chamber_products" role="tabpanel">
+            <div class="card mb-5 mb-xl-10">
+                <div class="card-header border-0 pt-6 d-flex flex-column">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-4">
+                        <div class="card-title m-0">
+                            <div class="d-flex align-items-center position-relative my-1">
+                                <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5"><span
+                                        class="path1"></span><span class="path2"></span></i>
+                                <input type="text" id="chamberSearch"
+                                       class="form-control form-control-solid w-250px ps-13" placeholder="Ürün Ara..."/>
+                            </div>
+                        </div>
+                        <div class="card-toolbar m-0">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-light-warning" id="btnChamberBulkEdit">
+                                    <i class="fa-solid fa-pen-to-square"></i> Toplu Düzenle
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btnChamberBulkSave">
+                                    <i class="fa-solid fa-floppy-disk"></i> Toplu Kaydet
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex w-100">
+                        <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold"
+                            id="chamberCategoryTabs">
+                            <li class="nav-item">
+                                <a class="nav-link text-active-primary ms-0 me-10 py-3 active" data-category="Altın"
+                                   href="javascript:void(0);">
+                                    Altın
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-active-primary ms-0 me-10 py-3" data-category="Ziynet"
+                                   href="javascript:void(0);">
+                                    Ziynet
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body py-4">
+                    <div class="alert alert-dismissible bg-light-warning d-flex flex-column flex-sm-row p-5 mb-5">
+                        <i class="fa-solid fa-triangle-exclamation fs-2hx text-warning me-4 mb-5 mb-sm-0"></i>
+                        <div class="d-flex flex-column pe-0 pe-sm-10">
+                            <h5 class="mb-1 text-warning">Nasıl Çalışır?</h5>
+                            <span>Kutulara girdiğiniz değerler <b>Mağazaların ekranlarında</b> referans fiyat olarak görünür. Boş bıraktığınız kutular için sistem otomatik olarak <b>Global (Sistem)</b> fiyatlarını referans alır.</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="dtChamberProducts" class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                            <thead>
+                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                <th class="w-10px pe-2">
+                                    <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                        <input class="form-check-input" type="checkbox" id="chamber-check-all">
+                                    </div>
+                                </th>
+                                <th>Resim</th>
+                                <th>Ürün</th>
+                                <th>Dernek Alış Has</th>
+                                <th>Dernek Satış Has</th>
+                                <th>Dernek İşçilik</th>
+                            </tr>
+                            </thead>
+                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modal_add_company" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered mw-650px">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="fw-bold">Derneğe Üye Ekle</h2>
+                        <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
+                        <form id="form_add_company" class="form">
+                            {% csrf_token %}
+                            <div class="fv-row mb-7">
+                                <label class="required fs-6 fw-semibold mb-2">Firma Seçin</label>
+                                <select class="form-select form-select-solid" name="company_id"
+                                        id="select_available_company"
+                                        data-placeholder="Sistemde kayıtlı firma arayın...">
+                                    <option></option>
+                                </select>
+                                <div class="form-text mt-2">Seçtiğiniz firma ve ona bağlı mağazalar dernekle
+                                    ilişkilendirilecektir.
+                                </div>
+                            </div>
+                            <div class="text-center pt-15">
+                                <button type="reset" class="btn btn-light me-3" data-bs-dismiss="modal">İptal</button>
+                                <button type="submit" class="btn btn-primary" id="btn_add_company_submit">
+                                    <span class="indicator-label">Ekle</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- HIZLI BAŞKAN OLUŞTURMA MODALI -->
+        <div class="modal fade" id="modal_quick_president" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered mw-650px">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="fw-bold">Hızlı Başkan Kullanıcısı Oluştur</h2>
+                        <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
+                        <div class="alert alert-dismissible bg-light-info d-flex align-items-center p-4 mb-5">
+                            <i class="fa-solid fa-circle-info text-info fs-4 me-3"></i>
+                            <span class="text-gray-700">Bu kullanıcı otomatik olarak CHAMBER rolüne atanacak ve bu derneğin başkanı olacaktır.</span>
+                        </div>
+                        <form id="form_quick_president" class="form" novalidate>
+                            {% csrf_token %}
+                            <div class="row mb-5">
+                                <div class="col-md-6">
+                                    <label class="required fs-6 fw-semibold mb-2">Ad</label>
+                                    <input type="text" name="qp_first_name" class="form-control form-control-solid" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="required fs-6 fw-semibold mb-2">Soyad</label>
+                                    <input type="text" name="qp_last_name" class="form-control form-control-solid" required>
+                                </div>
+                            </div>
+                            <div class="row mb-5">
+                                <div class="col-md-6">
+                                    <label class="required fs-6 fw-semibold mb-2">E-posta</label>
+                                    <input type="email" name="qp_email" class="form-control form-control-solid" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="required fs-6 fw-semibold mb-2">Kullanıcı Adı</label>
+                                    <input type="text" name="qp_username" class="form-control form-control-solid" required>
+                                </div>
+                            </div>
+                            <div class="row mb-5">
+                                <div class="col-md-6">
+                                    <label class="required fs-6 fw-semibold mb-2">Şifre</label>
+                                    <input type="password" name="qp_password" class="form-control form-control-solid" required minlength="4">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="required fs-6 fw-semibold mb-2">Şifre (Tekrar)</label>
+                                    <input type="password" name="qp_password2" class="form-control form-control-solid" required>
+                                </div>
+                            </div>
+                            <div class="text-center pt-10">
+                                <button type="reset" class="btn btn-light me-3" data-bs-dismiss="modal">İptal</button>
+                                <button type="submit" class="btn btn-primary" id="btn_quick_president_submit">
+                                    <span class="indicator-label">Oluştur ve Ata</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        // =============================================
+        // BAŞKAN ATAMA & HIZLI OLUŞTURMA
+        // =============================================
+        $(document).ready(function () {
+            var CHAMBER_ID = "{{ record.id }}";
+            var CSRF = '{{ csrf_token }}';
+
+            // Select2 — Başkan Kullanıcı Araması
+            $('#president_user_select').select2({
+                width: '100%',
+                allowClear: true,
+                ajax: {
+                    url: "{% url 'chambers:get-available-presidents' record.id %}",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return {q: params.term}; },
+                    processResults: function (data) { return {results: data.results}; },
+                    cache: true
+                },
+                minimumInputLength: 0,
+                placeholder: 'Kullanıcı arayın...',
+                language: 'tr'
+            });
+
+            // Ata Butonu
+            $('#btnAssignPresident').on('click', function () {
+                var userId = $('#president_user_select').val();
+                var btn = $(this);
+                btn.prop('disabled', true);
+
+                $.ajax({
+                    url: "{% url 'chambers:assign-president' %}",
+                    type: 'POST',
+                    data: {
+                        chamber_id: CHAMBER_ID,
+                        user_id: userId || '',
+                        csrfmiddlewaretoken: CSRF
+                    },
+                    success: function (resp) {
+                        if (resp.result) {
+                            Swal.fire({icon: 'success', title: 'Başarılı', text: userId ? 'Başkan atandı.' : 'Başkan kaldırıldı.', timer: 1500, showConfirmButton: false})
+                                .then(function() { window.location.reload(); });
+                        } else {
+                            Swal.fire('Hata', resp.error_msg || 'Bir hata oluştu.', 'error');
+                        }
+                    },
+                    error: function () { Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error'); },
+                    complete: function () { btn.prop('disabled', false); }
+                });
+            });
+
+            // Hızlı Başkan Oluştur Form
+            $('#form_quick_president').on('submit', function (e) {
+                e.preventDefault();
+                var $form = $(this);
+
+                if ($form[0].checkValidity() === false) {
+                    $form.addClass('was-validated');
+                    return;
+                }
+
+                var pw1 = $form.find('[name="qp_password"]').val();
+                var pw2 = $form.find('[name="qp_password2"]').val();
+                if (pw1 !== pw2) {
+                    Swal.fire('Uyarı', 'Şifreler eşleşmiyor.', 'warning');
+                    return;
+                }
+
+                var btn = $('#btn_quick_president_submit');
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Oluşturuluyor...');
+
+                $.ajax({
+                    url: "{% url 'chambers:quick-create-president' %}",
+                    type: 'POST',
+                    data: {
+                        chamber_id: CHAMBER_ID,
+                        first_name: $form.find('[name="qp_first_name"]').val(),
+                        last_name: $form.find('[name="qp_last_name"]').val(),
+                        email: $form.find('[name="qp_email"]').val(),
+                        username: $form.find('[name="qp_username"]').val(),
+                        password: pw1,
+                        csrfmiddlewaretoken: CSRF
+                    },
+                    success: function (resp) {
+                        if (resp.result) {
+                            $('#modal_quick_president').modal('hide');
+                            Swal.fire({icon: 'success', title: 'Başarılı', text: 'Başkan oluşturuldu ve derneğe atandı.', timer: 1500, showConfirmButton: false})
+                                .then(function () { window.location.reload(); });
+                        } else {
+                            Swal.fire('Hata', resp.error_msg || 'Bir hata oluştu.', 'error');
+                        }
+                    },
+                    error: function () { Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error'); },
+                    complete: function () {
+                        btn.prop('disabled', false).html('<span class="indicator-label">Oluştur ve Ata</span>');
+                    }
+                });
+            });
+
+            // Modal kapandığında formu sıfırla
+            $('#modal_quick_president').on('hidden.bs.modal', function () {
+                $('#form_quick_president')[0].reset();
+                $('#form_quick_president').removeClass('was-validated');
+            });
+        });
+    </script>
+
+    <script>
+        function loadCities(targetSelector, selectedId = null) {
+            return $.ajax({
+                url: "{% url 'locations:get-cities' %}",
+                type: "GET",
+                dataType: "json",
+                success: function (resp) {
+                    let opts = '<option value=""></option>';
+                    let dataList = resp.data ? resp.data : resp;
+                    dataList.forEach(c => {
+                        opts += `<option value="${c.id}">${c.name}</option>`;
+                    });
+                    $(targetSelector).html(opts);
+                    if (selectedId) {
+                        $(targetSelector).val(selectedId).trigger('change.select2');
+                    }
+                }
+            });
+        }
+
+        function loadDistricts(cityId, targetSelector, selectedId = null) {
+            if (!cityId) {
+                $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change.select2');
+                return Promise.resolve();
+            }
+            return $.ajax({
+                url: "{% url 'locations:get-districts' %}",
+                type: "GET",
+                data: {city_id: cityId},
+                dataType: "json",
+                success: function (resp) {
+                    let opts = '<option value=""></option>';
+                    let dataList = resp.data ? resp.data : resp;
+                    dataList.forEach(d => {
+                        opts += `<option value="${d.id}">${d.name}</option>`;
+                    });
+                    $(targetSelector).html(opts).prop('disabled', false);
+                    if (selectedId) {
+                        $(targetSelector).val(selectedId);
+                    }
+                    $(targetSelector).trigger('change.select2');
+                }
+            });
+        }
+
+        function loadTaxOffices(cityId, targetSelector, selectedId = null) {
+            if (!cityId) {
+                $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change.select2');
+                return Promise.resolve();
+            }
+            return $.ajax({
+                url: "{% url 'locations:get-tax_offices' %}",
+                type: "GET",
+                data: {city_id: cityId},
+                dataType: "json",
+                success: function (resp) {
+                    let opts = '<option value=""></option>';
+                    let dataList = resp.data ? resp.data : resp;
+                    dataList.forEach(t => {
+                        opts += `<option value="${t.id}">${t.code} - ${t.name}</option>`;
+                    });
+                    $(targetSelector).html(opts).prop('disabled', false);
+                    if (selectedId) {
+                        $(targetSelector).val(selectedId);
+                    }
+                    $(targetSelector).trigger('change.select2');
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            $('#city, #district, #tax_office').select2({
+                width: '100%',
+                allowClear: true,
+                language: "tr"
+            });
+
+            $('#city').on('change', function () {
+                let val = $(this).val();
+                if (val) {
+                    loadDistricts(val, '#district');
+                    loadTaxOffices(val, '#tax_office');
+                } else {
+                    $('#district, #tax_office').val(null).empty().trigger('change.select2').prop('disabled', true);
+                }
+            });
+
+            const existingCityId = "{{ record.city_id|default_if_none:'' }}";
+            const existingDistrictId = "{{ record.district_id|default_if_none:'' }}";
+            const existingTaxOfficeId = "{{ record.tax_office_id|default_if_none:'' }}";
+
+            loadCities('#city', existingCityId).then(function () {
+                if (existingCityId) {
+                    Promise.all([
+                        loadDistricts(existingCityId, '#district', existingDistrictId),
+                        loadTaxOffices(existingCityId, '#tax_office', existingTaxOfficeId)
+                    ]);
+                }
+            });
+
+            // Ayarları Güncelleme Form Gönderimi
+            $('#kt_chamber_settings_form').on('submit', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                const $btn = $("#btnSettingsSave");
+
+                if ($form[0].checkValidity() === false) {
+                    e.stopPropagation();
+                    $form.addClass('was-validated');
+                    return false;
+                }
+
+                $btn.prop("disabled", true).text("Kaydediliyor...");
+                let formData = new FormData($form[0]);
+
+                $.ajax({
+                    url: "{% url 'chambers:add' %}",
+                    type: "POST",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        if (data.result === true) {
+                            Swal.fire({
+                                title: 'Başarılı',
+                                text: 'Dernek bilgileri başarıyla güncellendi.',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Hata', data.error_msg || 'Bir hata oluştu.', 'error');
+                            $btn.prop("disabled", false).text("Değişiklikleri Kaydet");
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error');
+                        $btn.prop("disabled", false).text("Değişiklikleri Kaydet");
+                    }
+                });
+            });
+
+            var dtCompanies;
+            var initCompaniesDatatable = function () {
+                if (dtCompanies) return;
+
+                dtCompanies = $('#kt_datatable_companies').DataTable({
+                    dom: '<\'top d-flex justify-content-end\'f>rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
+                    info: false, paging: true, lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                    pageLength: 25, processing: true, serverSide: true,
+                    ajax: {url: "{% url 'chambers:get-companies' record.id %}", type: 'GET'},
+                    columns: [
+                        {
+                            data: 'title', render: function (data, type, row) {
+                                var detailUrl = "/stores/detail/" + row.id;
+                                return '<a href="' + detailUrl + '" class="fw-bold text-primary text-hover-primary">' + (data || '-') + '</a>';
+                            }
+                        },
+                        {
+                            data: 'phone', render: function (d) {
+                                return d ? d : '-';
+                            }
+                        },
+                        {
+                            data: 'city', render: function (data, type, row) {
+                                return (row.city || '') + (row.city && row.district ? ' / ' : '') + (row.district || '-');
+                            }
+                        },
+                        {
+                            data: 'is_active', className: 'text-center', render: function (d) {
+                                return d ? '<span class="badge bg-light-success text-success">Aktif</span>' : '<span class="badge bg-light-danger text-danger">Pasif</span>';
+                            }
+                        },
+                        {
+                            data: null, className: 'text-end', orderable: false, render: function (data, type, row) {
+                                return `
+                        <button class="btn btn-sm btn-light-danger btn-remove-company" data-id="${row.id}" data-name="${row.title}">
+                            <i class="fa-solid fa-trash"></i> Çıkar
+                        </button>
+                    `;
+                            }
+                        }
+                    ],
+                    language: {url: '/static/management/plugins/custom/datatables/TR.json'}
+                });
+            };
+
+            $('a[data-bs-toggle="tab"][href="#connected_companies"]').on('shown.bs.tab', function (e) {
+                initCompaniesDatatable();
+            });
+
+            $(document).ready(function () {
+
+                // Select2 - Firma Arama
+                $('#select_available_company').select2({
+                    dropdownParent: $('#modal_add_company'),
+                    ajax: {
+                        url: "{% url 'chambers:get-available-companies' record.id %}",
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {q: params.term};
+                        },
+                        processResults: function (data) {
+                            return {results: data.results};
+                        },
+                        cache: true
+                    },
+                    minimumInputLength: 0
+                });
+
+                // Firma Ekle (Submit)
+                $('#form_add_company').on('submit', function (e) {
+                    e.preventDefault();
+                    let company_id = $('#select_available_company').val();
+
+                    if (!company_id) {
+                        Swal.fire('Uyarı', 'Lütfen bir firma seçin.', 'warning');
+                        return;
+                    }
+
+                    let btn = $('#btn_add_company_submit');
+                    btn.prop('disabled', true).text('Ekleniyor...');
+
+                    $.ajax({
+                        url: "{% url 'chambers:add-company' %}",
+                        type: "POST",
+                        data: {
+                            chamber_id: "{{ record.id }}",
+                            company_id: company_id,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        success: function (resp) {
+                            if (resp.result) {
+                                $('#modal_add_company').modal('hide');
+                                $('#select_available_company').val(null).trigger('change');
+
+                                setTimeout(function () {
+                                    $('body').removeClass('modal-open').css({
+                                        'padding-right': '',
+                                        'overflow': ''
+                                    });
+                                    $('.modal-backdrop').remove();
+
+                                    Swal.fire('Başarılı', 'Firma ve bağlı mağazaları derneğe eklendi.', 'success');
+                                    dtCompanies.ajax.reload();
+                                }, 350);
+
+                            } else {
+                                Swal.fire('Hata', resp.error_msg || 'Hata oluştu', 'error');
+                            }
+                        },
+                        complete: function () {
+                            btn.prop('disabled', false).html('<span class="indicator-label">Ekle</span>');
+                        }
+                    });
+                });
+
+                $('#kt_datatable_companies').on('click', '.btn-remove-company', function () {
+                    let company_id = $(this).data('id');
+                    let company_name = $(this).data('name');
+
+                    Swal.fire({
+                        title: 'Emin misiniz?',
+                        text: `${company_name} firmasını ve firmaya bağlı tüm mağazaları bu dernekten çıkarmak istediğinize emin misiniz?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Evet, Çıkar',
+                        cancelButtonText: 'İptal',
+                        customClass: {confirmButton: "btn btn-danger", cancelButton: "btn btn-light"}
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: "{% url 'chambers:remove-company' %}",
+                                type: "POST",
+                                data: {
+                                    chamber_id: "{{ record.id }}",
+                                    company_id: company_id,
+                                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                                },
+                                success: function (resp) {
+                                    if (resp.result) {
+                                        Swal.fire('Çıkarıldı!', 'Firma dernekten çıkarıldı.', 'success');
+                                        dtCompanies.ajax.reload();
+                                    } else {
+                                        Swal.fire('Hata', resp.error_msg || 'Bir hata oluştu.', 'error');
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            var dtChamber;
+            var CHAMBER_ID = "{{ record.id }}";
+
+            let activeCategory = "Altın";
+
+            var initChamberDatatable = function () {
+                if (dtChamber) return;
+
+                dtChamber = $('#dtChamberProducts').DataTable({
+                    dom: 'rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
+                    info: false, paging: true, lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                    pageLength: 25, processing: true, serverSide: true, autoWidth: false,
+                    ajax: {
+                        url: `/chambers/get-chamber-products/${CHAMBER_ID}`,
+                        type: 'GET',
+                        data: function (d) {
+                            d.category = activeCategory;
+                            d.search = {value: $('#chamberSearch').val()};
+                        }
+                    },
+                    columns: [
+                        {
+                            data: 'id', orderable: false, className: 'text-center',
+                            render: function (data) {
+                                return `<input class='form-check-input row-check' type='checkbox' value='${data}'>`;
+                            }
+                        },
+                        {
+                            data: 'image', orderable: false, className: 'text-center',
+                            render: function (data) {
+                                let img = data ? `/media/${data}` : `/media/default/user.png`;
+                                return `<img src='${img}' alt='Product' style='max-width: 40px; max-height: 40px; border-radius: 6px;'>`;
+                            }
+                        },
+                        {
+                            data: 'name',
+                            render: function (data, type, row) {
+                                return `<span class="fw-bold text-gray-800">${data}</span><br>
+                                        <span class="text-muted fs-8">Kat: ${row.category_name}</span>`;
+                            }
+                        },
+                        {
+                            data: 'chamber_buy_hs', orderable: false,
+                            render: function (data, type, row) {
+                                let val = data !== "" ? parseFloat(data).toFixed(4) : "";
+                                let display = val ? `<span class="badge badge-light-success fs-6">${val}</span>` : `<span class="text-muted fs-8">Sistem: ${row.global_buy_hs.toFixed(4)}</span>`;
+
+                                return `<div class='input-group'>
+                                    <span class='stock-value' data-id='${row.id}'>${display}</span>
+                                    <input type='number' class='form-control form-control-sm stock-input d-none px-1'
+                                           data-field='chamber_buy_hs' data-id='${row.id}' value='${val}' step='0.0001' placeholder='${row.global_buy_hs.toFixed(4)}' style="max-width: 7rem;">
+                                </div>`;
+                            }
+                        },
+                        {
+                            data: 'chamber_sale_hs', orderable: false,
+                            render: function (data, type, row) {
+                                let val = data !== "" ? parseFloat(data).toFixed(4) : "";
+                                let display = val ? `<span class="badge badge-light-primary fs-6">${val}</span>` : `<span class="text-muted fs-8">Sistem: ${row.global_sale_hs.toFixed(4)}</span>`;
+
+                                return `<div class='input-group'>
+                                    <span class='stock-value' data-id='${row.id}'>${display}</span>
+                                    <input type='number' class='form-control form-control-sm stock-input d-none px-1'
+                                           data-field='chamber_sale_hs' data-id='${row.id}' value='${val}' step='0.0001' placeholder='${row.global_sale_hs.toFixed(4)}' style="max-width: 7rem;">
+                                </div>`;
+                            }
+                        },
+                        {
+                            data: 'chamber_labor', orderable: false,
+                            render: function (data, type, row) {
+                                let val = data !== "" ? parseFloat(data).toFixed(2) : "";
+                                let display = val ? `<span class="badge badge-light-warning fs-6">${val}</span>` : `<span class="text-muted fs-8">Sistem: ${row.global_labor.toFixed(2)}</span>`;
+
+                                return `<div class='input-group'>
+                                    <span class='stock-value' data-id='${row.id}'>${display}</span>
+                                    <input type='number' class='form-control form-control-sm stock-input d-none px-1'
+                                           data-field='chamber_labor' data-id='${row.id}' value='${val}' step='0.01' placeholder='${row.global_labor.toFixed(2)}' style="max-width: 7rem;">
+                                </div>`;
+                            }
+                        }
+                    ],
+                    language: {url: '/static/management/plugins/custom/datatables/TR.json'}
+                });
+
+                $('#chamberSearch').on('keyup', function () {
+                    dtChamber.ajax.reload();
+                });
+
+                $('#chamberCategoryTabs .nav-link').on('click', function (e) {
+                    e.preventDefault();
+
+                    $('#chamberCategoryTabs .nav-link').removeClass('active');
+                    $(this).addClass('active');
+
+                    activeCategory = $(this).data('category');
+
+                    dtChamber.ajax.reload();
+
+                    $('#chamber-check-all').prop('checked', false);
+                });
+
+                $('#chamber-check-all').on('change', function () {
+                    $('#dtChamberProducts tbody input.row-check').prop('checked', $(this).is(':checked'));
+                });
+            };
+
+            $('a[data-bs-toggle="tab"][href="#chamber_products"]').on('shown.bs.tab', function (e) {
+                initChamberDatatable();
+            });
+
+
+            $('#btnChamberBulkEdit').on('click', function () {
+                var checked = $("#dtChamberProducts tbody input.row-check:checked");
+                if (checked.length === 0) {
+                    Swal.fire('Uyarı', 'Lütfen düzenlemek için en az bir ürün seçin.', 'warning');
+                    return;
+                }
+                checked.each(function () {
+                    var id = $(this).val();
+                    $("#dtChamberProducts .stock-value[data-id='" + id + "']").addClass('d-none');
+                    $("#dtChamberProducts .stock-input[data-id='" + id + "']").removeClass('d-none');
+                });
+            });
+
+            $('#btnChamberBulkSave').on('click', function () {
+                var checked = $("#dtChamberProducts tbody input.row-check:checked");
+                if (checked.length === 0) {
+                    Swal.fire('Uyarı', 'Lütfen kaydetmek için en az bir ürün seçin.', 'warning');
+                    return;
+                }
+
+                var items = [];
+                var btn = $(this);
+
+                checked.each(function () {
+                    var id = $(this).val();
+                    var rowData = {};
+                    var hasChange = false;
+
+                    var inputs = $("#dtChamberProducts .stock-input[data-id='" + id + "']");
+                    inputs.each(function () {
+                        if (!$(this).hasClass('d-none')) {
+                            var field = $(this).data('field');
+                            var val = $(this).val();
+                            rowData[field] = val;
+                            hasChange = true;
+                        }
+                    });
+
+                    if (hasChange) {
+                        items.push({product_id: id, updated_data: rowData});
+                    }
+                });
+
+                if (items.length === 0) {
+                    return;
+                }
+
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...');
+
+                $.ajax({
+                    url: "{% url 'chambers:update-chamber-prices' %}",
+                    type: 'POST',
+                    data: {
+                        chamber_id: CHAMBER_ID,
+                        items: JSON.stringify(items),
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                    },
+                    success: function (resp) {
+                        if (resp.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Başarılı',
+                                text: resp.updated + ' ürünün fiyatları güncellendi.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            $('#chamber-check-all').prop('checked', false);
+                            dtChamber.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Hata', resp.message, 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error');
+                    },
+                    complete: function () {
+                        btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk"></i> Toplu Kaydet');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

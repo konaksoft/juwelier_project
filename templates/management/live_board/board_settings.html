@@ -1,0 +1,1059 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default:"Canli Ekran Ayarlari" }} | Kuyum Plus</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <style>
+        /* ========================================
+           CSS DEGISKENLERI
+           ======================================== */
+        :root {
+            --bg-primary: #0F1B2B;
+            --bg-secondary: #1A253A;
+            --bg-card: rgba(26, 37, 58, 0.95);
+            --glass-bg: rgba(26, 37, 58, 0.95);
+            --accent-gold: #FFD700;
+            --accent-gold-dim: rgba(255, 215, 0, 0.15);
+            --text-primary: #E3EAF2;
+            --text-secondary: #A9B6C8;
+            --text-muted: #A9B6C8;
+            --success-color: #28a745;
+            --success-bg: rgba(40, 167, 69, 0.15);
+            --danger-color: #dc3545;
+            --danger-bg: rgba(220, 53, 69, 0.15);
+            --warning-color: #ffc107;
+            --warning-bg: rgba(255, 193, 7, 0.12);
+            --info-color: #17a2b8;
+            --info-bg: rgba(23, 162, 184, 0.12);
+            --border-color: rgba(255, 215, 0, 0.1);
+            --glow-gold: 0 0 20px rgba(255, 215, 0, 0.3);
+            --bg-gradient-top: rgba(245, 184, 0, 0.03);
+            --bg-gradient-bottom: rgba(63, 185, 80, 0.02);
+            --toggle-bg: #2A3550;
+            --toggle-active: #FFD700;
+            --input-bg: #0F1B2B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            background-image: radial-gradient(ellipse at top, var(--bg-gradient-top) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, var(--bg-gradient-bottom) 0%, transparent 40%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        /* ========================================
+           HEADER
+           ======================================== */
+        .settings-header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-gold-dim);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .back-btn i {
+            font-size: 1rem;
+        }
+
+        .header-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-title i {
+            color: var(--accent-gold);
+        }
+
+        .header-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .header-right-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .store-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.45rem 1rem;
+            background: var(--accent-gold-dim);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        .store-badge i {
+            font-size: 0.9rem;
+        }
+
+        /* ========================================
+           INFO BAR (Durum Cubugu)
+           ======================================== */
+        .info-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .info-bar {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.15rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .info-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .info-card-icon.mode {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #D4A000 100%);
+            color: #0F1B2B;
+        }
+
+        .info-card-icon.chamber {
+            background: linear-gradient(135deg, #6C63FF 0%, #4834D4 100%);
+            color: #fff;
+        }
+
+        .info-card-icon.store {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: #fff;
+        }
+
+        .info-card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .info-card-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .info-card-value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ========================================
+           ANA ICERIK
+           ======================================== */
+        .settings-content {
+            padding: 0 2rem 3rem 2rem;
+        }
+
+        /* ========================================
+           AYAR KARTLARI
+           ======================================== */
+        .settings-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.15rem 1.5rem;
+            background: linear-gradient(180deg, rgba(245, 184, 0, 0.04) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-top-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-top-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+        }
+
+        .card-top-icon.identity {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.25);
+            color: #0F1B2B;
+        }
+
+        .card-top-icon.visibility {
+            background: linear-gradient(135deg, #6C63FF 0%, #4834D4 100%);
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.25);
+            color: #fff;
+        }
+
+        .card-top-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .card-top-badge {
+            font-size: 0.65rem;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* ========================================
+           INPUT ALANLARI
+           ======================================== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-label-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-left: 0.35rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.08);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .file-upload-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: var(--input-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.03);
+        }
+
+        .file-upload-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-gold-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+            flex-shrink: 0;
+        }
+
+        .file-upload-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .file-upload-text-main {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .file-upload-text-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .file-upload-input {
+            display: none;
+        }
+
+        .current-logo-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding: 0.6rem 1rem;
+            background: var(--info-bg);
+            border: 1px solid rgba(23, 162, 184, 0.2);
+            border-radius: 10px;
+        }
+
+        .current-logo-preview img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .current-logo-preview-text {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .current-logo-preview-text span {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--info-color);
+        }
+
+        .current-logo-preview-text small {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .file-selected-name {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.78rem;
+            color: var(--success-color);
+            font-weight: 500;
+        }
+
+        .file-selected-name.show {
+            display: flex;
+        }
+
+        .file-selected-name i {
+            font-size: 0.85rem;
+        }
+
+        /* ========================================
+           TOGGLE SWITCH (Genis Kartli)
+           ======================================== */
+        .toggle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .toggle-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .toggle-icon-box.name-icon {
+            background: rgba(255, 215, 0, 0.12);
+            color: var(--accent-gold);
+        }
+
+        .toggle-icon-box.logo-icon {
+            background: rgba(76, 175, 80, 0.12);
+            color: #4CAF50;
+        }
+
+        .toggle-icon-box.currency-icon {
+            background: rgba(33, 150, 243, 0.12);
+            color: #2196F3;
+        }
+
+        .toggle-icon-box.sarrafiye-icon {
+            background: rgba(156, 39, 176, 0.12);
+            color: #9C27B0;
+        }
+
+        .toggle-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .toggle-label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .toggle-desc {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--toggle-bg);
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--toggle-active);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* ========================================
+           KAYDET BUTONU ALANI
+           ======================================== */
+        .save-area {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 0 0 0;
+        }
+
+        .btn-save {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.8rem 2.5rem;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #D4A000 100%);
+            border: none;
+            border-radius: 12px;
+            color: #0F1B2B;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-save:hover {
+            box-shadow: var(--glow-gold);
+            transform: translateY(-1px);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-save i {
+            font-size: 1rem;
+        }
+
+        /* ========================================
+           BILDIRIM (ALERT)
+           ======================================== */
+        .alert-banner {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-banner.show {
+            display: flex;
+        }
+
+        .alert-banner.success {
+            background: var(--success-bg);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            color: var(--success-color);
+        }
+
+        .alert-banner.error {
+            background: var(--danger-bg);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: var(--danger-color);
+        }
+
+        .alert-banner i {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        /* ========================================
+           RESPONSIVE
+           ======================================== */
+        @media (max-width: 768px) {
+            .settings-header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .info-bar {
+                padding: 1rem;
+            }
+
+            .settings-content {
+                padding: 0 1rem 2rem 1rem;
+            }
+
+            .card-body {
+                padding: 1rem;
+            }
+
+            .toggle-row {
+                padding: 0.85rem 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ============================================
+         HEADER
+         ============================================ -->
+    <header class="settings-header">
+        <div class="header-left">
+            <a href="{% url 'live_board:index' %}" class="back-btn">
+                <i class="bi bi-arrow-left"></i>
+                Canli Piyasalar'a Don
+            </a>
+            <div class="header-title-group">
+                <div class="header-title">
+                    <i class="bi bi-gear"></i>
+                    Canli Ekran Ayarlari
+                </div>
+                <div class="header-subtitle">Gorunurluk & Kimlik Ozellestirmesi</div>
+            </div>
+        </div>
+        <div class="header-right-info">
+            <div class="store-badge">
+                <i class="bi bi-shop"></i>
+                {{ store.title|default:"Magaza" }}
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================
+         BILGI CUBUGU (Info Bar)
+         ============================================ -->
+    <div class="info-bar">
+        <div class="info-card">
+            <div class="info-card-icon mode">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <div class="info-card-content">
+                <span class="info-card-label">Fiyat Modu</span>
+                <span class="info-card-value">{{ active_mode }}</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-icon chamber">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="info-card-content">
+                <span class="info-card-label">Fiyat Referans Dernegi</span>
+                <span class="info-card-value">{% if chamber_name %}{{ chamber_name }}{% else %}Tanimli Degil{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-icon store">
+                <i class="bi bi-shop-window"></i>
+            </div>
+            <div class="info-card-content">
+                <span class="info-card-label">Magaza</span>
+                <span class="info-card-value">{{ store.title|default:"—" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         ANA ICERIK
+         ============================================ -->
+    <div class="settings-content">
+
+        <!-- Bildirim Alani -->
+        <div class="alert-banner" id="alertBanner">
+            <i class="bi bi-info-circle"></i>
+            <span id="alertText"></span>
+        </div>
+
+        <!-- ==========================================
+             KART 1: Ekran Kimlik Bilgileri
+             ========================================== -->
+        <div class="settings-card">
+            <div class="card-top">
+                <div class="card-top-left">
+                    <div class="card-top-icon identity">
+                        <i class="bi bi-palette"></i>
+                    </div>
+                    <span class="card-top-title">Ekran Kimlik Bilgileri</span>
+                </div>
+                <span class="card-top-badge">Ozellestirme</span>
+            </div>
+            <div class="card-body">
+
+                <!-- Ozel Ekran Adi -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="bi bi-type" style="color: var(--accent-gold); margin-right: 4px;"></i>
+                        Ozel Ekran Adi
+                        <span class="form-label-hint">(Bos birakilirsa magaza adi gosterilir)</span>
+                    </label>
+                    <input type="text"
+                           class="form-input"
+                           id="inputCustomName"
+                           value="{{ lb_settings.custom_board_name|default:'' }}"
+                           placeholder="Ornek: Kuyumculuk AS">
+                </div>
+
+                <!-- Ozel Logo -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="bi bi-image" style="color: var(--accent-gold); margin-right: 4px;"></i>
+                        Ozel Logo
+                    </label>
+                    <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('inputCustomLogo').click()">
+                        <div class="file-upload-icon">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                        </div>
+                        <div class="file-upload-text">
+                            <span class="file-upload-text-main">Logo yuklemek icin tiklayin</span>
+                            <span class="file-upload-text-sub">PNG, JPG, SVG — Maks. 2MB</span>
+                        </div>
+                    </div>
+                    <input type="file"
+                           class="file-upload-input"
+                           id="inputCustomLogo"
+                           accept="image/*">
+                    <div class="file-selected-name" id="fileSelectedName">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span id="fileSelectedText"></span>
+                    </div>
+                    {% if custom_logo_url %}
+                    <div class="current-logo-preview">
+                        <img src="{{ custom_logo_url }}" alt="Mevcut logo">
+                        <div class="current-logo-preview-text">
+                            <span>Mevcut logo yuklu</span>
+                            <small>Yeni logo yuklerseniz mevcut logo degistirilir</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==========================================
+             KART 2: Gorunurluk Ayarlari
+             ========================================== -->
+        <div class="settings-card">
+            <div class="card-top">
+                <div class="card-top-left">
+                    <div class="card-top-icon visibility">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <span class="card-top-title">Gorunurluk Ayarlari</span>
+                </div>
+                <span class="card-top-badge">Canli Ekran</span>
+            </div>
+            <div class="card-body">
+                <div class="toggle-list">
+
+                    <!-- Toggle: Ozel Magaza Adi Goster -->
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-icon-box name-icon">
+                                <i class="bi bi-fonts"></i>
+                            </div>
+                            <div class="toggle-text">
+                                <span class="toggle-label">Ozel Magaza Adi Goster</span>
+                                <span class="toggle-desc">Canli ekranin header bolumunde magaza adini gosterir veya gizler</span>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleShowName" {% if lb_settings.show_custom_name %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Toggle: Ozel Logo Goster -->
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-icon-box logo-icon">
+                                <i class="bi bi-image"></i>
+                            </div>
+                            <div class="toggle-text">
+                                <span class="toggle-label">Ozel Logo Goster</span>
+                                <span class="toggle-desc">Canli ekranin header bolumunde logo ikonunu gosterir veya gizler</span>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleShowLogo" {% if lb_settings.show_custom_logo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Toggle: Doviz Bolumu -->
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-icon-box currency-icon">
+                                <i class="bi bi-currency-exchange"></i>
+                            </div>
+                            <div class="toggle-text">
+                                <span class="toggle-label">Doviz Bolumunu Goster</span>
+                                <span class="toggle-desc">USD, EUR, GBP, CHF doviz kur kartini canli ekranda gosterir veya gizler</span>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleShowCurrency" {% if lb_settings.show_currency_section %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Toggle: Sarrafiye Bolumu -->
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-icon-box sarrafiye-icon">
+                                <i class="bi bi-coin"></i>
+                            </div>
+                            <div class="toggle-text">
+                                <span class="toggle-label">Sarrafiye Bolumunu Goster</span>
+                                <span class="toggle-desc">Ceyrek, Yarim, Tam ve Ata sikke kartini canli ekranda gosterir veya gizler</span>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleShowSarrafiye" {% if lb_settings.show_sarrafiye_section %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             KAYDET BUTONU
+             ========================================== -->
+        <div class="save-area">
+            <button class="btn-save" id="btnSave" onclick="saveSettings()">
+                <i class="bi bi-check2-circle"></i>
+                Ayarlari Kaydet
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ============================================
+         JAVASCRIPT
+         ============================================ -->
+    <script>
+        /* =============================================
+           DOSYA SECIM GOSTERIMI
+           ============================================= */
+        var fileInput = document.getElementById('inputCustomLogo');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                var nameEl = document.getElementById('fileSelectedName');
+                var textEl = document.getElementById('fileSelectedText');
+                if (this.files && this.files.length > 0) {
+                    textEl.textContent = this.files[0].name;
+                    nameEl.classList.add('show');
+                } else {
+                    nameEl.classList.remove('show');
+                }
+            });
+        }
+
+        /* =============================================
+           BILDIRIM GOSTERME
+           ============================================= */
+        function showAlert(type, message) {
+            var banner = document.getElementById('alertBanner');
+            var text = document.getElementById('alertText');
+            var icon = banner.querySelector('i');
+
+            banner.className = 'alert-banner show ' + type;
+            text.textContent = message;
+
+            if (type === 'success') {
+                icon.className = 'bi bi-check-circle-fill';
+            } else {
+                icon.className = 'bi bi-exclamation-triangle-fill';
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hideAlert() {
+            var banner = document.getElementById('alertBanner');
+            banner.className = 'alert-banner';
+        }
+
+        /* =============================================
+           AYARLARI KAYDET
+           ============================================= */
+        function saveSettings() {
+            var btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            hideAlert();
+
+            var csrfToken = '{{ csrf_token }}';
+            var logoInput = document.getElementById('inputCustomLogo');
+            var hasFile = logoInput && logoInput.files && logoInput.files.length > 0;
+
+            if (hasFile) {
+                /* Multipart form-data (logo dosyasi var) */
+                var formData = new FormData();
+                formData.append('custom_board_name', document.getElementById('inputCustomName').value.trim());
+                formData.append('show_custom_name', document.getElementById('toggleShowName').checked ? 'true' : 'false');
+                formData.append('show_custom_logo', document.getElementById('toggleShowLogo').checked ? 'true' : 'false');
+                formData.append('show_currency_section', document.getElementById('toggleShowCurrency').checked ? 'true' : 'false');
+                formData.append('show_sarrafiye_section', document.getElementById('toggleShowSarrafiye').checked ? 'true' : 'false');
+                formData.append('custom_board_logo', logoInput.files[0]);
+
+                fetch('/live_board/api/live-board-settings/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) { handleResponse(data, btn); })
+                .catch(function(err) {
+                    showAlert('error', 'Baglanti hatasi: ' + err.message);
+                    btn.disabled = false;
+                });
+            } else {
+                /* JSON body (logo yok) */
+                var payload = {
+                    custom_board_name: document.getElementById('inputCustomName').value.trim(),
+                    show_custom_name: document.getElementById('toggleShowName').checked,
+                    show_custom_logo: document.getElementById('toggleShowLogo').checked,
+                    show_currency_section: document.getElementById('toggleShowCurrency').checked,
+                    show_sarrafiye_section: document.getElementById('toggleShowSarrafiye').checked
+                };
+
+                fetch('/live_board/api/live-board-settings/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) { handleResponse(data, btn); })
+                .catch(function(err) {
+                    showAlert('error', 'Baglanti hatasi: ' + err.message);
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        function handleResponse(data, btn) {
+            if (data.status === 'success') {
+                showAlert('success', 'Ayarlar basariyla kaydedildi! Canli ekrana dondugunuzde degisiklikler gorunecektir.');
+                btn.disabled = false;
+            } else {
+                showAlert('error', data.message || 'Bir hata olustu. Lutfen tekrar deneyin.');
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+</html>

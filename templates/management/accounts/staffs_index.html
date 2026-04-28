@@ -1,0 +1,459 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}{% endblock header %}
+{% block body %}
+
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main"
+         style="border-style:groove;border-radius:10px;border-color:aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+                    <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl"
+                         style="max-width:100%;">
+                        <div class="content flex-row-fluid" id="kt_content">
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card">
+
+                                        <div class="card-header align-items-center">
+                                            <div class="card-title">
+                                                <h3 class="fw-bold m-0">Konasoft Personel Listesi</h3>
+                                            </div>
+                                            <div class="card-toolbar d-flex align-items-center gap-2">
+                                                <div id="kt_datatable_example_buttons" class="d-none"></div>
+                                                <a href="#" class="btn btn-primary" data-bs-toggle="modal"
+                                                   data-bs-target="#addModal">
+                                                    <i class="ki-duotone ki-plus fs-2"></i> Yeni Personel Ekle
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-body">
+
+                                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="button" class="btn btn-light-danger"
+                                                            id="deleteSelected" title="Seçilileri Sil">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-light-success"
+                                                            id="changeStatusSelected" title="Durum Değiştir">
+                                                        <i class="fa-solid fa-circle-check"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table id="kt_datatable_example_1"
+                                                       class="table align-middle table-row-dashed fs-6 gy-5">
+                                                    <thead>
+                                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                        <th class="w-10px pe-2">
+                                                            <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                       data-kt-check="true"
+                                                                       data-kt-check-target="#kt_table_rows .form-check-input">
+                                                            </div>
+                                                        </th>
+                                                        <th>Avatar</th>
+                                                        <th>Kullanıcı Adı</th>
+                                                        <th>Ad Soyad</th>
+                                                        <th>E-posta</th>
+                                                        <th>Telefon</th>
+                                                        <th>Rolü</th>
+                                                        <th>Kayıt Tarihi</th>
+                                                        <th>Durum</th>
+                                                        <th class="text-end min-w-100px">İşlemler</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="addModal">
+        <div class="modal-dialog modal-dialog-centered mw-900px">
+            <div class="modal-content" style="padding:25px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Yeni Personel</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"
+                         aria-label="Kapat">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+
+                <form id="add-form" method="post" autocomplete="off" enctype="multipart/form-data" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" name="record_id" id="record_id">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                <label for="first_name">Ad</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                <label for="last_name">Soyad</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="username" name="username" required>
+                                <label for="username">Kullanıcı Adı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <label for="email">E-posta</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="mobile_phone" name="mobile_phone">
+                                <label for="mobile_phone">Telefon</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="role_id" name="role_id" required>
+                                    <option value="" selected disabled>Rol Seçiniz...</option>
+                                    {% for role in roles %}
+                                        <option value="{{ role.id }}">{{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="role_id">Personel Rolü</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-floating mb-3">
+                                <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                                <label for="avatar">Avatar</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="password" class="form-control" id="password" name="password"
+                                       autocomplete="new-password" placeholder="Şifre">
+                                <label for="password">Şifre (Düzenlemede boş bırakılabilir)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="password" class="form-control" id="password_again"
+                                       autocomplete="new-password" placeholder="Şifre Tekrar">
+                                <label for="password_again">Şifre (Tekrar)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-md-flex align-items-center mt-3">
+                                <div class="ms-auto mt-3 mt-md-0">
+                                    <a href="#" class="btn btn-light-danger" data-bs-dismiss="modal">İptal</a>
+                                    <button type="button" id="btnSave" class="btn btn-light-success">Kaydet</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        let dt;
+
+        // KAYIT DÜZENLEME FONKSİYONU
+        const edit_record = (row) => {
+            $("#addModal").modal('show');
+            $("#addModal .modal-title").text("Personel Düzenle");
+
+            $("#record_id").val(row.id);
+            $("#first_name").val(row.first_name || "");
+            $("#last_name").val(row.last_name || "");
+            $("#username").val(row.username || "");
+            $("#email").val(row.email || "");
+            $("#mobile_phone").val(row.mobile_phone || "");
+
+            // Rolü Seçili Getir
+            if (row.role_id) {
+                $("#role_id").val(row.role_id).trigger('change');
+            } else {
+                $("#role_id").val("").trigger('change');
+            }
+
+            // Şifre alanlarını temizle
+            $("#password").val('');
+            $("#password_again").val('');
+        };
+
+        var KTDatatablesServerSide = (function () {
+            var initDatatable = function () {
+                dt = $("#kt_datatable_example_1").DataTable({
+                    dom: "<'top d-flex justify-content-end'f>" + "rt" +
+                        "<'bottom d-flex justify-content-between align-items-center mb-4'l p>" + "<'clear'>",
+                    info: false,
+                    paging: true,
+                    lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                    pageLength: 25,
+                    searchDelay: 400,
+                    processing: true,
+                    serverSide: true,
+                    orderMulti: false,
+                    autoWidth: false,
+                    stateSave: true,
+                    ajax: {url: "{% url 'accounts:staffs-get-all' %}", type: "GET", dataType: "json"},
+                    order: [[7, "desc"]],
+                    columns: [
+                        {
+                            data: "id", orderable: false, className: "text-center",
+                            render: (d, t, row) => (
+                                '<input class="form-check-input" type="checkbox" value="' + d + '" data-id="' + d + '">'
+                            )
+                        },
+                        {
+                            data: "avatar", orderable: false,
+                            render: (d) => `<img src="/media/${d || 'accounts/user.png'}" class="rounded" style="width:36px;height:36px;object-fit:cover">`
+                        },
+                        {
+                            data: "username",
+                            render: (d, t, row) => {
+                                const base = "{% url 'accounts:staffs-detail' 12345 %}".replace(/\d+$/, row.id);
+                                return `<a href="${base}" class="user-name fw-bold text-dark">${d}</a>`;
+                            }
+                        },
+                        {
+                            data: null, render: (row) => (row.first_name || '') + ' ' + (row.last_name || '')
+                        },
+                        {data: "email"},
+                        {data: "mobile_phone"},
+
+                        // Rol Kolonu
+                        {
+                            data: "role__name",
+                            render: d => d
+                                ? `<span class="badge badge-light-primary fs-8 fw-bold">${d}</span>`
+                                : '<span class="badge badge-light-warning fs-8">Atanmamış</span>'
+                        },
+
+                        {data: "date_joined"},
+                        {
+                            data: "is_active", className: "text-center",
+                            render: (d) => d
+                                ? "<span class='mb-1 badge font-medium bg-light-success text-success'>Aktif</span>"
+                                : "<span class='mb-1 badge font-medium bg-light-danger text-danger'>Pasif</span>"
+                        },
+                        {
+                            data: null, orderable: false, className: "text-end",
+                            render: (row) => {
+                                // row objesini stringe çevirirken tırnak hatası olmasın diye replace ediyoruz
+                                const rowStr = JSON.stringify(row).replace(/"/g, '&quot;');
+                                return `
+                                  <a href="#" class="btn btn-light btn-active-light-primary btn-sm" title="Düzenle"
+                                     onclick="edit_record(${rowStr})">
+                                     <i class="ki-duotone ki-entrance-left" style="font-size:1.7em;"><span class="path1"></span><span class="path2"></span></i>
+                                  </a>`;
+                            }
+                        }
+                    ],
+                    language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+                    rowCallback: function (row, data) {
+                        $(row).on('dblclick', function () {
+                            window.location.href = "{% url 'accounts:staffs-detail' 12345 %}".replace(/\d+$/, data.id);
+                        });
+                    }
+                });
+
+                // Checkbox All
+                $('#kt_datatable_example_1 thead [data-kt-check="true"]').on('change', function () {
+                    const checked = this.checked;
+                    $('#kt_datatable_example_1 tbody input[type="checkbox"]').prop('checked', checked);
+                });
+
+                // Export Buttons (Opsiyonel)
+                const documentTitle = 'Personel Listesi';
+                new $.fn.dataTable.Buttons(dt, {
+                    buttons: [
+                        {extend: 'copyHtml5', title: documentTitle},
+                        {extend: 'excelHtml5', title: documentTitle},
+                        {extend: 'csvHtml5', title: documentTitle},
+                        {extend: 'pdfHtml5', title: documentTitle}
+                    ]
+                }).container().appendTo($('#kt_datatable_example_buttons'));
+
+                // Silme İşlemi
+                $('#deleteSelected').on('click', function () {
+                    const ids = $('#kt_datatable_example_1 tbody input[type="checkbox"]:checked')
+                        .map((_, el) => el.value).get();
+                    if (!ids.length) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Lütfen en az bir kayıt seçin.',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                        return;
+                    }
+                    $.post("{% url 'accounts:staffs-delete' %}", {
+                        'ids[]': ids,
+                        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                    }, function (data) {
+                        if (data.result) {
+                            Swal.fire({icon: 'success', title: 'Silindi', timer: 900, showConfirmButton: false})
+                                .then(() => dt.ajax.reload(null, false));
+                        } else {
+                            Swal.fire('Hata', data.error_msg || 'İşlem başarısız', 'error');
+                        }
+                    });
+                });
+
+                // Durum Değiştirme
+                $('#changeStatusSelected').on('click', function () {
+                    const ids = $('#kt_datatable_example_1 tbody input[type="checkbox"]:checked')
+                        .map((_, el) => el.value).get();
+                    if (!ids.length) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Lütfen en az bir kayıt seçin.',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                        return;
+                    }
+                    $.post("{% url 'accounts:staffs-change-status' %}", {
+                        'ids[]': ids,
+                        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                    }).done(function (data) {
+                        if (data.result) {
+                            Swal.fire({icon: 'success', title: 'Güncellendi', timer: 900, showConfirmButton: false})
+                                .then(() => dt.ajax.reload(null, false));
+                        } else {
+                            Swal.fire('Hata', data.error_msg || 'İşlem başarısız', 'error');
+                        }
+                    });
+                });
+            };
+
+            return {
+                init: function () {
+                    initDatatable();
+                }
+            };
+        })();
+
+        KTUtil.onDOMContentLoaded(function () {
+            KTDatatablesServerSide.init();
+        });
+
+        // FORM İŞLEMLERİ
+        $(function () {
+            $('#addModal').on('hidden.bs.modal', function () {
+                $('#add-form')[0].reset();
+                $('#record_id').val('');
+                $("#addModal .modal-title").text("Yeni Personel");
+                $("#role_id").val("").trigger("change"); // Rol seçimini sıfırla
+                $('#btnSave').prop('disabled', false);
+            });
+
+            $('#btnSave').click(function () {
+                $(this).prop('disabled', true);
+                $('#add-form').submit();
+            });
+
+            $('#add-form').on('submit', function (e) {
+                if (this.checkValidity() === false) {
+                    $(this).addClass('was-validated');
+                    $('#btnSave').prop('disabled', false);
+                    return false;
+                }
+
+                const id = $('#record_id').val();
+                const p1 = $('#password').val() || '';
+                const p2 = $('#password_again').val() || '';
+
+                // Yeni kayıtta şifre zorunluluğu (Min 4)
+                if (!id && (!p1 || p1.length < 4)) {
+                    Swal.fire('Uyarı', 'Lütfen en az 4 karakterlik bir şifre girin.', 'warning');
+                    $('#btnSave').prop('disabled', false);
+                    return false;
+                }
+                // Şifre eşleşme kontrolü
+                if (p1 || p2) {
+                    if (p1 !== p2) {
+                        Swal.fire('Uyarı', 'Şifreler eşleşmiyor.', 'warning');
+                        $('#btnSave').prop('disabled', false);
+                        return false;
+                    }
+                }
+
+                e.preventDefault();
+                const fd = new FormData(this);
+
+                $.ajax({
+                    url: "{% url 'accounts:staffs-add' %}",
+                    type: "POST",
+                    data: fd,
+                    cache: false,
+                    contentType: false,
+                    processData: false
+                }).done(function (data) {
+                    if (data.result === true) {
+                        const msg = $('#record_id').val() ? 'Personel güncellendi' : 'Personel eklendi';
+                        Swal.fire({
+                            title: 'Başarılı',
+                            text: msg,
+                            icon: 'success',
+                            timer: 1000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Hata', data.error_msg || 'İşlem başarısız', 'error');
+                    }
+                }).fail(function (xhr, _, err) {
+                    alert("Sunucu Hatası: " + xhr.status);
+                }).always(function () {
+                    $('#btnSave').prop('disabled', false);
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

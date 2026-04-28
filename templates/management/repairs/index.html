@@ -1,0 +1,1461 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        .custom-desc-label {
+            color: #6c757d !important;
+            font-size: 0.93rem !important;
+            top: -0.6rem !important;
+            left: 0 !important;
+            font-weight: 400 !important;
+            background: transparent;
+            padding: 0 .2rem;
+        }
+
+        .image-input-placeholder {
+            background-image: url('/static/management/media/svg/files/blank-image.svg') !important;
+        }
+
+        .custom-toolbar-card {
+            width: 100% !important;
+            margin-top: 1rem;
+            margin-bottom: 0;
+            margin-left: 1.5rem;
+            margin-right: 1.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .custom-toolbar-card .card-body { padding: 1.5rem 2rem; }
+        .custom-toolbar-card .container-xxl { max-width: 100% !important; }
+
+        @media (min-width: 767px) and (max-width: 991.98px) {
+            .toolbar-btn-size {
+                padding: 0; display: inline-flex; align-items: center; justify-content: center;
+                box-sizing: border-box; width: 5.5rem !important; height: 2.5rem !important;
+            }
+            .custom-toolbar-card { margin: 1rem 1.5rem -1rem !important; }
+            .custom-toolbar-card .card-body { padding: 1.5rem 0.1rem !important; }
+        }
+        @media (min-width: 576px) and (max-width: 767px) {
+            .toolbar-btn-size {
+                padding: 0; display: inline-flex; align-items: center; justify-content: center;
+                box-sizing: border-box; width: 5rem !important; height: 2.5rem !important;
+            }
+            .my-margin1 { margin-bottom: 0 !important; margin-top: 1rem !important; }
+            .custom-toolbar-card { margin: 1rem 2rem -2rem !important; }
+            .custom-toolbar-card .card-body { padding: 1.5rem 0.1rem !important; }
+        }
+        @media (max-width: 576px) {
+            .my-margin1 { margin-bottom: 0 !important; margin-top: 1rem !important; }
+            .toolbar-btn-size {
+                padding: 0; display: inline-flex; align-items: center; justify-content: center;
+                box-sizing: border-box; width: 5rem !important; height: 2.5rem !important;
+            }
+            .breadcrumb-smaller { font-size: 0.6rem; margin-top: 0.1rem; }
+            .dataTables_length { text-align: left !important; }
+            .breadcrumb-smaller { font-size: 0.6rem; margin-top: 0.1rem; }
+            .custom-toolbar-card { margin: 1rem 2rem -2rem !important; }
+            .custom-toolbar-card .card-body { padding: 1.5rem 0.1rem !important; }
+        }
+
+        .card .card-body { display: flex; flex-direction: column; }
+        .dataTables_wrapper.h-100 { flex: 1 1 auto; display: flex; flex-direction: column; }
+
+        #tableToolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin: .75rem 0; }
+        #tableToolbar .dataTables_filter label { display: flex; align-items: center; gap: .35rem; margin: 0; }
+        #tableToolbar .dataTables_filter input { height: 2.4rem; border-radius: .45rem; }
+
+        .toolbar-btn-size {
+            padding: 0; display: inline-flex; align-items: center; justify-content: center;
+            box-sizing: border-box; width: 6.5rem; height: 2.7rem;
+        }
+        .mini-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .35rem .65rem;
+            border-radius: 6px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .02);
+            font-size: .8rem;
+            white-space: nowrap;
+            height: 2.7rem;
+        }
+
+        .mini-stat .label {
+            color: #6b7280;
+            font-weight: 600;
+            font-size: .7rem;
+            margin-right: 2px;
+        }
+
+        .mini-stat .value {
+            color: #111827;
+            font-weight: 800;
+            font-size: .9rem;
+        }
+
+        .stat-daily { border-left: 3px solid #3b82f6; }
+        .stat-monthly { border-left: 3px solid #10b981; }
+        .stat-credit { border-left: 3px solid #f59e0b; }
+
+        @media (max-width: 991px) {
+            .mini-stat { display: inline-flex; }
+        }
+    </style>
+    <style>
+         .id-card-upload {
+                                    width: 100% !important;
+                                    display: block !important;
+                                    background-size: 60px auto !important; /* Boş ikonun devasa olmasını engeller */
+                                    background-position: center !important;
+                                    background-repeat: no-repeat !important;
+                                    background-color: #f5f8fa; /* Kutunun içini hafif doldurur */
+                                    border-radius: 0.475rem;
+                                }
+        .id-card-upload .image-input-wrapper {
+                                    width: 100% !important;
+                                    height: 140px !important;
+                                    border-radius: 0.475rem !important;
+                                    background-size: contain !important; /* Yüklenen kimliğin kırpılmasını engeller */
+                                    background-position: center !important;
+                                    background-repeat: no-repeat !important;
+                                }
+        .id-card-upload .btn-icon {
+                                    position: absolute !important;
+                                    right: 0 !important;
+                                    top: 0 !important;
+                                    transform: translate(30%, -30%) !important;
+                                    z-index: 5;
+                                }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid " id="kt_app_main"
+         style="border-style: groove;border-radius: 10px;border-color: aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card custom-toolbar-card">
+                    <div class="card-body">
+                        <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                    Tamir Yönetimi</h1>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                <div id="kt_toolbar_container"
+                                     class="container-xxl d-flex flex-stack flex-wrap"
+                                     style="max-width: 100%;">
+                                    <div class="page-title d-flex flex-column me-3">
+                                        <div id="kt_datatable_example_buttons" class="d-none"></div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                        <div class="d-flex align-items-center gap-2 me-2 flex-wrap">
+                                            <span class="mini-stat stat-daily" title="Günlük Gönderilen Mesaj">
+                                                <i class="fa-solid fa-paper-plane text-primary"></i>
+                                                <span class="label">Günlük:</span>
+                                                <span class="value" id="waDailyCount">-</span>
+                                            </span>
+
+                                            <span class="mini-stat stat-monthly" title="Aylık Gönderilen Mesaj">
+                                                <i class="fa-solid fa-calendar-days text-success"></i>
+                                                <span class="label">Aylık:</span>
+                                                <span class="value" id="waMonthlyCount">-</span>
+                                            </span>
+
+                                            <span class="mini-stat stat-credit" title="Kalan WhatsApp Kontörü">
+                                                <i class="fa-solid fa-coins text-warning"></i>
+                                                <span class="label">Bakiye:</span>
+                                                <span class="value" id="waCreditBalance">-</span>
+                                            </span>
+                                        </div>
+                                        <button type="button" class="btn btn-light-primary toolbar-btn-size"
+                                                data-kt-menu-trigger="click"
+                                                data-kt-menu-placement="bottom-end">
+                                            <i class="fa-solid fa-download"></i>
+                                            <span class="d-none d-lg-inline ms-1">Rapor</span>
+                                        </button>
+                                        <div id="kt_datatable_example_export_menu"
+                                             class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                             data-kt-menu="true">
+                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="copy">Panoya Kopyala</a></div>
+                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="excel">Dışa Aktar Excel</a></div>
+                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="csv">Dışa Aktar CSV</a></div>
+                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="pdf">Dışa Aktar PDF</a></div>
+                                        </div>
+                                        <a href="#" class="btn btn-primary toolbar-btn-size" data-bs-toggle="modal" data-bs-target="#addModal">
+                                            <i class="ki-duotone ki-plus fs-2"></i>
+                                            <span class="d-none d-lg-inline ms-1">Ekle</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="kt_app_content" class="app-content  flex-column-fluid ">
+                <div id="kt_app_content_container" class=" container-fluid ">
+                    <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl" style="max-width: 100%;">
+                        <div class="content flex-row-fluid" id="kt_content">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card ">
+                                        <div class="card-body">
+                                            <div class="mb-4">
+                                                <ul class="nav nav-tabs" id="repairsTabs" role="tablist">
+                                                    <li class="nav-item">
+                                                        <button class="nav-link active" data-tab="store" type="button">Mağazada Beklemede</button>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <button class="nav-link" data-tab="workshop" type="button">Atölyede Tamirde</button>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <button class="nav-link" data-tab="ready_for_pickup" type="button">Teslimata Hazır</button>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <button class="nav-link" data-tab="delivered" type="button">Müşteriye Teslim Edildi</button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <div id="tableToolbar" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                                    <div class="d-flex toolbar-buttons my-margin1" style="gap:.6rem">
+                                                        <button type="button" class="btn btn-light-danger me-3 toolbar-btn-size" data-bs-toggle="tooltip" id="deleteSelected">
+                                                            <i class="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-light-success me-3 toolbar-btn-size"
+                                                                data-bs-toggle="tooltip" title="Durum Değiştir" id="changeStatusSelected">
+                                                            <i class="fa-solid fa-retweet"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div id="dataTableSearch"></div>
+                                                </div>
+
+                                                <table id="kt_datatable_example_1" class="table align-middle table-row-dashed fs-6 gy-5">
+                                                    <thead>
+                                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                        <th class="w-10px pe-2" data-dt-column="0">
+                                                            <span class="dt-column-title">
+                                                                <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                                    <input class="form-check-input" type="checkbox"
+                                                                           data-kt-check="true"
+                                                                           data-kt-check-target="#kt_table_rows .form-check-input">
+                                                                </div>
+                                                            </span>
+                                                            <span class="dt-column-order"></span>
+                                                        </th>
+                                                        <th>Takip Kodu</th>
+                                                        <th>Atolye</th>
+                                                        <th>Teslim Alan</th>
+                                                        <th>Teslim Eden</th>
+                                                        <th>Müşteri</th>
+                                                        <th>Cinsi</th>
+                                                        <th>Tarih</th>
+                                                        <th>Durum</th>
+                                                        <th>Fiyat</th>
+                                                        <th class="text-end min-w-50px">İşlemler</th>
+                                                        <th class="text-end min-w-75px">Detay</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="text-gray-600 fw-semibold" id="kt_table_rows"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> </div>
+                    </div>
+                </div>
+            </div> </div>
+    </div>
+
+    <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true" data-bs-focus="false">
+        <div class="modal-dialog modal-dialog-centered mw-800px">
+            <div class="modal-content" style="padding: 25px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Yeni </h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Kapat">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+                <form id="add-form" method="post" autocomplete="off" data-toggle="validator" enctype="multipart/form-data" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" id="record_id" name="record_id" value="">
+                    <div class="row">
+                        <div class="col-3 mb-3">
+                                <div class="image-input image-input-empty image-input-outline image-input-placeholder mb-5"
+                                     data-kt-image-input="true">
+                                    <label class="fs-6 fw-semibold">
+                                        <span>Resim</span>
+                                        <span class="ms-1" data-bs-toggle="tooltip"
+                                              aria-label="Desteklenen dosya tipleri: png, jpg, jpeg, webp."
+                                              data-bs-original-title="Desteklenen dosya tipleri: png, jpg, jpeg, webp."
+                                              data-kt-initialized="1">
+                                            <i class="ki-duotone ki-information fs-7">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                                <span class="path3"></span>
+                                            </i>
+                                        </span>
+                                    </label>
+                                    <div class="image-input-wrapper w-150px h-150px"></div>
+                                    <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                           data-kt-image-input-action="change" data-bs-toggle="tooltip"
+                                           aria-label="Change avatar" data-bs-original-title="Change avatar"
+                                           data-kt-initialized="1">
+                                        <i class="ki-duotone ki-pencil fs-7">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                        <input type="file" name="image" accept="image/*">
+                                        <input type="hidden" name="avatar_remove">
+                                    </label>
+                                    <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                          data-kt-image-input-action="cancel" data-bs-toggle="tooltip"
+                                          aria-label="Cancel avatar" data-bs-original-title="Cancel avatar"
+                                          data-kt-initialized="1">
+                                    <i class="ki-duotone ki-cross fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                </span>
+                                    <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                          data-kt-image-input-action="remove" data-bs-toggle="tooltip"
+                                          aria-label="Remove avatar" data-bs-original-title="Remove avatar"
+                                          data-kt-initialized="1">
+                                    <i class="ki-duotone ki-cross fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                </span>
+                                </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select class="form-select" id="workshop_id" name="workshop_id" data-control="select2" required>
+                                            <option value="">Seçiniz</option>
+                                            {% for workshop in workshops %}
+                                                <option value="{{ workshop.id }}">{{ workshop.company_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="workshop_id">Atolye</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select class="form-select" name="product_type" id="product_type" multiple required>
+
+                                            <option value="" disabled>Seçiniz</option>
+                                            <option value="Alyans">Alyans</option>
+                                            <option value="Bileklik">Bileklik</option>
+                                            <option value="Bilezik">Bilezik</option>
+                                            <option value="Broş">Broş</option>
+                                            <option value="Düğün Seti">Düğün Seti</option>
+                                            <option value="Gerdanlık">Gerdanlık</option>
+                                            <option value="Hızma">Hızma</option>
+                                            <option value="İnci Set">İnci Set</option>
+                                            <option value="Kelepçe Bilezik">Kelepçe Bilezik</option>
+                                            <option value="Koleksiyon">Koleksiyon</option>
+                                            <option value="Kolye">Kolye</option>
+                                            <option value="Kolye Ucu">Kolye Ucu</option>
+                                            <option value="Küpe">Küpe</option>
+                                            <option value="Mini Set">Mini Set</option>
+                                            <option value="Saat">Saat</option>
+                                            <option value="Takı">Takı</option>
+                                            <option value="Yüzük">Yüzük</option>
+                                            <option value="Zincir">Zincir</option>
+                                        </select>
+                                        <label for="product_type">Ürün Türü</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <div class="form-floating flex-grow-1">
+                                            <select class="form-select" id="customer_id" name="customer_id" data-control="select2" required>
+                                                <option value="">Seçiniz</option>
+                                                {% for customer in customers %}
+                                                    <option value="{{ customer.id }}">{{ customer.first_name }} {{ customer.last_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <label for="customer_id">Müşteri</label>
+                                        </div>
+                                        <button type="button" class="btn btn-icon btn-light-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal" style="height: calc(3.5rem + 2px); width: 45px;" title="Yeni Müşteri Ekle">
+                                            <i class="ki-duotone ki-plus fs-2"></i>
+                                        </button>
+                                    </div>
+                                    <div id="phoneVerificationAlert" class="d-none align-items-center justify-content-between p-2 mb-3 rounded" style="background-color: #fff5f8; border: 1px dashed #f1416c;">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>
+                                            <span class="text-danger fs-8 fw-semibold">Telefon doğrulanmamış. (İsteğe Bağlı)</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger px-2 py-1 fs-8" onclick="initiatePhoneVerification()">Doğrula</button>
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" step="1" class="form-control" id="gram" name="gram" required>
+                                        <label for="gram">Toplam Gram</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" step="1" class="form-control" id="price" name="price" required>
+                                        <label for="price">Toplam Fiyat</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-floating mb-3">
+                                        <textarea class="form-control" placeholder=" " id="product_description" name="product_description" style="height: 120px"></textarea>
+                                        <label for="product_description" class="custom-desc-label">Tamir</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <div class="row">
+                        <div class="col-12">
+                            <div class="mt-3">
+                                <div class="ms-auto mt-3 mt-md-0 d-flex justify-content-end flex-nowrap gap-2">
+                                    <a href="#" class="btn btn-light-danger" data-bs-dismiss="modal">İptal</a>
+                                    <button type="button" id="btnSave" class="btn btn-light-success">Kaydet</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="statusModal" tabindex="-2" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="statusModalLabel">Durum Değiştir</h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <form id="statusUpdateForm" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <input type="hidden" name="repair_id" id="repair_id">
+                        <input type="hidden" name="status" id="status">
+                        <input type="hidden" name="mode" id="mode" value="single">
+                        <input type="hidden" name="ids" id="ids">
+                        <p class="fw-semibold">Bu tamir kaydının yeni durumunu seçin:</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-outline-secondary status-btn" data-status="store">Mağazada Beklemede</button>
+                            <button type="button" class="btn btn-outline-warning status-btn" data-status="workshop">Atölyede Tamirde</button>
+                            <button type="button" class="btn btn-outline-primary status-btn" data-status="ready_for_pickup">Teslimata Hazır</button>
+                            <button type="button" class="btn btn-outline-success status-btn" data-status="delivered">Müşteriye Teslim Edildi</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">İptal</button>
+                        <button type="button" id="btnSaveStatus" class="btn btn-success btn-lg">Durumu Güncelle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="addCustomerModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-900px">
+            <div class="modal-content">
+                <form id="customer_form" method="post" autocomplete="off" data-toggle="validator" enctype="multipart/form-data" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" name="record_id" id="customer_record_id">
+                    <input type="hidden" id="gender" name="gender" value=""/>
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">Yeni Müşteri Ekle</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 25px;">
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="cust_first_name" name="first_name" required/>
+                                    <label for="cust_first_name">Ad <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="cust_last_name" name="last_name" required/>
+                                    <label for="cust_last_name">Soyad <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="cust_phone" name="phone" required data-inputmask="'mask': '999-999-9999'"/>
+                                    <label for="cust_phone">Telefon Numarası <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="cust_identification_number" name="identification_number" pattern="\d{11}" maxlength="11" placeholder="12345678901"/>
+                                    <label for="cust_identification_number">Kimlik Numarası (TCKN)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="email" class="form-control" id="cust_email" name="email" placeholder="ornek@mail.com"/>
+                                    <label for="cust_email">E-posta</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <textarea class="form-control" id="cust_address" name="address" style="height: 80px" placeholder="Adres bilgisi"></textarea>
+                                    <label for="cust_address">Adres</label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-danger" data-bs-dismiss="modal">İptal</button>
+                        <button type="button" id="btnSaveCustomer" class="btn btn-light-success">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Telefon Doğrulama</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <p class="text-muted fs-6">Müşterinin telefonuna gönderilen 6 haneli kodu giriniz.</p>
+                    </div>
+                    <input type="text" id="verifyCodeInput" class="form-control text-center fs-2 fw-bolder"
+                           placeholder="______" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                           autocomplete="one-time-code">
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmPhoneVerification()">Kodu Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="repairDetailsModal" tabindex="-1" aria-labelledby="repairDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-sm modal-dialog-centered modal-fullscreen-md-down">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="repairDetailsModalLabel">Tamir Detayları Bilgi Fişi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="repairPrintableArea">
+                        <h3 style="text-align: center; margin: 5px 0;">Tamir Detayları Bilgi Fişi</h3>
+                        <hr style="border: none; border-top: 1px solid #000; margin-bottom: 5px;"/>
+                        <p style="margin: 2px 0;"><strong>Takip Kodu:</strong> <span id="repairTrackingCode"></span></p>
+                        <p style="margin: 2px 0;"><strong>Teslim Alan:</strong> <span id="receivedByName"></span></p>
+                        <p style="margin: 2px 0;"><strong>Teslim Eden:</strong> <span id="deliveredByName"></span></p>
+                        <p style="margin: 2px 0;"><strong>Durum:</strong> <span id="repairStatus"></span></p>
+                        <hr style="border: none; border-top: 1px solid #000; margin: 5px 0;"/>
+                        <p style="margin: 2px 0;"><strong>Müşteri:</strong> <span id="repairCustomerName"></span></p>
+                        <p style="margin: 2px 0;"><strong>Telefon:</strong> <span id="repairCustomerPhone"></span></p>
+                        <p style="margin: 2px 0;"><strong>Ürün Türü:</strong> <span id="repairProductType"></span></p>
+                        <p style="margin: 2px 0;"><strong>Atolye:</strong> <span id="repairWorkshop"></span></p>
+                        <p style="margin: 2px 0;"><strong>Tamir:</strong> <span id="repairProductDescription"></span></p>
+                        <table id="repairDetailsTable" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                            <tr>
+                                <th style="border: 1px solid #000; padding: 3px; text-align: left;">Gram</th>
+                                <th style="border: 1px solid #000; padding: 3px; text-align: left;">Fiyat</th>
+                                <th style="border: 1px solid #000; padding: 3px; text-align: left;">Oluşturma</th>
+                            </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <hr style="border: none; border-top: 1px solid #000; margin: 5px 0;"/>
+                        <p style="text-align: center; margin: 0;">Kayalar Kuyumculuk</p>
+                    </div>
+                </div>
+                <div class="modal-footer d-print-none">
+                    <button type="button" class="btn btn-danger" onclick="exportRepairToPDF()">PDF İndir</button>
+                    <button type="button" class="btn btn-primary" onclick="printRepairDetails()">Yazdır</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+      window.activeTab = 'store';
+      window.dt = null;
+    </script>
+
+    <script>
+        $(function () {
+            window.activeTab = 'store';
+            let exportButtonsInitialized = false;
+
+            function initExportButtons() {
+                if (exportButtonsInitialized || !window.dt) return;
+
+                const documentTitle = 'Tamir_Yonetimi_Raporu';
+                if ($.fn.DataTable.isDataTable('#kt_datatable_example_1') && window.dt.buttons) {
+                } else {
+                }
+
+                new $.fn.dataTable.Buttons(window.dt, {
+                    buttons: [
+                        { extend: 'copyHtml5', title: documentTitle, exportOptions: { columns: ':not(:last-child)' } },
+                        { extend: 'excelHtml5', title: documentTitle, exportOptions: { columns: ':not(:last-child)' } },
+                        { extend: 'csvHtml5', title: documentTitle, exportOptions: { columns: ':not(:last-child)' } },
+                        { extend: 'pdfHtml5', title: documentTitle, exportOptions: { columns: ':not(:last-child)' } }
+                    ]
+                }).container().appendTo($('#kt_datatable_example_buttons'));
+
+                exportButtonsInitialized = true;
+
+                const exportMenuItems = document.querySelectorAll('#kt_datatable_example_export_menu [data-kt-export]');
+                exportMenuItems.forEach(item => {
+                    item.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const type = this.getAttribute('data-kt-export');
+                        const buttonsWrapper = document.querySelector('#kt_datatable_example_buttons .dt-buttons');
+                        if (!buttonsWrapper) return;
+                        const targetBtn = buttonsWrapper.querySelector('.buttons-' + type);
+                        if (targetBtn) targetBtn.click();
+                    });
+                });
+            }
+
+            const COL_ACTIONS = 10;
+
+            function refreshControlsForTab(tab) {
+                const isDelivered = (tab === 'delivered');
+                $('#changeStatusSelected').toggle(!isDelivered);
+
+                if (window.dt && $.fn.DataTable.isDataTable('#kt_datatable_example_1')) {
+                    try {
+                        window.dt.column(COL_ACTIONS).visible(!isDelivered, false);
+                        window.dt.columns.adjust().draw(false);
+                    } catch (e) {
+                        console.log("Tablo henüz hazır değil");
+                    }
+                }
+            }
+
+            function detailButtons(row) {
+                const urlDetail = row.public_url;
+                const urlReceipt = `/repairs/receipt/${row.id}/?paper=80&print=1`;
+                return `
+                    <div class="d-flex justify-content-center gap-2">
+                      <a href="${urlDetail}" class="btn btn-sm btn-light-primary" target="_blank" title="Detaya Git">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                      </a>
+                      <a href="${urlReceipt}" class="btn btn-sm btn-light-info" title="Termal Fiş (80mm)">
+                        <i class="fa-solid fa-receipt"></i>
+                      </a>
+                    </div>`;
+            }
+
+
+            const initDatatable = (tabStatus, skipLoader = false) => {
+
+                $('#dataTableSearch').empty();
+
+                window.dt = $("#kt_datatable_example_1").DataTable({
+                    destroy: true,
+                    dom: '<"top d-flex justify-content-end"f>rt<' +
+                        '"bottom d-flex justify-content-between align-items-center mb-4"lp><"clear">',
+                    info: false,
+                    paging: true,
+                    lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                    pageLength: -1,
+                    searchDelay: 400,
+                    processing: true,
+                    serverSide: true,
+                    orderMulti: false,
+                    autoWidth: false,
+                    order: [[7, 'desc']],
+                    stateSave: false,
+                    select: {
+                        style: 'multi',
+                        selector: 'td:first-child input[type="checkbox"]',
+                        className: 'row-selected'
+                    },
+                    initComplete: function () {
+                        $('#kt_datatable_example_1_filter')
+                            .appendTo('#dataTableSearch')
+                            .addClass('mb-0');
+
+                        refreshControlsForTab(tabStatus);
+                        initExportButtons();
+                    },
+                    language: { url: "/static/management/plugins/custom/datatables/TR.json" },
+                    ajax: {
+                        url: "/repairs/get-all",
+                        type: "GET",
+                        dataType: "json",
+                        cache: false,
+                        kpSkipLoader: skipLoader,
+                        data: d => { d.status = tabStatus; }
+                    },
+                    columns: [
+                        {
+                            data: "id", orderable: false, className: "text-center",
+                            render: (data, type, row) =>
+                                `<input class="form-check-input" type="checkbox" value="${row.id}" data-id="${row.id}">`
+                        },
+                        {
+                            data: "tracking_code", orderable: false,
+                            render: (d, t, row) =>
+                                `<span class='fw-bold text-primary' style='cursor:pointer' onclick="getRepairDetails('${row.id}')">${d}</span>`
+                        },
+                        {
+                            data: "workshop__company_name",
+                            render: (d, t, row) => `<a href="/workshops/detail/${row.workshop__id}" class="fw-semibold text-warning">${row.workshop__company_name || ''}</a>`
+                        },
+                        {
+                            data: "id",
+                            render: (d, t, row) => `<a href="#" class="fw-semibold text-primary">${(row.received_by__first_name || '') + ' ' + (row.received_by__last_name || '')}</a>`
+                        },
+                        {
+                            data: "id",
+                            render: (d, t, row) => {
+                                if (row.status === "delivered" && row.delivered_by__first_name && row.delivered_by__last_name) {
+                                    return `<a href="#" class="fw-semibold text-primary">${row.delivered_by__first_name} ${row.delivered_by__last_name}</a>`;
+                                }
+                                return "-";
+                            }
+                        },
+                        {
+                            data: "customer__first_name",
+                            render: (d, t, row) => `<a href="/customers/detail/${row.customer__id}" class="fw-semibold text-warning">${row.customer__first_name} ${row.customer__last_name}</a>`
+                        },
+                        {
+                            data: "product_type",
+                            render: d => `<span class='badge bg-info text-white'>${d}</span>`
+                        },
+                        {
+                            data: "created_at",
+                            render: d => d || 'N/A'
+                        },
+                        {
+                            data: "status", className: "text-center",
+                            render: (d, t, row) => {
+                                const m = {
+                                    store: 'bg-secondary text-dark',
+                                    workshop: 'bg-warning text-dark',
+                                    ready_for_pickup: 'bg-info text-white',
+                                    delivered: 'bg-success text-white'
+                                };
+                                return `<span class='badge ${m[d] || "bg-light text-dark"}'>${row.status_display}</span>`;
+                            }
+                        },
+                        {
+                            data: "price",
+                            render: d => `<span class='fw-bold text-success'>${parseFloat(d || 0).toFixed(2)} TL</span>`
+                        },
+                        {
+                            data: "id", orderable: false, className: "text-end",
+                            render: (d, t, row) => {
+                                if (row.status === 'delivered' || tabStatus === 'delivered') return '';
+                                return `
+                                <div class="d-flex justify-content-end">
+                                  <a href="#" class="btn btn-light btn-active-light-primary  btn-sm"
+                                     title="Durumu Değiştir"
+                                     onclick="openStatusModalSingle('${row.id}','${row.status}')">
+                                    <i class="fa-solid fa-retweet" style="font-size:1.3em;"></i>
+                                  </a>
+                                </div>`;
+                            }
+                        },
+                        {
+                            data: "id", orderable: false, className: "text-end",
+                            render: (d, t, row) => tabStatus === 'store'
+                                ? `<a href="#" onclick="edit_scrap('${row.id}')" class="btn btn-sm btn-light btn-active-light-primary" title="Düzenle">
+                                     <i class="fa-solid ki-duotone bi-pencil-fill"></i>
+                                   </a>`
+                                : detailButtons(row)
+                        },
+                        {
+                            data: null, orderable: false, className: "text-center",
+                            render: (d, t, row) => tabStatus === 'store' ? detailButtons(row) : ""
+                        }
+                    ],
+                    drawCallback: function () {
+                        $('#kt_datatable_example_1 thead input[type="checkbox"][data-kt-check="true"]')
+                            .prop('checked', false);
+                    },
+                    rowCallback: function (row) {
+                        $(row).off('dblclick').on('dblclick', function (e) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            return false;
+                        });
+                    }
+                });
+            };
+
+            if ($('#repairsTabs').length) {
+                $('#repairsTabs').on('click', 'button', function () {
+                    $('#repairsTabs button').removeClass('active');
+                    $(this).addClass('active');
+                    window.activeTab = $(this).data('tab');
+
+                    initDatatable(window.activeTab, true);
+                });
+            }
+
+            initDatatable('store', false);
+
+            window.setActiveTab = function(newStatus) {
+                window.activeTab = newStatus;
+                $('#repairsTabs button').removeClass('active');
+                $(`#repairsTabs button[data-tab="${newStatus}"]`).addClass('active');
+
+                initDatatable(newStatus, true);
+            };
+
+            $('#deleteSelected').on('click', function () {
+                const ids = $('#kt_datatable_example_1 tbody input[type="checkbox"]:checked').map((_, el) => $(el).val()).get();
+                if (!ids.length) {
+                    Swal.fire({ title:'Hata!', text:'Lütfen en az bir kayıt seçin.', icon:'error', timer:1000, showConfirmButton:false });
+                    return;
+                }
+                $.post("/repairs/delete", {
+                    ids,
+                    csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                }, function (res) {
+                    if (res.result) {
+                        Swal.fire({ title:'Silindi', text:'Seçili kayıtlar silindi.', icon:'success', timer:1000, showConfirmButton:false })
+                            .then(() => window.dt.ajax.reload(null, false));
+                    } else {
+                        Swal.fire('Hata!', 'Hata: ' + (res.error_msg || 'bilinmiyor'), 'error');
+                    }
+                });
+            });
+
+            $('#changeStatusSelected').on('click', function () { openStatusModalBulk(); });
+
+        });
+    </script>
+
+    <script>
+       $('#addModal').on('shown.bs.modal', function () {
+        $('#customer_id').select2({
+            dropdownParent: $('#addModal'),
+            width: '100%'
+        });
+
+        $('#product_type').select2({
+            dropdownParent: $('#addModal'),
+            width: '100%',
+            placeholder: 'Ürün türü seçin'
+        });
+
+        $('#workshop_id').select2({
+            dropdownParent: $('#addModal'),
+            width: '100%',
+            placeholder: 'Seçiniz'
+        });
+    });
+
+    let selectedStatus = null;
+    let currentModalStatus = null;
+    const STATUS_ORDER = ['store', 'workshop', 'ready_for_pickup', 'delivered'];
+
+
+        function openStatusModalSingle(repairId, currentStatus) {
+          $('#mode').val('single');
+          $('#repair_id').val(repairId);
+          $('#ids').val('');
+          selectedStatus = null;
+          currentModalStatus = currentStatus;
+
+          const currentIdx = STATUS_ORDER.indexOf(currentStatus);
+
+          $('.status-btn').each(function () {
+            const s = $(this).data('status');
+            const idx = STATUS_ORDER.indexOf(s);
+            const lock = idx < currentIdx;
+            $(this)
+              .prop('disabled', lock)
+              .toggleClass('disabled', lock)
+              .toggleClass('active', s === currentStatus);
+          });
+
+          $('#statusModal').modal('show');
+        }
+
+        function openStatusModalBulk() {
+          const ids = $('#kt_datatable_example_1 tbody input[type="checkbox"]:checked')
+            .map((_, el) => $(el).val()).get();
+
+          if (!ids.length) {
+            Swal.fire({title:'Hata!', text:'Lütfen en az bir kayıt seçin.', icon:'error', timer:1000, showConfirmButton:false});
+            return;
+          }
+
+          const floorIdx = Math.max(...ids.map(id => {
+          const rowData = window.dt.row($(`#kt_datatable_example_1 tbody input[value="${id}"]`).closest('tr')).data();
+          return STATUS_ORDER.indexOf(rowData.status);
+        }));
+
+        $('#mode').val('bulk');
+        $('#repair_id').val('');
+        $('#ids').val(ids.join(','));
+        selectedStatus = null;
+        currentModalStatus = STATUS_ORDER[floorIdx];
+
+        $('.status-btn').each(function () {
+          const idx = STATUS_ORDER.indexOf($(this).data('status'));
+          const lock = idx < floorIdx;
+          $(this)
+            .prop('disabled', lock)
+            .toggleClass('disabled', lock)
+            .toggleClass('active', idx === floorIdx);
+        });
+
+        $('#statusModal').modal('show');
+        }
+
+        function getRepairDetails(repairId) {
+            $.ajax({
+                url: `/repairs/get-repair-details/${repairId}`,
+                type: "GET",
+                dataType: "json",
+                success: function (data) {
+                    if (data.result) { openRepairModal(data.repair); }
+                    else { Swal.fire('Hata', data.error_msg || 'Veri getirilemedi', 'error'); }
+                },
+                error: function (xhr, status, error) { Swal.fire('Hata', 'Bir hata oluştu: ' + error, 'error'); }
+            });
+        }
+
+        function openRepairModal(data) {
+            document.getElementById('repairTrackingCode').textContent = data.tracking_code || '';
+            document.getElementById('receivedByName').textContent = (data.received_by__first_name || '') + ' ' + (data.received_by__last_name || '');
+            document.getElementById('deliveredByName').textContent = (data.delivered_by__first_name || '') + ' ' + (data.delivered_by__last_name || '');
+            document.getElementById('repairStatus').textContent = data.status_display || '';
+            document.getElementById('repairCustomerName').textContent = (data.customer__first_name || '') + ' ' + (data.customer__last_name || '');
+            document.getElementById('repairCustomerPhone').textContent = data.customer__phone || '';
+            document.getElementById('repairProductType').textContent = data.product_type || '';
+            document.getElementById('repairProductDescription').textContent = data.product_description || '';
+            document.getElementById('repairWorkshop').textContent = data.workshop__company_name || '';
+
+            let tbody = document.querySelector('#repairDetailsTable tbody');
+            tbody.innerHTML = '';
+            let row = document.createElement('tr');
+            let gramCell = document.createElement('td'); gramCell.textContent = data.gram || '0.000';
+            let priceCell = document.createElement('td'); priceCell.textContent = (parseFloat(data.price) || 0).toFixed(2) + ' TL';
+            let createdCell = document.createElement('td'); createdCell.textContent = data.created_at || '';
+            row.appendChild(gramCell); row.appendChild(priceCell); row.appendChild(createdCell);
+            tbody.appendChild(row);
+
+            $('#repairDetailsModal').modal('show');
+        }
+
+        $(document).ready(function () {
+
+           $('#statusModal').on('hidden.bs.modal', function () {
+            $('#statusUpdateForm')[0].reset();
+            $('.status-btn').removeClass('active disabled').prop('disabled', false);
+            selectedStatus = null;
+            currentModalStatus = null;
+        });
+
+            $(".status-btn").off('click').on('click', function () {
+                if (this.disabled) return;
+                const target = $(this).data("status");
+                if (currentModalStatus && STATUS_ORDER.indexOf(target) < STATUS_ORDER.indexOf(currentModalStatus)) { return; }
+                $(".status-btn").removeClass("active");
+                $(this).addClass("active");
+                selectedStatus = target;
+                $("#status").val(selectedStatus);
+            });
+
+            $('#addModal').on('hidden.bs.modal', function () {
+            if (window.isSwitchingModal) return;
+
+            $('#add-form')[0].reset();
+            $('#workshop_id').val('').trigger('change');
+            $('#product_type').val(null).trigger('change');
+            $('#add-form').removeClass('was-validated');
+            $('#record_id').val('');
+            $("#addModal .modal-title").text("Yeni");
+
+            // Kilitlenmeyi (hayalet backdrop) önlemek için gölge ve body kilidini zorla temizle
+            setTimeout(() => {
+                if ($('.modal.show').length === 0) {
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open').css({
+                        'overflow': '',
+                        'padding-right': ''
+                    });
+                }
+            }, 250); // Süre biraz artırıldı
+        });
+
+            $('#btnSaveStatus').off('click').on('click', function () {
+                if (!selectedStatus) {
+                    Swal.fire('Hata', 'Lütfen bir durum seçin!', 'error');
+                    return;
+                }
+                if (currentModalStatus && STATUS_ORDER.indexOf(selectedStatus) < STATUS_ORDER.indexOf(currentModalStatus)) {
+                    Swal.fire('Hata', 'Sadece ileriye dönük durum seçebilirsiniz.', 'error');
+                    return;
+                }
+
+                const mode = $('#mode').val();
+                if (mode === 'bulk') {
+                    const ids = ($('#ids').val() || '').split(',').filter(Boolean);
+                    if (!ids.length) {
+                        Swal.fire('Hata', 'Seçili kayıt bulunamadı.', 'error');
+                        return;
+                    }
+                    const fd = new FormData();
+                    fd.append('status', selectedStatus);
+                    ids.forEach(id => fd.append('ids[]', id));
+                    fd.append('csrfmiddlewaretoken', $("input[name='csrfmiddlewaretoken']").val());
+
+                    $.ajax({
+                        url: "{% url 'repairs:change-status-bulk' %}",
+                        type: "POST",
+                        data: fd,
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    })
+                    .done((data) => {
+                        Swal.fire({ title: 'Güncellendi', text: 'Kayıtlar güncellendi.', icon: 'success', timer: 1000, showConfirmButton: false })
+                          .then(() => {
+                              $("#statusModal").modal('hide');
+                              window.setActiveTab(data?.new_status || selectedStatus);
+                          });
+                    })
+                    .fail((xhr,_,err) => Swal.fire('Hata', (xhr.responseJSON && xhr.responseJSON.error_msg) || ('Bir hata oluştu: ' + err), 'error'));
+                    return;
+                }
+
+                const singleRepairId = $('#repair_id').val();
+                $.ajax({
+                  url: "{% url 'repairs:change-status-product' %}",
+                  type: "POST",
+                  data: {
+                    repair_id: singleRepairId,
+                    status: selectedStatus,
+                    csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                  },
+                  success(data) {
+                    if (data.result === true) {
+                      Swal.fire({
+                        title: 'Başarılı',
+                        text: 'Kayıt Güncellendi',
+                        icon: 'success',
+                        timer: 1000,
+                        showConfirmButton: false
+                      }).then(() => {
+                        $("#statusModal").modal('hide');
+                        $('#statusUpdateForm')[0].reset();
+                        $('#statusUpdateForm').removeClass('was-validated');
+
+                        // yeni statü sekmesine geç
+                        window.setActiveTab(data.new_status || selectedStatus);
+                      });
+                    } else if (data.error === true) {
+                      Swal.fire('Hata', data.error_msg, 'error');
+                    }
+                  },
+                  error(xhr, _, err) {
+                    Swal.fire('Hata', (xhr.responseJSON && xhr.responseJSON.error_msg) || ('Bir hata oluştu: ' + err), 'error');
+                  }
+                });
+
+            });
+
+            $('#btnSave').click(function () {
+                $(this).prop("disabled", true);
+                $('#add-form').submit();
+            });
+
+            $('#add-form').submit(function (e) {
+                if ($("#add-form")[0].checkValidity() === false) {
+                    $("#add-form").addClass('was-validated');
+                    $("#btnSave").prop("disabled", false)
+                    return false;
+                }
+
+                let formData = new FormData($(this)[0]);
+                $.ajax({
+                    url: "{% url 'repairs:add' %}",
+                    type: "POST",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success(data) {
+                        if (data.result === true) {
+                            Swal.fire({ title: 'Başarılı', text: $('#record_id').val() ? 'Kayıt Güncellendi' : 'Kayıt eklendi', icon: 'success', timer: 1000, showConfirmButton: false })
+                              .then(() => { window.location.reload(); });
+                        } else if (data.error === true) {
+                            Swal.fire('Hata', data.error_msg, 'error');
+                        }
+                        $("#btnSave").prop("disabled", false);
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        alert("Error: " + xhr.status + " " + thrownError);
+                        $("#btnSave").prop("disabled", false);
+                    }
+                });
+                e.preventDefault();
+            });
+        });
+
+        function exportRepairToExcel() {
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let table = document.getElementById("repairDetailsTable");
+            if (!table) { Swal.fire('Hata', 'Tablo bulunamadı', 'error'); return; }
+            let wb = XLSX.utils.table_to_book(table, {sheet: "Tamir Detayları"});
+            XLSX.writeFile(wb, `TamirDetayi_${dateText}.xlsx`);
+        }
+
+        function exportRepairToPDF() {
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let filename = `TamirDetayi_${dateText}.pdf`;
+            let printableElement = document.getElementById('repairPrintableArea');
+            if (!printableElement) { Swal.fire('Hata', 'Yazdırılacak içerik bulunamadı', 'error'); return; }
+
+            html2pdf().set({
+                margin: [1, 1, 1, 1],
+                filename: filename,
+                image: {type: 'jpeg', quality: 0.98},
+                html2canvas: {scale: 2},
+                jsPDF: { unit: 'mm', format: [80, 100], orientation: 'portrait' }
+            }).from(printableElement).save();
+        }
+
+        function printRepairDetails() {
+            let printContents = document.getElementById('repairPrintableArea');
+            if (!printContents) { Swal.fire('Hata', 'Yazdırılacak içerik bulunamadı', 'error'); return; }
+            let originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents.innerHTML;
+            window.print();
+            document.body.innerHTML = originalContents;
+        }
+    </script>
+
+    <script>
+        function loadCustomers(selectedCustomerId = null) {
+            let customerSelect = $('#customer_id');
+            if (!selectedCustomerId) { selectedCustomerId = customerSelect.val(); }
+            $.ajax({
+                url: "{% url 'customers:get-customers' %}",
+                method: "GET",
+                success: function (data) {
+                    customerSelect.empty();
+                    customerSelect.append('<option value="" selected>Seçiniz</option>');
+                    data.forEach(customer => {
+                        let selected = customer.id == selectedCustomerId ? 'selected' : '';
+                        customerSelect.append(`<option value="${customer.id}" ${selected}>${customer.first_name} ${customer.last_name}</option>`);
+                    });
+                    customerSelect.promise().done(function () {
+                        customerSelect.val(selectedCustomerId).trigger('change');
+                    });
+                },
+                error: function (xhr, status, error) { console.error("Müşteri verileri alınamadı:", error); }
+            });
+        }
+
+        $(document).ready(function () {
+            // Modal açıldığında Select2'leri ayarla
+            $('#addCustomerModal').on('show.bs.modal', function () {
+                window.isSwitchingModal = true;
+                $("#addModal").modal('hide');
+            });
+
+            $('#addCustomerModal').on('hidden.bs.modal', function () {
+                $('#customer_form')[0].reset();
+                $('#customer_form').removeClass('was-validated');
+
+                setTimeout(() => {
+                    $("#addModal").modal('show');
+                    setTimeout(() => { window.isSwitchingModal = false; }, 500); // 400 yerine 500 yapıldı ki geçiş kesin bitsin
+                }, 200);
+            });
+
+            // Butona basıldığında formu tetikle
+            $('#btnSaveCustomer').click(function () {
+                $(this).prop("disabled", true);
+                $('#customer_form').submit();
+            });
+
+            // Mevcut Müşteri Kaydetme Submit Bloğunu Güncelle
+            $('#customer_form').off('submit').on('submit', function (e) {
+                e.preventDefault();
+
+                if ($("#customer_form")[0].checkValidity() === false) {
+                    $("#customer_form").addClass('was-validated');
+                    $("#btnSaveCustomer").prop("disabled", false);
+                    return false;
+                }
+
+                var rawPhone = $('#cust_phone').val() || '';
+                var digitsPhone = rawPhone.replace(/\D/g, '');
+                if (!/^5\d{9}$/.test(digitsPhone)) {
+                    Swal.fire('Hata', 'Lütfen geçerli bir Türkiye cep telefonu numarası girin. Örnek: 5XX-XXX-XXXX', 'error');
+                    $("#btnSaveCustomer").prop("disabled", false);
+                    return false;
+                }
+
+                let formData = new FormData(this);
+                $.ajax({
+                    url: "{% url 'customers:add' %}",
+                    type: "POST",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success(data) {
+                        if (data.result === true) {
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Müşteri başarıyla eklendi', showConfirmButton: false, timer: 2000 });
+                            loadCustomers(data.customer_id); // Select2'yi günceller ve seçer
+                            $("#addCustomerModal").modal('hide'); // Bu kapanınca addModal otomatik açılacak
+                        } else if (data.error === true) {
+                            Swal.fire('Hata', data.error_msg, 'error');
+                        }
+                        $("#btnSaveCustomer").prop("disabled", false);
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        Swal.fire('Hata', "Sunucu Hatası: " + xhr.status, 'error');
+                        $("#btnSaveCustomer").prop("disabled", false);
+                    }
+                });
+            });
+        });
+
+        // --- TELEFON DOĞRULAMA (OTP) FONKSİYONLARI ---
+
+        // 1. Müşteri seçimi değiştiğinde durumu kontrol et
+        $('#customer_id').on('change', function () {
+            let customerId = $(this).val();
+            let $alertBox = $('#phoneVerificationAlert');
+
+            if (!customerId) {
+                $alertBox.addClass('d-none').removeClass('d-flex');
+                return;
+            }
+
+            // Müşterinin doğrulama durumunu çek
+            $.ajax({
+                url: `/customers/${customerId}/verify/state`,
+                type: 'GET',
+                success: function (res) {
+                    // Sadece telefon doğrulanmamışsa VE telefon numarası kayıtlıysa uyarıyı göster
+                    if (res.phone && res.phone.value && res.phone.verified === false) {
+                        $alertBox.removeClass('d-none').addClass('d-flex');
+                    } else {
+                        $alertBox.addClass('d-none').removeClass('d-flex');
+                    }
+                },
+                error: function () {
+                    $alertBox.addClass('d-none').removeClass('d-flex');
+                }
+            });
+        });
+
+        // 2. Doğrula Butonuna Basıldığında OTP Gönder
+        window.initiatePhoneVerification = function () {
+            let customerId = $('#customer_id').val();
+            if (!customerId) return;
+
+            Swal.fire({
+                title: 'Gönderiliyor...',
+                text: 'Lütfen bekleyiniz',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            $.ajax({
+                url: `/customers/${customerId}/verify/send`,
+                method: 'POST',
+                data: {
+                    'channel': 'phone',
+                    'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(data) {
+                    Swal.close();
+                    if (data.result === true) {
+                        // Kodu girme modalını aç (Mevcut addModal'ı kapatmadan üstünde açarız)
+                        let verifyModal = new bootstrap.Modal(document.getElementById('verifyModal'));
+                        verifyModal.show();
+
+                        setTimeout(() => document.getElementById('verifyCodeInput').focus(), 500);
+
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Kod gönderildi.', showConfirmButton: false, timer: 3000 });
+                    } else {
+                        Swal.fire({icon: 'error', title: 'Hata', text: data.error_msg || 'Gönderilemedi.'});
+                    }
+                },
+                error: function() {
+                    Swal.close();
+                    Swal.fire({icon: 'error', title: 'Hata', text: 'Sunucu ile iletişim kurulamadı.'});
+                }
+            });
+        };
+
+        // 3. Girilen Kodu Onayla
+        window.confirmPhoneVerification = function() {
+            let customerId = $('#customer_id').val();
+            let code = $('#verifyCodeInput').val().trim();
+
+            if (code.length < 4) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: 'Geçerli bir kod girin.', showConfirmButton: false, timer: 2000 });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Doğrulanıyor...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            $.ajax({
+                url: `/customers/${customerId}/verify/confirm`,
+                method: 'POST',
+                data: {
+                    'channel': 'phone',
+                    'code': code,
+                    'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(data) {
+                    if (data.result === true) {
+                        bootstrap.Modal.getInstance(document.getElementById('verifyModal')).hide();
+                        $('#phoneVerificationAlert').removeClass('d-flex').addClass('d-none'); // Uyarıyı gizle
+                        Swal.fire({ icon: 'success', title: 'Başarılı!', text: 'Telefon numarası doğrulandı.', timer: 1500, showConfirmButton: false });
+                    } else {
+                        Swal.close();
+                        Swal.fire({icon: 'error', title: 'Hata', text: data.error_msg || 'Kod hatalı.'});
+                        $('#verifyCodeInput').val('').focus();
+                    }
+                },
+                error: function() {
+                    Swal.close();
+                    Swal.fire({icon: 'error', title: 'Hata', text: 'İstek başarısız.'});
+                }
+            });
+        };
+
+        // Enter tuşu ile onaylama desteği
+        document.getElementById('verifyCodeInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') confirmPhoneVerification();
+        });
+
+       function edit_scrap(id) {
+        $.ajax({
+            url: `/repairs/get-repair-details/${id}`,
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                if (data.result && data.repair) {
+                    $('#addModal .modal-title').text('Tamir Güncelle');
+                    $('#record_id').val(data.repair.id);
+                    $('#tracking_code').val(data.repair.tracking_code);
+                    $('#gram').val(data.repair.gram);
+                    $('#price').val(data.repair.price);
+
+                    let pt = data.repair.product_type || '';
+                    let ptValues = pt
+                        ? pt.split(',').map(function (v) { return v.trim(); }).filter(Boolean)
+                        : [];
+                    $('#product_type').val(ptValues).trigger('change');
+
+                    $('#product_description').val(data.repair.product_description);
+                    $('#customer_id').val(data.repair.customer__id).trigger('change');
+                    $('#workshop_id').val(data.repair.workshop__id).trigger('change');
+                    $('#addModal').modal('show');
+                } else {
+                    Swal.fire('Hata!', data.error_msg || 'Kayıt bulunamadı.', 'error');
+                }
+            },
+            error: function () {
+                Swal.fire('Hata!', 'Sunucuya bağlanılamadı.', 'error');
+            }
+        });
+    }
+
+    $('#scrapModal').on('hidden.bs.modal', function () {
+            $('#scrapForm')[0].reset();
+            $('#scrapForm').removeClass('was-validated');
+            $('#scrap_id').val('');
+            $('#modalTitle').text('Ekle');
+        });
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            loadWaStats();
+        });
+
+        function loadWaStats() {
+            var currentStoreId = "{{ request.user.store.id|default:'' }}";
+
+            if (!currentStoreId) {
+                console.warn("Mağaza ID bulunamadı, istatistikler çekilemiyor.");
+                return;
+            }
+
+            $.ajax({
+                url: '/whatsapp/api/usage',
+                type: 'GET',
+                dataType: 'json',
+                data: { store_id: currentStoreId },
+                success: function(js) {
+                    var d = js.daily || {};
+                    var m = js.monthly || {};
+                    $('#waDailyCount').text((d.count != null) ? d.count : 0);
+                    $('#waMonthlyCount').text((m.count != null) ? m.count : 0);
+                },
+                error: function() {
+                    console.log('WA Usage load failed');
+                    $('#waDailyCount').text('0');
+                    $('#waMonthlyCount').text('0');
+                }
+            });
+
+            $.ajax({
+                url: '/whatsapp/api/store-quotas',
+                type: 'GET',
+                dataType: 'json',
+                data: { store_id: currentStoreId },
+                success: function(js) {
+                    var item = (js.items && js.items.length > 0) ? js.items[0] : null;
+                    if (item) {
+                        var bal = item.credit_balance;
+                        $('#waCreditBalance').text((bal === null) ? '∞' : bal);
+                    }
+                },
+                error: function() {
+                    $('#waCreditBalance').text('-');
+                }
+            });
+        }
+    </script>
+    {% endblock footer %}

@@ -1,0 +1,1332 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        #tableToolbar .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem;
+            border: 1px solid #e9eef5;
+        }
+
+        .status-changer {
+            cursor: pointer;
+            font-weight: 600 !important;
+            background-color: transparent;
+            border: 1px solid transparent;
+            padding-right: 2rem;
+        }
+
+        .status-changer:hover {
+            border-color: #e4e6ef;
+        }
+
+        #leadsTable td {
+            overflow: visible !important;
+        }
+
+        .badge-new-tag {
+            background-color: #ffe2e5;
+            color: #f64e60;
+            border: 1px solid #f64e60;
+        }
+
+        .status-changer {
+            cursor: pointer !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%237E8299' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.75rem center !important;
+            background-size: 16px 12px !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            padding-right: 2.5rem !important;
+        }
+
+        #leadsTable td {
+            overflow: visible !important;
+            position: relative;
+        }
+
+        .date-preset-btn.active {
+            background-color: #ffffff !important;
+            color: #3E97FF !important;
+            box-shadow: 0 .1rem 1rem .25rem rgba(0, 0, 0, .05) !important;
+        }
+
+        .flatpickr-calendar {
+            font-family: inherit !important;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid #eff2f5 !important;
+        }
+
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
+            background: #652F98 !important;
+            border-color: #652F98 !important;
+        }
+
+        /* Gizli input için stil */
+        .flatpickr-custom-trigger {
+            opacity: 0;
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+
+        #leadsTable tbody td {
+            white-space: nowrap !important;
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+            vertical-align: middle !important;
+            line-height: 1.2 !important;
+        }
+
+        .text-truncate-custom {
+            max-width: 140px;
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+        }
+
+        .table-compact-input {
+            max-width: 130px !important;
+            padding: 2px 6px !important;
+            height: 24px !important;
+            font-size: 0.9rem !important;
+            border: 1px solid transparent;
+        }
+
+        .table-compact-input:hover, .table-compact-input:focus {
+            border-color: #e4e6ef;
+            background-color: #fff;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="card shadow-sm mb-5">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-4">
+                <div>
+                    <h3 class="mb-2 fw-bolder">Potansiyel Müşteri Yönetimi</h3>
+                    <div class="text-muted fs-7">Çağrı merkezi operasyon ve takip listesi</div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex bg-light rounded p-1">
+                        <input type="hidden" id="filterStartDate">
+                        <input type="hidden" id="filterEndDate">
+
+                        <div class="position-relative">
+                            <input type="text" id="flatpickr_range" class="flatpickr-custom-trigger">
+
+                            <button type="button"
+                                    class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2"
+                                    id="btnCustomDate">
+                                <i class="fa-solid fa-calendar-days me-2 fs-8"></i>Özel
+                            </button>
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn active"
+                                data-range="all">Tümü
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                data-range="today">Bugün
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                data-range="yesterday">Dün
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                data-range="week">Bu Hafta
+                        </button>
+                    </div>
+
+                    <button class="btn btn-sm btn-light-primary fw-bold" data-bs-toggle="modal"
+                            data-bs-target="#csvImportModal">
+                        <i class="fa-solid fa-file-import me-1"></i> İçe Aktar
+                    </button>
+                    <button class="btn btn-sm btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#addModal">
+                        <i class="fa-solid fa-plus me-1"></i> Yeni Ekle
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mt-6 border-bottom border-gray-300 gap-3">
+
+                <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold"
+                    id="leadTabs">
+                    <li class="nav-item">
+                        <a class="nav-link text-active-gray-600 active" data-tab="all" href="javascript:void(0)">
+                            <i class="fa-solid fa-list me-2"></i> Tümü
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-active-primary " data-tab="new" href="javascript:void(0)">
+                            <i class="fa-solid fa-fire me-2"></i> Aranacak
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-active-warning" data-tab="follow_up" href="javascript:void(0)">
+                            <i class="fa-solid fa-headset me-2"></i> Takiptekiler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-active-success" data-tab="completed" href="javascript:void(0)">
+                            <i class="fa-solid fa-check-double me-2"></i> Tamamlanan
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2 pb-1 mb-1">
+                    <span class="text-gray-500 fw-bold fs-7 me-1">Şehir:</span>
+
+                    <button type="button"
+                            class="btn btn-sm btn-light btn-active-light-primary text-gray-600 fw-bold px-3 border border-dashed city-filter-btn"
+                            data-city="İstanbul">İstanbul
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-light btn-active-light-primary text-gray-600 fw-bold px-3 border border-dashed city-filter-btn"
+                            data-city="Ankara">Ankara
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-light btn-active-light-primary text-gray-600 fw-bold px-3 border border-dashed city-filter-btn"
+                            data-city="İzmir">İzmir
+                    </button>
+
+                    <div class="w-150px">
+                        <select id="filterCitySelect" class="form-select form-select-sm form-select-solid"
+                                data-control="select2" data-placeholder="Şehirler...">
+                            <option value=""></option>
+                        </select>
+                    </div>
+
+                    <div class="w-150px ms-2">
+                        <select id="filterUserSelect" class="form-select form-select-sm form-select-solid"
+                                data-control="select2" data-placeholder="Personel">
+                            <option value=""></option>
+                            {% for u in users %}
+                                <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="button" id="clearCityFilterBtn" class="btn btn-sm btn-icon btn-light-danger d-none"
+                            title="Filtreyi Temizle">
+                        <i class="fa-solid fa-xmark fs-6"></i>
+                    </button>
+
+                    <input type="hidden" id="activeCityFilter" value="">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div id="tableToolbar" class="p-4 d-flex justify-content-between align-items-center border-bottom">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-light-danger d-none fw-bold" id="deleteSelected">
+                        <i class="fa-solid fa-trash-can me-1"></i> Seçilenleri Sil
+                    </button>
+                </div>
+                <div id="dataTableSearch"></div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="leadsTable" class="table align-middle table-row-dashed fs-6 gy-2 w-100 gs-2">
+                    <thead>
+                    <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0 bg-light">
+                        <th class="w-10px ps-4 rounded-start">
+                            <input id="selectAll" class="form-check-input" type="checkbox">
+                        </th>
+                        <th class="min-w-150px">Müşteri / Kanal</th>
+                        <th class="min-w-125px">Mağaza Adı</th>
+                        <th class="min-w-125px">İletişim</th>
+                        <th class="min-w-100px">Durum</th>
+                        <th class="min-w-100px">Şehir</th>
+                        <th class="min-w-100px">Kayıt Tarihi</th>
+                        <th class="min-w-100px">Ekleyen</th>
+                        <th class="min-w-100px">Atanan</th>
+                        <th class="min-w-100px">Son İşlem</th>
+                        <th class="text-end min-w-100px rounded-end pe-4">İşlemler</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="addModal">
+        <div class="modal-dialog modal-dialog-centered mw-900px">
+            <div class="modal-content" style="padding: 25px;">
+                <div class="modal-header pb-0 border-0 justify-content-end">
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
+                        <i class="ki-duotone ki-cross fs-1"></i>
+                    </div>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="mb-5">
+                        <h3 class="modal-title fw-bolder">Müşteri Kartı</h3>
+                        <div class="text-muted fw-semibold fs-7">Müşteri bilgilerini aşağıdan yönetebilirsiniz.</div>
+                    </div>
+
+                    <form id="add-form" method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <input type="hidden" name="record_id" id="record_id">
+
+                        <div class="row mb-5">
+                            <div class="col-md-6">
+                                <label class="required form-label">Ad Soyad</label>
+                                <input type="text" class="form-control form-control-solid" id="full_name"
+                                       name="full_name" required/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mağaza / Firma Adı</label>
+                                <input type="text" class="form-control form-control-solid" id="business_name"
+                                       name="business_name" placeholder="Örn: Altınbaş Kuyumculuk"/>
+                            </div>
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-md-4">
+                                <label class="required form-label">Telefon</label>
+                                <input type="text" class="form-control form-control-solid" id="phone" name="phone"
+                                       required/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">E-Posta</label>
+                                <input type="email" class="form-control form-control-solid" id="email" name="email"/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Kanal</label>
+                                <select class="form-select form-select-solid" id="channel" name="channel">
+                                    <option value="instagram">Instagram</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="tiktok">Tiktok</option>
+                                    <option value="whatsapp">Whatsapp</option>
+                                    <option value="website">Website</option>
+                                    <option value="referral">Referans</option>
+                                    <option value="field">Saha</option>
+                                    <option value="other">Diğer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-md-4">
+                                <label class="required form-label">Şehir</label>
+                                <select class="form-select form-select-solid" id="city" name="city"
+                                        data-placeholder="İl Seçiniz">
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="required form-label">İlçe</label>
+                                <select class="form-select form-select-solid" id="district" name="district"
+                                        data-placeholder="Önce İl Seçiniz" disabled>
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Atanan Kişiler</label>
+                                <select class="form-select form-select-solid" id="assigned_users"
+                                        name="assigned_users[]" multiple="multiple"
+                                        {% if not can_assign %}disabled{% endif %}>
+                                    {% for u in users %}
+                                        {% if not u.is_superuser %}
+                                            <option value="{{ u.id }}"
+                                                    {% if not can_assign and u.id == request.user.id %}selected{% endif %}>
+                                                {{ u.get_full_name|default:u.username }}
+                                            </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-md-6">
+                                <label class="form-label">Kategori</label>
+                                <select class="form-select form-select-solid" id="category" name="category">
+                                    <option value="" selected>Seçiniz</option>
+                                    {% for val, label in category_choices %}
+                                        <option value="{{ val }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Durum</label>
+                                <select class="form-select form-select-solid" id="status" name="status">
+                                    {% for val, label in status_choices %}
+                                        <option value="{{ val }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-md-6">
+                                <label class="form-label">Kanal Kullanıcı Adı</label>
+                                <input type="text" class="form-control form-control-solid" id="channel_handle"
+                                       name="channel_handle"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Skor</label>
+                                <input type="number" class="form-control form-control-solid" id="score" name="score"
+                                       value="0"/>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 pt-5">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" id="btnSave" class="btn btn-primary">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="csvImportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Toplu İçe Aktar (CSV)</h5>
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal">
+                        ✕
+                    </button>
+                </div>
+                <form id="csvFormModal" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label required">CSV Dosyası</label>
+                            <input type="file" name="file" accept=".csv" class="form-control form-control-solid"
+                                   required>
+                            <div class="form-text mt-2"><i class="fa-solid fa-circle-info me-1"></i> Dosya başlık satırı
+                                içermelidir.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Kapat</button>
+                        <button type="submit" class="btn btn-primary">Yükle Başlat</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="changeStatusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bolder">Durum Değiştir</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"><i
+                            class="ki-duotone ki-cross fs-1"></i></div>
+                </div>
+                <div class="modal-body">
+                    <form id="statusChangeForm">
+                        <input type="hidden" id="status_lead_id">
+                        <div class="mb-5">
+                            <label class="form-label fw-bold required">Yeni Aşama</label>
+                            <select class="form-select form-select-solid" id="new_status_select" name="to_status"
+                                    required data-control="select2" data-dropdown-parent="#changeStatusModal">
+                                {% for val, label in status_choices %}
+                                    <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label fw-bold">Not (Opsiyonel)</label>
+                            <textarea class="form-control form-control-solid" name="note" rows="3"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-primary">Güncelle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="quickActivityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">Hızlı Etkileşim Kaydı</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">✕</div>
+                </div>
+                <div class="modal-body">
+                    <form id="quickActivityForm">
+                        <input type="hidden" id="quick_activity_lead_id">
+                        <div class="mb-5">
+                            <label class="form-label required fw-semibold">Ne Yaptınız?</label>
+                            <select name="activity_type" class="form-select form-select-solid" required>
+                                <option value="call" selected>Telefon Görüşmesi</option>
+                                <option value="whatsapp">WhatsApp / Mesaj</option>
+                                <option value="meeting">Ziyaret (Yüzyüze)</option>
+                                <option value="presentation">Sunum / Demo</option>
+                                <option value="email">E-Posta</option>
+                            </select>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold">Sonuç Ne Oldu?</label>
+                            <select name="outcome" class="form-select form-select-solid">
+                                <option value="">Seçiniz...</option>
+                                <option value="positive">Olumlu</option>
+                                <option value="offer_requested">🎯 Teklif İstedi</option>
+                                <option value="offer_decision_pending">⏳ Teklif Kararı Bekleniyor</option>
+                                <option value="demo_requested">🖥️ Demo İstedi</option>
+                                <option value="decision_pending">🤔 Karar Bekleniyor</option>
+                                <option value="scheduled">📅 Randevu Alındı</option>
+                                <option value="reached_voicemail">Ulaşılamadı</option>
+                                <option value="negative">Olumsuz</option>
+                            </select>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label required fw-semibold">Notlar / Talepler</label>
+                            <textarea name="summary" class="form-control form-control-solid" rows="3"
+                                      required></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+    <script>
+        function getCSRF() {
+            return document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+        }
+
+        function formatDate(date) {
+            let d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
+        }
+
+        function setDateFilter(start, end, btnElement) {
+            $('#filterStartDate').val(start);
+            $('#filterEndDate').val(end);
+
+            $('.date-preset-btn, #btnCustomDate').removeClass('bg-white shadow-sm text-primary');
+
+            if (btnElement) {
+                $(btnElement).addClass('bg-white shadow-sm text-primary');
+            }
+
+            $('#leadsTable').DataTable().draw();
+        }
+
+        function loadFilterCities() {
+            $.ajax({
+                url: "{% url 'locations:get-cities' %}",
+                type: "GET",
+                dataType: "json",
+                success: function (resp) {
+                    let data = resp.data ? resp.data : resp;
+                    let opts = '<option value="">Diğer Şehirler</option>';
+
+                    // Buton olarak eklediğimiz şehirleri dropdown'da göstermeyelim
+                    const excluded = ['İstanbul', 'Ankara', 'İzmir', 'Istanbul', 'Izmir'];
+
+                    if (Array.isArray(data)) {
+                        data.forEach(c => {
+                            if (!excluded.includes(c.name)) {
+                                opts += `<option value="${c.name}">${c.name}</option>`;
+                            }
+                        });
+                    }
+                    $('#filterCitySelect').html(opts);
+                }
+            });
+        }
+
+        function applyCityFilter(cityName) {
+            if (!cityName) return;
+
+            $('#activeCityFilter').val(cityName);
+            $('#clearCityFilterBtn').removeClass('d-none');
+
+            $('#leadsTable').DataTable().draw();
+        }
+
+        var cachedCities = [];
+
+        function loadCities(targetSelector, selectedVal = null) {
+            if (cachedCities.length > 0) {
+                renderCities(cachedCities, targetSelector, selectedVal);
+                return;
+            }
+            $.ajax({
+                url: "{% url 'locations:get-cities' %}",
+                type: "GET",
+                dataType: "json",
+                success: function (resp) {
+                    cachedCities = resp.data ? resp.data : resp;
+                    renderCities(cachedCities, targetSelector, selectedVal);
+                }
+            });
+        }
+
+        function renderCities(data, selector, selectedVal = null) {
+            let opts = '<option value="">Seçiniz</option>';
+            if (Array.isArray(data)) {
+                data.forEach(c => {
+                    let isSel = (selectedVal && (c.id == selectedVal || c.name === selectedVal)) ? 'selected' : '';
+                    opts += `<option value="${c.id}" ${isSel}>${c.name}</option>`;
+                });
+            }
+            $(selector).html(opts).trigger('change.select2');
+        }
+
+        function loadDistricts(cityId, targetSelector, selectedName = null) {
+            if (!cityId) {
+                $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change');
+                return;
+            }
+            $.ajax({
+                url: "{% url 'locations:get-districts' %}",
+                type: "GET",
+                data: {city_id: cityId},
+                dataType: "json",
+                success: function (resp) {
+                    let opts = '<option value=""></option>';
+                    let dataList = resp.data ? resp.data : resp;
+                    if (Array.isArray(dataList)) {
+                        dataList.forEach(d => {
+                            let isSel = (selectedName && d.name === selectedName) ? 'selected' : '';
+                            opts += `<option value="${d.id}" ${isSel}>${d.name}</option>`;
+                        });
+                    }
+                    $(targetSelector).html(opts).prop('disabled', false).trigger('change.select2');
+                }
+            });
+        }
+
+        function setSelect2ByText(selector, text) {
+            if (!text) return;
+            let foundId = null;
+            $(selector + ' option').each(function () {
+                if ($(this).text().trim() === text.trim()) {
+                    foundId = $(this).val();
+                    return false;
+                }
+            });
+            if (foundId) {
+                $(selector).val(foundId).trigger('change');
+            }
+        }
+
+        const LABELS = {
+            channel: {
+                instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok',
+                whatsapp: 'WhatsApp', website: 'Web Sitesi', referral: 'Referans',
+                other: 'Diğer', paid: 'Reklam/Ücretli', organic: 'Organik'
+            }
+        };
+
+        let currentTab = 'all';
+        loadCities(null);
+
+        loadFilterCities();
+
+        $(function () {
+            const fp = flatpickr("#flatpickr_range", {
+                mode: "range",             // Aralık seçimi
+                locale: "tr",              // Türkçe dil desteği
+                dateFormat: "Y-m-d",       // Arka plana giden format
+                altInput: true,            // Kullanıcıya görünen formatı değiştirmek için (gizli inputta opsiyoneldir)
+                onClose: function (selectedDates, dateStr, instance) {
+                    // Takvim kapanınca (tarih seçilince) çalışır
+                    if (selectedDates.length === 2) {
+                        const start = instance.formatDate(selectedDates[0], "Y-m-d");
+                        const end = instance.formatDate(selectedDates[1], "Y-m-d");
+
+                        // Filtreyi uygula
+                        setDateFilter(start, end);
+
+                        // Buton görünümlerini güncelle
+                        $('.date-preset-btn').removeClass('bg-white shadow-sm text-primary');
+                        $('#btnCustomDate').addClass('bg-white shadow-sm text-primary');
+
+                        // Butonun içindeki yazıyı seçilen tarih aralığı yap
+                        const labelStart = instance.formatDate(selectedDates[0], "d.m");
+                        const labelEnd = instance.formatDate(selectedDates[1], "d.m");
+                        $('#btnCustomDate').html(`<i class="fa-solid fa-calendar-check me-2 fs-8"></i> ${labelStart} - ${labelEnd}`);
+                    }
+                }
+            });
+
+            $('#btnCustomDate').on('click', function (e) {
+                e.stopPropagation();
+                fp.open();
+            });
+
+            $('.date-preset-btn').on('click', function () {
+                fp.clear();
+                $('#btnCustomDate').html('<i class="fa-solid fa-calendar-days me-2 fs-8"></i>Özel');
+
+                const range = $(this).data('range');
+                const today = new Date();
+                let start = '', end = '';
+
+                if (range === 'all') {
+                    start = '';
+                    end = '';
+                } else if (range === 'today') {
+                    start = formatDate(today);
+                    end = formatDate(today);
+                } else if (range === 'yesterday') {
+                    let yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    start = formatDate(yesterday);
+                    end = formatDate(yesterday);
+                } else if (range === 'week') {
+                    let day = today.getDay();
+                    let diff = today.getDate() - day + (day === 0 ? -6 : 1); // Pazartesiye git
+
+                    let monday = new Date(today);
+                    monday.setDate(diff);
+
+                    let sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6); // Pazartesi + 6 = Pazar
+
+                    start = formatDate(monday);
+                    end = formatDate(sunday);
+                }
+
+                setDateFilter(start, end, this);
+            });
+
+
+            $('#filterCitySelect').select2({
+                minimumResultsForSearch: 5,
+                allowClear: true,
+                placeholder: "Diğer Şehirler"
+            });
+
+            $('#filterUserSelect').select2({
+                minimumResultsForSearch: 5,
+                allowClear: true,
+                placeholder: "Personel Seç"
+            });
+
+            // Personel Seçilince Tabloyu Yenile
+            $('#filterUserSelect').on('change', function () {
+                dt.draw();
+            });
+
+            $('.city-filter-btn').on('click', function () {
+                const city = $(this).data('city');
+
+                $('.city-filter-btn').removeClass('active btn-primary text-white').addClass('btn-light text-gray-600');
+                $(this).removeClass('btn-light text-gray-600').addClass('active btn-primary text-white');
+                $('#filterCitySelect').val(null).trigger('change.select2');
+
+                applyCityFilter(city);
+            });
+
+            $('#filterCitySelect').on('change', function () {
+                const city = $(this).val();
+                if (city) {
+                    $('.city-filter-btn').removeClass('active btn-primary text-white').addClass('btn-light text-gray-600');
+                    applyCityFilter(city);
+                }
+            });
+
+            $('#clearCityFilterBtn').on('click', function () {
+                $('#activeCityFilter').val('');
+                $('#filterCitySelect').val(null).trigger('change.select2');
+                $('.city-filter-btn').removeClass('active btn-primary text-white').addClass('btn-light text-gray-600');
+                $(this).addClass('d-none');
+                $('#leadsTable').DataTable().draw();
+            });
+
+            $('#addModal').on('shown.bs.modal', function () {
+                $('#city, #district, #assigned_users').select2({
+                    dropdownParent: $('#addModal'),
+                    width: '100%',
+                    allowClear: true,
+                    language: "tr",
+                    placeholder: "Seçiniz"
+                });
+                if ($('#city option').length <= 1) loadCities('#city');
+            });
+
+            $('#city').on('change', function () {
+                let val = $(this).val();
+                $('#district').val(null).empty().trigger('change').prop('disabled', true);
+                loadDistricts(val, '#district');
+            });
+
+            const dt = $('#leadsTable').DataTable({
+                dom: '<"top d-flex justify-content-between align-items-center"f>rt<"bottom d-flex justify-content-between align-items-center mb-4"lp><"clear">',
+                info: false,
+                paging: true,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Tümü']],
+                pageLength: 25,
+                serverSide: true,
+                processing: true,
+                orderMulti: false,
+                autoWidth: false,
+                stateSave: false,
+                ajax: {
+                    url: "{% url 'leads:get-all' %}",
+                    type: "GET",
+                    data: function (d) {
+                        d.filter_tab = currentTab;
+                        d.start_date = $('#filterStartDate').val();
+                        d.end_date = $('#filterEndDate').val();
+                        d.filter_city = $('#activeCityFilter').val();
+                        d.filter_user = $('#filterUserSelect').val();
+                    }
+                },
+                order: [[9, 'desc']],
+                columns: [
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center ps-4",
+                        render: d => `<input class="form-check-input row-checkbox" type="checkbox" value="${d}">`
+                    },
+                    {
+                        data: "full_name",
+                        render: function (d, t, r) {
+                            let badge = '';
+                            if (r.created_on) {
+                                const createdDate = new Date(r.created_on);
+                                const now = new Date();
+                                if ((Math.abs(now - createdDate) / 36e5) < 24 && (r.status === 'new' || r.status === 'giriş')) {
+                                    badge = '<span class="badge badge-light-danger fs-9 fw-bolder ms-2 blink-animation">YENİ</span>';
+                                }
+                            }
+                            let chKey = (r.channel || '').toLowerCase();
+                            let chLabel = LABELS.channel[chKey] || r.channel || '-';
+                            let icon = '<i class="fa fa-globe text-muted me-1"></i>';
+                            if (chKey === 'instagram') icon = '<i class="fab fa-instagram text-danger me-1"></i>';
+                            else if (chKey === 'whatsapp') icon = '<i class="fab fa-whatsapp text-success me-1"></i>';
+
+                            const detailUrl = "{% url 'leads:detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', r.id);
+                            return `
+                                <div class="d-flex flex-column justify-content-center">
+                                    <div class="d-flex align-items-center">
+                                        <a href="${detailUrl}" class="text-gray-800 text-hover-primary fw-bold fs-7 text-truncate-custom" title="${d}">${d || '(İsimsiz)'}</a>
+                                        ${badge}
+                                    </div>
+                                    <span class="text-muted fs-8 d-flex align-items-center mt-1">${icon} <span class="ms-1">${chLabel}</span></span>
+                                </div>`;
+                        }
+                    },
+                    {
+                        data: "business_name",
+                        render: function (d, t, r) {
+                            const safeVal = (d || '').replace(/"/g, '&quot;');
+                            return `<input type="text" class="form-control form-control-sm form-control-transparent quick-change-input fw-bold text-gray-800 fs-7 table-compact-input" value="${safeVal}" title="${safeVal}" placeholder="-" data-id="${r.id}" data-field="business_name" data-prev-val="${safeVal}">`;
+                        }
+                    },
+                    {
+                        data: "phone",
+                        orderable: false,
+                        render: function (d, t, r) {
+                            let html = '<div class="d-flex flex-column">';
+
+                            if (r.phone) {
+                                html += `
+                                <a href="tel:${r.phone}" class="text-gray-600 text-hover-primary fs-7 mb-1 d-flex align-items-center">
+                                    <i class="fa fa-phone me-1 fs-8"></i> ${r.phone}
+                                </a>`;
+                            }
+
+                            if (r.email) {
+                                html += `
+                                <a href="mailto:${r.email}" class="text-gray-500 text-hover-primary fs-7 d-flex align-items-center" title="${r.email}">
+                                    <i class="fa fa-envelope me-1 fs-8"></i>
+                                    <span class="text-truncate-custom" style="max-width: 150px;">${r.email}</span>
+                                </a>`;
+                            }
+
+                            html += '</div>';
+
+                            return (r.phone || r.email) ? html : '-';
+                        }
+                    },
+                    {
+                        data: "status",
+                        render: function (data) {
+                            const statusMap = {
+                                'new': {title: 'İletişime Geçilmedi', class: 'badge-light-info'},
+                                'giriş': {title: 'İletişime Geçilmedi', class: 'badge-light-info'},
+                                'contacted': {title: 'İletişime Geçildi', class: 'badge-light-primary'},
+                                'qualified': {title: 'Uygun Bulundu', class: 'badge-light-warning'},
+                                'proposal': {title: 'Teklif', class: 'badge-light-primary'},
+                                'negotiation': {title: 'Görüşme', class: 'badge-light-primary'},
+                                'won': {title: 'Kazanıldı', class: 'badge-light-success'},
+                                'lost': {title: 'Kaybedildi', class: 'badge-light-danger'},
+                                'spam': {title: 'Spam', class: 'badge-light-dark'},
+                                'dnc': {title: 'İletişime Geçilmeyecek', class: 'badge-light-dark'}
+                            };
+                            const state = statusMap[data] || {title: data, class: 'badge-light-secondary'};
+                            return `<span class="badge ${state.class} fw-bold px-3 py-2 fs-7">${state.title}</span>`;
+                        }
+                    },
+                    {
+                        data: "city",
+                        render: function (data, type, row) {
+                            let city = data || '';
+                            let district = row.district || '';
+                            if (city && district) return `<div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-7">${city}</span><span class="text-muted fs-8">${district}</span></div>`;
+                            else if (city) return `<span class="text-gray-800 fw-bold fs-7">${city}</span>`;
+                            else return '<span class="text-muted">-</span>';
+                        }
+                    },
+                    {
+                        data: "created_on",
+                        visible: true,
+                        render: function (d) {
+                            if (!d) return '-';
+                            const date = new Date(d);
+                            return `<span class="text-gray-600 fw-bold fs-7">${date.toLocaleDateString('tr-TR')} <br> <span class="text-muted fs-9">${date.toLocaleTimeString('tr-TR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}</span></span>`;
+                        }
+                    },
+                    {
+                        data: "created_by_name",
+                        orderable: false,
+                        render: function (d) {
+                            return `<span class="text-gray-600 fw-bold fs-7 text-truncate-custom" style="max-width: 100px;" title="${d}">${d}</span>`;
+                        }
+                    },
+                    {
+                        data: "assigned_users_names",
+                        render: function (d) {
+                            return d ? `<span class="badge badge-light-primary fw-bold px-2 py-1 fs-8" style="white-space:normal;">${d}</span>` : `<span class="text-muted fs-8 fst-italic">Atanmadı</span>`;
+                        }
+                    },
+                    {
+                        data: "last_activity_at",
+                        render: function (d, t, r) {
+                            if (!d) return '<span class="badge badge-light fw-bold fs-8">İşlem Yok</span>';
+                            const dt = new Date(d);
+                            const dateStr = dt.toLocaleDateString('tr-TR', {day: '2-digit', month: '2-digit'});
+                            const outcomeMap = {
+                                'positive': {text: 'Olumlu', class: 'text-success'},
+                                'negative': {text: 'Olumsuz', class: 'text-danger'},
+                                'offer_requested': {text: 'Teklif İstedi', class: 'text-primary'},
+                                'offer_decision_pending': {text: 'Teklif K. Bekleniyor', class: 'text-warning'}, // <--- YENİ EKLENEN
+                                'demo_requested': {text: 'Demo İstedi', class: 'text-info'},
+                                'decision_pending': {text: 'Karar Bekliyor', class: 'text-warning'},
+                                'reached_voicemail': {text: 'Ulaşılamadı', class: 'text-muted'},
+                                'scheduled': {text: 'Randevu', class: 'text-primary'},
+                                'call': {text: 'Arandı', class: 'text-gray-600'}
+                            };
+                            let outcomeData = (r.last_activity_outcome && outcomeMap[r.last_activity_outcome]) ? outcomeMap[r.last_activity_outcome] : {
+                                text: 'Güncellendi',
+                                class: 'text-gray-500 fst-italic'
+                            };
+                            let summary = r.last_activity_summary || '';
+                            if (summary.length > 35) summary = summary.substring(0, 35) + '...';
+                            return `<div class="d-flex flex-column"><div class="d-flex justify-content-between align-items-center mb-1"><span class="fw-bolder fs-7 ${outcomeData.class}">${outcomeData.text}</span><span class="text-muted fs-9">${dateStr}</span></div><span class="text-gray-600 fs-8 fw-semibold fst-italic" title="${r.last_activity_summary || ''}">${summary}</span></div>`;
+                        }
+                    },
+                    {data: "created_on", visible: false},
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-end pe-4",
+                        render: function (id, t, r) {
+                            const detailUrl = "{% url 'leads:detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', id);
+                            const safe = v => (v || '').toString().replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+                            return `
+                                <a href="${detailUrl}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 shadow-sm" title="Detay"><i class="fa-solid fa-arrow-right fs-5"></i></a>
+                                <button class="btn btn-icon btn-bg-light btn-active-color-success btn-sm me-1 shadow-sm" title="Yeni Etkileşim Gir" onclick="openActivityModal('${r.id}')"><i class="fa-solid fa-plus fs-5"></i></button>
+                                <button class="btn btn-icon btn-bg-light btn-active-color-info btn-sm me-1 shadow-sm" title="Durum Değiştir" onclick="openStatusModal('${r.id}', '${r.status}')"><i class="fa-solid fa-rotate fs-5"></i></button>
+                                <button class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm shadow-sm" title="Hızlı Düzenle" onclick="edit_record('${r.id}','${safe(r.full_name)}','${safe(r.phone)}','${safe(r.email)}','${safe(r.channel)}','${safe(r.channel_handle)}','${safe(r.status)}','${safe(r.category)}','${safe(r.business_name)}','${safe(r.city)}','${safe(r.district)}','${(r.assigned_users_ids || []).join(',')}','${r.score || 0}')"><i class="fa-solid fa-pen fs-5"></i></button>
+                            `;
+                        }
+                    }
+                ],
+                initComplete: function () {
+                    $('#leadsTable_filter').appendTo('#dataTableSearch').addClass('mb-0');
+                    if (cachedCities.length === 0) {
+                        setTimeout(() => dt.draw(false), 1000);
+                    }
+                },
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+
+            $('#leadTabs a').on('click', function () {
+                $('#leadTabs a').removeClass('active');
+                $(this).addClass('active');
+                currentTab = $(this).data('tab');
+                dt.draw();
+            });
+
+            $('#filterStartDate, #filterEndDate').on('change keyup', function () {
+                dt.draw();
+            });
+
+            $('#selectAll').on('change', function () {
+                $('.row-checkbox').prop('checked', this.checked);
+                toggleBulkBtn();
+            });
+            $(document).on('change', '.row-checkbox', toggleBulkBtn);
+
+            function toggleBulkBtn() {
+                $('#deleteSelected').toggleClass('d-none', $('.row-checkbox:checked').length === 0);
+            }
+
+            $('#deleteSelected').on('click', function () {
+                const ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(e => e.value);
+                if (!ids.length) return;
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: `${ids.length} kayıt silinecek!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'İptal'
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        $.post("{% url 'leads:delete' %}", {ids: ids, csrfmiddlewaretoken: getCSRF()}, function (res) {
+                            if (res.result) {
+                                Swal.fire('Silindi!', '', 'success');
+                                dt.ajax.reload(null, false);
+                                $('#selectAll').prop('checked', false);
+                                toggleBulkBtn();
+                            } else {
+                                Swal.fire('Hata', res.error_msg, 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            $(document).on('change', '.quick-change', function () {
+                handleQuickUpdate($(this));
+            });
+            $(document).on('blur', '.quick-change-input', function () {
+                handleQuickUpdate($(this));
+            });
+            $(document).on('keypress', '.quick-change-input', function (e) {
+                if (e.which === 13) $(this).blur();
+            });
+
+            function handleQuickUpdate($el) {
+                const id = $el.data('id');
+                const field = $el.data('field');
+                const val = $el.val();
+                if ($el.data('prev-val') === val) return;
+                $el.addClass('bg-light-warning');
+                $.ajax({
+                    url: "{% url 'leads:quick-update' %}",
+                    type: "POST",
+                    data: {id: id, field: field, value: val, csrfmiddlewaretoken: getCSRF()},
+                    success: function (res) {
+                        $el.removeClass('bg-light-warning');
+                        if (res.result) {
+                            $el.addClass('bg-light-success text-success');
+                            setTimeout(() => $el.removeClass('bg-light-success text-success'), 1500);
+                            $el.data('prev-val', val);
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'Güncellendi',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        } else {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'error',
+                                title: res.error_msg || 'Hata',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    },
+                    error: function () {
+                        $el.removeClass('bg-light-warning').addClass('bg-light-danger');
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'error',
+                            title: 'Sunucu hatası',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            }
+
+            $(document).on('change', '.status-changer', function (e) {
+                e.preventDefault();
+                const $sel = $(this);
+                const leadId = $sel.data('lead-id');
+                const newStatus = $sel.val();
+                const oldStatus = $sel.data('original-val');
+                const url = "{% url 'leads:change-stage' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', leadId);
+                const fd = new FormData();
+                fd.append('to_status', newStatus);
+                fd.append('note', 'Listeden hızlı durum güncellemesi');
+                $sel.prop('disabled', true);
+                fetch(url, {method: 'POST', headers: {'X-CSRFToken': getCSRF()}, body: fd})
+                    .then(r => r.json())
+                    .then(res => {
+                        $sel.prop('disabled', false);
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'Durum Güncellendi',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            $sel.removeClass('bg-light-primary bg-light-success bg-light-danger bg-light-info bg-light-warning text-primary text-success text-danger text-info text-warning').addClass('fw-bold');
+                            if (newStatus === 'new') $sel.addClass('bg-light-primary text-primary');
+                            else if (newStatus === 'won') $sel.addClass('bg-light-success text-success');
+                            else if (newStatus === 'lost') $sel.addClass('bg-light-danger text-danger');
+                            else if (newStatus === 'contacted') $sel.addClass('bg-light-info text-info');
+                            else if (newStatus === 'qualified') $sel.addClass('bg-light-warning text-warning');
+                            else $sel.addClass('bg-light text-gray-800');
+                            $sel.data('original-val', newStatus);
+                            if (typeof currentTab !== 'undefined' && currentTab === 'new' && newStatus !== 'new') {
+                                $('#leadsTable').DataTable().row($sel.closest('tr')).remove().draw(false);
+                            }
+                        } else {
+                            Swal.fire('Hata', res.error_msg || 'Güncellenemedi', 'error');
+                            $sel.val(oldStatus);
+                        }
+                    })
+                    .catch(err => {
+                        $sel.prop('disabled', false);
+                        $sel.val(oldStatus);
+                        Swal.fire('Hata', 'Sunucu bağlantı hatası', 'error');
+                    });
+            });
+
+            window.openStatusModal = function (id, currentStatus) {
+                $('#status_lead_id').val(id);
+                $('#new_status_select').val(currentStatus).trigger('change');
+                $('#statusChangeForm textarea[name="note"]').val('');
+                $('#changeStatusModal').modal('show');
+            };
+
+            $(document).on('submit', '#statusChangeForm', function (e) {
+                e.preventDefault();
+                const leadId = $('#status_lead_id').val();
+                const newStatus = $('#new_status_select').val();
+                const note = $(this).find('textarea[name="note"]').val();
+                const btn = $(this).find('button[type="submit"]');
+                btn.attr('data-kt-indicator', 'on').prop('disabled', true);
+                const url = "{% url 'leads:change-stage' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', leadId);
+                const fd = new FormData();
+                fd.append('to_status', newStatus);
+                fd.append('note', note);
+                fetch(url, {method: 'POST', headers: {'X-CSRFToken': getCSRF()}, body: fd})
+                    .then(r => r.json()).then(res => {
+                    if (res.result) {
+                        Swal.fire({
+                            title: 'Başarılı!',
+                            text: 'Durum başarıyla güncellendi.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        $('#changeStatusModal').modal('hide');
+                        $('#leadsTable').DataTable().ajax.reload(null, false);
+                    } else {
+                        Swal.fire('Hata', res.error_msg || 'Bir hata oluştu', 'error');
+                    }
+                }).catch(err => {
+                    Swal.fire('Hata', 'Sunucu bağlantı hatası', 'error');
+                }).finally(() => {
+                    btn.removeAttr('data-kt-indicator').prop('disabled', false);
+                });
+            });
+
+            $('#btnSave').on('click', function () {
+                $('#add-form').submit();
+            });
+            $('#add-form').on('submit', function (e) {
+                e.preventDefault();
+                const btn = $('#btnSave');
+                if (!this.checkValidity()) {
+                    this.classList.add('was-validated');
+                    return;
+                }
+                if (!$('#city').val()) {
+                    Swal.fire('Eksik Bilgi', 'Lütfen Şehir seçiniz.', 'warning');
+                    return;
+                }
+                btn.prop('disabled', true);
+                const fd = new FormData(this);
+                $.ajax({
+                    url: "{% url 'leads:add' %}",
+                    type: "POST",
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    headers: {'X-CSRFToken': getCSRF()},
+                    success: function (res) {
+                        if (res.result) {
+                            Swal.fire({title: 'Başarılı', icon: 'success', timer: 1000, showConfirmButton: false});
+                            window.location.reload();
+                        } else {
+                            Swal.fire('Hata', res.error_msg, 'error');
+                        }
+                    },
+                    complete: () => btn.prop('disabled', false)
+                });
+            });
+
+            $('#addModal').on('hidden.bs.modal', function () {
+                $('#add-form')[0].reset();
+                $('#record_id').val('');
+                $('#city').val(null).trigger('change');
+                $('#district').empty().prop('disabled', true);
+                $('#addModal .modal-title').text('Müşteri Kartı');
+            });
+
+            $('#csvFormModal').on('submit', function (e) {
+                e.preventDefault();
+                const btn = $(this).find('button[type=submit]');
+                btn.prop('disabled', true).text('Yükleniyor...');
+                const fd = new FormData(this);
+                fetch("{% url 'leads:import' %}", {method: "POST", headers: {"X-CSRFToken": getCSRF()}, body: fd})
+                    .then(r => r.json()).then(res => {
+                    if (res.result) {
+                        Swal.fire({
+                            title: 'İşlem Tamamlandı',
+                            html: `Eklenen: <b>${res.created}</b><br>Güncellenen: <b>${res.updated}</b><br>Atlanan: <b>${res.skipped}</b>`,
+                            icon: 'success'
+                        });
+                        dt.ajax.reload(null, false);
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('csvImportModal')).hide();
+                        document.getElementById('csvFormModal').reset();
+                    } else {
+                        Swal.fire('Hata', res.error_msg, 'error');
+                    }
+                }).finally(() => btn.prop('disabled', false).text('Yükle Başlat'));
+            });
+
+            window.edit_record = function (id, full_name, phone, email, channel, channel_handle, status, category, business_name, city, district, r_assigned_ids_str, score) {
+                $('#addModal').modal('show');
+                $('#addModal .modal-title').text('Kayıt Düzenle');
+
+                $('#record_id').val(id);
+                $('#full_name').val(full_name);
+                $('#phone').val(phone);
+                $('#email').val(email);
+                $('#channel').val(channel).trigger('change');
+                $('#channel_handle').val(channel_handle);
+                $('#status').val(status).trigger('change');
+                $('#category').val(category).trigger('change');
+                $('#business_name').val(business_name);
+                $('#score').val(score || 0);
+
+                const $sel = $('#assigned_users');
+                $sel.val(null).trigger('change');
+                if (r_assigned_ids_str) {
+                    const ids = r_assigned_ids_str.split(',');
+                    $sel.val(ids).trigger('change');
+                }
+
+                loadCities('#city', city);
+
+                setTimeout(() => {
+                    let cityId = $('#city').val();
+                    if (cityId) {
+                        loadDistricts(cityId, '#district', district);
+                    }
+                }, 300);
+            };
+
+            window.openActivityModal = function (id) {
+                $('#quick_activity_lead_id').val(id);
+                $('#quickActivityForm')[0].reset();
+                $('#quickActivityModal').modal('show');
+            };
+
+            $(document).on('submit', '#quickActivityForm', function (e) {
+                e.preventDefault();
+                const leadId = $('#quick_activity_lead_id').val();
+                const btn = $(this).find('button[type="submit"]');
+                btn.prop('disabled', true).text('Kaydediliyor...');
+                const url = "{% url 'leads:add-activity' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', leadId);
+                const fd = new FormData(this);
+                fetch(url, {method: 'POST', headers: {'X-CSRFToken': getCSRF()}, body: fd})
+                    .then(r => r.json()).then(res => {
+                    if (res.result) {
+                        $('#quickActivityModal').modal('hide');
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Aktivite Eklendi',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        $('#leadsTable').DataTable().ajax.reload(null, false);
+                    } else {
+                        Swal.fire('Hata', res.msg || 'Bir hata oluştu', 'error');
+                    }
+                }).catch(err => {
+                    Swal.fire('Hata', 'Sunucu hatası', 'error');
+                }).finally(() => {
+                    btn.prop('disabled', false).text('Kaydet');
+                });
+            });
+
+            $('#addModal').on('shown.bs.modal', function () {
+                $('#city, #district, #assigned_users').select2({
+                    dropdownParent: $('#addModal'),
+                    width: '100%',
+                    allowClear: true,
+                    language: "tr",
+                    placeholder: "Seçiniz"
+                });
+                if ($('#city option').length <= 1) loadCities('#city');
+            });
+
+            $('#city').on('change', function () {
+                let val = $(this).val();
+                if(!val) {
+                     $('#district').val(null).empty().prop('disabled', true);
+                } else {
+                     loadDistricts(val, '#district');
+                }
+            });
+        });
+    </script>
+{% endblock footer %}

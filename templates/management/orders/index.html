@@ -1,0 +1,311 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}">
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="app-content container-xxl">
+
+            <div class="card mb-5" id="ordersHeaderCard">
+                <div class="card-header align-items-center">
+                    <div class="card-title">
+                        <h3 class="fw-bold mb-0">Siparişler</h3>
+                    </div>
+
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="position-relative">
+                            <button type="button" class="btn btn-light-primary btn-sm"
+                                    data-kt-menu-trigger="click"
+                                    data-kt-menu-placement="bottom-end">
+                                <i class="fa-solid fa-download"></i> Dışa Aktar
+                            </button>
+                            <div id="ordersExportMenu"
+                                 class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600
+                                    menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                 data-kt-menu="true">
+                                <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="copy">Panoya
+                                    Kopyala</a></div>
+                                <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="excel">Excel</a>
+                                </div>
+                                <div class="menu-item px-3"><a href="#" class="menu-link px-3"
+                                                               data-kt-export="csv">CSV</a></div>
+                                <div class="menu-item px-3"><a href="#" class="menu-link px-3"
+                                                               data-kt-export="pdf">PDF</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body py-4">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <select id="orderStatus" class="form-select form-select-sm" style="width:180px;">
+                            <option value="">Tümü (Durum)</option>
+                            <option value="PENDING">Beklemede</option>
+                            <option value="APPROVED">Onaylandı</option>
+                            <option value="REJECTED">Reddedildi</option>
+                            <option value="FULFILLED">Tamamlandı</option>
+                        </select>
+                        <button class="btn btn-sm btn-light" id="btnOrdersReload">
+                            <i class="fa-solid fa-rotate-right"></i> Yenile
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+
+                    <div class="mb-4">
+                        <ul class="nav nav-tabs" id="ordersTabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-type="ALL" type="button">Tümü</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-type="WA_CREDIT" type="button">WhatsApp</button>
+                            </li>
+                            {# e-Fatura Kontör sekmesi kaldırıldı — fatura kontör sistemi devre dışı #}
+                            <li class="nav-item">
+                                <button class="nav-link" data-type="PROPOSAL" type="button">Teklif</button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div id="ordersTableToolbar"
+                         class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <button id="deleteSelectedOrders" class="btn btn-icon btn-light-danger btn-sm"
+                                    title="Seçilenleri Sil" disabled>
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <div id="ordersTableSearch"></div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="ordersTable" class="table align-middle table-row-dashed fs-6 gy-5">
+                            <thead>
+                            <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                <th class="w-10px">
+                                    <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                        <input id="selectAllOrders" class="form-check-input" type="checkbox">
+                                    </div>
+                                </th>
+                                <th>Tarih</th>
+                                <th>Sipariş No</th>
+                                <th>Mağaza</th>
+                                <th>Tür</th>
+                                <th>Kalem / Miktar</th>
+                                <th>Durum</th>
+                                <th>Karar</th>
+                                <th>İşlem</th>
+                            </tr>
+                            </thead>
+                            <tbody class="text-gray-600 fw-semibold"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script>
+        function getCSRFCookie(name = 'csrftoken') {
+            const m = document.cookie.match(new RegExp('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)'));
+            return m ? decodeURIComponent(m[2]) : '';
+        }
+
+        function formatDateTR(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const dt = new Date(dateStr);
+                return dt.toLocaleString('tr-TR', {
+                    timeZone: 'Europe/Istanbul',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        $(function () {
+            let dt;
+            let activeType = 'ALL';
+
+            function urlList() {
+                const p = new URLSearchParams();
+                const s = $('#orderStatus').val() || '';
+                if (s) p.set('status', s);
+                if (activeType && activeType !== 'ALL') p.set('type', activeType);
+                return '/orders/api/list' + (p.toString() ? ('?' + p.toString()) : '');
+            }
+
+            function badgeStatus(s) {
+                const map = {
+                    "PENDING": '<span class="badge bg-light-warning text-warning">Beklemede</span>',
+                    "APPROVED": '<span class="badge bg-light-success text-success">Onaylandı</span>',
+                    "REJECTED": '<span class="badge bg-light-danger text-danger">Reddedildi</span>',
+                    "FULFILLED": '<span class="badge bg-light-primary text-primary">Tamamlandı</span>',
+                    "DRAFT": '<span class="badge bg-light text-muted">Taslak</span>'
+                };
+                return map[s] || s;
+            }
+
+            function getSelectedIds() {
+                return $('.row-checkbox:checked').map(function () {
+                    return this.value;
+                }).get();
+            }
+
+            function toggleBulkBtns() {
+                const hasSel = getSelectedIds().length > 0;
+                $('#deleteSelectedOrders').prop('disabled', !hasSel);
+            }
+
+            function initDT() {
+                dt = $('#ordersTable').DataTable({
+                    dom: '<"top d-flex justify-content-end mb-3"f>rt<"bottom d-flex justify-content-between align-items-center mb-4"lp>',
+                    info: false, paging: true, lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Tümü"]],
+                    order: [[1, 'desc']], processing: true, serverSide: false, autoWidth: false,
+                    ajax: {url: urlList(), dataSrc: 'data'},
+                    columnDefs: [
+                        {targets: 0, width: '45px', orderable: false, className: 'text-center align-middle'},
+                        {targets: '_all', className: 'align-middle'}
+                    ],
+                    columns: [
+                        {
+                            data: 'id',
+                            render: id => `<div class="form-check form-check-sm form-check-custom form-check-solid d-flex justify-content-center"><input type="checkbox" class="form-check-input row-checkbox" value="${id}"></div>`
+                        },
+                        {
+                            data: 'created_at',
+                            render: function (d, type) {
+                                if (type === 'display' || type === 'filter') return formatDateTR(d);
+                                return d;
+                            }
+                        },
+                        {
+                            data: null,
+                            render: function (r, type) {
+                                const shortNo = r.short_no || '';
+                                const fullNo = r.order_no || shortNo;
+                                if (type === 'display') {
+                                    // DETAY SAYFASI LİNKİ
+                                    return `<a href="${r.detail_url}" class="text-gray-800 text-hover-primary fw-bold" title="${fullNo}">${shortNo}</a>`;
+                                }
+                                return fullNo;
+                            }
+                        },
+                        {data: 'store_label'},
+                        {data: 'type_label'},
+                        {data: 'amount'},
+                        {
+                            data: null,
+                            render: r => {
+                                // Ödeme ve Durum kombinasyonu
+                                if (r.status === 'APPROVED' || r.status === 'FULFILLED') return badgeStatus(r.status);
+                                if (r.status === 'REJECTED') return badgeStatus(r.status);
+
+                                // Pending ise ödeme durumuna bak
+                                if (r.payment_status === 'PAID') return '<span class="badge bg-light-success text-success">Ödeme Alındı</span>';
+                                return badgeStatus(r.status);
+                            }
+                        },
+                        {
+                            data: null,
+                            render: r => {
+                                const decidedAtStr = r.decided_at ? formatDateTR(r.decided_at) : '';
+                                return (r.decided_by || '') + (decidedAtStr ? `<br><small>${decidedAtStr}</small>` : '');
+                            }
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            render: r => {
+                                // Listede sadece silme ve detay linki kalsın, işlemler detayda
+                                return `<a href="${r.detail_url}" class="btn btn-sm btn-light btn-active-light-primary">Detay</a>`;
+                            }
+                        }
+                    ],
+                    language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+                    initComplete: function () {
+                        $('#ordersTable_filter').appendTo('#ordersTableSearch').addClass('mb-0');
+                        toggleBulkBtns();
+                    }
+                });
+
+                $('#selectAllOrders').on('change', function () {
+                    $('.row-checkbox').prop('checked', $(this).is(':checked'));
+                    toggleBulkBtns();
+                });
+
+                $('#ordersTable tbody').on('change', '.row-checkbox', toggleBulkBtns);
+                dt.on('draw', toggleBulkBtns);
+            }
+
+            $(document).on('click', '#deleteSelectedOrders', async function () {
+                const ids = getSelectedIds();
+                if (!ids.length) return Swal.fire('Uyarı', 'Lütfen en az bir sipariş seçin.', 'warning');
+
+                const res = await Swal.fire({
+                    title: 'Silinsin mi?',
+                    text: `${ids.length} sipariş silinecek (Sadece Beklemede olanlar silinir).`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, sil',
+                    cancelButtonText: 'Vazgeç'
+                });
+                if (!res.isConfirmed) return;
+
+                try {
+                    const r = await fetch('/orders/api/delete', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFCookie()},
+                        body: JSON.stringify({ids})
+                    });
+                    const js = await r.json();
+                    if (js.result) {
+                        $('#selectAllOrders').prop('checked', false);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Silindi',
+                            text: `${js.deleted} kayıt silindi`,
+                            timer: 1200,
+                            showConfirmButton: false
+                        });
+                        dt.ajax.reload(null, false);
+                    } else {
+                        Swal.fire('Hata', js.error_msg || 'Silme başarısız', 'error');
+                    }
+                } catch {
+                    Swal.fire('Hata', 'Sunucuya istek gönderilemedi', 'error');
+                }
+            });
+
+            function reloadDT() {
+                if ($.fn.DataTable.isDataTable('#ordersTable')) dt.ajax.url(urlList()).load();
+                else initDT();
+            }
+
+            $(document).on('click', '#ordersTabs .nav-link', function () {
+                $('#ordersTabs .nav-link').removeClass('active');
+                $(this).addClass('active');
+                activeType = $(this).data('type') || 'ALL';
+                reloadDT();
+            });
+
+            $('#btnOrdersReload, #orderStatus').on('click change', reloadDT);
+            initDT();
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}Uyumlu Cihazlar & Donanımlar | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus ile tam entegre çalışan RFID yazıcılar, el terminalleri, kuyumcu etiketleri ve
+    POS cihazları.{% endblock page_description %}
+{% block page_keywords %}rfid yazıcı, kuyumcu etiketi, zebra zd621r, r6 el terminali, pavo n86, kuyum plus
+    donanım{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/cihazlar/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus – Uyumlu Cihazlar{% endblock og_title %}
+{% block og_description %}Yazılımımızla %100 uyumlu, test edilmiş profesyonel donanım
+    çözümleri.{% endblock og_description %}
+{% block og_image %}{% static 'theme/img/new_logo/1.png' %}{% endblock og_image %}
+{% block twitter_title %}Uyumlu Cihazlar | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}Kuyumculuk süreçlerinizi hızlandıracak profesyonel
+    donanımlar.{% endblock twitter_description %}
+
+{% block header %}
+    <style>
+        .breadcrumb-slim {
+            padding-top: 4rem !important;
+            padding-bottom: 4rem !important;
+        }
+
+        .my-ul-padding {
+            padding-top: 1rem !important;
+        }
+
+        /* Cihaz Kartları */
+        .device-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .device-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-color: #f8bc27;
+        }
+
+        .device-image {
+            max-width: 100%;
+            max-height: 180px;
+            height: auto;
+            object-fit: contain;
+            padding: 10px;
+        }
+
+        .device-badge {
+            display: inline-block;
+            background-color: #eefdf3;
+            color: #28a745;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .device-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        /* SSS Görsel Alanı */
+        .faq-image-container {
+            height: 100%;
+            min-height: 350px; /* Biraz daha yükseklik verdim ferah durması için */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .faq-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 991.98px) {
+            .breadcrumb-slim {
+                padding-bottom: 2rem !important;
+                padding-top: 2rem !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.6rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                justify-content: flex-start !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .my-pdding {
+                padding: 2rem 0 !important;
+            }
+
+            .breadcrumb-slim {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                font-size: 1.2rem !important;
+            }
+
+            .faq-image-container {
+                min-height: 250px;
+                margin-top: 20px;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="breadcrumb-area bg-cover breadcrumb-responsive breadcrumb-slim"
+         style="margin: 0!important; background-color:#F8F9FC">
+        <div class="container">
+            <div class="breadcrumb-inner">
+                <div class="row justify-content-center breadcrumb-row">
+                    <div class="col-lg-6 breadcrumb-col">
+                        <h2 class="page-title">Cihazlar ve Donanımlar</h2>
+                    </div>
+                    <div class="col-lg-6 text-lg-end breadcrumb-col">
+                        <ul class="page-list my-ul-padding">
+                            <li><a href="{% url 'kuyumplus:index' %}" style="color:black!important">Anasayfa</a></li>
+                            <li><a href="#" style="color: black!important">Donanım</a></li>
+                            <li>Cihazlar</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="service-area pd-top-90 pd-bottom-0 my-pdding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-12 mb-4 mb-lg-0">
+                    <div class="td-sidebar service-sidebar">
+                        <div class="widget widget_info">
+                            <h5 class="widget-title"><i class="fas fa-microchip"></i> Donanım Bilgisi</h5>
+                            <div class="widget-info-inner">
+                                <h6>Kategori</h6>
+                                <p>RFID, Yazıcı, POS</p>
+                                <h6>Durum</h6>
+                                <p>Sıfır / Garantili</p>
+                                <h6>Uyumluluk</h6>
+                                <p>%100 Kuyum Plus</p>
+                                <h6>Teslimat</h6>
+                                <p>Stoktan Gönderim</p>
+                                <h6>Kurulum</h6>
+                                <p>Uzaktan Destek</p>
+                            </div>
+                        </div>
+
+                        <div class="widget widget_quote p-4 mt-4" style="background: #f8bc27; border-radius: 8px;">
+                            <h5 class="text-white mb-3">Özel Teklif Alın</h5>
+                            <p class="text-white">Toplu alımlarınız veya mağaza kurulumlarınız için size özel fiyat
+                                çalışması yapabiliriz.</p>
+                            <a href="https://wa.me/905324893954?text=Merhaba,%20donanım%20ve%20cihazlar%20hakkında%20özel%20teklif%20almak%20istiyorum."
+                               class="btn btn-white w-100 mt-2"
+                               target="_blank"
+                               style="color: #333;">
+                               Hemen Teklif Al
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="blog-details-page-content">
+                        <div class="single-blog-inner mb-0">
+                            <div class="details">
+                                <h3>Kuyum Plus Onaylı Donanımlar</h3>
+                                <p class="mb-5">Yazılımımızdan en yüksek verimi alabilmeniz için test edip
+                                    onayladığımız, kuyumculuk sektörüne özel donanım çözümleri aşağıda listelenmiştir.
+                                    Bu cihazlar ile RFID sayım, hızlı etiket basımı ve yasal e-belge süreçlerinizi
+                                    sorunsuz yönetebilirsiniz.</p>
+
+                                <div class="device-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 mb-3 mb-md-0 text-center">
+                                            <img src="{% static 'theme/img/cihazlar/r2-kuyumcu-etiketi2.webp' %}"
+                                                 alt="RK02 RFID Etiket" class="device-image">
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h4>RK02 RFID Kuyumcu Etiketi</h4>
+                                            <p class="text-muted">2000 Adet / Rulo</p>
+                                            <p>Kuyumculuk ürünleri için özel tasarlanmış, suya ve ultrasonik yıkamaya
+                                                dayanıklı RFID çipli etiket. İnce kuyruk yapısı sayesinde yüzük ve
+                                                kolyelerde estetik durur.</p>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="device-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 mb-3 mb-md-0 text-center">
+                                            <img src="{% static 'theme/img/cihazlar/zebra-zd621r.webp' %}"
+                                                 alt="Zebra RFID Yazıcı" class="device-image">
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h4>Zebra ZD621R RFID Yazıcı</h4>
+                                            <p class="text-muted">4 inç Masaüstü / 203 dpi</p>
+                                            <p>Sektörün en güvenilir RFID kodlama ve baskı cihazı. Kuyum Plus Barkod
+                                                modülü ile tam entegre çalışarak saniyeler içinde binlerce etiketi
+                                                kodlar ve basar.</p>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="device-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 mb-3 mb-md-0 text-center">
+                                            <img src="{% static 'theme/img/cihazlar/c5.webp' %}"
+                                                 alt="C5 RFID Terminal" class="device-image">
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h4>C5 UHF RFID Okuyucu (Android 11/13)</h4>
+                                            <p>Mağaza sayımını dakikalara indiren yüksek performanslı okuyucu. Mağaza
+                                                içinde gezerken raflardaki ve kasalardaki ürünleri uzaktan algılar.</p>
+                                            <p>Chainway C5, yükseltilmiş hepsi bir arada UHF RFID Okuyucudur. Endüstri
+                                                lideri UHF performansı sunan, kendi geliştirdiği Impinj E710/R2000
+                                                tabanlı UHF modülünü entegre etmiştir. C5 entegre bir tasarım benimser,
+                                                daha kararlı UHF performansı sağlar ve daha yüksek dayanıklılık sunar.
+                                                Android 11 platformuna, Qualcomm sekiz çekirdekli işlemciye, isteğe
+                                                bağlı yığın dahili belleğe ve büyük kapasiteli çıkarılabilir pile
+                                                sahiptir. C5 ayrıca bankacılık, kamu güvenliği, depolama, perakende,
+                                                lojistik vb. alanlarda yaygın olarak kullanılmasını sağlayan 2D tarama,
+                                                NFC, parmak izi tanıma ve diğer işlevleri de destekler.</p>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="device-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 mb-3 mb-md-0 text-center">
+                                            <img src="{% static 'theme/img/cihazlar/N86-Pavo.webp' %}"
+                                                 alt="Pavo N86 POS" class="device-image">
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h4>Pavo N86 POS Cihazı</h4>
+                                            <p class="text-muted">Android Yeni Nesil ÖKC</p>
+                                            <p>Android işletim sistemli, dokunmatik ekranlı yeni nesil yazar kasa POS.
+                                                Kuyum Plus entegrasyonu ile satış anında fiş ve fatura işlemlerini
+                                                kolaylaştırır.</p>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5 pd-bottom-90">
+                <div class="col-12 mb-4">
+                    <h3>Donanım Hakkında <span style="color: #4382ff;">Sorular</span></h3>
+                </div>
+
+                <div class="col-lg-7 mb-4 mb-lg-0">
+                    <div class="accordion accordion-inner style-2 accordion-icon-left" id="deviceFAQ">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseOne" aria-expanded="true">
+                                    Cihazlar yazılımla tam uyumlu mu?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show"
+                                 aria-labelledby="headingOne"
+                                 data-bs-parent="#deviceFAQ">
+                                <div class="accordion-body">
+                                    Evet. Listelenen tüm cihazlar (Zebra Yazıcılar, RFID okuyucular
+                                    ve POS cihazları) Kuyum Plus yazılımı ile %100 entegre çalışır.
+                                    Herhangi bir sürücü veya uyumsuzluk sorunu yaşamazsınız.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                    Kurulum ve teknik destek veriyor musunuz?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse"
+                                 aria-labelledby="headingTwo"
+                                 data-bs-parent="#deviceFAQ">
+                                <div class="accordion-body">
+                                    Donanımı bizden temin ettiğinizde kurulum, kalibrasyon ve
+                                    yazılım entegrasyonu ekibimiz tarafından ücretsiz olarak
+                                    yapılmaktadır.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                    Neden onaylı donanım tercih etmeliyim?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse"
+                                 aria-labelledby="headingThree"
+                                 data-bs-parent="#deviceFAQ">
+                                <div class="accordion-body">
+                                    Bu cihazlar yüzlerce kuyumcuda aktif olarak test edilmiş ve
+                                    performans onayı almıştır. İş akışınızın kesilmemesi ve en hızlı
+                                    sayım/etiketleme deneyimi için onaylı donanımları öneriyoruz.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="faq-image-container">
+                        <img src="{% static 'theme/img/cihazlar/rfid-kuyumcu-etiketi.webp' %}"
+                             alt="RFID Etiket Uygulaması">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+{% block footer %}{% endblock footer %}

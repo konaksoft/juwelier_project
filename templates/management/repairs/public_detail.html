@@ -1,0 +1,310 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ header.title }} • {{ header.tracking_code }}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="{% static 'management/plugins/global/plugins.bundle.css' %}" rel="stylesheet">
+    <link href="{% static 'management/css/style.bundle.css' %}" rel="stylesheet">
+    <link rel="icon" href="{% static 'theme/img/new_logo/1.png' %}">
+    <style>
+        :root {
+            --brand: #1A253A;
+            --accent: #FFCD02;
+            --ink: #E3EAF2;
+            --muted: #99A6B8;
+            --line: #2A3D66;
+            --card: #152036;
+            --ok: #10b981;
+            --warn: #f59e0b
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle, #2A3D66 40%, #1A253A 70%, #0F1B2B);
+            min-height: 100dvh
+        }
+
+        .wrap {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 16px
+        }
+
+        .topbar {
+            background: var(--brand);
+            border-bottom: 1px solid #0b1424;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .22), inset 0 0 0 1px rgba(255, 255, 255, .03)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .brand img {
+            height: 48px
+        }
+
+        .ttl h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800
+        }
+
+        .ttl p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--accent);
+            color: #0F1B2B;
+            background: var(--accent);
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700
+        }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 6px 22px rgba(0, 0, 0, .25);
+            margin-top: 12px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns:1fr 1.2fr;
+            gap: 14px
+        }
+
+        .badge {
+            display: inline-flex;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid;
+            font-weight: 700;
+            background: transparent
+        }
+
+        .ok {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .warn {
+            border-color: var(--warn);
+            color: var(--warn)
+        }
+
+        .muted {
+            border-color: #6b7280;
+            color: #9ca3af
+        }
+
+        .kv {
+            margin: 6px 0
+        }
+
+        .k {
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .v {
+            font-size: 14px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden
+        }
+
+        th, td {
+            border-bottom: 1px solid #11203a;
+            padding: 10px 12px;
+            font-size: 13px
+        }
+
+        thead th {
+            background: linear-gradient(180deg, #223152, #1A253A);
+            color: #fff;
+            text-align: left;
+            font-weight: 700
+        }
+
+        .num {
+            text-align: right
+        }
+
+        .imgbox img {
+            max-width: 100%;
+            border-radius: 10px;
+            border: 1px solid #2a334c
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns:1fr
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                color: #000
+            }
+
+            .topbar {
+                display: none
+            }
+
+            .panel {
+                background: #fff;
+                border: 1px solid #e5e7eb;
+                box-shadow: none;
+                color: #111
+            }
+
+            thead th {
+                background: #f3f4f6;
+                color: #111
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <!-- Top -->
+    <div class="topbar">
+        <div class="brand">
+            <img src="{% static 'theme/img/new_logo/1.png' %}" alt="Kuyum Plus">
+            <div class="ttl">
+                <h3>{{ header.title }}</h3>
+                <p>Takip Kodu: {{ header.tracking_code }}</p>
+            </div>
+        </div>
+        <div class="actions">
+            <a class="btn" href="javascript:window.print()">🖨️ Yazdır</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="grid">
+            <div>
+                <div class="kv"><span class="k">Müşteri</span>
+                    <div class="v">{{ header.customer_full }}</div>
+                </div>
+                {% if header.customer_phone and header.customer_phone != '-' %}
+                    <div class="kv"><span class="k">Telefon</span>
+                        <div class="v">{{ header.customer_phone }}</div>
+                    </div>
+                {% endif %}
+                <div class="kv"><span class="k">Teslim Alan</span>
+                    <div class="v">{{ header.employee }}</div>
+                </div>
+                <div class="kv"><span class="k">Durum</span>
+                    <div class="v"><span class="badge {{ badge.class }}">{{ badge.value }}</span></div>
+                </div>
+                <div class="kv"><span class="k">Ürün Türü</span>
+                    <div class="v">{{ repair.product_type|default:"-" }}</div>
+                </div>
+                {% if repair.gram %}
+                    <div class="kv"><span class="k">Gram</span>
+                        <div class="v">{{ repair.gram }} gr</div>
+                    </div>{% endif %}
+                <div class="kv"><span class="k">Fiyat</span>
+                    <div class="v">{{ repair.price }} TL</div>
+                </div>
+                {% if repair.product_description %}
+                    <div class="kv"><span class="k">Açıklama</span>
+                        <div class="v">{{ repair.product_description }}</div>
+                    </div>
+                {% endif %}
+                {% if workshop_name %}
+                    <div class="kv"><span class="k">Atölye</span>
+                        <div class="v">{{ workshop_name }}</div>
+                    </div>
+                {% endif %}
+                <div class="kv"><span class="k">Oluşturma</span>
+                    <div class="v">{{ times.received }}</div>
+                </div>
+                <div class="kv"><span class="k">Son Güncelleme</span>
+                    <div class="v">{{ times.updated }}</div>
+                </div>
+            </div>
+            <div class="imgbox">
+                {% if image_url %}
+                    <img src="{{ image_url }}" alt="Ürün">
+                {% else %}
+                    <img src="{% static 'management/media/svg/files/blank-image.svg' %}" alt="Ürün">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Basit durum çizgisi -->
+    <div class="panel">
+        <table>
+            <thead>
+            <tr>
+                <th>Adım</th>
+                <th>Tarih</th>
+                <th>Bilgi</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Mağazada Beklemede</td>
+                <td>{{ times.received }}</td>
+                <td>Ürün teslim alındı.</td>
+            </tr>
+            {% if repair.status in "workshop ready_for_pickup delivered" %}
+                <tr>
+                    <td>Atölyede Tamirde</td>
+                    <td>{{ times.workshop|default:"-" }}</td>
+                    <td>İşçilik devam ediyor.</td>
+                </tr>
+            {% endif %}
+            {% if repair.status in "ready_for_pickup delivered" %}
+                <tr>
+                    <td>Teslimata Hazır</td>
+                    <td>{{ times.ready|default:"-" }}</td>
+                    <td>Ürün teslim alınabilir.</td>
+                </tr>
+            {% endif %}
+            {% if repair.status == "delivered" %}
+                <tr>
+                    <td>Müşteriye Teslim Edildi</td>
+                    <td>{{ times.updated }}</td>
+                    <td>Teslim tamamlandı.</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

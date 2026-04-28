@@ -1,0 +1,437 @@
+<!-- file: templates/management/invoices/dashboard.html -->
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    {{ block.super }}
+    <style>
+        .kpi-card {
+            border: 1px solid #eef3f7;
+            border-radius: .75rem;
+            background: #fff
+        }
+
+        .kpi-card .val {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: .2px
+        }
+
+        .kpi-muted {
+            color: #6b7280
+        }
+
+        .kpi-row {
+            row-gap: 1rem
+        }
+
+        .kpi-badge {
+            font-size: .75rem;
+            border-radius: 6px;
+            padding: .25rem .5rem;
+            background: #f1f5f9
+        }
+
+        .chart-box {
+            height: 360px;
+            border: 1px solid #eef3f7;
+            border-radius: .75rem;
+            background: #fff
+        }
+
+        .table-wrap {
+            border: 1px solid #eef3f7;
+            border-radius: .75rem;
+            background: #fff
+        }
+
+        .filters .form-control, .filters .form-select {
+            height: 42px
+        }
+
+        .sticky-actions {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: transparent
+        }
+
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px
+        }
+
+        @media (max-width: 991.98px) {
+            .kpi-row > [class*="col-"] {
+                display: flex;
+                align-items: stretch
+            }
+
+            .kpi-card {
+                flex: 1 1 100%
+            }
+        }
+    </style>
+    {% block invoice_head %}{% endblock invoice_head %}
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main"
+         style="border-style:groove;border-radius:10px;border-color:aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-5 py-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 sticky-actions">
+                    <div class="d-flex align-items-center gap-3">
+                        <h1 class="text-gray-900 fw-bold fs-3 my-0">Fatura Dashboard</h1>
+                        <span class="kpi-badge"><span id="period-label">Son 30 gün</span></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'invoices:create' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i>&nbsp;Yeni
+                            Fatura</a>
+                        <button type="button" id="exportCsv" class="btn btn-light-primary"><i
+                                class="fa-solid fa-file-csv"></i>&nbsp;CSV
+                        </button>
+                        <button type="button" class="btn btn-light-primary aside-toggle"><i
+                                class="fa-solid fa-bars"></i>&nbsp;Menü
+                        </button>
+                    </div>
+                </div>
+
+                <div class="filters row g-3 mb-4">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label mb-1">Başlangıç</label>
+                        <input type="date" id="fDateFrom" class="form-control"/>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label mb-1">Bitiş</label>
+                        <input type="date" id="fDateTo" class="form-control"/>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label mb-1">Durum</label>
+                        <select id="fStatus" class="form-select">
+                            <option value="">Tümü</option>
+                            <option value="ISSUED">Kesildi</option>
+                            <option value="SENT">Gönderildi</option>
+                            <option value="DRAFT">Taslak</option>
+                            <option value="CANCELED">İptal</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3 d-flex align-items-end">
+                        <div class="btn-group w-100">
+                            <button class="btn btn-light-primary w-25 period-btn" data-days="7">7g</button>
+                            <button class="btn btn-light-primary w-25 period-btn active" data-days="30">30g</button>
+                            <button class="btn btn-light-primary w-25 period-btn" data-days="90">90g</button>
+                            <button class="btn btn-light-primary w-25" id="applyFilters"><i
+                                    class="fa-solid fa-filter"></i>&nbsp;Uygula
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row kpi-row mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="kpi-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="kpi-muted">Toplam Tutar (₺)</span>
+                                <i class="fa-solid fa-receipt text-muted"></i>
+                            </div>
+                            <div class="val mt-2" id="kpi-total"></div>
+                            <div class="kpi-muted mt-1"><span id="kpi-count"></span> fatura</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="kpi-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="kpi-muted">Ortalama Fatura</span>
+                                <i class="fa-solid fa-scale-balanced text-muted"></i>
+                            </div>
+                            <div class="val mt-2" id="kpi-avg"></div>
+                            <div class="kpi-muted mt-1">Adet başı</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="kpi-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="kpi-muted">Durum</span>
+                                <i class="fa-solid fa-circle-check text-muted"></i>
+                            </div>
+                            <div class="mt-3 d-flex flex-wrap gap-2">
+                                <span class="kpi-badge"><b id="kpi-issued">0</b> Kesildi</span>
+                                <span class="kpi-badge"><b id="kpi-draft">0</b> Taslak</span>
+                                <span class="kpi-badge"><b id="kpi-canceled">0</b> İptal</span>
+                                <span class="kpi-badge"><b id="kpi-sent">0</b> Gönderildi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="kpi-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="kpi-muted">e-Belge</span>
+                                <i class="fa-solid fa-file-invoice text-muted"></i>
+                            </div>
+                            <div class="mt-3 d-flex flex-wrap gap-2">
+                                <span class="kpi-badge"><span class="legend-dot" style="background:#0ea5e9;"></span><b
+                                        id="kpi-efatura">0</b> e-Fatura</span>
+                                <span class="kpi-badge"><span class="legend-dot" style="background:#22c55e;"></span><b
+                                        id="kpi-earsiv">0</b> e-Arşiv</span>
+                                <span class="kpi-badge"><b id="kpi-edoc-pending">0</b> Bekleyen</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-box p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="fs-6 fw-semibold m-0">Günlük Fatura Tutarı</h3>
+                                <span class="kpi-muted" id="trend-range"></span>
+                            </div>
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-box p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="fs-6 fw-semibold m-0">Dağılım</h3>
+                                <div class="kpi-muted">
+                                    <span class="legend-dot" style="background:#0ea5e9;"></span>e-Fatura
+                                    <span class="legend-dot ms-3" style="background:#22c55e;"></span>e-Arşiv
+                                    <span class="legend-dot ms-3" style="background:#f97316;"></span>Durum
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <canvas id="edocPie"></canvas>
+                                </div>
+                                <div class="col-6">
+                                    <canvas id="statusBar"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrap p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="fs-6 fw-semibold m-0">Son Faturalar</h3>
+                        <a class="btn btn-sm btn-light-primary" href="{% url 'invoices:index' %}"><i
+                                class="fa-solid fa-list"></i>&nbsp;Tümünü Gör</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Müşteri</th>
+                                <th>Tarih</th>
+                                <th class="text-end">Tutar (₺)</th>
+                                <th>e-Belge</th>
+                                <th>Durum</th>
+                                <th>Ödeme</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="lastInvoicesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function () {
+            function n2(v) {
+                v = Number(v || 0);
+                return new Intl.NumberFormat('tr-TR', {maximumFractionDigits: 2}).format(v)
+            }
+
+            function qs(s) {
+                return document.querySelector(s)
+            }
+
+            function qsa(s) {
+                return Array.from(document.querySelectorAll(s))
+            }
+
+            const state = {days: 30, from: null, to: null, status: ''}
+            const metricsUrl = "{% url 'invoices:dashboard-metrics' %}"
+            const detailStub = "{% url 'invoices:detail' '00000000-0000-0000-0000-000000000000' %}"
+            let chTrend, chEdoc, chStatus
+
+            function setPeriod(days) {
+                state.days = Number(days)
+                const to = new Date()
+                const from = new Date();
+                from.setDate(to.getDate() - state.days + 1)
+                state.from = from.toISOString().slice(0, 10)
+                state.to = to.toISOString().slice(0, 10)
+                qs('#fDateFrom').value = state.from
+                qs('#fDateTo').value = state.to
+                qs('#period-label').textContent = (state.days === 7 ? 'Son 7 gün' : state.days === 30 ? 'Son 30 gün' : state.days === 90 ? 'Son 90 gün' : state.from + ' → ' + state.to)
+            }
+
+            function refreshPeriodLabel() {
+                const f = qs('#fDateFrom').value || '', t = qs('#fDateTo').value || ''
+                if (f && t) qs('#period-label').textContent = f + ' → ' + t
+            }
+
+            function buildQuery() {
+                const p = new URLSearchParams()
+                if (state.status) p.set('status', state.status)
+                if (state.from) p.set('date_from', state.from)
+                if (state.to) p.set('date_to', state.to)
+                return metricsUrl + '?' + p.toString()
+            }
+
+            function fillKpis(k) {
+                qs('#kpi-total').textContent = '₺ ' + n2(k.total)
+                qs('#kpi-count').textContent = k.count
+                qs('#kpi-avg').textContent = '₺ ' + n2(k.avg)
+                qs('#kpi-issued').textContent = k.issued
+                qs('#kpi-draft').textContent = k.draft
+                qs('#kpi-canceled').textContent = k.canceled
+                qs('#kpi-sent').textContent = k.sent
+                qs('#kpi-efatura').textContent = k.efatura
+                qs('#kpi-earsiv').textContent = k.earsiv
+                qs('#kpi-edoc-pending').textContent = k.edoc_pending
+            }
+
+            function fillTable(rows) {
+                const tb = qs('#lastInvoicesBody');
+                tb.innerHTML = ''
+                rows.forEach(r => {
+                    const tr = document.createElement('tr')
+                    const href = detailStub.replace('00000000-0000-0000-0000-000000000000', r.id)
+                    tr.innerHTML =
+                        '<td>' + (r.invoice_no || '-') + '</td>' +
+                        '<td>' + (r.customer || '-') + '</td>' +
+                        '<td>' + (r.issue_date || '-') + '</td>' +
+                        '<td class="text-end">₺ ' + n2(r.grand_total) + '</td>' +
+                        '<td>' + (r.edoc_type || '-') + '</td>' +
+                        '<td>' + (r.status || '-') + '</td>' +
+                        '<td>' + (r.pos_status || '') + '</td>' +
+                        '<td class="text-end"><a class="btn btn-sm btn-light-primary" href="' + href + '"><i class="fa-solid fa-eye"></i></a></td>'
+                    tb.appendChild(tr)
+                })
+            }
+
+            function drawTrend(points) {
+                const labels = points.map(p => p.date), data = points.map(p => Number(p.total || 0))
+                const ctx = document.getElementById('trendChart').getContext('2d')
+                if (chTrend) chTrend.destroy()
+                chTrend = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{label: '₺', data: data, fill: true, borderWidth: 3, tension: .4}]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {legend: {display: false}},
+                        scales: {y: {beginAtZero: true}}
+                    }
+                })
+                if (labels.length) qs('#trend-range').textContent = labels[0] + ' → ' + labels[labels.length - 1]; else qs('#trend-range').textContent = ''
+            }
+
+            function drawEdoc(k) {
+                const ctx = document.getElementById('edocPie').getContext('2d')
+                if (chEdoc) chEdoc.destroy()
+                chEdoc = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {labels: ['e-Fatura', 'e-Arşiv'], datasets: [{data: [k.efatura, k.earsiv]}]},
+                    options: {plugins: {legend: {display: true, position: 'bottom'}}}
+                })
+            }
+
+            function drawStatusBars(k) {
+                const ctx = document.getElementById('statusBar').getContext('2d')
+                if (chStatus) chStatus.destroy()
+                chStatus = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Kesildi', 'Taslak', 'İptal', 'Gönderildi', 'Ödendi', 'Bekleyen', 'Ödenmedi'],
+                        datasets: [{
+                            label: 'Adet',
+                            data: [k.issued, k.draft, k.canceled, k.sent, k.pos_paid, k.pos_pending, k.pos_unpaid],
+                            borderWidth: 2,
+                            borderRadius: 6,
+                            barThickness: 28
+                        }]
+                    },
+                    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
+                })
+            }
+
+            function fetchAndRender() {
+                const u = buildQuery()
+                fetch(u).then(r => r.json()).then(j => {
+                    fillKpis(j.kpis || {})
+                    fillTable(j.latest || [])
+                    drawTrend(j.trend || [])
+                    drawEdoc(j.kpis || {efatura: 0, earsiv: 0})
+                    drawStatusBars(j.kpis || {
+                        issued: 0,
+                        draft: 0,
+                        canceled: 0,
+                        sent: 0,
+                        pos_paid: 0,
+                        pos_pending: 0,
+                        pos_unpaid: 0
+                    })
+                }).catch(() => {
+                })
+            }
+
+            qsa('.period-btn').forEach(b => b.addEventListener('click', function () {
+                qsa('.period-btn').forEach(x => x.classList.remove('active'));
+                this.classList.add('active')
+                setPeriod(this.dataset.days);
+                refreshPeriodLabel();
+                fetchAndRender()
+            }))
+            qs('#applyFilters').addEventListener('click', function () {
+                state.from = qs('#fDateFrom').value || null
+                state.to = qs('#fDateTo').value || null
+                state.status = qs('#fStatus').value || ''
+                refreshPeriodLabel();
+                fetchAndRender()
+            })
+            qs('#exportCsv').addEventListener('click', function () {
+                const u = buildQuery()
+                fetch(u).then(r => r.json()).then(j => {
+                    const rows = j.latest || []
+                    const head = ['invoice_id', 'invoice_no', 'customer', 'issue_date', 'grand_total', 'status', 'edoc_type', 'edoc_status', 'pos_status']
+                    const lines = [head.join(',')]
+                    rows.forEach(r => {
+                        const vals = [r.id, r.invoice_no || '', r.customer || '', (r.issue_date || '').replaceAll(',', ' '), r.grand_total || '0', r.status || '', r.edoc_type || '', r.edoc_status || '', r.pos_status || '']
+                        lines.push(vals.map(v => ('"' + String(v).replaceAll('"', '""') + '"')).join(','))
+                    })
+                    const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'})
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'invoices-latest.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url)
+                })
+            })
+            setPeriod(30);
+            fetchAndRender()
+        })();
+    </script>
+    {% block invoice_scripts %}{% endblock invoice_scripts %}
+{% endblock footer %}

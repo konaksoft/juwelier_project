@@ -1,0 +1,1255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default:"Canli Piyasalar" }} | Kuyum Plus</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <style>
+        /* ========================================
+           DARK TEMA (varsayilan)
+           ======================================== */
+        [data-theme="dark"] {
+            --bg-primary: #0F1B2B;
+            --bg-secondary: #1A253A;
+            --bg-card: rgba(26, 37, 58, 0.95);
+            --glass-bg: rgba(26, 37, 58, 0.95);
+            --accent-gold: #FFD700;
+            --accent-gold-dim: rgba(255, 215, 0, 0.15);
+            --text-primary: #E3EAF2;
+            --text-secondary: #A9B6C8;
+            --text-muted: #A9B6C8;
+            --success-color: #28a745;
+            --success-bg: rgba(40, 167, 69, 0.15);
+            --danger-color: #dc3545;
+            --danger-bg: rgba(220, 53, 69, 0.15);
+            --border-color: rgba(255, 215, 0, 0.1);
+            --glow-gold: 0 0 20px rgba(255, 215, 0, 0.3);
+            --bg-gradient-top: rgba(245, 184, 0, 0.03);
+            --bg-gradient-bottom: rgba(63, 185, 80, 0.02);
+            --table-hover: rgba(255, 215, 0, 0.08);
+            --scrollbar-track: #1A253A;
+        }
+
+        /* ========================================
+           LIGHT TEMA
+           ======================================== */
+        [data-theme="light"] {
+            --bg-primary: #F5F6FA;
+            --bg-secondary: #FFFFFF;
+            --bg-card: rgba(255, 255, 255, 0.97);
+            --glass-bg: rgba(255, 255, 255, 0.97);
+            --accent-gold: #C8960C;
+            --accent-gold-dim: rgba(200, 150, 12, 0.1);
+            --text-primary: #1A1D26;
+            --text-secondary: #5A6275;
+            --text-muted: #8890A0;
+            --success-color: #1D8B3E;
+            --success-bg: rgba(29, 139, 62, 0.1);
+            --danger-color: #C83232;
+            --danger-bg: rgba(200, 50, 50, 0.1);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --glow-gold: 0 2px 12px rgba(200, 150, 12, 0.2);
+            --bg-gradient-top: rgba(200, 150, 12, 0.02);
+            --bg-gradient-bottom: rgba(29, 139, 62, 0.01);
+            --table-hover: rgba(200, 150, 12, 0.06);
+            --scrollbar-track: #E8E9ED;
+        }
+
+        [data-theme="light"] .logo-icon {
+            background: linear-gradient(135deg, #C8960C 0%, #A07808 100%);
+        }
+
+        [data-theme="light"] .logo-title {
+            color: #1A1D26;
+        }
+
+        [data-theme="light"] .time-display {
+            color: #1A1D26;
+        }
+
+        [data-theme="light"] .card-title-text h3 {
+            color: #1A1D26;
+        }
+
+        [data-theme="light"] .price-table thead {
+            background: #F0F1F5;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: var(--bg-primary);
+        }
+
+        .live-wrap {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            background-image: radial-gradient(ellipse at top, var(--bg-gradient-top) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, var(--bg-gradient-bottom) 0%, transparent 40%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 0;
+        }
+
+        .live-header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 54px;
+            height: 54px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #D4A000 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-gold);
+            flex-shrink: 0;
+            line-height: 0;
+            color: #0F1B2B;
+        }
+
+        .logo-icon.has-image {
+            background: transparent;
+            box-shadow: none;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-icon i {
+            font-size: 1.75rem;
+            color: var(--bg-primary);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.2;
+        }
+
+        .logo-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .logo-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+
+        .chamber-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--success-bg);
+            border-radius: 20px;
+            border: 1px solid rgba(63, 185, 80, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+
+        .status-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--success-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .datetime-display {
+            text-align: right;
+        }
+
+        .time-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .time-display .seconds {
+            color: var(--accent-gold);
+            font-size: 1.2rem;
+        }
+
+        .date-display {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .btn-fullscreen,
+        .btn-theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-fullscreen:hover,
+        .btn-theme-toggle:hover {
+            background: var(--accent-gold-dim);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .header-action-link {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+        }
+
+        .header-action-link:hover {
+            background: var(--accent-gold-dim);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .ticker-container {
+            background: linear-gradient(90deg,
+            var(--bg-secondary) 0%,
+            rgba(20, 27, 38, 0.98) 50%,
+            var(--bg-secondary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        [data-theme="light"] .ticker-container {
+            background: linear-gradient(90deg,
+            var(--bg-secondary) 0%,
+            rgba(248, 249, 252, 0.98) 50%,
+            var(--bg-secondary) 100%);
+        }
+
+        .ticker-container::before,
+        .ticker-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .ticker-container::before {
+            left: 0;
+            background: linear-gradient(90deg, var(--bg-secondary) 0%, transparent 100%);
+        }
+
+        .ticker-container::after {
+            right: 0;
+            background: linear-gradient(90deg, transparent 0%, var(--bg-secondary) 100%);
+        }
+
+        .ticker-track {
+            display: flex;
+            animation: ticker-scroll 40s linear infinite;
+            width: max-content;
+        }
+
+        .ticker-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes ticker-scroll {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            border-right: 1px solid var(--border-color);
+            gap: 1rem;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .ticker-item:hover {
+            background: var(--accent-gold-dim);
+        }
+
+        .ticker-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ticker-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .ticker-change {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .ticker-change.up {
+            color: var(--success-color);
+            background: var(--success-bg);
+        }
+
+        .ticker-change.down {
+            color: var(--danger-color);
+            background: var(--danger-bg);
+        }
+
+        .main-content {
+            padding: 1.5rem 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .price-card {
+            background: var(--glass-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            height: 340px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: linear-gradient(180deg, rgba(245, 184, 0, 0.05) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .table-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-gold) var(--scrollbar-track);
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: var(--accent-gold);
+            border-radius: 10px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .card-icon.gold {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .card-icon.coins {
+            background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+            box-shadow: 0 4px 15px rgba(192, 192, 192, 0.3);
+        }
+
+        .card-icon.currency {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .card-icon.others {
+            background: linear-gradient(135deg, #2196F3 0%, #1565C0 100%);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .card-title-text h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-title-text span {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .card-badge {
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .price-table thead {
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            z-index: 10;
+        }
+
+        .price-table th {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.75rem 1rem;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .price-table th:first-child {
+            text-align: left;
+        }
+
+        .price-table tbody tr {
+            transition: all 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            height: 55px;
+        }
+
+        [data-theme="light"] .price-table tbody tr {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .price-table tbody tr:hover {
+            background: var(--table-hover);
+        }
+
+        .price-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .price-table td {
+            padding: 0 1rem;
+            vertical-align: middle;
+        }
+
+        .price-table td:first-child {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .price-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+
+        .price-value.buy {
+            color: var(--text-primary);
+        }
+
+        .price-value.sell {
+            color: var(--accent-gold);
+        }
+
+        .price-arrow {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+
+        .price-arrow.up {
+            color: var(--success-color);
+        }
+
+        .price-arrow.down {
+            color: var(--danger-color);
+        }
+
+        .change-cell {
+            text-align: right;
+        }
+
+        .change-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .change-badge.up {
+            color: var(--success-color);
+            background: var(--success-bg);
+        }
+
+        .change-badge.down {
+            color: var(--danger-color);
+            background: var(--danger-bg);
+        }
+
+        @keyframes flashGreen {
+            0% { background: rgba(63, 185, 80, 0.3); }
+            100% { background: transparent; }
+        }
+
+        @keyframes flashRed {
+            0% { background: rgba(248, 81, 73, 0.3); }
+            100% { background: transparent; }
+        }
+
+        .flash-up {
+            animation: flashGreen 0.8s ease;
+        }
+
+        .flash-down {
+            animation: flashRed 0.8s ease;
+        }
+
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 992px) {
+            .summary-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .summary-item {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .summary-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .summary-change {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        .summary-change.up {
+            color: var(--success-color);
+            background: var(--success-bg);
+        }
+
+        .summary-change.down {
+            color: var(--danger-color);
+            background: var(--danger-bg);
+        }
+
+        .update-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            z-index: 1000;
+        }
+
+        .update-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .live-header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .summary-bar {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="live-wrap" id="liveWrap" data-theme="dark">
+
+    <header class="live-header">
+        <div class="logo-section">
+            {% if show_custom_logo %}
+                {% if custom_logo_url %}
+                    <div class="logo-icon has-image">
+                        <img src="{{ custom_logo_url }}" alt="{{ store_display_name }}">
+                    </div>
+                {% elif store.avatar %}
+                    <div class="logo-icon has-image">
+                        <img src="{{ store.avatar.url }}" alt="{{ store.title }}">
+                    </div>
+                {% else %}
+                    <div class="logo-icon">
+                        <i class="bi bi-shop-window"></i>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <div class="logo-text">
+                {% if show_custom_name %}
+                    <div class="logo-title">{{ store_display_name|default:store.title|default:"MAGAZA ADI" }}</div>
+                {% endif %}
+                <div class="logo-subtitle">
+                    {% if is_chamber_mode %}
+                        <span class="chamber-badge"><i class="bi bi-building"></i> {{ chamber_name }}</span> &middot;
+                    {% endif %}
+                    Anlik Piyasa Verileri
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="market-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Piyasa Acik</span>
+            </div>
+            <a href="{% url 'live_board:board_settings' %}" class="header-action-link">
+                <i class="bi bi-gear"></i>
+                <span>Ayarlar</span>
+            </a>
+            <button class="btn-theme-toggle" onclick="toggleTheme()" id="btnTheme" title="Tema Degistir">
+                <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+            </button>
+            <button class="btn-fullscreen" onclick="toggleFullscreen()">
+                <i class="bi bi-arrows-fullscreen"></i>
+                <span>Tam Ekran</span>
+            </button>
+            <div class="datetime-display">
+                <div class="time-display" id="liveTime">00:00:<span class="seconds">00</span></div>
+                <div class="date-display" id="liveDate">-- --- ----</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="ticker-container">
+        <div class="ticker-track" id="tickerTrack">
+        </div>
+    </div>
+
+    <main class="main-content">
+
+        <div class="summary-bar">
+            <div class="summary-item">
+                <div class="summary-info">
+                    <span class="summary-label">Has Altin</span>
+                    <span class="summary-value" id="summaryGold">--</span>
+                </div>
+                <span class="summary-change up" id="summaryGoldChange">%0.00</span>
+            </div>
+            <div class="summary-item">
+                <div class="summary-info">
+                    <span class="summary-label">ONS</span>
+                    <span class="summary-value" id="summaryOns">--</span>
+                </div>
+                <span class="summary-change up" id="summaryOnsChange">%0.00</span>
+            </div>
+            <div class="summary-item">
+                <div class="summary-info">
+                    <span class="summary-label">USD/TRY</span>
+                    <span class="summary-value" id="summaryUsd">--</span>
+                </div>
+                <span class="summary-change up" id="summaryUsdChange">%0.00</span>
+            </div>
+            <div class="summary-item">
+                <div class="summary-info">
+                    <span class="summary-label">EUR/TRY</span>
+                    <span class="summary-value" id="summaryEur">--</span>
+                </div>
+                <span class="summary-change up" id="summaryEurChange">%0.00</span>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="price-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon gold">&#x1F4B0;</div>
+                        <div class="card-title-text">
+                            <h3>Altin Fiyatlari</h3>
+                        </div>
+                    </div>
+                    <span class="card-badge">Anlik</span>
+                </div>
+                <div class="table-container">
+                    <table class="price-table">
+                        <thead>
+                        <tr>
+                            <th>Urun</th>
+                            <th>Alis</th>
+                            <th>Satis</th>
+                            <th>Degisim</th>
+                        </tr>
+                        </thead>
+                        <tbody id="goldTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if show_sarrafiye_section %}
+            <div class="price-card" id="sarrafiyeCard">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon coins">&#x1FA99;</div>
+                        <div class="card-title-text">
+                            <h3>Sarrafiye (Ziynet)</h3>
+                        </div>
+                    </div>
+                    <span class="card-badge">Anlik</span>
+                </div>
+                <div class="table-container">
+                    <table class="price-table">
+                        <thead>
+                        <tr>
+                            <th>Urun</th>
+                            <th>Alis</th>
+                            <th>Satis</th>
+                            <th>Degisim</th>
+                        </tr>
+                        </thead>
+                        <tbody id="coinsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if show_currency_section %}
+            <div class="price-card" id="currencyCard">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon currency">&#x1F4B5;</div>
+                        <div class="card-title-text">
+                            <h3>Doviz Kurlari</h3>
+                        </div>
+                    </div>
+                    <span class="card-badge">Anlik</span>
+                </div>
+                <div class="table-container">
+                    <table class="price-table">
+                        <thead>
+                        <tr>
+                            <th>Birim</th>
+                            <th>Alis</th>
+                            <th>Satis</th>
+                            <th>Degisim</th>
+                        </tr>
+                        </thead>
+                        <tbody id="currencyTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="price-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon others">&#x1F4CA;</div>
+                        <div class="card-title-text">
+                            <h3>Diger / Pariteler</h3>
+                        </div>
+                    </div>
+                    <span class="card-badge">Anlik</span>
+                </div>
+                <div class="table-container">
+                    <table class="price-table">
+                        <thead>
+                        <tr>
+                            <th>Urun</th>
+                            <th>Alis</th>
+                            <th>Satis</th>
+                            <th>Degisim</th>
+                        </tr>
+                        </thead>
+                        <tbody id="othersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <div class="update-indicator">
+        <span class="dot"></span>
+        <span>Son guncelleme: <span id="lastUpdate">--:--:--</span></span>
+    </div>
+
+</div>
+
+<script>
+    /* =============================================
+       TEMA YONETIMI
+       ============================================= */
+    function initTheme() {
+        var saved = localStorage.getItem('kuyumplus_theme') || 'dark';
+        document.getElementById('liveWrap').setAttribute('data-theme', saved);
+        updateThemeIcon(saved);
+    }
+
+    function toggleTheme() {
+        var wrap = document.getElementById('liveWrap');
+        var current = wrap.getAttribute('data-theme');
+        var next = current === 'dark' ? 'light' : 'dark';
+        wrap.setAttribute('data-theme', next);
+        localStorage.setItem('kuyumplus_theme', next);
+        updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+        var icon = document.getElementById('themeIcon');
+        if (theme === 'dark') {
+            icon.className = 'bi bi-moon-stars-fill';
+        } else {
+            icon.className = 'bi bi-sun-fill';
+        }
+    }
+
+    initTheme();
+
+    /* =============================================
+       SAAT / TARIH
+       ============================================= */
+    let prevPrices = {};
+    let allPricesForTicker = [];
+
+    function updateDateTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        document.getElementById('liveTime').innerHTML = `${hours}:${minutes}:<span class="seconds">${seconds}</span>`;
+        document.getElementById('liveDate').textContent = now.toLocaleDateString('tr-TR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    /* =============================================
+       FIYAT VERISI CEKME
+       ============================================= */
+    const LIVE_STORE_ID = '{{ store_id|default:"" }}';
+
+    async function fetchPrices() {
+        try {
+            const qs = LIVE_STORE_ID ? '?store_id=' + LIVE_STORE_ID : '';
+            const res = await fetch('/live_board/api/data/' + qs);
+            const json = await res.json();
+
+            if (json.status === 'success') {
+                renderTable('goldTable', json.data.gold);
+
+                var coinsEl = document.getElementById('coinsTable');
+                if (coinsEl) {
+                    renderTable('coinsTable', json.data.coins);
+                }
+
+                var currencyEl = document.getElementById('currencyTable');
+                if (currencyEl) {
+                    renderTable('currencyTable', json.data.currency);
+                }
+
+                renderTable('othersTable', json.data.others);
+
+                updateSummaryBar(json.data);
+
+                allPricesForTicker = [
+                    ...json.data.gold,
+                    ...json.data.coins,
+                    ...json.data.currency,
+                    ...json.data.others
+                ];
+                renderTicker();
+
+                document.getElementById('lastUpdate').textContent =
+                    new Date().toLocaleTimeString('tr-TR');
+            }
+        } catch (err) {
+            console.error('Veri cekme hatasi:', err);
+        }
+    }
+
+    /* =============================================
+       TABLO RENDER
+       ============================================= */
+    function renderTable(tableId, items) {
+        const tbody = document.getElementById(tableId);
+        if (!tbody) return;
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 2rem;">Veri bulunamadi</td></tr>';
+            return;
+        }
+
+        if (tableId === 'coinsTable') {
+            items.sort((a, b) => {
+                const aIsNew = a.display_name.includes('(Yeni)');
+                const bIsNew = b.display_name.includes('(Yeni)');
+                if (aIsNew && !bIsNew) return -1;
+                if (!aIsNew && bIsNew) return 1;
+                return 0;
+            });
+        }
+
+        let html = '';
+        items.forEach(item => {
+            const buy = parseFloat(item.buy_price_tl || 0);
+            const sell = parseFloat(item.sale_price_tl || 0);
+            const change = parseFloat(item.profit || 0);
+            const isUp = change >= 0;
+            const key = item.name;
+
+            let rowClass = '';
+            if (prevPrices[key]) {
+                if (sell > prevPrices[key].sell) rowClass = 'flash-up';
+                else if (sell < prevPrices[key].sell) rowClass = 'flash-down';
+            }
+            prevPrices[key] = {sell: sell};
+
+            html += `
+                <tr class="${rowClass}">
+                    <td>${item.display_name}</td>
+                    <td>
+                        <div class="price-value buy">
+                            <span class="price-arrow ${isUp ? 'up' : 'down'}">
+                                <i class="bi bi-caret-${isUp ? 'up' : 'down'}-fill"></i>
+                            </span>
+                            ${formatNumber(buy)}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="price-value sell">
+                            <span class="price-arrow ${isUp ? 'up' : 'down'}">
+                                <i class="bi bi-caret-${isUp ? 'up' : 'down'}-fill"></i>
+                            </span>
+                            ${formatNumber(sell)}
+                        </div>
+                    </td>
+                    <td class="change-cell">
+                        <span class="change-badge ${isUp ? 'up' : 'down'}">
+                            <i class="bi bi-arrow-${isUp ? 'up' : 'down'}-short"></i>
+                            %${Math.abs(change).toFixed(2)}
+                        </span>
+                    </td>
+                </tr>`;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    /* =============================================
+       SUMMARY BAR
+       ============================================= */
+    function updateSummaryBar(data) {
+        const gold = data.gold.find(i => i.name === 'Has Altin');
+        if (gold) {
+            document.getElementById('summaryGold').textContent = formatNumber(gold.sale_price_tl);
+            updateChangeElement('summaryGoldChange', gold.profit);
+        }
+
+        const ons = data.gold.find(i => i.name === 'ONS');
+        if (ons) {
+            document.getElementById('summaryOns').textContent = formatNumber(ons.sale_price_tl);
+            updateChangeElement('summaryOnsChange', ons.profit);
+        }
+
+        const usd = data.currency.find(i => i.name === 'USD');
+        if (usd) {
+            document.getElementById('summaryUsd').textContent = formatNumber(usd.sale_price_tl);
+            updateChangeElement('summaryUsdChange', usd.profit);
+        }
+
+        const eur = data.currency.find(i => i.name === 'EUR');
+        if (eur) {
+            document.getElementById('summaryEur').textContent = formatNumber(eur.sale_price_tl);
+            updateChangeElement('summaryEurChange', eur.profit);
+        }
+    }
+
+    function updateChangeElement(elementId, profit) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const change = parseFloat(profit || 0);
+        const isUp = change >= 0;
+        el.textContent = `${isUp ? '+' : ''}%${Math.abs(change).toFixed(2)}`;
+        el.className = `summary-change ${isUp ? 'up' : 'down'}`;
+    }
+
+    /* =============================================
+       TICKER
+       ============================================= */
+    function renderTicker() {
+        const track = document.getElementById('tickerTrack');
+        if (allPricesForTicker.length === 0) return;
+
+        let tickerHTML = '';
+        const items = [...allPricesForTicker, ...allPricesForTicker];
+
+        items.forEach(item => {
+            const sell = parseFloat(item.sale_price_tl || 0);
+            const change = parseFloat(item.profit || 0);
+            const isUp = change >= 0;
+
+            tickerHTML += `
+                <div class="ticker-item">
+                    <span class="ticker-name">${item.display_name}</span>
+                    <span class="ticker-price">${formatNumber(sell)}</span>
+                    <span class="ticker-change ${isUp ? 'up' : 'down'}">
+                        <i class="bi bi-arrow-${isUp ? 'up' : 'down'}-short"></i>
+                        %${Math.abs(change).toFixed(2)}
+                    </span>
+                </div>`;
+        });
+
+        track.innerHTML = tickerHTML;
+    }
+
+    /* =============================================
+       YARDIMCI
+       ============================================= */
+    function formatNumber(num) {
+        return num.toLocaleString('tr-TR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+    }
+
+    function toggleFullscreen() {
+        const el = document.getElementById('liveWrap');
+        if (!document.fullscreenElement) {
+            el.requestFullscreen().catch(err => {
+                console.log('Tam ekran hatasi:', err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    /* =============================================
+       BASLAT
+       ============================================= */
+    fetchPrices();
+    // ID saklanarak sayfa kapatildiginda clearInterval cagrilabilir.
+    // Visibility API ile sekme arka plana alindikta polling durdurulur —
+    // boylece arka plan sekmeler gereksiz DB sorgusu tetiklemez.
+    let _priceIntervalId = setInterval(fetchPrices, 5000);
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+            clearInterval(_priceIntervalId);
+        } else {
+            fetchPrices();
+            _priceIntervalId = setInterval(fetchPrices, 5000);
+        }
+    });
+
+    window.addEventListener('beforeunload', function () {
+        clearInterval(_priceIntervalId);
+    });
+</script>
+</body>
+</html>

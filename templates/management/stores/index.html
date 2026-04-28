@@ -1,0 +1,336 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/select2/select2.min.css' %}">
+    <script src="{% static 'management/plugins/custom/select2/select2.min.js' %}"></script>
+
+    <style>
+        /* Select2 ve Form Düzenlemeleri */
+        .form-floating .select2-container--default .select2-selection--single {
+            height: calc(3.5rem + 2px);
+            padding: .9rem 2.25rem .9rem .75rem;
+        }
+
+        .form-floating .select2-selection__rendered {
+            line-height: 1.25rem;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .is-invalid + .select2 .select2-selection--single {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 .15rem rgba(220, 53, 69, .15);
+        }
+
+        .is-valid + .select2 .select2-selection--single {
+            border-color: #198754 !important;
+        }
+
+        #tableToolbar {
+            padding-top: .5rem;
+            padding-bottom: .2rem;
+            align-items: center;
+        }
+
+        #tableToolbar .toolbar-buttons {
+            display: flex;
+            gap: .6rem;
+            align-items: center;
+        }
+
+        #tableToolbar .toolbar-btn-size {
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main"
+         style="border-style:groove;border-radius:10px;border-color:aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+
+                    <div class="card mb-5 shadow-sm">
+                        <div class="card-body py-5 d-flex justify-content-between align-items-center flex-wrap">
+                            <h3 class="fw-bold text-dark m-0">Firmalar</h3>
+                            <div class="d-flex align-items-center gap-3">
+                                <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                                    <i class="ki-duotone ki-plus fs-2"></i> Ekle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div id="tableToolbar"
+                                 class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                                <div class="d-flex toolbar-buttons">
+                                    <button type="button" class="btn btn-light-danger toolbar-btn-size"
+                                            id="deleteSelected" title="Seçilileri Sil">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-light-success toolbar-btn-size"
+                                            id="changeStatusSelected" title="Durum Değiştir">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                    </button>
+                                </div>
+                                <div id="dataTableSearch"></div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table id="kt_datatable_example_1"
+                                       class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                                    <thead>
+                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                        <th class="text-center" style="width:40px;"></th>
+                                        <th>Firma</th>
+                                        <th>E-posta</th>
+                                        <th>Telefon</th>
+                                        <th>VKN / TCKN</th>
+                                        <th>Bağlı Dernek</th>
+                                        <th>İlk Abonelik</th>
+                                        <th class="text-center">Durum</th>
+                                        <th class="text-end" style="width:70px;">İşlem</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="addModal">
+        <div class="modal-dialog modal-dialog-centered mw-900px">
+            <div class="modal-content" style="padding:25px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Yeni Firma</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"
+                         aria-label="Kapat">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+
+                <form id="add-form" method="post" autocomplete="off" enctype="multipart/form-data" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" name="record_id" id="record_id">
+                    <input type="hidden" name="tax_office_code" id="tax_office_code" value="">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="title" name="title"
+                                       placeholder="Ticari Unvan / Ad Soyad" required>
+                                <label for="title">Ticari Unvan / Ad Soyad</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <label for="email">E-posta</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                                <label for="phone">Telefon</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label" for="avatar">Avatar (logo)</label>
+                                <input type="file" class="form-control" name="avatar" id="avatar" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <textarea class="form-control" id="description" name="description"
+                                          style="height:80px"></textarea>
+                                <label for="description">Açıklama</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-md-flex align-items-center mt-3">
+                                <div class="ms-auto mt-3 mt-md-0">
+                                    <a href="#" class="btn btn-light-danger" data-bs-dismiss="modal">İptal</a>
+                                    <button type="button" id="btnSave" class="btn btn-light-success">Kaydet</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+
+            // --- YARDIMCI FONKSİYONLAR ---
+
+            // Şehirleri Yükle (Promise döner)
+            function loadCities(targetSelector) {
+                return $.ajax({
+                    url: "{% url 'locations:get-cities' %}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function (resp) {
+                        let opts = '<option value=""></option>';
+                        let dataList = resp.data ? resp.data : resp;
+                        if (Array.isArray(dataList)) {
+                            dataList.forEach(c => {
+                                // BACKEND'DEN GELEN PLAKA KODUNU DATA ATTRIBUTE OLARAK EKLİYORUZ
+                                // Bu sayede JS tarafında map tutmaya gerek kalmıyor.
+                                let plate = c.plate_code || '';
+                                opts += `<option value="${c.id}" data-plate="${plate}">${c.name}</option>`;
+                            });
+                        }
+                        $(targetSelector).html(opts);
+                    }
+                });
+            }
+
+
+
+            // Modal Kapanış
+            $('#addModal').on('hidden.bs.modal', function () {
+                $('#add-form')[0].reset();
+                $('#record_id').val('');
+                $('#btnSave').prop('disabled', false);
+                // Faz 12.3: Ek modül checkbox'larını sıfırla
+                $('.extra-module-check:not(:disabled)').prop('checked', false);
+                $('.module-card-index').not(':has(.extra-module-check:disabled)').removeClass('bg-light-primary').addClass('bg-light');
+            });
+
+            // Kaydet Butonu
+            $('#btnSave').click(function () {
+                $('#add-form').submit();
+            });
+
+            // Form Submit
+            $('#add-form').on('submit', function (e) {
+                e.preventDefault();
+                if (!this.checkValidity()) {
+                    e.stopPropagation();
+                    $(this).addClass('was-validated');
+                    return;
+                }
+
+
+
+                var formData = new FormData(this);
+                // Seçilen vergi dairesi kodunu hidden input'a atalım
+
+                $('#btnSave').prop('disabled', true);
+
+                $.ajax({
+                    url: "{% url 'stores:add' %}",
+                    type: "POST",
+                    data: formData,
+                    cache: false, contentType: false, processData: false
+                }).done(function (data) {
+                    if (data.result === true) {
+                        Swal.fire({
+                            title: 'Başarılı',
+                            text: 'İşlem tamamlandı',
+                            icon: 'success',
+                            timer: 1000,
+                            showConfirmButton: false
+                        }).then(function () {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Hata', data.error_msg || 'Hata oluştu', 'error');
+                        $('#btnSave').prop('disabled', false);
+                    }
+                }).fail(function () {
+                    Swal.fire('Hata', 'Sunucu hatası', 'error');
+                    $('#btnSave').prop('disabled', false);
+                });
+            });
+
+            // POS SORGULA BUTONU
+
+            // DATATABLE BAŞLATMA
+            var dt;
+            var KTDatatablesServerSide = (function () {
+                var initDatatable = function () {
+                    dt = $('#kt_datatable_example_1').DataTable({
+                        dom: '<\'top d-flex justify-content-end\'f>rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
+                        info: false, paging: true, lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                        pageLength: -1, processing: true, serverSide: true,
+                        ajax: {url: '/stores/get-all', type: 'GET'},
+                        columns: [
+                            {
+                                data: 'id',
+                                orderable: false,
+                                className: 'text-center',
+                                render: function (data, type, row) {
+                                    return '<input class="form-check-input" type="checkbox" value="' + row.id + '" />';
+                                }
+                            },
+                            {
+                                data: 'title', render: function (data, type, row) {
+                                    return '<a href="/stores/detail/' + row.id + '" class="fw-bold text-primary">' + (data || '-') + '</a>';
+                                }
+                            },
+                            {data: 'email'}, {data: 'phone'}, {data: 'tax_number'},
+                            {
+                                data: 'chamber_names', render: function (d) {
+                                    return d !== '-' ? '<span class="badge badge-light-primary">' + d + '</span>' : '-';
+                                }
+                            },
+                            {
+                                data: 'subscription_start', render: function (d) {
+                                    return d ? new Date(d).toLocaleDateString('tr-TR') : '-';
+                                }
+                            },
+                            {
+                                data: 'is_active', className: 'text-center', render: function (d) {
+                                    return d ? '<span class="badge bg-light-success text-success">Aktif</span>' : '<span class="badge bg-light-danger text-danger">Pasif</span>';
+                                }
+                            },
+                            {
+                                data: 'id', className: 'text-end', orderable: false, render: function (d) {
+                                    return '<a href="/stores/detail/' + d + '" class="btn btn-icon btn-light-primary btn-sm"><i class="fa-solid fa-arrow-right"></i></a>';
+                                }
+                            }
+                        ],
+                        language: {url: '/static/management/plugins/custom/datatables/TR.json'}
+                    });
+                };
+                return {
+                    init: function () {
+                        initDatatable();
+                    }
+                };
+            })();
+            KTDatatablesServerSide.init();
+        });
+    </script>
+{% endblock footer %}

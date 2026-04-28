@@ -1,0 +1,114 @@
+<div class="chat-container p-3" style="background-color: #f8f9fa;"> 
+    {% for msg in messages %}
+        {% if is_superuser %}
+            <div class="d-flex mb-4 {%  if  msg.sender__store_id %}justify-content-start{% else %}justify-content-end{% endif %}">
+
+            <div class="card chat-bubble {% if  msg.sender__store_id  %}bubble-left{% else %}bubble-right{% endif %}" style="width: 75%;">
+
+                <div class="card-header py-2 d-flex align-items-center justify-content-between
+                    {% if msg.sender__store_id %}bg-gold-gradient{% else %}bg-admin-dark{% endif %}">
+
+                    <div class="d-flex align-items-center">
+                        <i class="fas {% if msg.sender__store_id %}fa-gem{% else %}fa-headset{% endif %} me-2"></i>
+                        <span class="fw-bold small">{{ msg.sender__username }}</span>
+                    </div>
+
+                    <small class="opacity-75" style="font-size: 0.90rem;">
+                         {{ msg.created_at|date:"d.m H:i" }}
+                    </small>
+                </div>
+
+                <div class="card-body px-3 py-3 {% if msg.sender__store_id %}bg-gold-light{% else %}bg-white border{% endif %}">
+                    <p class="mb-0 text-break" style="font-size: 0.95rem;">
+                        {{ msg.message|linebreaksbr }}
+                    </p>
+
+                    {% if msg.attachment %}
+                        <div class="mt-3 pt-2 border-top border-secondary-subtle">
+                            <a href="/media/{{ msg.attachment }}" target="_blank"
+                               class="d-flex align-items-center text-decoration-none p-2 rounded
+                               {% if msg.sender__store_id %}bg-warning-subtle text-dark{% else %}bg-light text-dark{% endif %}">
+
+                                <div class="me-3">
+                                    <i class="fas fa-file-invoice fa-lg text-secondary"></i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold small">Ekli Dosya</span>
+                                    <span class="small text-muted" style="font-size: 0.7rem;">Görüntülemek için tıkla</span>
+                                </div>
+                                <i class="fas fa-chevron-right ms-auto text-muted"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer py-1 px-3 text-end border-0 bg-transparent">
+                     <span class="badge rounded-pill {% if msg.sender__store_id %}bg-warning text-dark border border-warning{% else %}bg-secondary{% endif %}" style="font-size: 0.6rem;">
+                        {% if msg.sender__store_id %} Müşteri (Mağaza) {% else %} Destek Ekibi {% endif %}
+                    </span>
+                </div>
+
+            </div>
+        </div>
+        {% else %}
+            <div class="d-flex mb-4 {%  if msg.sender_id != user_id %}justify-content-start{% else %}justify-content-end{% endif %}">
+
+            <div class="card chat-bubble {% if msg.sender_id != user_id  %}bubble-left{% else %}bubble-right{% endif %}" style="width: 75%;">
+
+                <div class="card-header py-2 d-flex align-items-center justify-content-between
+                    {% if msg.sender__store_id %}bg-gold-gradient{% else %}bg-admin-dark{% endif %}">
+
+                    <div class="d-flex align-items-center">
+                        <i class="fas {% if msg.sender__store_id %}fa-gem{% else %}fa-headset{% endif %} me-2"></i>
+                        <span class="fw-bold small">{{ msg.sender__username }}</span>
+                    </div>
+
+                    <small class="opacity-75" style="font-size: 0.90rem;">
+                         {{ msg.created_at|date:"d.m H:i" }}
+                    </small>
+                </div>
+
+                <div class="card-body px-3 py-3 {% if msg.sender__store_id %}bg-gold-light{% else %}bg-white border{% endif %}">
+                    <p class="mb-0 text-break" style="font-size: 0.95rem;">
+                        {{ msg.message|linebreaksbr }}
+                    </p>
+
+                    {% if msg.attachment %}
+                        <div class="mt-3 pt-2 border-top border-secondary-subtle">
+                            <a href="/media/{{ msg.attachment }}" target="_blank"
+                               class="d-flex align-items-center text-decoration-none p-2 rounded
+                               {% if msg.sender__store_id %}bg-warning-subtle text-dark{% else %}bg-light text-dark{% endif %}">
+
+                                <div class="me-3">
+                                    <i class="fas fa-file-invoice fa-lg text-secondary"></i>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold small">Ekli Dosya</span>
+                                    <span class="small text-muted" style="font-size: 0.7rem;">Görüntülemek için tıkla</span>
+                                </div>
+                                <i class="fas fa-chevron-right ms-auto text-muted"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer py-1 px-3 text-end border-0 bg-transparent">
+                     <span class="badge rounded-pill {% if msg.sender__store_id %}bg-warning text-dark border border-warning{% else %}bg-secondary{% endif %}" style="font-size: 0.6rem;">
+                        {% if msg.sender__store_id %} Müşteri (Mağaza) {% else %} Destek Ekibi {% endif %}
+                    </span>
+                </div>
+
+            </div>
+        </div>
+        {% endif %}
+
+
+    {% empty %}
+        <div class="text-center py-5">
+            <div class="mb-3">
+                <i class="fas fa-comments fa-3x text-muted opacity-25"></i>
+            </div>
+            <p class="text-muted small">Bu talep için henüz bir mesajlaşma başlatılmadı.</p>
+        </div>
+    {% endfor %}
+</div>

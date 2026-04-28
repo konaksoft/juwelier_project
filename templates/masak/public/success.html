@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teşekkürler - {{ store.title }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh;
+       display: flex; align-items: center; justify-content: center;
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; }
+.success-card { background: #fff; border-radius: 20px; padding: 40px 28px; text-align: center;
+                max-width: 420px; width: 100%; box-shadow: 0 25px 60px rgba(0,0,0,.35); }
+.tick { width: 90px; height: 90px; background: linear-gradient(135deg, #28a745, #20c997);
+        border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 3rem; margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(40,167,69,.35); }
+h1 { font-size: 1.4rem; color: #1a1a2e; font-weight: 700; margin-bottom: 10px; }
+.store-tag { display: inline-block; margin-top: 20px; padding: 8px 16px; background: #f8f9fa;
+             border-radius: 20px; font-size: .85rem; color: #666; }
+</style>
+</head>
+<body>
+<div class="success-card">
+    <div class="tick"><i class="bi bi-check-lg"></i></div>
+    <h1>Form Başarıyla Gönderildi</h1>
+    <p class="text-muted">MASAK müşteri tanı formunuz mağazamıza ulaşmıştır.<br>İlginize teşekkür ederiz.</p>
+    <div class="store-tag"><i class="bi bi-shop"></i> {{ store.title }}</div>
+</div>
+</body>
+</html>

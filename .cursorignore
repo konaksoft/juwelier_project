@@ -1,0 +1,23 @@
+# KESİNLİKLE OKUNMAMASI GEREKEN GİZLİ DOSYALAR (Şifreler, API Key'ler)
+.env
+*.pem
+*.key
+secrets.json
+
+# SANAL ORTAM VE IDE DOSYALARI (Kod içermez, gereksiz token harcar)
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+
+# MEDYA VE STATİK DOSYALAR (Görsel ve CSS dosyaları token israfıdır)
+media/
+static/
+staticfiles/
+
+# VERİTABANI VE YEDEKLER
+*.sqlite3
+backup_database.py

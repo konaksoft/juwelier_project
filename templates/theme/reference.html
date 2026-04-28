@@ -1,0 +1,171 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{# ======================  SEO OVERRIDES  ====================== #}
+{% block page_title %}Referanslarımız | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus’ı tercih eden kuyumcular, toptancılar ve üreticilerle tanışın.{% endblock %}
+{% block page_keywords %}kuyum plus referanslar, kuyumcu programı kullanıcıları, kuyumculuk erp
+    müşterileri{% endblock %}
+{% block canonical_url %}https://www.kuyumplus.com/referanslar/{% endblock %}
+{% block og_title %}Kuyum Plus – Referanslarımız{% endblock %}
+{% block og_description %}Kuyum Plus ile dijital dönüşümünü tamamlayan başarı hikâyelerini keşfedin.{% endblock %}
+{% block og_image %}{% static 'theme/media/references/og-references.png' %}{% endblock %}
+{% block og_url %}https://www.kuyumplus.com/referanslar/{% endblock %}
+{% block twitter_title %}Referanslarımız | Kuyum Plus{% endblock %}
+{% block twitter_description %}Kuyum Plus’ın tercih edildiği işletmelere göz atın.{% endblock %}
+
+{% block body %}
+    <div class="breadcrumb-area bg-cover"
+         style="background-image:url('{% static 'theme/img/bg/7.png' %}');">
+        <div class="container">
+            <div class="breadcrumb-inner">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6"><h2 class="page-title">Referanslarımız</h2></div>
+                    <div class="col-lg-6 text-lg-end">
+                        <ul class="page-list">
+                            <li><a href="{% url '' %}">Anasayfa</a></li>
+                            <li>Referanslar</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="case-study-area pd-top-120 pd-bottom-90">
+        <div class="container">
+            <div class="section-title text-center">
+                <h6 class="sub-title">BİZİ TERCIH EDENLER</h6>
+                <h2 class="title">20&#43; <span>Başarılı İşletme</span> ile Büyüyoruz</h2>
+            </div>
+            <div class="team-area bg-relative pd-top-120 pd-bottom-90">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="single-team-inner text-center" >
+                                <div class="thumb">
+                                    <img src="/static/theme/img/logo/kayalar_logo1.png" alt="img">
+                                    <ul class="team-social-inner">
+                                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                                <div class="details" style="background-color: aliceblue;">
+                                    <h5><a href="#">Mustafa Kaya</a></h5>
+                                    <p>Kayalar Kuyumculuk</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="single-team-inner text-center">
+                                <div class="thumb">
+                                    <img src="assets/img/team/2.png" alt="img">
+                                    <ul class="team-social-inner">
+                                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                                <div class="details">
+                                    <h5><a href="team-details.html">Darrell Steward</a></h5>
+                                    <p>It Department</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="single-team-inner text-center">
+                                <div class="thumb">
+                                    <img src="assets/img/team/3.png" alt="img">
+                                    <ul class="team-social-inner">
+                                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                                <div class="details">
+                                    <h5><a href="team-details.html">Bessie Cooper</a></h5>
+                                    <p>Software Department</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="single-team-inner text-center">
+                                <div class="thumb">
+                                    <img src="assets/img/team/1.png" alt="img">
+                                    <ul class="team-social-inner">
+                                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                                <div class="details">
+                                    <h5><a href="team-details.html">Devon Lane</a></h5>
+                                    <p>Merketing Department</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="single-team-inner text-center">
+                                <div class="thumb">
+                                    <img src="assets/img/team/2.png" alt="img">
+                                    <ul class="team-social-inner">
+                                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                                <div class="details">
+                                    <h5><a href="team-details.html">Darrell Steward</a></h5>
+                                    <p>It Department</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="single-team-inner text-center">
+                                <div class="thumb">
+                                    <img src="assets/img/team/3.png" alt="img">
+                                    <ul class="team-social-inner">
+                                        <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                                    </ul>
+                                </div>
+                                <div class="details">
+                                    <h5><a href="team-details.html">Bessie Cooper</a></h5>
+                                    <p>Software Department</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ====================  CALL-TO-ACTION  ==================== #}
+    <div class="contact-area pd-top-90 bg-cover"
+         style="background-image:url('{% static 'theme/img/bg/13.png' %}');">
+        <div class="container">
+            <div class="contact-inner-1">
+                <div class="row align-items-center">
+                    <div class="col-lg-8 wow fadeInLeft" data-wow-duration="1.5s">
+                        <img class="w-100" src="{% static 'theme/media/about2.png' %}" alt="CTA Görseli">
+                    </div>
+                    <div class="col-lg-4 wow fadeInRight" data-wow-duration="1.5s">
+                        <div class="section-title mb-0">
+                            <h6 class="sub-title">SİZ DE KATILIN</h6>
+                            <h2 class="title">Başarı <span>Hikâyenizi</span> Yazalım</h2>
+                            <p class="content">Kuyum Plus ailesine katılarak dijital dönüşümünüzü hızlandırın. Hemen
+                                bizimle iletişime geçin.</p>
+                            <a href="{% url 'kuyumplus:iletisim' %}" class="btn btn-border-base mt-3">İletişim Formu <i
+                                    class="fa fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+{% block footer %}{% endblock footer %}

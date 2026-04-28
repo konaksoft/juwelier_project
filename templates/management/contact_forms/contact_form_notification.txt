@@ -1,0 +1,11 @@
+Kuyum Plus - Yeni İletişim Talebi
+
+Ad Soyad : {{ full_name }}
+E-posta  : {{ email }}
+Telefon  : {{ phone }}
+Mesaj    :
+{{ message }}
+
+Gönderim Zamanı: {{ created_on|date:"d.m.Y H:i" }}
+
+Bu ileti, kuyumplus.com iletişim formundan otomatik olarak gönderildi.

@@ -1,0 +1,1406 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
+    <style>
+        /* --- KPI KARTLARI --- */
+        .kpi {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid #e9eef5;
+            background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+            box-shadow: 0 4px 12px rgba(18, 38, 63, 0.05);
+            transition: transform .18s ease, box-shadow .18s ease;
+            height: 74px;
+        }
+
+        .kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 38, 63, 0.08);
+        }
+
+        .kpi__icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 18px;
+        }
+
+        .kpi__body {
+            line-height: 1.15;
+        }
+
+        .kpi__label {
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            opacity: .85;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .kpi__value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: .01em;
+            white-space: nowrap;
+        }
+
+        .kpi--green .kpi__icon {
+            background: rgba(40, 167, 69, .12);
+            color: #28a745;
+        }
+
+        .kpi--green .kpi__label, .kpi--green .kpi__value {
+            color: #1f8d3d;
+        }
+
+        .kpi--red .kpi__icon {
+            background: rgba(220, 53, 69, .12);
+            color: #dc3545;
+        }
+
+        .kpi--red .kpi__label, .kpi--red .kpi__value {
+            color: #b11e2b;
+        }
+
+        .kpi--blue .kpi__icon {
+            background: rgba(0, 123, 255, .12);
+            color: #007bff;
+        }
+
+        .kpi--blue .kpi__label {
+            color: #1661c1;
+        }
+
+        .kpi--blue .kpi__value {
+            color: #0d47a1;
+        }
+
+        .kpi--orange .kpi__icon {
+            background: rgba(255, 165, 0, .12);
+            color: #f59e0b;
+        }
+
+        .kpi--orange .kpi__label, .kpi--orange .kpi__value {
+            color: #d97706;
+        }
+
+        /* --- TABLOLAR --- */
+        table.dataTable td, table.dataTable th {
+            vertical-align: middle !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dataTables_wrapper .top {
+            display: none !important;
+        }
+
+        /* Gelen/Giden border */
+        tr.dir-in td:first-child {
+            border-left: 4px solid #50cd89 !important;
+        }
+
+        tr.dir-out td:first-child {
+            border-left: 4px solid #f1416c !important;
+        }
+
+        /* Scrollbar */
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #c9a84c, #f7d56e);
+            border-radius: 3px;
+        }
+
+        /* Hesap bilgi karti */
+        .account-info-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #eef1f6 100%);
+            border: 1px solid #e2e6ed;
+            border-radius: 12px;
+            padding: 16px 20px;
+        }
+
+        .account-info-card .info-label {
+            font-size: .78rem;
+            font-weight: 600;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .account-info-card .info-value {
+            font-size: .95rem;
+            font-weight: 700;
+            color: #181c32;
+        }
+
+        /* Badge */
+        .recon-badge-MATCHED {
+            background: rgba(40, 167, 69, .12);
+            color: #28a745;
+        }
+
+        .recon-badge-PENDING {
+            background: rgba(255, 193, 7, .12);
+            color: #d97706;
+        }
+
+        .recon-badge-PARTIAL {
+            background: rgba(0, 123, 255, .12);
+            color: #007bff;
+        }
+
+        .recon-badge-DISCREPANCY {
+            background: rgba(220, 53, 69, .12);
+            color: #dc3545;
+        }
+
+        .recon-badge-MANUAL {
+            background: rgba(128, 0, 255, .12);
+            color: #7c3aed;
+        }
+
+        .recon-badge-NOT_REQUIRED {
+            background: rgba(108, 117, 125, .12);
+            color: #6c757d;
+        }
+
+        /* --- MOBIL BUTON DUZENLEMESI (Kare Butonlar) --- */
+        @media (max-width: 767.98px) {
+            .mobile-square-btns {
+                flex-wrap: nowrap !important;
+            }
+
+            .mobile-square-btns .btn {
+                width: 36px !important;
+                height: 36px !important;
+                padding: 0 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .mobile-square-btns .btn i {
+                margin: 0 !important;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5 py-3 py-lg-6">
+
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% else %}
+
+                    <!-- =============== BREADCRUMB =============== -->
+                    <div class="card shadow-sm mb-4 border-0">
+                        <div class="card-body p-2 p-md-4">
+                            <div class="d-flex align-items-center flex-nowrap gap-2 gap-md-3">
+
+                                <a href="{% url 'bank-management:index' %}"
+                                   class="btn btn-sm btn-light-primary flex-shrink-0"
+                                   style="display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 32px;"
+                                   title="Kasa Yönetimine Dön">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                    <span class="ms-2 d-none d-md-inline">Kasa Yönetimi</span>
+                                </a>
+
+                                <span class="text-muted d-none d-md-inline">/</span>
+
+                                <h1 class="fw-bold text-dark fs-5 fs-md-4 my-0 text-truncate">{{ account.name }}</h1>
+
+                                <div class="ms-auto flex-shrink-0">
+                                    {% if account.account_type == 'POS' %}
+                                        <span class="badge px-2 px-md-3 py-2 rounded-pill"
+                                              style="background:rgba(128,0,255,.12);color:#7c3aed;">POS Kasası</span>
+                                    {% elif account.account_type == 'BANK' %}
+                                        <span class="badge px-2 px-md-3 py-2 rounded-pill"
+                                              style="background:rgba(0,123,255,.12);color:#007bff;">Havale/EFT</span>
+                                    {% elif account.account_type == 'CASH' %}
+                                        <span class="badge px-2 px-md-3 py-2 rounded-pill"
+                                              style="background:rgba(40,167,69,.12);color:#28a745;">Nakit Kasası</span>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- =============== HESAP BiLGi KARTI =============== -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body p-3 p-md-4">
+                            <div class="account-info-card">
+                                <div class="row g-3">
+                                    <div class="col-md-3 col-6">
+                                        <div class="info-label">Banka / Kurum</div>
+                                        <div class="info-value">{{ account.bank_name|default:"-" }}</div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="info-label">IBAN</div>
+                                        <div class="info-value"
+                                             style="word-break:break-all;">{{ account.iban|default:"-" }}</div>
+                                    </div>
+                                    <div class="col-md-2 col-4">
+                                        <div class="info-label">Para Birimi</div>
+                                        <div class="info-value">{{ account.currency }}</div>
+                                    </div>
+                                    <div class="col-md-2 col-4">
+                                        <div class="info-label">Tolerans</div>
+                                        <div class="info-value">{{ account.reconciliation_tolerance }} TL</div>
+                                    </div>
+                                    <div class="col-md-2 col-4">
+                                        <div class="info-label">Durum</div>
+                                        <div class="info-value">
+                                            {% if account.is_active %}
+                                                <span class="badge badge-light-success">Aktif</span>
+                                            {% else %}
+                                                <span class="badge badge-light-danger">Pasif</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- =============== KPI OZET KARTLARI (4'lu Grid) =============== -->
+                    <div class="row g-3 mb-5">
+                        <div class="col-lg-3 col-md-6 col-6">
+                            <div class="kpi kpi--green">
+                                <div class="kpi__icon"><i class="fa-solid fa-arrow-down"></i></div>
+                                <div class="kpi__body">
+                                    <div class="kpi__label">Toplam Giriş</div>
+                                    <div class="kpi__value"
+                                         id="kpiTotalIn">{{ summary.total_in|floatformat:2 }} {{ account.currency }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-6">
+                            <div class="kpi kpi--red">
+                                <div class="kpi__icon"><i class="fa-solid fa-arrow-up"></i></div>
+                                <div class="kpi__body">
+                                    <div class="kpi__label">Toplam Çıkış</div>
+                                    <div class="kpi__value"
+                                         id="kpiTotalOut">{{ summary.total_out|floatformat:2 }} {{ account.currency }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-6">
+                            <div class="kpi kpi--orange">
+                                <div class="kpi__icon"><i class="fa-solid fa-percent"></i></div>
+                                <div class="kpi__body">
+                                    <div class="kpi__label">Komisyon Kesintisi</div>
+                                    <div class="kpi__value"
+                                         id="kpiCommission">{{ summary.total_commission|floatformat:2 }} {{ account.currency }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-6">
+                            {% if summary.balance_is_negative %}
+                                <div class="kpi"
+                                     style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: #fff;">
+                                    <div class="kpi__icon" style="color: rgba(255,255,255,0.7);"><i
+                                            class="fa-solid fa-triangle-exclamation"></i></div>
+                                    <div class="kpi__body">
+                                        <div class="kpi__label" style="color: rgba(255,255,255,0.85);">Net Kasa <span
+                                                class="badge bg-warning text-dark ms-1" style="font-size: 0.65em;">EKSİ BAKİYE</span>
+                                        </div>
+                                        <div class="kpi__value" id="kpiBalanceNet"
+                                             style="color: #fff;">{{ summary.balance_net|floatformat:2 }} {{ account.currency }}</div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="kpi kpi--blue">
+                                    <div class="kpi__icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                                    <div class="kpi__body">
+                                        <div class="kpi__label">Net Kasa</div>
+                                        <div class="kpi__value"
+                                             id="kpiBalanceNet">{{ summary.balance_net|floatformat:2 }} {{ account.currency }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if summary.fx_breakdown %}
+                            <!-- FAZ 20: Merkez Döviz Kasası — Döviz bazlı bakiye gruplama -->
+                            <div class="col-12 mt-3">
+                                <div class="p-3 rounded-3"
+                                     style="background: rgba(255,193,7,0.05); border: 1px dashed rgba(255,193,7,0.3);">
+                                    <div class="fw-semibold text-muted mb-2">
+                                        <i class="fa-solid fa-coins text-warning me-1"></i> Döviz Bakiye Dağılımı
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        {% for code, amount in summary.fx_breakdown.items %}
+                                            <div class="px-3 py-2 rounded-2 bg-white shadow-sm text-center"
+                                                 style="min-width: 120px;">
+                                                <div class="text-muted small">{{ code }}</div>
+                                                <div class="fw-bold fs-5 {% if amount|floatformat:2 < 0 %}text-danger{% else %}text-success{% endif %}">
+                                                    {{ amount }}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- =============== FiLTRELER + EXPORT =============== -->
+                    <div class="card shadow-sm w-100">
+                        <div class="card-body p-3 p-md-5">
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+                                <h3 class="fw-bold fs-4 my-0">İslem Geçmisi</h3>
+                                <div class="d-flex gap-2 mobile-square-btns">
+
+                                    <button class="btn btn-sm btn-light-info fw-bold" id="btnAdjustment"
+                                            data-bs-toggle="modal" data-bs-target="#modalAdjustment"
+                                            title="Kasa bakiye duzeltme / acilis fisi olustur">
+                                        <i class="fa-solid fa-sliders me-md-1"></i>
+                                        <span class="d-none d-md-inline">Bakiye Düzelt</span>
+                                    </button>
+
+                                    <button class="btn btn-sm btn-light-warning fw-bold" id="btnDailyClose"
+                                            data-bs-toggle="modal" data-bs-target="#modalDailyClose"
+                                            title="Gun sonu kasa kapanisi (Z-Raporu)">
+                                        <i class="fa-solid fa-cash-register me-md-1"></i>
+                                        <span class="d-none d-md-inline">Gun Sonu Kapanış</span>
+                                    </button>
+
+                                    <a href="{% url 'bank-management:export' account.id %}?format=pdf"
+                                       class="btn btn-sm btn-light-danger fw-bold" id="btnExportPdf" title="PDF İndir">
+                                        <i class="fa-solid fa-file-pdf me-md-1"></i>
+                                        <span class="d-none d-md-inline">PDF</span>
+                                    </a>
+
+                                    <a href="{% url 'bank-management:export' account.id %}?format=excel"
+                                       class="btn btn-sm btn-light-success fw-bold" id="btnExportExcel"
+                                       title="Excel İndir">
+                                        <i class="fa-solid fa-file-excel me-md-1"></i>
+                                        <span class="d-none d-md-inline">Excel</span>
+                                    </a>
+
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mb-4 flex-wrap align-items-end">
+                                <div>
+                                    <label class="form-label small mb-1">Başlangıç</label>
+                                    <input type="text" id="filterDateFrom"
+                                           class="form-control form-control-sm form-control-solid"
+                                           placeholder="Tarih seçin" style="width:150px;">
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">Bitiş</label>
+                                    <input type="text" id="filterDateTo"
+                                           class="form-control form-control-sm form-control-solid"
+                                           placeholder="Tarih seçin" style="width:150px;">
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">Ödeme Tipi</label>
+                                    <select id="filterPaymentType" class="form-select form-select-sm form-select-solid"
+                                            style="width:150px;">
+                                        <option value="">Tümü</option>
+                                        <option value="CREDIT_CARD">Kredi Karti</option>
+                                        <option value="TRANSFER">Havale/EFT</option>
+                                        <option value="CASH">Nakit</option>
+                                        <option value="COMMISSION">Komisyon</option>
+                                        <option value="ADJUSTMENT">Bakiye Düzeltme / Açılış</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">Mutabakat</label>
+                                    <select id="filterReconStatus" class="form-select form-select-sm form-select-solid"
+                                            style="width:150px;">
+                                        <option value="">Tümü</option>
+                                        <option value="PENDING">Beklemede</option>
+                                        <option value="MATCHED">Eşleşti</option>
+                                        <option value="PARTIAL">Kısmi</option>
+                                        <option value="DISCREPANCY">Uyumsuz</option>
+                                        <option value="MANUAL">Manuel</option>
+                                        <option value="NOT_REQUIRED">Gerekli Değil</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-sm btn-primary" id="btnFilter">
+                                    <i class="fa-solid fa-filter me-1"></i> Filtrele
+                                </button>
+                                <button class="btn btn-sm btn-light" id="btnFilterReset">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Sıfırla
+                                </button>
+                            </div>
+
+                            <!-- =============== DATATABLE =============== -->
+                            <div class="table-responsive">
+                                <table id="tablePayments"
+                                       class="table table-row-dashed table-row-gray-300 gy-4 gs-4 align-middle">
+                                    <thead>
+                                    <tr class="fw-bold text-gray-500 fs-7 text-uppercase">
+                                        <th>Tarih</th>
+                                        <th>İslem No</th>
+                                        <th>Ödeme Tipi</th>
+                                        <th class="text-end">Brüt Tutar</th>
+                                        <th class="text-end">Net Tutar</th>
+                                        <th class="text-center">Yön</th>
+                                        <th class="text-center">Mutabakat</th>
+                                        <th>Müşteri</th>
+                                        <th>Personel</th>
+                                        <th class="text-center">Detay</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- =============== GECMiS KAPANISLAR =============== -->
+                    <div class="card shadow-sm w-100 mt-5">
+                        <div class="card-body p-3 p-md-5">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="fw-bold fs-4 my-0">
+                                    <i class="fa-solid fa-cash-register me-2 text-warning"></i>Geçmiş Kapanışlar
+                                </h3>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="tableCloses"
+                                       class="table table-row-dashed table-row-gray-300 gy-3 gs-4 align-middle">
+                                    <thead>
+                                    <tr class="fw-bold text-gray-500 fs-7 text-uppercase">
+                                        <th>Tarih</th>
+                                        <th class="text-end">Sistem Bakiyesi</th>
+                                        <th class="text-end">Fiziksel Sayim</th>
+                                        <th class="text-end">Fark</th>
+                                        <th>Not</th>
+                                        <th>Kapatan</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="closesBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">Yükleniyor...</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Transfer (Virman) Detay                                    -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalTransferDetail" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-550px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">
+                        <i class="fa-solid fa-right-left me-2 text-info"></i>Kasa Arasi Virman Detayi
+                    </h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-8">
+                    <div id="transferDetailLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                    <div id="transferDetailContent" class="d-none">
+                        <table class="table table-row-dashed gy-3 gs-3 mb-0">
+                            <tbody>
+                            <tr>
+                                <td class="text-muted fw-semibold" style="width:40%;">Referans No</td>
+                                <td class="fw-bold" id="tdReference">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">Gonderen Kasa</td>
+                                <td class="fw-bold" id="tdFromAccount">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">Alici Kasa</td>
+                                <td class="fw-bold" id="tdToAccount">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">Tutar</td>
+                                <td class="fw-bold text-primary fs-5" id="tdAmount">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">Tarih</td>
+                                <td class="fw-bold" id="tdDate">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">Islemi Yapan</td>
+                                <td class="fw-bold" id="tdPerformedBy">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">Aciklama</td>
+                                <td id="tdNotes">-</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Gun Sonu Kapanis                                           -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalDailyClose" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-500px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">
+                        <i class="fa-solid fa-cash-register me-2 text-warning"></i>Gün Sonu Kapanış
+                    </h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-8">
+
+                    <!-- Sistem Bakiyesi (otomatik) -->
+                    {% if summary.balance_is_negative %}
+                        <div class="p-3 mb-4 rounded-3"
+                             style="background: rgba(220,53,69,0.08); border: 1px dashed rgba(220,53,69,0.5);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold text-muted">Sistem Bakiyesi (Net) <span
+                                        class="badge bg-danger ms-1">EKSİ</span></span>
+                                <strong class="fs-4 text-danger"
+                                        id="closeSystemBalance">{{ summary.balance_net|floatformat:2 }} {{ account.currency }}</strong>
+                            </div>
+                            <div class="mt-2 small text-muted">
+                                <i class="fa-solid fa-info-circle text-warning me-1"></i>
+                                Kasa bakiyesi negatif. Bu durum gün içi operasyonlarda (virman öncesi işlem vb.) normal
+                                olabilir. Gün sonu kapanışında bakiyenin pozitife dönmesi beklenir.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="p-3 mb-4 rounded-3"
+                             style="background: rgba(0,123,255,0.08); border: 1px dashed rgba(0,123,255,0.3);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold text-muted">Sistem Bakiyesi (Net)</span>
+                                <strong class="fs-4 text-primary"
+                                        id="closeSystemBalance">{{ summary.balance_net|floatformat:2 }} {{ account.currency }}</strong>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if account.currency == 'FX' %}
+                        <!-- FAZ 20.4: Merkez Döviz Kasası — hangi döviz için kapanış? -->
+                        <div class="mb-3">
+                            <label for="closeFxCurrency" class="form-label fw-bold">Döviz Cinsi</label>
+                            <select class="form-select form-select-solid" id="closeFxCurrency">
+                                <option value="USD">USD — Amerikan Doları</option>
+                                <option value="EUR">EUR — Euro</option>
+                                <option value="GBP">GBP — İngiliz Sterlini</option>
+                                <option value="CAD">CAD — Kanada Doları</option>
+                                <option value="QAR">QAR — Katar Riyali</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 p-2 rounded bg-light text-center" id="closeFxBalance">
+                            <span class="text-muted small">Seçili döviz bakiyesi</span>
+                            <div class="fw-bold fs-5" id="closeFxBalanceAmount">-</div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold" id="closePhysicalLabel">
+                            Fiziksel Kasa Sayimi ({% if account.currency == 'FX' %}
+                            <span id="closePhysicalCurLabel">USD</span>{% else %}{{ account.currency }}{% endif %}) *
+                        </label>
+                        <input type="text" inputmode="decimal" id="closePhysicalCount"
+                               class="form-control form-control-solid form-control-lg"
+                               placeholder="Eldeki gerçek miktarı girin (Örn: {{ summary.balance_net|floatformat:2 }})"
+                               style="font-size: 1.25rem; font-weight: 700;">
+                    </div>
+
+                    <!-- Fark (otomatik hesaplanir) -->
+                    <div class="p-3 mb-4 rounded-3" id="closeDiffPanel" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">Fark</span>
+                            <strong class="fs-4" id="closeDiffDisplay">0.00 TL</strong>
+                        </div>
+                        <div class="text-muted small mt-1" id="closeDiffNote"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Not (Opsiyonel)</label>
+                        <input type="text" id="closeNote" class="form-control form-control-solid"
+                               placeholder="Ornek: Kasa tamam, 50 TL bozukluk eksik">
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgec</button>
+                    <button type="button" class="btn btn-warning" id="btnSaveDailyClose">
+                        <i class="fa-solid fa-check me-1"></i> Kapanisi Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============== FAZ 19: BAKİYE DÜZELTME MODALI =============== -->
+    <div class="modal fade" id="modalAdjustment" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-sliders me-2"></i> Bakiye Düzeltme / Açılış Fişi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4 p-3 rounded-3" id="adjBalanceCard"
+                         style="background: rgba(0,123,255,0.05); border: 1px dashed rgba(0,123,255,0.3);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold text-muted">Mevcut Bakiye</span>
+                            <strong class="fs-5 text-primary" id="adjBalanceDisplay">
+                                {% if account.currency == 'FX' and summary.fx_breakdown %}
+                                    {% for code, amount in summary.fx_breakdown.items %}
+                                        <span class="me-2">{{ amount }} {{ code }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    {{ summary.balance_net|floatformat:2 }} {{ account.currency }}
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+
+                    {% if account.currency == 'FX' %}
+                        <!-- FAZ 20.2: Merkez Döviz Kasası — döviz cinsi seçici -->
+                        <div class="mb-3">
+                            <label for="adjCurrency" class="form-label fw-semibold">Döviz Cinsi</label>
+                            <select class="form-select form-select-solid" id="adjCurrency">
+                                <option value="USD">USD — Amerikan Doları</option>
+                                <option value="EUR">EUR — Euro</option>
+                                <option value="GBP">GBP — İngiliz Sterlini</option>
+                                <option value="CAD">CAD — Kanada Doları</option>
+                                <option value="QAR">QAR — Katar Riyali</option>
+                            </select>
+                        </div>
+                    {% endif %}
+
+                    {% if account.currency != 'FX' %}
+                        <!-- Sayım Sonucu: Otomatik fark hesaplama (FX hariç) -->
+                        <div class="mb-3">
+                            <label for="adjPhysicalCount" class="form-label fw-semibold">
+                                <i class="fa-solid fa-calculator me-1 text-info"></i>
+                                Sayim Sonucu (Gercek Kasa Tutari — {{ account.currency }})
+                            </label>
+                            <input type="text" inputmode="decimal" class="form-control form-control-lg"
+                                   id="adjPhysicalCount"
+                                   placeholder="Kasadaki gercek tutari girin...">
+                        </div>
+                        <div class="mb-3 d-none" id="adjDiffPanel">
+                            <div class="p-3 rounded-3" id="adjDiffCard" style="border: 1px dashed #ccc;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold text-muted">Hesaplanan Fark</span>
+                                    <strong class="fs-5" id="adjDiffDisplay">-</strong>
+                                </div>
+                                <div class="small mt-1" id="adjDiffNote"></div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">İşlem Yönü</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="adjDirection" id="adjDirectionIn"
+                                       value="in" checked>
+                                <label class="form-check-label text-success fw-bold" for="adjDirectionIn">
+                                    <i class="fa-solid fa-arrow-down me-1"></i> Kasaya Giriş (+)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="adjDirection" id="adjDirectionOut"
+                                       value="out">
+                                <label class="form-check-label text-danger fw-bold" for="adjDirectionOut">
+                                    <i class="fa-solid fa-arrow-up me-1"></i> Kasadan Çıkış (-)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="adjAmount" class="form-label fw-semibold" id="adjAmountLabel">
+                            Tutar ({% if account.currency == 'FX' %}<span id="adjCurrencyLabel">USD</span>{% else %}
+                            {{ account.currency }}{% endif %})
+                        </label>
+                        <input type="number" step="0.01" min="0.01" class="form-control form-control-lg" id="adjAmount"
+                               placeholder="0.00" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="adjNotes" class="form-label fw-semibold">Açıklama / Not</label>
+                        <textarea class="form-control" id="adjNotes" rows="2"
+                                  placeholder="Örn: Sisteme geçiş sermayesi, Sayım farkı düzeltmesi"></textarea>
+                    </div>
+
+                    <div class="alert alert-light border small mb-0">
+                        <i class="fa-solid fa-info-circle text-info me-1"></i>
+                        Bu işlem bir satış/alış <strong>değildir</strong>. Karşılığında mal veya stok hareketi oluşmaz.
+                        Kasa bakiyesini doğrudan etkiler ancak günlük ciro raporuna dahil olmaz.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button" class="btn btn-info text-white" id="btnSaveAdjustment">
+                        <i class="fa-solid fa-check me-1"></i> Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    {% if not error %}
+        <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+        <script>
+            "use strict";
+
+            // FAZ 20.1: Inline Türkçe dil objesi (CDN CORS hatası çözümü)
+            var _dtTurkish = {
+                emptyTable: "Tabloda veri bulunmuyor",
+                info: "_TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor",
+                infoEmpty: "Kayıt yok",
+                infoFiltered: "(_MAX_ toplam kayıttan filtrelendi)",
+                lengthMenu: "_MENU_ kayıt göster",
+                loadingRecords: "Yükleniyor...",
+                processing: "İşleniyor...",
+                search: "Ara:",
+                zeroRecords: "Eşleşen kayıt bulunamadı",
+                paginate: {first: "İlk", last: "Son", next: "Sonraki", previous: "Önceki"},
+                aria: {sortAscending: ": artan sıralama", sortDescending: ": azalan sıralama"}
+            };
+
+            var CSRF = document.querySelector("input[name='csrfmiddlewaretoken']").value;
+            var ACCOUNT_ID = "{{ account.id }}";
+            var CURRENCY = "{{ account.currency }}";
+            // Negatif bakiye desteği: locale noktalama (54.268,00) ve standart (-54268.00) formatlarını parse et
+            var _rawBalance = "{{ summary.balance_net|default:'0' }}".replace(/\./g, '').replace(',', '.');
+            var SYSTEM_BALANCE = parseFloat(_rawBalance);
+            if (isNaN(SYSTEM_BALANCE)) SYSTEM_BALANCE = 0;
+            var PAYMENTS_URL = "{% url 'bank-management:detail_payments' account.id %}";
+            var EXPORT_URL = "{% url 'bank-management:export' account.id %}";
+            var ADJUSTMENT_URL = "{% url 'bank-management:adjustment' %}";
+            var DAILY_CLOSE_URL = "{% url 'bank-management:daily_close' %}";
+            var TRANSFER_DETAIL_URL = "{% url 'bank-management:transfer_detail' '00000000-0000-0000-0000-000000000000' %}";
+            // FAZ 20.4: FX kasa döviz kırılımı (view'dan JSON string olarak gelir)
+            var FX_BREAKDOWN = null;
+            {% if fx_breakdown_json %}
+                try {
+                    FX_BREAKDOWN = JSON.parse('{{ fx_breakdown_json|escapejs }}');
+                } catch (e) {
+                    FX_BREAKDOWN = null;
+                }
+            {% endif %}
+
+            // FAZ 20.4: JS tarafında döviz kodu tespit helper
+            function _guessFxCodeJS(rate, reference) {
+                // 1. Reference'dan [EUR] prefix'i oku
+                if (reference && reference.charAt(0) === '[') {
+                    var idx = reference.indexOf(']');
+                    if (idx > 1) {
+                        var code = reference.substring(1, idx).toUpperCase();
+                        if (['USD', 'EUR', 'GBP', 'CAD', 'QAR'].indexOf(code) >= 0) return code;
+                    }
+                }
+                // 2. Sentinel rate kontrolü
+                var sentinels = {0.01: 'USD', 0.02: 'EUR', 0.03: 'GBP', 0.04: 'CAD', 0.05: 'QAR'};
+                for (var s in sentinels) {
+                    if (Math.abs(rate - parseFloat(s)) < 0.001) return sentinels[s];
+                }
+                // 3. Kur aralığı tahmini
+                if (rate < 20) return 'QAR';
+                if (rate < 48) return 'USD';
+                if (rate < 65) return 'EUR';
+                if (rate < 85) return 'GBP';
+                return 'Döviz';
+            }
+
+            var DAILY_CLOSES_LIST_URL = "{% url 'bank-management:daily_close_list' account.id %}";
+
+            // =====================================================================
+            // DATATABLE — iSLEM GECMiSi
+            // =====================================================================
+
+            var dtPayments = $('#tablePayments').DataTable({
+                dom: "rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+                info: false,
+                paging: true,
+                pageLength: 25,
+                processing: true,
+                serverSide: true,
+                orderMulti: false,
+                autoWidth: false,
+                stateSave: false,
+                language: _dtTurkish,
+                responsive: false,
+                ajax: {
+                    url: PAYMENTS_URL,
+                    data: function (d) {
+                        d.date_from = $('#filterDateFrom').val();
+                        d.date_to = $('#filterDateTo').val();
+                        d.payment_type = $('#filterPaymentType').val();
+                        d.recon_status = $('#filterReconStatus').val();
+                    }
+                },
+                order: [[0, 'desc']],
+                columns: [
+                    {
+                        data: 'date',
+                        render: function (data) {
+                            return '<span class="text-muted small">' + data + '</span>';
+                        }
+                    },
+                    {
+                        data: 'process_no',
+                        render: function (data) {
+                            return '<span class="fw-semibold">' + data + '</span>';
+                        }
+                    },
+                    {
+                        data: 'payment_type_display',
+                        render: function (data, type, row) {
+                            var icon = 'fa-money-bill';
+                            if (row.payment_type === 'CREDIT_CARD') icon = 'fa-credit-card';
+                            else if (row.payment_type === 'TRANSFER') icon = 'fa-right-left';
+                            else if (row.payment_type === 'ADJUSTMENT') icon = 'fa-sliders';
+                            return '<i class="fa-solid ' + icon + ' me-1 text-muted"></i> ' + data;
+                        }
+                    },
+                    {
+                        data: 'amount',
+                        className: 'text-end',
+                        render: function (data, type, row) {
+                            // FAZ 20.4: FX kasası — gerçek döviz birimini göster
+                            var num = parseFloat(data) || 0;
+                            var displayCur = CURRENCY;
+                            if (CURRENCY === 'FX' && row.currency_amount) {
+                                num = parseFloat(row.currency_amount) || 0;
+                                // exchange_rate'den veya amount_tl'den birim tespit
+                                var rate = parseFloat(row.exchange_rate) || 0;
+                                displayCur = _guessFxCodeJS(rate, row.reference || '');
+                            }
+                            return '<span class="fw-bold">' +
+                                num.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) +
+                                ' ' + displayCur + '</span>';
+                        }
+                    },
+                    {
+                        data: 'net_amount',
+                        className: 'text-end',
+                        render: function (data, type, row) {
+                            var num = parseFloat(data) || 0;
+                            var displayCur = CURRENCY;
+                            // FAZ 20.4: FX kasası — gerçek döviz birimini göster
+                            if (CURRENCY === 'FX' && row.currency_amount) {
+                                num = parseFloat(row.currency_amount) || 0;
+                                displayCur = _guessFxCodeJS(parseFloat(row.exchange_rate) || 0, row.reference || '');
+                            }
+                            var commInfo = '';
+                            if (row.commission_rate && parseFloat(row.commission_rate) > 0) {
+                                commInfo = ' <span class="text-muted small">(%' + row.commission_rate + ')</span>';
+                            }
+                            return '<span class="fw-bold">' +
+                                num.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) +
+                                ' ' + displayCur + '</span>' + commInfo;
+                        }
+                    },
+                    {
+                        data: 'direction',
+                        className: 'text-center',
+                        render: function (data) {
+                            if (data === 'IN') {
+                                return '<span class="badge badge-light-success"><i class="fa-solid fa-arrow-down me-1"></i>Giris</span>';
+                            }
+                            return '<span class="badge badge-light-danger"><i class="fa-solid fa-arrow-up me-1"></i>Cikis</span>';
+                        }
+                    },
+                    {
+                        data: 'reconciliation_status',
+                        className: 'text-center',
+                        render: function (data, type, row) {
+                            return '<span class="badge recon-badge-' + data + ' px-2 py-1 rounded-pill">' +
+                                row.reconciliation_display + '</span>';
+                        }
+                    },
+                    {
+                        data: 'customer_name',
+                        render: function (data) {
+                            if (!data || data === '-') return '<span class="text-muted">-</span>';
+                            return data;
+                        }
+                    },
+                    {
+                        data: 'performed_by_name',
+                        render: function (data) {
+                            if (!data || data === '-') return '<span class="text-muted">-</span>';
+                            return '<i class="fa-solid fa-user-check me-1 text-muted"></i>' + data;
+                        }
+                    },
+                    {
+                        data: null,
+                        className: 'text-center',
+                        orderable: false,
+                        searchable: false,
+                        render: function (data, type, row) {
+                            if (!row.is_transfer) return '<span class="text-muted">-</span>';
+                            return '<button type="button" class="btn btn-sm btn-icon btn-light-primary btn-transfer-detail" ' +
+                                'data-payment-id="' + row.id + '" title="Transfer Detayi">' +
+                                '<i class="fa-solid fa-eye"></i></button>';
+                        }
+                    }
+                ],
+                createdRow: function (row, data) {
+                    $(row).addClass(data.direction === 'IN' ? 'dir-in' : 'dir-out');
+                }
+            });
+
+            // =====================================================================
+            // FiLTRELER
+            // =====================================================================
+
+            $('#btnFilter').on('click', function () {
+                dtPayments.ajax.reload();
+                updateExportLinks();
+            });
+
+            $('#btnFilterReset').on('click', function () {
+                $('#filterDateFrom').val('');
+                $('#filterDateTo').val('');
+                $('#filterPaymentType').val('');
+                $('#filterReconStatus').val('');
+                dtPayments.ajax.reload();
+                updateExportLinks();
+            });
+
+            // Export linklerini filtrelerle guncelle
+            function updateExportLinks() {
+                var dateFrom = $('#filterDateFrom').val();
+                var dateTo = $('#filterDateTo').val();
+                var params = '';
+                if (dateFrom) params += '&date_from=' + dateFrom;
+                if (dateTo) params += '&date_to=' + dateTo;
+
+                $('#btnExportPdf').attr('href', EXPORT_URL + '?format=pdf' + params);
+                $('#btnExportExcel').attr('href', EXPORT_URL + '?format=excel' + params);
+            }
+
+            // =====================================================================
+            // FLATPICKR BAŞLATMA (Metronic Tarih Seçici)
+            // =====================================================================
+            $(document).ready(function () {
+                // Başlangıç tarihi
+                $("#filterDateFrom").flatpickr({
+                    dateFormat: "Y-m-d",
+                    allowInput: true,
+                    locale: "tr",
+                    onChange: function (selectedDates, dateStr, instance) {
+                        var toPicker = document.getElementById("filterDateTo")._flatpickr;
+                        if (toPicker) {
+                            toPicker.set("minDate", dateStr);
+                        }
+                    }
+                });
+
+                // Bitiş tarihi
+                $("#filterDateTo").flatpickr({
+                    dateFormat: "Y-m-d",
+                    allowInput: true,
+                    locale: "tr"
+                });
+            });
+
+            // =====================================================================
+            // GUNLUK KAPANIS (Z-RAPORU)
+            // =====================================================================
+
+            // Fiziksel sayim girilince farki anlik hesapla (negatif bakiye destekli)
+            $('#closePhysicalCount').on('input', function () {
+                var rawVal = this.value.replace(/\./g, '').replace(',', '.');
+                var physical = parseFloat(rawVal);
+                if (isNaN(physical)) physical = 0;
+                var diff = physical - SYSTEM_BALANCE;
+                var panel = $('#closeDiffPanel');
+
+                if (this.value) {
+                    panel.show();
+                    var cls = 'text-success';
+                    var note = 'Kasa tamam.';
+
+                    if (diff > 0.01) {
+                        cls = 'text-warning';
+                        note = 'Kasada ' + Math.abs(diff).toLocaleString('tr-TR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }) + ' ' + CURRENCY + ' FAZLA var.';
+                    } else if (diff < -0.01) {
+                        cls = 'text-danger';
+                        note = 'Kasada ' + Math.abs(diff).toLocaleString('tr-TR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }) + ' ' + CURRENCY + ' EKSiK var.';
+                    }
+
+                    var sysDisplay = SYSTEM_BALANCE.toLocaleString('tr-TR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    var diffDisplay = (diff >= 0 ? '+' : '') + diff.toLocaleString('tr-TR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+
+                    // Negatif sistem bakiyesi varsa ek uyarı
+                    if (SYSTEM_BALANCE < -0.01) {
+                        note += ' (Sistem bakiyesi negatif: ' + sysDisplay + ' ' + CURRENCY + ')';
+                    }
+
+                    $('#closeDiffDisplay').text(diffDisplay + ' ' + CURRENCY).attr('class', 'fs-4 ' + cls);
+                    $('#closeDiffNote').text(note).attr('class', 'small mt-1 ' + cls);
+                } else {
+                    panel.hide();
+                }
+            });
+
+            // Kapanisi kaydet (negatif bakiye destekli)
+            $('#btnSaveDailyClose').on('click', function () {
+                var rawPhysical = ($('#closePhysicalCount').val() || '').replace(/\./g, '').replace(',', '.');
+                var physical = parseFloat(rawPhysical);
+                if (isNaN(physical) || physical < 0) {
+                    Swal.fire('Uyarı', 'Fiziksel kasa sayımı girin.', 'warning');
+                    return;
+                }
+
+                var diff = physical - SYSTEM_BALANCE;
+                var fmtOpts = {minimumFractionDigits: 2, maximumFractionDigits: 2};
+                var confirmMsg = 'Sistem: ' + SYSTEM_BALANCE.toLocaleString('tr-TR', fmtOpts) + ' ' + CURRENCY +
+                    '<br>Fiziksel: ' + physical.toLocaleString('tr-TR', fmtOpts) + ' ' + CURRENCY +
+                    '<br><b>Fark: ' + (diff >= 0 ? '+' : '') + diff.toLocaleString('tr-TR', fmtOpts) + ' ' + CURRENCY + '</b>';
+
+                Swal.fire({
+                    title: 'Gün Sonu Kapanış Onayı',
+                    html: confirmMsg,
+                    icon: Math.abs(diff) < 0.01 ? 'success' : 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Kapanışı Kaydet',
+                    cancelButtonText: 'Vazgeç'
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+
+                    fetch(DAILY_CLOSE_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                        body: JSON.stringify({
+                            bank_account_id: ACCOUNT_ID,
+                            physical_count: physical,
+                            note: $('#closeNote').val() || ''
+                        })
+                    })
+                        .then(function (r) {
+                            return r.json();
+                        })
+                        .then(function (data) {
+                            if (data.result) {
+                                var modalEl = document.getElementById('modalDailyClose');
+                                var modal = bootstrap.Modal.getInstance(modalEl);
+                                if (modal) modal.hide();
+
+                                $('#closePhysicalCount').val('');
+                                $('#closeNote').val('');
+                                $('#closeDiffPanel').hide();
+                                loadDailyCloses();
+
+                                setTimeout(function () {
+                                    $('.modal-backdrop').remove();
+
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Başarılı',
+                                        text: data.msg,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        $('html, body').removeClass('modal-open swal2-shown swal2-height-auto').css({
+                                            'overflow': '',
+                                            'padding-right': ''
+                                        });
+                                    });
+                                }, 300);
+
+                            } else {
+                                Swal.fire('Hata', data.msg, 'error');
+                            }
+                        });
+                });
+            });
+
+            // Gecmis kapanislari yukle
+            function loadDailyCloses() {
+                fetch(DAILY_CLOSES_LIST_URL)
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (res) {
+                        var body = $('#closesBody');
+                        if (!res.result || !res.data || res.data.length === 0) {
+                            body.html('<tr><td colspan="6" class="text-center text-muted py-4">Henuz kapanıs kaydı yok.</td></tr>');
+                            return;
+                        }
+
+                        var html = '';
+                        res.data.forEach(function (c) {
+                            var diff = parseFloat(c.difference) || 0;
+                            var diffCls = 'text-success';
+                            if (diff > 0.01) diffCls = 'text-warning';
+                            else if (diff < -0.01) diffCls = 'text-danger';
+
+                            html += '<tr>' +
+                                '<td class="fw-semibold">' + c.date + '</td>' +
+                                '<td class="text-end">' + parseFloat(c.system_balance).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ' + CURRENCY + '</td>' +
+                                '<td class="text-end">' + parseFloat(c.physical_count).toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' ' + CURRENCY + '</td>' +
+                                '<td class="text-end fw-bold ' + diffCls + '">' + (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' ' + CURRENCY + '</td>' +
+                                '<td>' + (c.note || '-') + '</td>' +
+                                '<td class="text-muted small">' + (c.closed_by || '-') + '</td>' +
+                                '</tr>';
+                        });
+
+                        body.html(html);
+                    });
+            }
+
+            // Sayfa yuklendiginde gecmis kapanislari getir
+            loadDailyCloses();
+
+            // FAZ 20.4: Gün sonu döviz seçimi değiştiğinde bakiyeyi güncelle
+            var _closeFxSelect = document.getElementById('closeFxCurrency');
+            if (_closeFxSelect && FX_BREAKDOWN) {
+                function _updateCloseFxBalance() {
+                    var selCur = _closeFxSelect.value;
+                    var bal = FX_BREAKDOWN[selCur] || '0';
+                    var balEl = document.getElementById('closeFxBalanceAmount');
+                    var labelEl = document.getElementById('closePhysicalCurLabel');
+                    if (balEl) balEl.textContent = parseFloat(bal).toFixed(2) + ' ' + selCur;
+                    if (labelEl) labelEl.textContent = selCur;
+                    // Sistem bakiyesini de güncelle
+                    var sysEl = document.getElementById('closeSystemBalance');
+                    if (sysEl) sysEl.textContent = parseFloat(bal).toFixed(2) + ' ' + selCur;
+                }
+
+                _closeFxSelect.addEventListener('change', _updateCloseFxBalance);
+                _updateCloseFxBalance(); // İlk yükleme
+            }
+
+
+            // ================================================================
+            // FAZ 19: BAKİYE DÜZELTME / AÇILIŞ FİŞİ
+            // ================================================================
+
+            // FAZ 20.2: Döviz cinsi seçicisi değiştiğinde label'ı güncelle
+            var _adjCurrencySelect = document.getElementById('adjCurrency');
+            if (_adjCurrencySelect) {
+                _adjCurrencySelect.addEventListener('change', function () {
+                    var lbl = document.getElementById('adjCurrencyLabel');
+                    if (lbl) lbl.textContent = this.value;
+                });
+            }
+
+            // Sayim Sonucu → Otomatik Fark Hesaplama (FX kasalar haric)
+            var _adjPhysical = document.getElementById('adjPhysicalCount');
+            if (_adjPhysical) {
+                _adjPhysical.addEventListener('input', function () {
+                    var panel = document.getElementById('adjDiffPanel');
+                    var display = document.getElementById('adjDiffDisplay');
+                    var note = document.getElementById('adjDiffNote');
+                    var card = document.getElementById('adjDiffCard');
+                    var rawVal = this.value.replace(/\./g, '').replace(',', '.');
+                    var physical = parseFloat(rawVal);
+
+                    if (this.value === '' || isNaN(physical)) {
+                        panel.classList.add('d-none');
+                        return;
+                    }
+
+                    var diff = physical - SYSTEM_BALANCE;
+                    panel.classList.remove('d-none');
+
+                    var absDiff = Math.abs(diff);
+                    var fmtDiff = absDiff.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                    if (diff > 0.001) {
+                        display.textContent = '+' + fmtDiff + ' ' + CURRENCY;
+                        display.className = 'fs-5 text-success fw-bold';
+                        note.textContent = 'Kasada ' + fmtDiff + ' ' + CURRENCY + ' FAZLA var. Giris (+) secildi.';
+                        note.className = 'small mt-1 text-success';
+                        card.style.borderColor = '#28a745';
+                        document.getElementById('adjDirectionIn').checked = true;
+                        document.getElementById('adjAmount').value = absDiff.toFixed(2);
+                    } else if (diff < -0.001) {
+                        display.textContent = '-' + fmtDiff + ' ' + CURRENCY;
+                        display.className = 'fs-5 text-danger fw-bold';
+                        note.textContent = 'Kasada ' + fmtDiff + ' ' + CURRENCY + ' EKSIK var. Cikis (-) secildi.';
+                        note.className = 'small mt-1 text-danger';
+                        card.style.borderColor = '#dc3545';
+                        document.getElementById('adjDirectionOut').checked = true;
+                        document.getElementById('adjAmount').value = absDiff.toFixed(2);
+                    } else {
+                        display.textContent = '0,00 ' + CURRENCY;
+                        display.className = 'fs-5 text-muted fw-bold';
+                        note.textContent = 'Kasa bakiyesi dogru. Duzeltme gerekmiyor.';
+                        note.className = 'small mt-1 text-muted';
+                        card.style.borderColor = '#6c757d';
+                        document.getElementById('adjDirectionIn').checked = true;
+                        document.getElementById('adjAmount').value = '';
+                    }
+                });
+            }
+
+            document.getElementById('btnSaveAdjustment').addEventListener('click', function () {
+                var amountVal = parseFloat(document.getElementById('adjAmount').value) || 0;
+                var notes = (document.getElementById('adjNotes').value || '').trim();
+                var directionEl = document.querySelector('input[name="adjDirection"]:checked');
+                var direction = directionEl ? directionEl.value : 'in';
+
+                // FAZ 20.2: Döviz kasası ise seçili döviz cinsini al, değilse kasanın birimi
+                var adjCurrencyEl = document.getElementById('adjCurrency');
+                var adjCurrency = adjCurrencyEl ? adjCurrencyEl.value : CURRENCY;
+                var displayCurrency = (CURRENCY === 'FX') ? adjCurrency : CURRENCY;
+
+                if (amountVal <= 0) {
+                    Swal.fire('Uyarı', 'Lütfen geçerli bir tutar girin.', 'warning');
+                    return;
+                }
+
+                var finalAmount = direction === 'out' ? -amountVal : amountVal;
+                var directionText = direction === 'out' ? 'ÇIKIŞ' : 'GİRİŞ';
+
+                Swal.fire({
+                    title: 'Düzeltme Fişi Onayı',
+                    html: '<div class="text-center">' +
+                        '<div class="fs-5 fw-bold mb-2">' + amountVal.toFixed(2) + ' ' + displayCurrency + ' ' + directionText + '</div>' +
+                        (notes ? '<div class="text-muted small">' + notes + '</div>' : '') +
+                        '</div>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Kaydet',
+                    cancelButtonText: 'Vazgeç',
+                    confirmButtonColor: '#0dcaf0',
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+
+                    fetch(ADJUSTMENT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': CSRF,
+                        },
+                        body: 'account_id=' + ACCOUNT_ID + '&amount=' + finalAmount + '&notes=' + encodeURIComponent(notes) + '&currency=' + adjCurrency,
+                    })
+                        .then(function (r) {
+                            return r.json();
+                        })
+                        .then(function (data) {
+                            if (data.result) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Kaydedildi',
+                                    text: data.msg,
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                });
+                                // Modal kapat, sayfayı yenile
+                                var modalEl = document.getElementById('modalAdjustment');
+                                var modal = bootstrap.Modal.getInstance(modalEl);
+                                if (modal) modal.hide();
+                                setTimeout(function () {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                Swal.fire('Hata', data.msg || 'İşlem kaydedilemedi.', 'error');
+                            }
+                        })
+                        .catch(function () {
+                            Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                        });
+                });
+            });
+
+            // =====================================================================
+            // TRANSFER DETAY MODALI
+            // =====================================================================
+
+            $('#tablePayments').on('click', '.btn-transfer-detail', function () {
+                var paymentId = $(this).data('payment-id');
+                var modal = new bootstrap.Modal(document.getElementById('modalTransferDetail'));
+                $('#transferDetailLoading').removeClass('d-none');
+                $('#transferDetailContent').addClass('d-none');
+                modal.show();
+
+                fetch(TRANSFER_DETAIL_URL.replace('00000000-0000-0000-0000-000000000000', paymentId))
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        $('#transferDetailLoading').addClass('d-none');
+                        if (!data.result) {
+                            $('#transferDetailContent').removeClass('d-none')
+                                .html('<div class="alert alert-warning mb-0">' + (data.msg || 'Detay alinamadi.') + '</div>');
+                            return;
+                        }
+                        var d = data.data;
+                        var numAmount = parseFloat(d.amount) || 0;
+                        var fmtAmount = numAmount.toLocaleString('tr-TR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }) + ' TL';
+                        $('#tdReference').text(d.reference);
+                        $('#tdFromAccount').text(d.from_account);
+                        $('#tdToAccount').text(d.to_account);
+                        $('#tdAmount').text(fmtAmount);
+                        $('#tdDate').text(d.date);
+                        $('#tdPerformedBy').text(d.performed_by);
+                        $('#tdNotes').text(d.notes);
+                        $('#transferDetailContent').removeClass('d-none');
+                    })
+                    .catch(function () {
+                        $('#transferDetailLoading').addClass('d-none');
+                        $('#transferDetailContent').removeClass('d-none')
+                            .html('<div class="alert alert-danger mb-0">Sunucu hatasi.</div>');
+                    });
+            });
+
+        </script>
+    {% endif %}
+{% endblock footer %}

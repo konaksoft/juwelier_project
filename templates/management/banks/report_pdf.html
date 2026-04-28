@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>{{ account.name }} - Kasa Raporu</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1.2cm 1.5cm;
+        }
+
+        body {
+            font-family: "DejaVu Sans", "Helvetica", "Arial", sans-serif;
+            color: #1a1a2e;
+            font-size: 9pt;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ── ANTET ── */
+        .antet {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+        .antet td {
+            border: none;
+            vertical-align: middle;
+            padding: 0;
+        }
+        .antet .left-col {
+            width: 60%;
+        }
+        .antet .right-col {
+            width: 40%;
+            text-align: right;
+        }
+        .antet .brand {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1a1a2e;
+            letter-spacing: .02em;
+        }
+        .antet .brand-sub {
+            font-size: 9px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .antet .doc-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            background: #f0f0f5;
+            padding: 4px 12px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .antet .doc-period {
+            font-size: 9px;
+            color: #555;
+            margin-top: 4px;
+        }
+
+        .hr-thick {
+            border-top: 2.5pt solid #1a1a2e;
+            margin: 4px 0 6px;
+            height: 0;
+        }
+        .hr-thin {
+            border-top: 0.8pt solid #bbb;
+            margin: 4px 0;
+            height: 0;
+        }
+
+        /* ── HESAP BILGiLERi ── */
+        .info-row {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            font-size: 8.5pt;
+        }
+        .info-row td {
+            border: none;
+            padding: 2px 8px 2px 0;
+        }
+        .info-row .lbl {
+            font-weight: 700;
+            color: #555;
+        }
+        .info-row .val {
+            color: #1a1a2e;
+            font-weight: 600;
+        }
+
+        /* ── KPI KARTLARI ── */
+        .kpi-row {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 5px 0;
+            margin-bottom: 10px;
+        }
+        .kpi-cell {
+            width: 25%;
+            border-radius: 6px;
+            padding: 7px 8px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .kpi-cell .kpi-label {
+            font-size: 7pt;
+            font-weight: 700;
+            letter-spacing: .04em;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        .kpi-cell .kpi-value {
+            font-size: 11pt;
+            font-weight: 800;
+        }
+        .kpi-green  { background: #e8f8ee; border: 1px solid #a8d8b9; }
+        .kpi-green  .kpi-label, .kpi-green  .kpi-value { color: #166534; }
+        .kpi-red    { background: #fef2f2; border: 1px solid #f5bdb8; }
+        .kpi-red    .kpi-label, .kpi-red    .kpi-value { color: #991b1b; }
+        .kpi-orange { background: #fffbeb; border: 1px solid #fcd34d; }
+        .kpi-orange .kpi-label, .kpi-orange .kpi-value { color: #92400e; }
+        .kpi-blue   { background: #eff6ff; border: 1px solid #93c5fd; }
+        .kpi-blue   .kpi-label, .kpi-blue   .kpi-value { color: #1e40af; }
+
+        /* ── ANA TABLO ── */
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin-bottom: 8px;
+        }
+        .tbl th {
+            background: #1a1a2e;
+            color: #fff;
+            border: 1px solid #1a1a2e;
+            padding: 5px 6px;
+            font-weight: 700;
+            text-align: center;
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+        .tbl td {
+            border: 1px solid #d1d5db;
+            padding: 4px 6px;
+            vertical-align: middle;
+        }
+        .tbl tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+        .tbl .text-right  { text-align: right; }
+        .tbl .text-center { text-align: center; }
+        .tbl .row-in  { border-left: 3px solid #16a34a; }
+        .tbl .row-out { border-left: 3px solid #dc2626; }
+        .tbl .dir-in  { color: #166534; font-weight: 700; }
+        .tbl .dir-out { color: #991b1b; font-weight: 700; }
+        .tbl .comm    { color: #92400e; }
+
+        /* ── OZET KUTUSU (Alt) ── */
+        .summary-box {
+            width: 50%;
+            margin-left: auto;
+            border-collapse: collapse;
+            border: 2px solid #1a1a2e;
+            border-radius: 6px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+        .summary-box td {
+            padding: 4px 10px;
+            font-size: 9pt;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .summary-box tr:last-child td {
+            border-bottom: none;
+        }
+        .summary-box .s-label {
+            font-weight: 700;
+            color: #374151;
+            width: 55%;
+        }
+        .summary-box .s-value {
+            text-align: right;
+            font-weight: 800;
+            width: 45%;
+        }
+        .summary-box .s-total {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .summary-box .s-total td {
+            border-bottom: none;
+            padding: 6px 10px;
+            font-size: 10pt;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            margin-top: 10px;
+            font-size: 7.5pt;
+            color: #888;
+            text-align: right;
+        }
+        .footer .left {
+            float: left;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ══════ ANTET ══════ -->
+    <table class="antet">
+        <tr>
+            <td class="left-col">
+                <div class="brand">{{ store.title|default:"Kuyum Plus" }}</div>
+                <div class="brand-sub">{{ store.address|default:"" }}</div>
+            </td>
+            <td class="right-col">
+                <div class="doc-title">{{ account.name }} — Kasa Raporu</div>
+                <div class="doc-period">Donem: {{ date_from }} — {{ date_to }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="hr-thick"></div>
+
+    <!-- ══════ HESAP BILGILERi ══════ -->
+    <table class="info-row">
+        <tr>
+            <td><span class="lbl">Hesap Tipi:</span> <span class="val">{{ account.get_account_type_display }}</span></td>
+            <td><span class="lbl">Banka / Kurum:</span> <span class="val">{{ account.bank_name|default:"-" }}</span></td>
+            <td><span class="lbl">IBAN:</span> <span class="val">{{ account.iban|default:"-" }}</span></td>
+            <td><span class="lbl">Para Birimi:</span> <span class="val">{{ account.currency }}</span></td>
+        </tr>
+    </table>
+
+    <div class="hr-thin"></div>
+
+    <!-- ══════ KPI KARTLARI ══════ -->
+    <table class="kpi-row">
+        <tr>
+            <td class="kpi-cell kpi-green">
+                <div class="kpi-label">Toplam Giris</div>
+                <div class="kpi-value">{{ summary.total_in|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</div>
+            </td>
+            <td class="kpi-cell kpi-red">
+                <div class="kpi-label">Toplam Cikis</div>
+                <div class="kpi-value">{{ summary.total_out|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</div>
+            </td>
+            <td class="kpi-cell kpi-orange">
+                <div class="kpi-label">Komisyon Kesintisi</div>
+                <div class="kpi-value">{{ summary.total_commission|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</div>
+            </td>
+            <td class="kpi-cell {% if summary.balance_net >= 0 %}kpi-blue{% else %}kpi-red{% endif %}">
+                <div class="kpi-label">Net Kasa</div>
+                <div class="kpi-value">{{ summary.balance_net|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</div>
+            </td>
+        </tr>
+    </table>
+
+    {% if fx_breakdown %}
+    <!-- FAZ 20.4: Merkez Döviz Kasası — döviz kırılımı -->
+    <table class="kpi-row" style="margin-top: 5px;">
+        <tr>
+            {% for code, amount in fx_breakdown.items %}
+            <td class="kpi-cell kpi-blue" style="padding: 4px 8px;">
+                <div class="kpi-label" style="font-size: 8px;">{{ code }}</div>
+                <div class="kpi-value" style="font-size: 11px;">{{ amount }}</div>
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+    {% endif %}
+
+    <!-- ══════ iSLEM TABLOSU ══════ -->
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th style="width:11%;">Tarih</th>
+                <th style="width:9%;">Islem No</th>
+                <th style="width:11%;">Odeme Tipi</th>
+                <th style="width:6%;">Yon</th>
+                <th style="width:13%;">Brut Tutar</th>
+                <th style="width:13%;">Net Tutar</th>
+                <th style="width:10%;">Komisyon</th>
+                <th style="width:27%;">Musteri</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td class="{% if row.direction == 'Giris' %}row-in{% else %}row-out{% endif %}">{{ row.date }}</td>
+                <td class="text-center">{{ row.process_no }}</td>
+                <td>{{ row.payment_type_display }}</td>
+                <td class="text-center {% if row.direction == 'Giris' %}dir-in{% else %}dir-out{% endif %}">
+                    {{ row.direction }}
+                </td>
+                <td class="text-right">{{ row.amount|floatformat:2 }} {{ row.currency }}</td>
+                <td class="text-right">{{ row.net_amount|floatformat:2 }} {{ row.currency }}</td>
+                <td class="text-right comm">
+                    {% if row.commission_amount %}{{ row.commission_amount|floatformat:2 }}{% else %}-{% endif %}
+                </td>
+                <td>{{ row.customer_name }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center" style="padding:15px; color:#999;">
+                    Bu donemde islem bulunamadi.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ══════ OZET KUTUSU ══════ -->
+    <table class="summary-box">
+        <tr>
+            <td class="s-label">Toplam Giris:</td>
+            <td class="s-value" style="color:#166534;">{{ summary.total_in|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="s-label">Toplam Cikis:</td>
+            <td class="s-value" style="color:#991b1b;">{{ summary.total_out|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</td>
+        </tr>
+        <tr>
+            <td class="s-label">Komisyon Kesintisi:</td>
+            <td class="s-value" style="color:#92400e;">{{ summary.total_commission|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</td>
+        </tr>
+        {% if fx_breakdown %}
+        {% for code, amount in fx_breakdown.items %}
+        <tr>
+            <td class="s-label">{{ code }} Bakiye:</td>
+            <td class="s-value" style="color:#1e40af;">{{ amount }} {{ code }}</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+        <tr class="s-total">
+            <td class="s-label" style="color:#fff;">NET KASA:</td>
+            <td class="s-value" style="color:#fff;">{{ summary.balance_net|floatformat:2 }} {% if account.currency != 'FX' %}{{ account.currency }}{% else %}TL{% endif %}</td>
+        </tr>
+    </table>
+
+    <!-- ══════ FOOTER ══════ -->
+    <div class="footer">
+        <span class="left">Toplam {{ rows|length }} islem kaydi</span>
+        <span>Olusturulma: {{ print_datetime }} — {{ store.title|default:"Kuyum Plus" }}</span>
+    </div>
+
+</body>
+</html>

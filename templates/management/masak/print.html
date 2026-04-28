@@ -1,0 +1,366 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>MASAK Müşteri Bilgi Beyan Formu - {{ declaration.display_name }}</title>
+<style>
+@page { size: A4; margin: 18mm 18mm 22mm 18mm; }
+* { box-sizing: border-box; }
+html, body { background: #fff; }
+body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+    color: #000;
+    margin: 0;
+    padding: 14px;
+    line-height: 1.45;
+}
+.page { max-width: 210mm; margin: 0 auto; padding: 8mm; background: #fff; }
+
+.no-print { text-align: center; margin-bottom: 18px; }
+.no-print button {
+    padding: 8px 22px; font-size: 11pt; font-family: inherit;
+    border: 1px solid #000; background: #fff; cursor: pointer;
+}
+
+.doc-header {
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+.doc-header .store-name {
+    font-size: 14pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.doc-header .store-info { font-size: 9.5pt; margin-top: 2px; }
+
+.doc-title {
+    text-align: center;
+    font-size: 13pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 12px 0 2px 0;
+}
+.doc-subtitle {
+    text-align: center;
+    font-size: 9.5pt;
+    font-style: italic;
+    margin-bottom: 14px;
+}
+
+.meta-bar {
+    display: table;
+    width: 100%;
+    border: 1px solid #000;
+    margin-bottom: 14px;
+    font-size: 10pt;
+}
+.meta-bar .cell {
+    display: table-cell;
+    padding: 5px 10px;
+    border-right: 1px solid #000;
+}
+.meta-bar .cell:last-child { border-right: none; }
+.meta-bar strong { font-weight: bold; }
+
+.section {
+    margin-top: 12px;
+    margin-bottom: 4px;
+}
+.section-head {
+    font-size: 10.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000;
+    padding: 3px 0;
+    margin-bottom: 4px;
+    letter-spacing: .5px;
+}
+table.kv {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+}
+table.kv td {
+    border: 1px solid #000;
+    padding: 4px 8px;
+    font-size: 10pt;
+    vertical-align: top;
+}
+table.kv td.label {
+    width: 25%;
+    font-weight: bold;
+    background: #fff;
+    white-space: nowrap;
+}
+table.kv td.value { width: 25%; }
+table.kv td.value-wide { width: 75%; }
+
+.legal-block {
+    margin-top: 14px;
+    padding: 8px 10px;
+    border: 1px solid #000;
+    font-size: 9.5pt;
+    text-align: justify;
+    line-height: 1.5;
+}
+.legal-block .legal-title {
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: .5px;
+}
+
+.consents { margin-top: 10px; font-size: 10pt; }
+.consents .line { margin: 3px 0; }
+.consents .box {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border: 1px solid #000;
+    text-align: center;
+    line-height: 10px;
+    font-size: 10pt;
+    margin-right: 5px;
+    vertical-align: middle;
+    font-weight: bold;
+}
+
+.signatures {
+    display: table;
+    width: 100%;
+    margin-top: 28px;
+    border-collapse: collapse;
+}
+.signatures .sig {
+    display: table-cell;
+    width: 50%;
+    text-align: center;
+    padding: 0 14px;
+    vertical-align: bottom;
+}
+.signatures .sig .name {
+    font-size: 10pt;
+    margin-top: 40px;
+    padding-top: 4px;
+    border-top: 1px solid #000;
+    font-weight: bold;
+}
+.signatures .sig .role {
+    font-size: 9pt;
+    margin-top: 2px;
+    font-style: italic;
+}
+
+@media print {
+    .no-print { display: none !important; }
+    body { padding: 0; }
+    .page { padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+    <button onclick="window.print()">YAZDIR</button>
+</div>
+
+<div class="page">
+    <div class="doc-header">
+        <div class="store-name">{{ store.title|upper }}</div>
+        <div class="store-info">
+            {% if store.address %}{{ store.address }}{% endif %}
+            {% if store.phone_number %} &nbsp;|&nbsp; Tel: {{ store.phone_number }}{% endif %}
+        </div>
+    </div>
+
+    <div class="doc-title">MASAK MÜŞTERİ BİLGİ BEYAN FORMU</div>
+    <div class="doc-subtitle">5549 Sayılı Suç Gelirlerinin Aklanmasının Önlenmesi Hakkında Kanun Kapsamında</div>
+
+    <div class="meta-bar">
+        <div class="cell"><strong>Belge No:</strong> MSK-{{ declaration.id|stringformat:"s"|slice:":8"|upper }}</div>
+        <div class="cell"><strong>Düzenleme Tarihi:</strong> {{ declaration.submitted_at|date:"d.m.Y H:i" }}</div>
+        <div class="cell"><strong>Müşteri Tipi:</strong> {{ declaration.get_customer_type_display }}</div>
+    </div>
+
+    {% if declaration.customer_type == 'KURUMSAL' %}
+        <div class="section">
+            <div class="section-head">A. Tüzel Kişi Bilgileri</div>
+            <table class="kv">
+                <tr>
+                    <td class="label">Ticari Unvan</td>
+                    <td class="value-wide" colspan="3">{{ declaration.company_title|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Vergi Dairesi</td>
+                    <td class="value">{{ declaration.tax_office|default:"-" }}</td>
+                    <td class="label">Vergi No (VKN)</td>
+                    <td class="value">{{ declaration.tax_number|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">MERSİS No</td>
+                    <td class="value">{{ declaration.mersis_number|default:"-" }}</td>
+                    <td class="label">Ticaret Sicil No</td>
+                    <td class="value">{{ declaration.trade_registry_number|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Faaliyet Konusu</td>
+                    <td class="value-wide" colspan="3">{{ declaration.activity_field|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Merkez Adresi</td>
+                    <td class="value-wide" colspan="3">{{ declaration.company_address|default:"-"|linebreaksbr }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-head">B. Yetkili Temsilci Bilgileri</div>
+            <table class="kv">
+                <tr>
+                    <td class="label">Adı</td>
+                    <td class="value">{{ declaration.rep_first_name|default:"-" }}</td>
+                    <td class="label">Soyadı</td>
+                    <td class="value">{{ declaration.rep_last_name|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">T.C. Kimlik No</td>
+                    <td class="value">{{ declaration.rep_identity_number|default:"-" }}</td>
+                    <td class="label">Ünvan / Görev</td>
+                    <td class="value">{{ declaration.rep_title|default:"-" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-head">C. Gerçek Faydalanıcı / Ortak Bilgileri</div>
+            <table class="kv">
+                <tr>
+                    <td class="label">Ad Soyad</td>
+                    <td class="value-wide" colspan="3">{{ declaration.beneficial_owner_name|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">T.C. Kimlik No</td>
+                    <td class="value">{{ declaration.beneficial_owner_identity|default:"-" }}</td>
+                    <td class="label">Ortaklık Payı</td>
+                    <td class="value">{{ declaration.beneficial_owner_share|default:"-" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-head">D. İletişim Bilgileri</div>
+            <table class="kv">
+                <tr>
+                    <td class="label">Telefon</td>
+                    <td class="value">{{ declaration.phone|default:"-" }}</td>
+                    <td class="label">E-posta</td>
+                    <td class="value">{{ declaration.email|default:"-" }}</td>
+                </tr>
+            </table>
+        </div>
+    {% else %}
+        <div class="section">
+            <div class="section-head">A. Müşteri Kimlik Bilgileri</div>
+            <table class="kv">
+                <tr>
+                    <td class="label">Adı</td>
+                    <td class="value">{{ declaration.first_name|default:"-" }}</td>
+                    <td class="label">Soyadı</td>
+                    <td class="value">{{ declaration.last_name|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">T.C. Kimlik / Pasaport No</td>
+                    <td class="value">{{ declaration.identity_number|default:"-" }}</td>
+                    <td class="label">Uyruğu</td>
+                    <td class="value">{{ declaration.nationality|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Belge Türü</td>
+                    <td class="value">{{ declaration.get_document_type_display|default:"-" }}</td>
+                    <td class="label">Belge No</td>
+                    <td class="value">{{ declaration.document_number|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Doğum Yeri</td>
+                    <td class="value">{{ declaration.birth_place|default:"-" }}</td>
+                    <td class="label">Doğum Tarihi</td>
+                    <td class="value">{% if declaration.birth_date %}{{ declaration.birth_date|date:"d.m.Y" }}{% else %}-{% endif %}</td>
+                </tr>
+                <tr>
+                    <td class="label">Anne Adı</td>
+                    <td class="value">{{ declaration.mother_name|default:"-" }}</td>
+                    <td class="label">Baba Adı</td>
+                    <td class="value">{{ declaration.father_name|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">İş / Meslek</td>
+                    <td class="value-wide" colspan="3">{{ declaration.occupation|default:"-" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-head">B. İletişim Bilgileri</div>
+            <table class="kv">
+                <tr>
+                    <td class="label">Telefon</td>
+                    <td class="value">{{ declaration.phone|default:"-" }}</td>
+                    <td class="label">E-posta</td>
+                    <td class="value">{{ declaration.email|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">İkamet Adresi</td>
+                    <td class="value-wide" colspan="3">{{ declaration.address|default:"-"|linebreaksbr }}</td>
+                </tr>
+            </table>
+        </div>
+    {% endif %}
+
+    <div class="legal-block">
+        <div class="legal-title">Beyan ve Taahhüt</div>
+        İşbu form, 5549 Sayılı Suç Gelirlerinin Aklanmasının Önlenmesi Hakkında Kanun ile
+        Mali Suçları Araştırma Kurulu (MASAK) mevzuatı çerçevesinde yürütülen müşteri
+        tanıma (KYC) yükümlülüğü kapsamında düzenlenmiştir. Yukarıda beyan edilen tüm
+        bilgilerin doğru, eksiksiz ve güncel olduğunu; bilgilerimde meydana gelen
+        değişiklikleri derhal mağazaya bildireceğimi; yanlış, eksik veya yanıltıcı beyan
+        halinde doğabilecek her türlü hukuki ve cezai sorumluluğun tarafıma ait olduğunu
+        kabul, beyan ve taahhüt ederim. 6698 sayılı Kişisel Verilerin Korunması Kanunu
+        kapsamında kişisel verilerimin ilgili mevzuatta öngörülen süre boyunca işlenmesine
+        ve saklanmasına rıza gösteriyorum.
+    </div>
+
+    <div class="consents">
+        <div class="line"><span class="box">{% if declaration.consent_kvkk %}X{% endif %}</span> 6698 Sayılı KVKK Aydınlatma Metnini okudum ve anladım.</div>
+        <div class="line"><span class="box">{% if declaration.consent_acik_riza %}X{% endif %}</span> Kişisel verilerimin işlenmesine açık rıza gösteriyorum.</div>
+        <div class="line">
+            <strong>Ticari Elektronik İleti (İYS) İzinleri:</strong>
+            &nbsp; <span class="box">{% if declaration.consent_iys_sms %}X{% endif %}</span> SMS
+            &nbsp; <span class="box">{% if declaration.consent_iys_email %}X{% endif %}</span> E-posta
+            &nbsp; <span class="box">{% if declaration.consent_iys_call %}X{% endif %}</span> Arama
+        </div>
+    </div>
+
+    <div class="signatures">
+        <div class="sig">
+            <div class="name">{{ declaration.display_name|default:"-" }}</div>
+            <div class="role">
+                {% if declaration.customer_type == 'KURUMSAL' %}Yetkili Temsilci (İmza){% else %}Müşteri (İmza){% endif %}
+            </div>
+        </div>
+        <div class="sig">
+            <div class="name">{{ store.title }}</div>
+            <div class="role">Mağaza Yetkilisi (İmza - Kaşe)</div>
+        </div>
+    </div>
+</div>
+
+{% if auto_print %}
+<script>window.addEventListener("load", function(){ setTimeout(function(){ window.print(); }, 400); });</script>
+{% endif %}
+</body>
+</html>

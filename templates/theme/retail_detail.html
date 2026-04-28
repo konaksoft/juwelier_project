@@ -1,0 +1,263 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+{% block page_title %}Perakende Satış Modülü | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus Perakende Modülü ile barkodlu hızlı satış, çoklu kasa ve dövizli işlem desteği
+    sayesinde mağazanızdaki perakende süreçlerini saniyeler içinde yönetin; e-fatura entegrasyonu ve taksitli ödeme
+    seçenekleriyle müşteri memnuniyetini artırın.{% endblock page_description %}
+{% block page_keywords %}perakende modülü, kuyumcu POS, hızlı satış ekranı, barkodlu satış, taksitli ödeme, e-fatura
+    entegrasyonu{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/moduller/perakende/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus – Perakende Satış Modülü{% endblock og_title %}
+{% block og_description %}Dokunmatik hızlı satış, barkod & QR entegrasyonu, çoklu kasa ve e-fatura desteği ile perakende
+    operasyonlarınızı hızlandırın.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/perakende_og.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/moduller/perakende/{% endblock og_url %}
+{% block twitter_title %}Perakende Modülü | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}Mağazanızda hızlı satış ve kusursuz müşteri deneyimi için Perakende Modülü’nü
+    keşfedin.{% endblock twitter_description %}
+{% block header %}
+    <style>
+        .breadcrumb-slim {
+            padding-top: 4rem !important;
+            padding-bottom: 4rem !important;
+        }
+
+        .my-ul-padding {
+            padding-top: 1rem !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .breadcrumb-slim {
+                padding-bottom: 2rem !important;
+                padding-top: 2rem !important;
+
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.6rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: 1rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .my-image-size{
+                width: 100% !important;
+            height: 20rem!important;
+            }
+            .breadcrumb-slim {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.2rem !important;
+                margin-bottom: .5rem !important;
+
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: .8rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+            .my-padding{
+                padding: 3rem  0!important;
+            }
+        }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="breadcrumb-area bg-cover breadcrumb-responsive breadcrumb-slim"
+         style="margin: 0!important; background-color:#F8F9FC">
+        <div class="container">
+            <div class="breadcrumb-inner">
+                <div class="row justify-content-center breadcrumb-row">
+                    <div class="col-lg-6 breadcrumb-col">
+                        <h2 class="page-title">Perakende Satış Modülü</h2>
+                    </div>
+                    <div class="col-lg-6 text-lg-end breadcrumb-col">
+                        <ul class="page-list my-ul-padding">
+                            <li><a href="{% url '' %}" style="color:black!important">Anasayfa</a></li>
+                            <li><a href="#" style="color: black!important">Modüller</a></li>
+                            <li>Perakende</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="service-area pd-top-90 pd-bottom-0 my-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-12 mb-4 mb-lg-0">
+                    <div class="td-sidebar service-sidebar">
+                        <div class="widget widget_info">
+                            <h5 class="widget-title"><i class="fas fa-cash-register"></i> Modül Bilgisi</h5>
+                            <div class="widget-info-inner">
+                                <h6>Amaç</h6>
+                                <p>Hızlı Perakende Satış</p>
+                                <h6>Kapsam</h6>
+                                <p>Altın, Gümüş, Saat, Aksesuar</p>
+                                <h6>Sürüm</h6>
+                                <p>v1.0</p>
+                                <h6>Destek</h6>
+                                <p>7/24 Teknik Destek</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="blog-details-page-content">
+                        <div class="single-blog-inner mb-0">
+                            <div class="thumb mb-4 my-image-size">
+                                <img src="{% static 'theme/media/perakende.webp' %}" alt="Perakende Modülü Görseli">
+                            </div>
+
+                            <div class="details">
+                                <h3>Satış Hızınız, Müşteri Memnuniyetiniz</h3>
+                                <p>Kuyum Plus Perakende Modülü sayesinde tek ekrandan barkod okuyucu veya dokunmatik
+                                    ürün kısayolları ile saniyeler içinde satış yapın. Çoklu kasa desteği, dövizli
+                                    fiyatlandırma ve taksitli ödeme seçenekleriyle müşteri deneyiminizi üst seviyeye
+                                    taşıyın.</p>
+
+                                <h4>Öne Çıkan Özellikler</h4>
+                                <ul class="single-list-inner style-check style-heading">
+                                    <li><i class="far fa-check-circle"></i> <strong>Dokunmatik Hızlı Satış
+                                        Ekranı</strong></li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Barkod &amp; QR Okuyucu
+                                        Entegrasyonu</strong></li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Çoklu Kasa / Dövizli Satış</strong>
+                                    </li>
+                                    <li><i class="far fa-check-circle"></i> <strong>E-Fatura / E-Arşiv
+                                        Otomasyonu</strong></li>
+                                </ul>
+
+                                <h4 class="mt-5">Nasıl Çalışır?</h4>
+                                <p>Ürünlerinizi barkodlayın veya hızlı satış paneline sabitleyin, satış işlemi sonrası
+                                    sistem stokları otomatik günceller ve tahsilatı kasaya işler. Eğer e-fatura
+                                    entegrasyonunuz aktifse belge otomatik oluşturulur ve müşterinize iletilir.</p>
+
+                                <h4 class="mt-5">Sıkça Sorulan Sorular</h4>
+                                <div class="accordion accordion-inner style-2 accordion-icon-left" id="retailFAQ">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="rq1">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                                    data-bs-target="#rc1" aria-expanded="true">
+                                                POS fiş yazıcısı destekleniyor mu?
+                                            </button>
+                                        </h2>
+                                        <div id="rc1" class="accordion-collapse collapse show" aria-labelledby="rq1"
+                                             data-bs-parent="#retailFAQ">
+                                            <div class="accordion-body">Evet. 58 mm ve 80 mm termal fiş yazıcıları USB
+                                                veya LAN üzerinden desteklenmektedir.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="rq2">
+                                            <button class="accordion-button collapsed" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#rc2">
+                                                Dövizli satış yapabilir miyim?
+                                            </button>
+                                        </h2>
+                                        <div id="rc2" class="accordion-collapse collapse" aria-labelledby="rq2"
+                                             data-bs-parent="#retailFAQ">
+                                            <div class="accordion-body">TL, USD, EUR ve GBP para birimlerinde anlık kur
+                                                üzerinden satış yapabilir, kasalarınızı ayrı ayrı takip edebilirsiniz.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="rq3">
+                                            <button class="accordion-button collapsed" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#rc3">
+                                                E-fatura entegrasyonu nasıl çalışıyor?
+                                            </button>
+                                        </h2>
+                                        <div id="rc3" class="accordion-collapse collapse" aria-labelledby="rq3"
+                                             data-bs-parent="#retailFAQ">
+                                            <div class="accordion-body">Satış tamamlandığında belge otomatik GİB
+                                                sistemine iletilir; müşterinize PDF kopyası e-posta ile gider.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

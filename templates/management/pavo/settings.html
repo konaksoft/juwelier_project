@@ -1,0 +1,717 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .hint {
+            color: #6b7280;
+            font-size: .9rem
+        }
+
+        .code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace
+        }
+
+        .result-box {
+            border: 1px solid #eef3f7;
+            border-radius: .75rem;
+            background: #fff;
+            padding: 1rem;
+            min-height: 140px
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .45rem .75rem;
+            border-radius: 999px;
+            font-weight: 600
+        }
+
+        .status-ok {
+            background: #ecfdf5;
+            color: #047857
+        }
+
+        .status-warn {
+            background: #fff7ed;
+            color: #c2410c
+        }
+
+        .status-bad {
+            background: #fef2f2;
+            color: #b91c1c
+        }
+
+        .status-muted {
+            background: #f1f5f9;
+            color: #475569
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-5" id="kt_app_main"
+         style="border:1px groove aliceblue;border-radius:10px;">
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h1 class="fs-3 fw-bold my-0">Pavo Cihaz (REST) Ayarları</h1>
+                    <span id="connStatusPill" class="status-pill status-muted">
+                        <i class="fa-solid fa-circle-question"></i><span>Durum bilinmiyor</span>
+                    </span>
+                </div>
+
+                <ul class="nav nav-tabs mb-4" id="pavoRestTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-terminal"
+                                type="button" role="tab">
+                            <i class="fa-solid fa-plug me-2"></i>Cihaz / Ağ Ayarları
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rest-tx"
+                                type="button" role="tab">
+                            <i class="fa-solid fa-credit-card me-2"></i>Android REST Test
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="tab-terminal" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-12 col-lg-7">
+                                <form method="post" class="card">
+                                    <div class="card-header"><strong>Cihaz / Ağ Bilgileri</strong></div>
+                                    <div class="card-body">
+                                        {% csrf_token %}
+                                        {% if messages %}{% for m in messages %}
+                                            <div class="alert alert-{{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Başlık</label>
+                                                <input type="text" name="title" class="form-control"
+                                                       value="{{ term.title|default:'Terminal' }}"
+                                                       placeholder="örn. Kasa 1">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Cihaz IP</label>
+                                                <input type="text" name="ip" class="form-control"
+                                                       value="{{ term.ip|default:'' }}"
+                                                       placeholder="örn. 192.168.200.10"
+                                                       required>
+                                                <div class="hint mt-1">Aynı ağdaki PavoPay cihazının IP adresi.</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label d-block">Güvenli (HTTPS)</label>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="secure"
+                                                           id="secureSwitch"
+                                                           {% if term and term.secure %}checked{% endif %}>
+                                                    <label for="secureSwitch" class="form-check-label">Etkin</label>
+                                                </div>
+                                                <div class="hint mt-1">
+                                                    HTTPS → <span class="code">4567</span>,
+                                                    HTTP → <span class="code">4568</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Port</label>
+                                                <input type="number" min="1" max="65535" name="port"
+                                                       class="form-control" value="{{ term.port|default:'' }}"
+                                                       placeholder="boş bırak → otomatik">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Seri No</label>
+                                                <input type="text" name="serial_number" class="form-control"
+                                                       value="{{ term.serial_number|default:'' }}"
+                                                       placeholder="örn. PAV960000079" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Fingerprint</label>
+                                                <input type="text" name="fingerprint" class="form-control"
+                                                       value="{{ term.fingerprint|default:'' }}"
+                                                       placeholder="örn. test" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="hint">
+                                                    Temel REST:
+                                                    <span class="code">https://IP:Port/Method</span>
+                                                    — Pairing:
+                                                    <span class="code">/Pairing</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                                        <div class="hint mb-0">
+                                            IP / Seri No / Fingerprint burada kayıtlı, Android bu formdan okuyacak.
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa-solid fa-save"></i> Kaydet
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-12 col-lg-5">
+                                <div class="card h-100">
+                                    <div class="card-header"><strong>Son Eşleştirme Bilgisi</strong></div>
+                                    <div class="card-body">
+                                        <div class="result-box">
+                                            {% if term and term.last_paired_at %}
+                                                <div class="mb-2">
+                                                    <b>Son başarılı eşleştirme:</b>
+                                                    {{ term.last_paired_at|date:"d.m.Y H:i:s" }}
+                                                </div>
+                                                <em>Yeni bir test için "Android REST Test" sekmesini kullanın.</em>
+                                            {% else %}
+                                                <em>Henüz eşleştirme kaydı yok.</em>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header"><strong>Doküman Örneği</strong></div>
+                            <div class="card-body">
+<pre class="mb-0 code" style="white-space:pre-wrap">
+Pairing (POST /Pairing):
+{
+  "TransactionHandle": {
+    "SerialNumber": "PAV960000079",
+    "TransactionDate": "2025-01-29T11:20:35",
+    "TransactionSequence": 1,
+    "Fingerprint": "test"
+  }
+}
+</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="tab-rest-tx" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-12 col-lg-7">
+                                <div class="card">
+                                    <div class="card-header"><strong>Android WebView REST Testi</strong></div>
+                                    <div class="card-body">
+                                        <p class="hint">
+                                            Bu bölüm, Android uygulamasındaki WebView içinde çalışan
+                                            <span class="code">window.PavoAndroid</span> arayüzü ile
+                                            doğrudan PavoPay cihazına Pairing / Sale / CompleteSale / GetSaleResult
+                                            çağrıları
+                                            göndermek için kullanılır.
+                                        </p>
+
+                                        <div class="mb-3 d-flex flex-wrap gap-2">
+                                            <button type="button" id="btnAndroidPair" class="btn btn-light-primary">
+                                                <i class="fa-solid fa-link"></i> Pairing Testi (Android)
+                                            </button>
+                                        </div>
+
+                                        <div class="row g-3 mt-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Tutar</label>
+                                                <input type="number" step="0.01" id="txAmount" class="form-control"
+                                                       value="20">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Para Birimi</label>
+                                                <select id="txCurrency" class="form-select">
+                                                    <option value="TRY" selected>TRY</option>
+                                                    <option value="USD">USD</option>
+                                                    <option value="EUR">EUR</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Referans / Order No</label>
+                                                <input type="text" id="txReference" class="form-control"
+                                                       value="0000000000ABC0005">
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3 d-flex flex-wrap gap-2">
+                                            <button type="button" id="btnAndroidSale" class="btn btn-light-success">
+                                                <i class="fa-solid fa-credit-card"></i> Sale Gönder (Android)
+                                            </button>
+                                            <button type="button" id="btnAndroidCompleteSale"
+                                                    class="btn btn-light-warning">
+                                                <i class="fa-solid fa-bag-shopping"></i> CompleteSale (Android)
+                                            </button>
+                                            <button type="button" id="btnAndroidGetResult" class="btn btn-light">
+                                                <i class="fa-solid fa-clipboard-check"></i> GetSaleResult (Android)
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-5">
+                                <div class="card h-100">
+                                    <div class="card-header"><strong>Android REST Sonuçları</strong></div>
+                                    <div class="card-body">
+                                        <div class="result-box mb-3" id="androidResultBox">
+                                            <em>Henüz Android üzerinden test yapılmadı.</em>
+                                        </div>
+                                        <div class="hint">
+                                            Pairing / Sale / CompleteSale / GetSaleResult çağrılarının JSON yanıtları
+                                            burada
+                                            görüntülenir.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+
+{% block footer %}
+    <script>
+        (function () {
+            function showResult(obj, targetId) {
+                var box = document.getElementById(targetId || "androidResultBox");
+                if (!box) return;
+                var pre = document.createElement("pre");
+                pre.style.whiteSpace = "pre-wrap";
+                pre.className = "mb-0";
+                box.innerHTML = "";
+                try {
+                    pre.textContent = JSON.stringify(obj, null, 2);
+                } catch (e) {
+                    pre.textContent = String(obj);
+                }
+                box.appendChild(pre);
+            }
+
+            function parseJsonString(txt) {
+                if (!txt) return {};
+                try {
+                    return JSON.parse(txt);
+                } catch (e) {
+                    return {raw: String(txt)};
+                }
+            }
+
+            function pushConfigToAndroid() {
+                var ipEl = document.querySelector('input[name="ip"]');
+                var snEl = document.querySelector('input[name="serial_number"]');
+                var fpEl = document.querySelector('input[name="fingerprint"]');
+                if (!ipEl || !snEl || !fpEl) return;
+                var ip = ipEl.value || "";
+                var serialNumber = snEl.value || "";
+                var fingerprint = fpEl.value || "";
+                if (!ip || !serialNumber || !fingerprint) return;
+                var secureSwitch = document.getElementById("secureSwitch");
+                var secure = secureSwitch && secureSwitch.checked;
+                var portEl = document.querySelector('input[name="port"]');
+                var portStr = portEl && portEl.value ? portEl.value : "";
+                var port = parseInt(portStr || (secure ? "4567" : "4568"));
+                if (isNaN(port) || port <= 0 || port > 65535) {
+                    port = secure ? 4567 : 4568;
+                }
+                var payload = {
+                    ip: ip,
+                    port: port,
+                    secure: secure,
+                    serialNumber: serialNumber,
+                    fingerprint: fingerprint
+                };
+                try {
+                    if (hasAndroidBridge() && window.PavoAndroid && window.PavoAndroid.configure) {
+                        window.PavoAndroid.configure(ip, port, secure, serialNumber, fingerprint);
+                    }
+                } catch (e) {
+                }
+                try {
+                    if (hasIosBridge() && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.PavoIOS) {
+                        window.webkit.messageHandlers.PavoIOS.postMessage({
+                            action: "configure",
+                            payload: payload,
+                            callbackName: "pavoPairCallback"
+                        });
+                    }
+                } catch (e) {
+                }
+            }
+
+            var pill = document.getElementById("connStatusPill");
+            var state = {pair: null};
+
+            function setPill() {
+                if (!pill) return;
+                pill.classList.remove("status-ok", "status-warn", "status-bad", "status-muted");
+                var cls = "status-muted";
+                var icon = "circle-question";
+                var text = "Durum bilinmiyor";
+                if (state.pair === true) {
+                    cls = "status-ok";
+                    icon = "circle-check";
+                    text = "Bağlı";
+                } else if (state.pair === false) {
+                    cls = "status-bad";
+                    icon = "plug-circle-xmark";
+                    text = "Pairing başarısız";
+                }
+                pill.classList.add(cls);
+                pill.innerHTML = '<i class="fa-solid fa-' + icon + '"></i><span>' + text + '</span>';
+            }
+
+            function hasAndroidBridge() {
+                return typeof window.PavoAndroid !== "undefined" && window.PavoAndroid !== null;
+            }
+
+            function hasIosBridge() {
+                try {
+                    return !!(
+                        typeof window.webkit !== "undefined"
+                        && window.webkit
+                        && window.webkit.messageHandlers
+                        && window.webkit.messageHandlers.PavoIOS
+                    );
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function testIosBridge() {
+                var info = {
+                    userAgent: navigator.userAgent || "",
+                    hasAndroidBridge: hasAndroidBridge(),
+                    hasIosBridge: hasIosBridge()
+                };
+                showResult(info, "androidResultBox");
+                if (hasIosBridge()) {
+                    try {
+                        window.webkit.messageHandlers.PavoIOS.postMessage({
+                            action: "pair",
+                            payload: null,
+                            callbackName: "pavoPairCallback"
+                        });
+                    } catch (e) {
+                        showResult({
+                            HasError: true,
+                            Message: "PavoIOS.pair çağrısı sırasında hata: " + String(e)
+                        }, "androidResultBox");
+                    }
+                } else {
+                    showResult({
+                        HasError: true,
+                        Message: "iOS köprüsü (window.webkit.messageHandlers.PavoIOS) bulunamadı."
+                    }, "androidResultBox");
+                }
+            }
+
+            window.pavoPairCallback = function (resultJson) {
+                var parsed = parseJsonString(resultJson);
+                var hasError = parsed && parsed.HasError === true;
+                state.pair = !hasError;
+                showResult(parsed, "androidResultBox");
+                if (typeof window.pavoConnectionUpdateFromResult === "function") {
+                    window.pavoConnectionUpdateFromResult(parsed);
+                }
+                setPill();
+            };
+
+            window.pavoSaleCallback = function (resultJson) {
+                var parsed = parseJsonString(resultJson);
+                showResult(parsed, "androidResultBox");
+            };
+
+            window.pavoGetSaleResultCallback = function (resultJson) {
+                var parsed = parseJsonString(resultJson);
+                showResult(parsed, "androidResultBox");
+            };
+
+            window.pavoCompleteSaleCallback = function (resultJson) {
+                var parsed = parseJsonString(resultJson);
+                showResult(parsed, "androidResultBox");
+            };
+
+            var btnPair = document.getElementById("btnAndroidPair");
+            if (btnPair) {
+                btnPair.addEventListener("click", function () {
+                    if (hasIosBridge()) {
+                        testIosBridge();
+                        return;
+                    }
+
+                    if (!hasAndroidBridge() || !window.PavoAndroid.pair) {
+                        showResult({
+                            HasError: true,
+                            Message: "PavoAndroid.pair arayüzü bulunamadı. Sayfa Android WebView içinde mi açık?"
+                        });
+                        state.pair = false;
+                        setPill();
+                        return;
+                    }
+
+                    window.PavoAndroid.pair("pavoPairCallback");
+                });
+            }
+
+            function val(id) {
+                var el = document.getElementById(id);
+                return el && el.value ? el.value : "";
+            }
+
+            function buildSalePayload() {
+                var amountStr = val("txAmount");
+                var amount = 0;
+                if (amountStr) {
+                    var parsed = parseFloat(amountStr);
+                    if (!isNaN(parsed)) amount = parsed;
+                }
+                return {
+                    Amount: amount,
+                    Currency: val("txCurrency") || "TRY",
+                    Reference: val("txReference") || null
+                };
+            }
+
+            function buildCompleteSalePayload() {
+                var amountStr = val("txAmount");
+                var qty = 1;
+                var unitPrice = 0;
+                if (amountStr) {
+                    var parsed = parseFloat(amountStr);
+                    if (!isNaN(parsed)) unitPrice = parsed;
+                }
+
+                var gross = +(qty * unitPrice).toFixed(2);
+                var currency = val("txCurrency") || "TRY";
+                var reference = val("txReference") || "0000000000ABC0005";
+
+                return {
+                    Sale: {
+                        RefererApp: "Harici Uygulama",
+                        RefererAppVersion: "1.0.0",
+                        OrderNo: reference,
+                        MainDocumentType: 1,
+                        GrossPrice: gross,
+                        TotalPrice: gross,
+                        CurrencyCode: currency,
+                        ExchangeRate: 1,
+                        SendPhoneNotification: false,
+                        SendEMailNotification: true,
+                        NotificationPhone: "",
+                        DocumentNote: "",
+                        Reserved03: "",
+                        NotificationEMail: "me@info.com",
+                        ShowCreditCardMenu: false,
+                        SelectedSlots: ["rf", "icc", "manual"],
+                        EnableAllTerminalsOnRetry: false,
+                        AllowDismissCardRead: false,
+                        CardReadTimeout: 30,
+                        SkipAmountCash: false,
+                        CancelPaymentLater: true,
+                        AskCustomer: false,
+                        SendResponseBeforePrint: false,
+                        TryAgainOnPaymentFailure: true,
+                        ReferOtherMediatorsToRetryPayment: true,
+                        AbandonOptions: {
+                            IsVoid: true,
+                            EnableRefundMediatorsOnVoidFailure: true
+                        },
+                        ContinuePaymentWithCardInserted: true,
+                        HeadUnmaskedCardNumber: 4,
+                        TailUnmaskedCardNumber: 4,
+                        AddedSaleItems: [
+                            {
+                                Name: "Gofret",
+                                IsGeneric: false,
+                                UnitCode: "KGM",
+                                TaxGroupCode: "KDV10",
+                                ItemQuantity: qty,
+                                UnitPriceAmount: unitPrice,
+                                GrossPriceAmount: gross,
+                                TotalPriceAmount: gross,
+                                ReservedText: "TEST0001"
+                            }
+                        ],
+                        PaymentInformations: [
+                            {
+                                Mediator: 2,
+                                Amount: gross,
+                                CurrencyCode: currency,
+                                ExchangeRate: 1,
+                                ExternalReferenceText: reference
+                            }
+                        ],
+                        AllowedPaymentMediators: [
+                            {Mediator: 2},
+                            {Mediator: 1}
+                        ],
+                        ReceiptInformation: {
+                            ReceiptImageEnabled: true,
+                            ReceiptJsonEnabled: false,
+                            ReceiptTextEnabled: false,
+                            ReceiptWidth: "58mm",
+                            PrintCustomerReceipt: true,
+                            PrintCustomerReceiptCopy: true,
+                            PrintMerchantReceipt: true,
+                            EnableExchangeRateField: true
+                        },
+                        CustomerParty: {
+                            CustomerType: 1,
+                            FirstName: "John",
+                            MiddleName: "",
+                            FamilyName: "Doe",
+                            CompanyName: "",
+                            TaxOfficeCode: "",
+                            TaxNumber: "11111111111",
+                            Phone: "",
+                            EMail: "",
+                            Country: "Türkiye",
+                            City: "Ankara",
+                            District: "Çankaya",
+                            Neighborhood: "",
+                            Address: ""
+                        },
+                        AdditionalInfo: [
+                            {
+                                Key: "Test",
+                                Value: "Test",
+                                Print: true
+                            }
+                        ],
+                        TopPrintableItems: [
+                            {type: "dSpace", height: 20},
+                            {
+                                type: "dText",
+                                alignment: "center",
+                                fontSize: 24,
+                                text: "Ücretsiz Ürünler",
+                                fontWeight: "bold"
+                            },
+                            {type: "dLine", dashWidth: 4},
+                            {type: "dSpace", height: 20}
+                        ],
+                        BottomPrintableItems: [
+                            {type: "dSpace", height: 20},
+                            {
+                                type: "dText",
+                                alignment: "center",
+                                fontSize: 24,
+                                text: "Ücretsiz Ürünler",
+                                fontWeight: "bold"
+                            },
+                            {type: "dLine", dashWidth: 4},
+                            {type: "dSpace", height: 20}
+                        ]
+                    }
+                };
+            }
+
+            var btnSale = document.getElementById("btnAndroidSale");
+            if (btnSale) {
+                btnSale.addEventListener("click", function () {
+                    if (!hasAndroidBridge() || !window.PavoAndroid.sale) {
+                        showResult({
+                            HasError: true,
+                            Message: "PavoAndroid.sale arayüzü bulunamadı. Sayfa Android WebView içinde mi açık?"
+                        });
+                        return;
+                    }
+                    var payload = buildSalePayload();
+                    var jsonStr;
+                    try {
+                        jsonStr = JSON.stringify(payload);
+                    } catch (e) {
+                        jsonStr = "{}";
+                    }
+                    window.PavoAndroid.sale(jsonStr, "pavoSaleCallback");
+                });
+            }
+
+            var btnComplete = document.getElementById("btnAndroidCompleteSale");
+            if (btnComplete) {
+                btnComplete.addEventListener("click", function () {
+                    if (!hasAndroidBridge() || !window.PavoAndroid.completeSale) {
+                        showResult({
+                            HasError: true,
+                            Message: "PavoAndroid.completeSale arayüzü bulunamadı. Sayfa Android WebView içinde mi açık?"
+                        });
+                        return;
+                    }
+                    var payload = buildCompleteSalePayload();
+                    var jsonStr;
+                    try {
+                        jsonStr = JSON.stringify(payload);
+                    } catch (e) {
+                        jsonStr = "{}";
+                    }
+                    window.PavoAndroid.completeSale(jsonStr, "pavoCompleteSaleCallback");
+                });
+            }
+
+            var btnGet = document.getElementById("btnAndroidGetResult");
+            if (btnGet) {
+                btnGet.addEventListener("click", function () {
+                    if (!hasAndroidBridge() || !window.PavoAndroid.getSaleResult) {
+                        showResult({
+                            HasError: true,
+                            Message: "PavoAndroid.getSaleResult arayüzü bulunamadı. Sayfa Android WebView içinde mi açık?"
+                        });
+                        return;
+                    }
+                    window.PavoAndroid.getSaleResult("{}", "pavoGetSaleResultCallback");
+                });
+            }
+
+            var tabsRoot = document.getElementById("pavoRestTabs");
+            if (tabsRoot) {
+                var tabButtons = tabsRoot.querySelectorAll(".nav-link");
+                var panes = document.querySelectorAll(".tab-pane");
+
+                function switchTab(tabId) {
+                    tabButtons.forEach(function (btn) {
+                        var target = btn.getAttribute("data-bs-target");
+                        if (target === tabId) {
+                            btn.classList.add("active");
+                        } else {
+                            btn.classList.remove("active");
+                        }
+                    });
+                    panes.forEach(function (pane) {
+                        if ("#" + pane.id === tabId) {
+                            pane.classList.add("show", "active");
+                        } else {
+                            pane.classList.remove("show", "active");
+                        }
+                    });
+                }
+
+                tabButtons.forEach(function (btn) {
+                    btn.addEventListener("click", function () {
+                        var t = btn.getAttribute("data-bs-target");
+                        switchTab(t || "#tab-terminal");
+                    });
+                });
+
+                switchTab("#tab-terminal");
+            }
+
+            state.pair = null;
+            setPill();
+            pushConfigToAndroid();
+
+            var form = document.querySelector("#tab-terminal form");
+            if (form) {
+                form.addEventListener("submit", function () {
+                    setTimeout(pushConfigToAndroid, 500);
+                });
+            }
+        })();
+    </script>
+{% endblock footer %}

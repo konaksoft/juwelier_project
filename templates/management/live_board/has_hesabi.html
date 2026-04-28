@@ -1,0 +1,1224 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default:"Has Hesabı" }} | Kuyum Plus</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-primary: #0F1B2B;
+            --bg-secondary: #1A253A;
+            --bg-card: rgba(26, 37, 58, 0.95);
+            --glass-bg: rgba(26, 37, 58, 0.95);
+            --accent-gold: #FFD700;
+            --accent-gold-dim: rgba(255, 215, 0, 0.15);
+            --text-primary: #E3EAF2;
+            --text-secondary: #A9B6C8;
+            --text-muted: #A9B6C8;
+            --success-color: #28a745;
+            --success-bg: rgba(40, 167, 69, 0.15);
+            --danger-color: #dc3545;
+            --danger-bg: rgba(220, 53, 69, 0.15);
+            --warning-color: #E5A100;
+            --warning-bg: rgba(229, 161, 0, 0.12);
+            --border-color: rgba(255, 215, 0, 0.1);
+            --glow-gold: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            background-image: radial-gradient(ellipse at top, rgba(245, 184, 0, 0.03) 0%, transparent 50%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .page-header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-header-left .icon-box {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #D4A000 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-gold);
+            color: var(--bg-primary);
+            font-size: 1.3rem;
+        }
+
+        .page-header-left h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .page-header-left p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-back {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            background: var(--accent-gold-dim);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ========================================
+           TABS
+           ======================================== */
+        .tabs-nav {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab-btn {
+            padding: 0.85rem 1.75rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--accent-gold);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-gold);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-gold);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ========================================
+           AYARLAR TAB — KARTLAR
+           ======================================== */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .settings-grid { grid-template-columns: 1fr; }
+            .main-content { padding: 1rem; }
+        }
+
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-head {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(180deg, rgba(245, 184, 0, 0.05) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-head h2 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .card-body {
+            padding: 1.25rem;
+        }
+
+        /* ========================================
+           TOGGLE SWITCH
+           ======================================== */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-label {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .toggle-label small {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #3A4558;
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-gold);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* ========================================
+           MOD SEÇİMİ (Radio)
+           ======================================== */
+        .mode-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-option:hover {
+            border-color: var(--accent-gold);
+            background: var(--accent-gold-dim);
+        }
+
+        .mode-option.selected {
+            border-color: var(--accent-gold);
+            background: var(--accent-gold-dim);
+            box-shadow: 0 0 0 1px var(--accent-gold);
+        }
+
+        .mode-option input[type="radio"] {
+            display: none;
+        }
+
+        .mode-radio-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .mode-option.selected .mode-radio-circle {
+            border-color: var(--accent-gold);
+        }
+
+        .mode-radio-circle::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .mode-option.selected .mode-radio-circle::after {
+            background: var(--accent-gold);
+        }
+
+        .mode-text {
+            flex: 1;
+        }
+
+        .mode-text strong {
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            display: block;
+        }
+
+        .mode-text small {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .mode-icon {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .mode-option.selected .mode-icon {
+            color: var(--accent-gold);
+        }
+
+        /* ========================================
+           UYARI BANNER
+           ======================================== */
+        .warning-banner {
+            display: none;
+            padding: 0.85rem 1rem;
+            background: var(--warning-bg);
+            border: 1px solid rgba(229, 161, 0, 0.3);
+            border-radius: 10px;
+            color: var(--warning-color);
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .warning-banner.visible {
+            display: flex;
+        }
+
+        .success-banner {
+            display: none;
+            padding: 0.85rem 1rem;
+            background: var(--success-bg);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            border-radius: 10px;
+            color: var(--success-color);
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .success-banner.visible {
+            display: flex;
+        }
+
+        /* ========================================
+           MANUEL HAS TABLOSU
+           ======================================== */
+        .has-input-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .has-input-table th {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.6rem 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .has-input-table th:first-child {
+            text-align: left;
+        }
+
+        .has-input-table td {
+            padding: 0.5rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .has-input-table td:first-child {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .has-input-table .hs-input {
+            width: 100%;
+            padding: 0.5rem 0.6rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            outline: none;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .has-input-table .hs-input:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .has-input-table .hs-input:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        /* ========================================
+           KAYDET BUTONU
+           ======================================== */
+        .btn-save-settings {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, var(--accent-gold), #D4A000);
+            border: none;
+            border-radius: 10px;
+            color: var(--bg-primary);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1.5rem;
+        }
+
+        .btn-save-settings:hover {
+            box-shadow: var(--glow-gold);
+        }
+
+        .btn-save-settings:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========================================
+           HAS HESABI TAB
+           ======================================== */
+        .has-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .has-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .ayar-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .ayar-btn {
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ayar-btn:hover {
+            background: var(--accent-gold-dim);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .ayar-btn.active {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: var(--bg-primary);
+            box-shadow: var(--glow-gold);
+        }
+
+        .result-section {
+            margin-top: 1rem;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .result-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .result-value.big {
+            font-size: 1.5rem;
+        }
+
+        .result-value.muted {
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-item {
+            flex: 1;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            text-align: center;
+        }
+
+        .info-item .label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        @media (max-width: 600px) {
+            .info-bar { flex-direction: column; }
+            .ayar-buttons { justify-content: center; }
+        }
+
+        .ayar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .ayar-table th {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.6rem 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .ayar-table th:first-child { text-align: left; }
+
+        .ayar-table td {
+            padding: 0.65rem 0.75rem;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            text-align: right;
+            color: var(--text-primary);
+        }
+
+        .ayar-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .ayar-table tbody tr:hover {
+            background: var(--accent-gold-dim);
+        }
+
+        .ayar-table .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .ayar-table .gold {
+            color: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+
+<header class="page-header">
+    <div class="page-header-left">
+        <div class="icon-box"><i class="bi bi-sliders"></i></div>
+        <div>
+            <h1>Canlı Ekran Ayarları & Has Hesabı</h1>
+            <p>Canlı Piyasa Ekranı Özelleştirme ve Saf Altın Hesaplama</p>
+        </div>
+    </div>
+    <a href="{% url 'live_board:index' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Canlı Piyasalar
+    </a>
+</header>
+
+<main class="main-content">
+
+    <!-- TABS NAV -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="settings" onclick="switchTab('settings')">
+            <i class="bi bi-gear"></i> Canlı Ekran Ayarları
+        </button>
+        <button class="tab-btn" data-tab="calculator" onclick="switchTab('calculator')">
+            <i class="bi bi-calculator"></i> Has Hesabı
+        </button>
+    </div>
+
+    <!-- ================================================
+         TAB 1: CANLI EKRAN AYARLARI
+         ================================================ -->
+    <div class="tab-content active" id="tab-settings">
+
+        <div class="success-banner" id="settingsSuccessBanner">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Ayarlar başarıyla kaydedildi.</span>
+        </div>
+
+        <div class="settings-grid">
+
+            <!-- SOL KOLON: Mod Seçimi + Görünürlük -->
+            <div>
+                <!-- Mod Seçimi -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-head">
+                        <i class="bi bi-broadcast" style="color: var(--accent-gold);"></i>
+                        <h2>Fiyat Modu Seçimi</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mode-options" id="modeOptions">
+                            <label class="mode-option {% if is_chamber_mode %}selected{% endif %}" data-mode="chamber" onclick="selectMode('chamber')">
+                                <input type="radio" name="pricing_mode" value="chamber" {% if is_chamber_mode %}checked{% endif %}>
+                                <span class="mode-radio-circle"></span>
+                                <span class="mode-text">
+                                    <strong>Dernek Modu</strong>
+                                    <small>Dernek fiyatları geçerli olur. Manuel hesaplama kapatılır.</small>
+                                </span>
+                                <i class="bi bi-building mode-icon"></i>
+                            </label>
+                            <label class="mode-option {% if use_manual_mode and not is_chamber_mode %}selected{% endif %}" data-mode="manual" onclick="selectMode('manual')">
+                                <input type="radio" name="pricing_mode" value="manual" {% if use_manual_mode and not is_chamber_mode %}checked{% endif %}>
+                                <span class="mode-radio-circle"></span>
+                                <span class="mode-text">
+                                    <strong>Manuel Has Hesaplama</strong>
+                                    <small>Her ürün için has miktarını kendiniz belirlersiniz.</small>
+                                </span>
+                                <i class="bi bi-pencil-square mode-icon"></i>
+                            </label>
+                            <label class="mode-option {% if not use_manual_mode and not is_chamber_mode %}selected{% endif %}" data-mode="api" onclick="selectMode('api')">
+                                <input type="radio" name="pricing_mode" value="api" {% if not use_manual_mode and not is_chamber_mode %}checked{% endif %}>
+                                <span class="mode-radio-circle"></span>
+                                <span class="mode-text">
+                                    <strong>API Modu (Otomatik)</strong>
+                                    <small>Piyasa fiyatları otomatik olarak güncellenir.</small>
+                                </span>
+                                <i class="bi bi-cloud-arrow-down mode-icon"></i>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Görünürlük Ayarları -->
+                <div class="card">
+                    <div class="card-head">
+                        <i class="bi bi-eye" style="color: var(--accent-gold);"></i>
+                        <h2>Görünürlük Ayarları</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="toggle-row">
+                            <div class="toggle-label">
+                                Mağaza Adı
+                                <small>Canlı ekranda mağaza adını göster</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleStoreName" {% if show_store_name %}checked{% endif %}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">
+                                Logo
+                                <small>Canlı ekranda mağaza logosunu göster</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleLogo" {% if show_logo %}checked{% endif %}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">
+                                Döviz Bölümü
+                                <small>Döviz kurları kartını göster/gizle</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleCurrency" {% if show_currency_section %}checked{% endif %}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-label">
+                                Sarrafiye Bölümü
+                                <small>Sarrafiye (Ziynet) kartını göster/gizle</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleSarrafiye" {% if show_sarrafiye_section %}checked{% endif %}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAĞ KOLON: Manuel Has Miktarları -->
+            <div>
+                <div class="card">
+                    <div class="card-head">
+                        <i class="bi bi-hash" style="color: var(--accent-gold);"></i>
+                        <h2>Manuel Has Miktarları</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="warning-banner" id="chamberWarning">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>Dernek Modu aktifken manuel has hesaplama yapılamaz. Fiyatlar dernek tarafından belirlenir.</span>
+                        </div>
+
+                        <table class="has-input-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left;">Ürün</th>
+                                    <th>Alış Has</th>
+                                    <th>Satış Has</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manualHasBody">
+                                {% for target in manual_has_targets %}
+                                <tr>
+                                    <td>{{ target }}</td>
+                                    <td>
+                                        <input type="number" class="hs-input manual-hs-input"
+                                               data-product="{{ target }}" data-side="buy_hs"
+                                               step="0.0001" min="0" placeholder="0.0000">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="hs-input manual-hs-input"
+                                               data-product="{{ target }}" data-side="sale_hs"
+                                               step="0.0001" min="0" placeholder="0.0000">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {% if is_superuser %}
+        <button class="btn-save-settings" id="btnSaveSettings" onclick="saveSettings()">
+            <i class="bi bi-check2-circle"></i> Ayarları Kaydet
+        </button>
+        {% endif %}
+
+    </div>
+
+    <!-- ================================================
+         TAB 2: HAS HESABI
+         ================================================ -->
+    <div class="tab-content" id="tab-calculator">
+
+        <div class="info-bar">
+            <div class="info-item">
+                <div class="label">Has Altın Alış</div>
+                <div class="value" id="infoHasBuy">--</div>
+            </div>
+            <div class="info-item">
+                <div class="label">Has Altın Satış</div>
+                <div class="value" id="infoHasSell">--</div>
+            </div>
+            <div class="info-item">
+                <div class="label">Seçili Ayar</div>
+                <div class="value" id="infoAyar">22 Ayar</div>
+            </div>
+            <div class="info-item">
+                <div class="label">Has Oranı</div>
+                <div class="value" id="infoOran">0.9167</div>
+            </div>
+        </div>
+
+        <div class="has-grid">
+
+            <div class="card">
+                <div class="card-head">
+                    <i class="bi bi-pencil-square" style="color: var(--accent-gold);"></i>
+                    <h2>Hesaplama Girişi</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Ayar Seçimi</label>
+                        <div class="ayar-buttons" id="ayarButtons">
+                            {% for a in ayar_list %}
+                                <button type="button"
+                                        class="ayar-btn{% if a.ayar == 22 %} active{% endif %}"
+                                        data-ayar="{{ a.ayar }}"
+                                        data-oran="{{ a.oran }}">
+                                    {{ a.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gram (Brüt Ağırlık)</label>
+                        <input type="number" class="form-control" id="inputGram"
+                               placeholder="0.000" step="0.001" min="0" value="">
+                    </div>
+                    <div class="form-group">
+                        <label>İşçilik Tutarı (TL) — Opsiyonel</label>
+                        <input type="number" class="form-control" id="inputIscilik"
+                               placeholder="0.00" step="0.01" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <i class="bi bi-graph-up-arrow" style="color: var(--accent-gold);"></i>
+                    <h2>Hesaplama Sonucu</h2>
+                </div>
+                <div class="card-body">
+                    <div class="result-section">
+                        <div class="result-row">
+                            <span class="result-label">Has (Saf) Gram</span>
+                            <span class="result-value" id="resultHasGram">0.0000</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Alış Değeri (TL)</span>
+                            <span class="result-value muted" id="resultAlisTl">0,00</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Satış Değeri (TL)</span>
+                            <span class="result-value" id="resultSatisTl">0,00</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">İşçilik (TL)</span>
+                            <span class="result-value muted" id="resultIscilik">0,00</span>
+                        </div>
+                        <div class="result-row" style="border-top: 2px solid var(--accent-gold); padding-top: 1rem; margin-top: 0.5rem;">
+                            <span class="result-label" style="font-weight: 700; color: #fff;">İşçilikli Toplam</span>
+                            <span class="result-value big" id="resultToplam">0,00 TL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <div class="card">
+                <div class="card-head">
+                    <i class="bi bi-table" style="color: var(--accent-gold);"></i>
+                    <h2>Ayar Bazlı Has Oranları ve 1 Gram Değerleri</h2>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <table class="ayar-table">
+                        <thead>
+                            <tr>
+                                <th>Ayar</th>
+                                <th>Has Oranı</th>
+                                <th>1gr Has (gr)</th>
+                                <th>1gr Alış (TL)</th>
+                                <th>1gr Satış (TL)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ayarTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+    /* =============================================
+       SABITLER
+       ============================================= */
+    const HAS_BUY_TL = {{ has_buy_tl }};
+    const HAS_SELL_TL = {{ has_sell_tl }};
+    const AYAR_LIST = [
+        {% for a in ayar_list %}
+        { ayar: {{ a.ayar }}, oran: {{ a.oran }}, label: "{{ a.label }}" }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    let selectedAyar = 22;
+    let selectedOran = 0.916667;
+
+    // Manuel has map (sunucudan gelen mevcut değerler)
+    let manualHasMap = {};
+    try {
+        manualHasMap = JSON.parse('{{ manual_has_map_json|escapejs }}');
+    } catch(e) {
+        manualHasMap = {};
+    }
+
+    /* =============================================
+       SEKME YÖNETİMİ
+       ============================================= */
+    function switchTab(tabName) {
+        // Tab butonları
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tabName) btn.classList.add('active');
+        });
+        // Tab içerikleri
+        document.querySelectorAll('.tab-content').forEach(function(content) {
+            content.classList.remove('active');
+        });
+        var target = document.getElementById('tab-' + tabName);
+        if (target) target.classList.add('active');
+    }
+
+    /* =============================================
+       MOD SEÇİMİ
+       ============================================= */
+    let currentMode = '{% if is_chamber_mode %}chamber{% elif use_manual_mode %}manual{% else %}api{% endif %}';
+
+    function selectMode(mode) {
+        currentMode = mode;
+
+        // Radio seçimlerini güncelle
+        document.querySelectorAll('.mode-option').forEach(function(opt) {
+            opt.classList.remove('selected');
+            if (opt.dataset.mode === mode) {
+                opt.classList.add('selected');
+                opt.querySelector('input[type="radio"]').checked = true;
+            }
+        });
+
+        // Manuel has inputlarını enable/disable et
+        var inputs = document.querySelectorAll('.manual-hs-input');
+        var warningBanner = document.getElementById('chamberWarning');
+
+        if (mode === 'chamber') {
+            inputs.forEach(function(inp) { inp.disabled = true; });
+            warningBanner.classList.add('visible');
+        } else if (mode === 'manual') {
+            inputs.forEach(function(inp) { inp.disabled = false; });
+            warningBanner.classList.remove('visible');
+        } else {
+            // API modu — inputlar disable ama uyarı yok
+            inputs.forEach(function(inp) { inp.disabled = true; });
+            warningBanner.classList.remove('visible');
+        }
+    }
+
+    /* =============================================
+       MANUEL HAS MAP — INPUTLARA DOLDUR
+       ============================================= */
+    function populateManualHasInputs() {
+        document.querySelectorAll('.manual-hs-input').forEach(function(input) {
+            var product = input.dataset.product;
+            var side = input.dataset.side;
+            if (manualHasMap[product] && manualHasMap[product][side] !== undefined) {
+                var val = manualHasMap[product][side];
+                if (val > 0) {
+                    input.value = parseFloat(val).toFixed(4);
+                }
+            }
+        });
+    }
+
+    /* =============================================
+       AYARLARI KAYDET
+       ============================================= */
+    function saveSettings() {
+        var btn = document.getElementById('btnSaveSettings');
+        btn.disabled = true;
+
+        // Manuel has map'i inputlardan topla
+        var newMap = {};
+        document.querySelectorAll('.manual-hs-input').forEach(function(input) {
+            var product = input.dataset.product;
+            var side = input.dataset.side;
+            var val = parseFloat(input.value) || 0;
+
+            if (!newMap[product]) newMap[product] = {};
+            newMap[product][side] = val;
+        });
+
+        var payload = {
+            show_store_name: document.getElementById('toggleStoreName').checked,
+            show_logo: document.getElementById('toggleLogo').checked,
+            show_currency_section: document.getElementById('toggleCurrency').checked,
+            show_sarrafiye_section: document.getElementById('toggleSarrafiye').checked,
+            use_manual_mode: (currentMode === 'manual'),
+            manual_has_map: newMap
+        };
+
+        fetch('/live_board/api/live-board-settings/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                var banner = document.getElementById('settingsSuccessBanner');
+                banner.classList.add('visible');
+                setTimeout(function() { banner.classList.remove('visible'); }, 3000);
+            } else {
+                alert(data.message || 'Kaydetme başarısız.');
+            }
+            btn.disabled = false;
+        })
+        .catch(function(err) {
+            alert('Bağlantı hatası: ' + err.message);
+            btn.disabled = false;
+        });
+    }
+
+    /* =============================================
+       HAS HESABI FONKSİYONLARI
+       ============================================= */
+    function formatTL(num) {
+        return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatGram(num) {
+        return num.toLocaleString('tr-TR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+    }
+
+    function initCalculator() {
+        document.getElementById('infoHasBuy').textContent = formatTL(HAS_BUY_TL);
+        document.getElementById('infoHasSell').textContent = formatTL(HAS_SELL_TL);
+
+        renderAyarTable();
+        bindCalculatorEvents();
+        calculate();
+    }
+
+    function bindCalculatorEvents() {
+        document.querySelectorAll('.ayar-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.ayar-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                selectedAyar = parseInt(btn.dataset.ayar);
+                selectedOran = parseFloat(btn.dataset.oran);
+                document.getElementById('infoAyar').textContent = selectedAyar + ' Ayar';
+                document.getElementById('infoOran').textContent = selectedOran.toFixed(4);
+                calculate();
+            });
+        });
+
+        document.getElementById('inputGram').addEventListener('input', calculate);
+        document.getElementById('inputIscilik').addEventListener('input', calculate);
+    }
+
+    function calculate() {
+        var gram = parseFloat(document.getElementById('inputGram').value) || 0;
+        var iscilik = parseFloat(document.getElementById('inputIscilik').value) || 0;
+
+        var hasGram = gram * selectedOran;
+        var alisTl = hasGram * HAS_BUY_TL;
+        var satisTl = hasGram * HAS_SELL_TL;
+        var toplam = satisTl + iscilik;
+
+        document.getElementById('resultHasGram').textContent = formatGram(hasGram);
+        document.getElementById('resultAlisTl').textContent = formatTL(alisTl);
+        document.getElementById('resultSatisTl').textContent = formatTL(satisTl);
+        document.getElementById('resultIscilik').textContent = formatTL(iscilik);
+        document.getElementById('resultToplam').textContent = formatTL(toplam) + ' TL';
+    }
+
+    function renderAyarTable() {
+        var tbody = document.getElementById('ayarTableBody');
+        var html = '';
+
+        AYAR_LIST.forEach(function(a) {
+            var hasGram1 = 1 * a.oran;
+            var alis1 = hasGram1 * HAS_BUY_TL;
+            var satis1 = hasGram1 * HAS_SELL_TL;
+
+            html += '<tr>' +
+                '<td>' + a.label + '</td>' +
+                '<td class="mono">' + a.oran.toFixed(6) + '</td>' +
+                '<td class="mono">' + hasGram1.toFixed(4) + '</td>' +
+                '<td class="mono">' + formatTL(alis1) + '</td>' +
+                '<td class="mono gold">' + formatTL(satis1) + '</td>' +
+                '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    /* =============================================
+       INIT
+       ============================================= */
+    function init() {
+        // Mod durumunu ayarla
+        selectMode(currentMode);
+
+        // Manuel has inputlarını doldur
+        populateManualHasInputs();
+
+        // Has hesabı başlat
+        initCalculator();
+    }
+
+    init();
+</script>
+</body>
+</html>

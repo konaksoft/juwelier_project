@@ -1,0 +1,410 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- PRINT AYARLARI --- */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+
+            body {
+                background-color: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            #kt_app_sidebar, #kt_app_header, .app-toolbar, .btn-print-actions {
+                display: none !important;
+            }
+
+            #printableArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+                box-shadow: none;
+                max-width: none !important;
+            }
+
+            .contract-approval-area {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* --- GENEL SAYFA --- */
+        body {
+            background-color: #f9fafb;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #334155;
+        }
+
+        .doc-container {
+            background: white;
+            max-width: 297mm; /* A4 Landscape */
+            margin: 20px auto;
+            padding: 40px 50px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 8px;
+            min-height: 210mm;
+        }
+
+        /* --- HEADER --- */
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .doc-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .doc-title p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .doc-meta {
+            text-align: right;
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        /* --- MODERN TABLO TASARIMI --- */
+        .package-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .package-table th {
+            background-color: #f8fafc;
+            color: #334155;
+            padding: 16px 10px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .package-table th:last-child {
+            border-right: none;
+        }
+
+        .package-table th:first-child {
+            text-align: left;
+            padding-left: 20px;
+            width: 30%;
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .package-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
+            text-align: center;
+            vertical-align: middle;
+            transition: background-color 0.2s;
+        }
+
+        .package-table td:last-child {
+            border-right: none;
+        }
+
+        .package-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .package-table td:first-child {
+            text-align: left;
+            padding-left: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            color: #334155;
+            background-color: #fff;
+        }
+
+        /* Satır Hover Efekti */
+        .package-table tbody tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* --- YENİ İKON (BADGE) TASARIMI --- */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+
+        .status-available {
+            background-color: #dcfce7; /* Açık Yeşil Arkaplan */
+            color: #166534; /* Koyu Yeşil İkon */
+            box-shadow: 0 0 0 1px #bbf7d0; /* Hafif çerçeve */
+        }
+
+        .status-unavailable {
+            background-color: #f1f5f9; /* Açık Gri Arkaplan */
+            color: #94a3b8; /* Gri İkon */
+        }
+
+        .note-text {
+            display: block;
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 4px;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        /* --- SÖZLEŞME VE İMZA ALANI --- */
+        .contract-approval-area {
+            margin-top: 50px;
+            border-top: 2px dashed #cbd5e1;
+            padding-top: 30px;
+        }
+
+        .contract-ref-box {
+            text-align: center;
+            border: 1px solid #cbd5e1;
+            background-color: #f8fafc;
+            padding: 12px;
+            font-weight: 700;
+            font-size: 12px;
+            color: #334155;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .handwriting-request {
+            margin-bottom: 25px;
+        }
+
+        .handwriting-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .handwriting-input-box {
+            border: 1px solid #cbd5e1;
+            height: 45px;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            padding-left: 15px;
+            font-style: italic;
+            color: #94a3b8;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .signatures-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .sig-box {
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            min-height: 140px;
+            position: relative;
+            background: #fff;
+            border-radius: 4px;
+        }
+
+        .sig-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e3a8a;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .sig-content {
+            font-size: 12px;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .sig-placeholder {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 11px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid">
+        <div class="d-flex flex-column flex-column-fluid">
+
+            <div class="app-toolbar py-3 py-lg-6 btn-print-actions">
+                <div class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            Paket Detayları (Sözleşme Eki)
+                        </h1>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'proposals:index' %}" class="btn btn-light btn-sm">Listeye Dön</a>
+                        <button onclick="window.print()" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-print"></i> Yazdır / PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-content flex-column-fluid">
+                <div class="app-container container-xxl">
+
+                    <div class="doc-container" id="printableArea">
+
+                        <div class="doc-header">
+                            <div class="doc-title">
+                                <h1>PAKET ÖZELLİKLERİ VE KARŞILAŞTIRMA TABLOSU</h1>
+                                <p>Ek-1: Yazılım Paket İçerikleri ve Modül Detayları</p>
+                            </div>
+                            <div class="doc-meta">
+                                <strong>İlgili Teklif No:</strong> {{ proposal.proposal_no }}<br>
+                                <strong>Firma:</strong>
+                                {% if proposal.company %}
+                                    {{ proposal.company.title }}
+                                {% elif proposal.lead %}
+                                    {{ proposal.lead.full_name }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <table class="package-table">
+                            <thead>
+                            <tr>
+                                <th>MODÜL / ÖZELLİK</th>
+                                {% for pkg in packages %}
+                                    <th>
+                                        {{ pkg.name|upper }}
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for group in module_rows %}
+                                <tr style="background-color: #f0f9ff;">
+                                    <td colspan="{{ packages|length|add:'1' }}" style="font-weight: 600; color: #1e3a8a; padding: 10px 12px; font-size: 0.95rem; border-bottom: 2px solid #bfdbfe;">
+                                        <i class="{{ group.module.icon }}" style="margin-right: 6px;"></i> {{ group.module.name }}
+                                    </td>
+                                </tr>
+                                {% for row in group.rows %}
+                                    <tr>
+                                        <td style="padding-left: 28px;">{{ row.permission.name }}</td>
+                                        {% for cell in row.cells %}
+                                            <td>
+                                                {% if cell.available %}
+                                                    <div class="status-badge status-available">
+                                                        <i class="fa-solid fa-check"></i>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="status-badge status-unavailable">
+                                                        <i class="fa-solid fa-minus"></i>
+                                                    </div>
+                                                {% endif %}
+
+                                                {% if cell.note %}
+                                                    <span class="note-text">{{ cell.note }}</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <div class="contract-approval-area">
+                            <div class="contract-ref-box">
+                                BU BELGE, ...... / ...... / 20...... TARİHLİ HİZMET SÖZLEŞMESİNİN AYRILMAZ BİR EKİDİR.
+                            </div>
+
+                            <div class="handwriting-request">
+                                <span class="handwriting-label">
+                                    <i class="fa-solid fa-pen-fancy"></i> LÜTFEN AŞAĞIDAKİ KUTUCUĞA EL YAZINIZ İLE <u>"...... PAKET TALEP EDİYORUM"</u> YAZINIZ.
+                                </span>
+                                <div class="handwriting-input-box">
+                                    (Buraya el yazınız ile paket talebinizi yazınız...)
+                                </div>
+                            </div>
+
+                            <div class="signatures-grid">
+                                <div class="sig-box">
+                                    <div class="sig-header">YÜKLENİCİ (KONASOFT)</div>
+                                    <div class="sig-content">
+                                        <strong>Konasoft Yazılım</strong><br>
+                                        Kaşe / İmza
+                                    </div>
+                                </div>
+
+                                <div class="sig-box">
+                                    <div class="sig-header">MÜŞTERİ ONAYI</div>
+                                    <div class="sig-content">
+                                        <strong>
+                                            {% if proposal.company %}
+                                                {{ proposal.company.title }}
+                                            {% elif proposal.lead %}
+                                                {{ proposal.lead.full_name }}
+                                            {% endif %}
+                                        </strong> <br>
+                                        Tarih: ..... / ..... / 20.....
+                                    </div>
+                                    <div class="sig-placeholder">İmza</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

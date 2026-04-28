@@ -1,0 +1,1015 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+
+        .my-bottom {
+            margin-top: 0 !important;
+        }
+
+        #kt_app_content_container {
+            position: relative;
+            z-index: 2;
+            padding-top: 5px !important;
+        }
+
+        body {
+            background-image: url("{% static 'management/img/background.webp' %}") !important;
+
+            /* DEĞİŞİKLİK BURADA: 'cover' yerine '100% 100%' kullanıyoruz */
+            background-size: 100% 100% !important;
+
+            background-position: center center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+
+            /* Sayfa içeriği az olsa bile arkaplanın tam boy olmasını garantilemek için: */
+            min-height: 100vh;
+            width: 100%;
+        }
+
+
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            backdrop-filter: blur(0px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        #kt_app_content, #kt_app_main {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .nav-line-tabs .nav-item .nav-link {
+            color: rgba(255, 255, 255, 0.7) !important;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            transition: all .3s ease;
+            padding: 1rem 0;
+            margin: 0 1rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-line-tabs .nav-item .nav-link.active {
+            color: #FFD700 !important;
+            border-bottom: 2px solid #FFD700 !important;
+        }
+
+        .nav-line-tabs .nav-item .nav-link:hover:not(.active) {
+            color: #fff !important;
+        }
+
+        .pixel-card {
+            width: 100%;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            isolation: isolate;
+            transition: all 0.4s ease;
+            user-select: none;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            cursor: pointer;
+        }
+
+        .pixel-card:hover {
+            border-color: rgba(255, 215, 0, 1);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.2);
+        }
+
+        .card-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            height: 100%;
+        }
+
+        .pixel-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.5;
+        }
+
+        .card-content-overlay {
+            z-index: 2;
+            position: absolute;
+            color: white;
+            text-align: center;
+            pointer-events: none;
+            width: 100%;
+            padding: 0 15px;
+        }
+
+        .card-icon-wrapper {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px auto;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .pixel-card:hover .card-icon-wrapper {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.1);
+        }
+
+        .pixel-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            aspect-ratio: 1;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15), transparent 70%);
+            opacity: 0;
+            transition: opacity 800ms ease;
+            z-index: 2;
+        }
+
+        .pixel-card:hover::before {
+            opacity: 1;
+        }
+
+        @media (max-width: 991.98px) {
+            .my-bottom {
+                margin-top: 0 !important;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .pixel-card {
+                height: 200px;
+            }
+
+            .card-icon-wrapper {
+                width: 50px;
+                height: 50px;
+            }
+
+            .card-icon-wrapper i {
+                font-size: 1.5rem !important;
+            }
+
+            .card-content-overlay h3 {
+                font-size: 1.25rem !important;
+            }
+
+            #profile-form .col-md-6 {
+                flex: 0 0 50% !important;
+                max-width: 50% !important;
+                padding-left: .75rem;
+                padding-right: .75rem;
+            }
+
+            .store-card .card-body {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 1rem;
+            }
+
+            .store-card .card-body > .d-flex.align-items-center {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid my-bottom" id="kt_app_main">
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="app-container container-xxl">
+
+                {% if status %}
+                    <div class="alert alert-{{ status }}" role="alert">
+                        {{ status_message }}
+                    </div>
+                {% endif %}
+
+                <div class="card mb-1  bg-transparent shadow-none border-0">
+                    <div class="card-header border-0 p-0 justify-content-center justify-content-md-start">
+                        <ul class="nav nav-line-tabs nav-line-tabs-2x border-transparent fs-4 fw-bold mb-5">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#tab_home">
+                                    <i class="ki-duotone ki-shop fs-2 me-2"></i> Anasayfa
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#tab_profile_details">
+                                    <i class="ki-duotone ki-user-square fs-2 me-2"></i> Profil Detayları
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#tab_general_info">
+                                    <i class="ki-duotone ki-setting-3 fs-2 me-2"></i> Yönetim Paneli
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="myTabContentMain">
+
+                    <div class="tab-pane fade show active" id="tab_home" role="tabpanel">
+                        <div class="row g-5 g-xl-8">
+
+                            <div class="col-12 mb-2 text-center">
+                                <h1 class="text-white fw-bolder fs-2x" style="text-shadow: 0 4px 10px rgba(0,0,0,0.8);">
+                                    Hoşgeldiniz, {{ request.user.first_name }}!
+                                </h1>
+                                <p class="text-gray-300 fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+                                    KuyumPlus yönetim paneline hoşgeldiniz.
+                                </p>
+                            </div>
+
+                            <div class="col-md-4 col-4">
+                                <a href="{% url 'transactions-board:fast-index' %}" class="card-link">
+                                    <div id="pixel-card-1" class="pixel-card" data-variant="gold">
+                                        <div class="card-content-overlay">
+                                            <div class="card-icon-wrapper">
+                                                <i class="ki-duotone ki-flash-circle fs-2x text-warning">
+                                                    <span class="path1"></span><span class="path2"></span>
+                                                </i>
+                                            </div>
+                                            <h3 class="fw-bold text-white mb-2 fs-2">Hızlı İşlem</h3>
+                                            <span class="text-gray-400 fs-7">Satış veya işlem başlatın</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-4 col-4">
+                                <a href="{% url 'dashboard:index' %}" class="card-link">
+                                    <div id="pixel-card-2" class="pixel-card" data-variant="gold">
+                                        <div class="card-content-overlay">
+                                            <div class="card-icon-wrapper">
+                                                <i class="ki-duotone ki-chart-pie-simple fs-2x text-warning">
+                                                    <span class="path1"></span><span class="path2"></span>
+                                                </i>
+                                            </div>
+                                            <h3 class="fw-bold text-white mb-2 fs-2">Raporlar</h3>
+                                            <span class="text-gray-400 fs-7">Durumunuzu inceleyin</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-4 col-4">
+                                <a href="{% url 'products:index' %}" class="card-link">
+                                    <div id="pixel-card-3" class="pixel-card" data-variant="gold">
+                                        <div class="card-content-overlay">
+                                            <div class="card-icon-wrapper">
+                                                <i class="ki-duotone ki-abstract-26 fs-2x text-warning">
+                                                    <span class="path1"></span><span class="path2"></span>
+                                                </i>
+                                            </div>
+                                            <h3 class="fw-bold text-white mb-2 fs-2">Stok Yönetimi</h3>
+                                            <span class="text-gray-400 fs-7">Ürün ekle/çıkar</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-4 col-4">
+                                <a href="{% url 'process:index' %}" class="card-link">
+                                    <div id="pixel-card-4" class="pixel-card" data-variant="gold">
+                                        <div class="card-content-overlay">
+                                            <div class="card-icon-wrapper">
+                                                <i class="ki-duotone ki-clipboard fs-2x text-warning">
+                                                    <span class="path1"></span><span class="path2"></span><span
+                                                        class="path3"></span>
+                                                </i>
+                                            </div>
+                                            <h3 class="fw-bold text-white mb-2 fs-2">Tüm İşlemler</h3>
+                                            <span class="text-gray-400 fs-7">Geçmiş işlemleri görüntüle</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-4 col-4">
+                                <a href="{% url 'customers:index' %}" class="card-link">
+                                    <div id="pixel-card-5" class="pixel-card" data-variant="gold">
+                                        <div class="card-content-overlay">
+                                            <div class="card-icon-wrapper">
+                                                <i class="ki-duotone ki-people fs-2x text-warning">
+                                                    <span class="path1"></span><span class="path2"></span><span
+                                                        class="path3"></span><span class="path4"></span><span
+                                                        class="path5"></span>
+                                                </i>
+                                            </div>
+                                            <h3 class="fw-bold text-white mb-2 fs-2">Müşteriler</h3>
+                                            <span class="text-gray-400 fs-7">Müşteri listesi ve detaylar</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-4 col-4">
+                                <a href="{% if request.user.store_id %}{% url 'stores:store-detail' request.user.store_id %}{% else %}#{% endif %}"
+                                   class="card-link">
+                                    <div id="pixel-card-6" class="pixel-card" data-variant="gold">
+                                        <div class="card-content-overlay">
+                                            <div class="card-icon-wrapper">
+                                                <i class="ki-duotone ki-shop fs-2x text-warning">
+                                                    <span class="path1"></span><span class="path2"></span><span
+                                                        class="path3"></span>
+                                                </i>
+                                            </div>
+                                            <h3 class="fw-bold text-white mb-2 fs-2">Mağaza Yönetimi</h3>
+                                            <span class="text-gray-400 fs-7">Mağaza ayarları ve bilgiler</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="tab_profile_details" role="tabpanel">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card store-card shadow-sm"
+                                     style="min-height: 500px; background: rgba(255,255,255,0.95);">
+                                    <div class="card-header cursor-pointer">
+                                        <div class="card-title m-0">
+                                            <h3 class="fw-bold m-0 text-dark">Profil Detayları</h3>
+                                        </div>
+                                    </div>
+                                    <div class="card-body d-flex flex-column p-5 text-dark">
+                                        <div class="d-flex align-items-center mb-5">
+                                            <div class="symbol symbol-100px symbol-lg-150px symbol-circle me-5"></div>
+                                            <div class="symbol symbol-100px symbol-lg-150px symbol-circle me-5 overflow-hidden">
+                                                {% if request.user.avatar and request.user.avatar.name != 'accounts/user.png' %}
+                                                    <img src="/media/{{ request.user.avatar }}" alt="image"
+                                                         class="img-fluid"
+                                                         style="border:3px solid #ffffff; box-shadow:0 2px 5px rgba(0,0,0,.1);">
+                                                {% else %}
+                                                    <img src="/media/default/user.png" alt="image" class="img-fluid"
+                                                         style="border:3px solid #ffffff; box-shadow:0 2px 5px rgba(0,0,0,.1);">
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="mt-6 flex-grow-1">
+                                                    <div class="fw-bold fs-6 mb-2">Mağaza ID</div>
+                                                    <div class="text-muted fs-5 mb-8">{{ request.user.store.store_id }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-6">
+                                            <div class="col-md-6 mb-4">
+                                                <div class="bg-light rounded p-4">
+                                                    <div class="fw-bold fs-6  mb-2">Üyelik Başlangıcı</div>
+                                                    <div class="fs-5 text-muted">{{ store.subscription_start | default:"-" }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-4">
+                                                <div class="bg-light rounded p-4">
+                                                    <div class="fw-bold fs-6  mb-2">Üyelik Bitişi</div>
+                                                    <div class="fs-5 text-muted">{{ store.subscription_end | default:"-" }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-6">
+                                            <div class="col-md-6 mb-4">
+                                                <div class="mt-6 flex-grow-1">
+                                                    <div class="fw-bold fs-6 mb-2">Kullanıcı Adı:</div>
+                                                    <div class="text-muted fs-5 mb-8">{{ request.user.username }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-4">
+                                                <div class="mt-6 flex-grow-1">
+                                                    <div class="fw-bold fs-6 mb-2">Telefon Numarası:</div>
+                                                    <div class="text-muted fs-5 mb-8">{{ request.user.mobile_phone }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-6 flex-grow-1">
+                                            <div class="fw-bold fs-6 mb-2">E-posta:</div>
+                                            <div class="text-muted fs-5 mb-8">{{ request.user.email }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="tab_general_info" role="tabpanel">
+                        <div class="row">
+                            <div class="col-xl-12">
+                                <div class="tab-content" id="myTabContent">
+                                    <div class="tab-pane fade show active" id="kt_tab_pane_1" role="tabpanel">
+                                        <div class="card mb-5 mb-xl-10 shadow-sm" id="kt_profile_details_view"
+                                             style="background: rgba(255,255,255,0.95);">
+                                            <div class="card-header cursor-pointer">
+                                                <div class="card-title m-0">
+                                                    <h3 class="fw-bold m-0 text-dark">Genel Bilgiler</h3>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-body p-9 text-dark">
+                                                <form id="profile-form" method="post" autocomplete="off"
+                                                      data-toggle="validator" enctype="multipart/form-data" role="form"
+                                                      action="{% url 'accounts:add' %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="record_id" value="{{ record.id }}">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="text" class="form-control" id="first_name"
+                                                                       name="first_name"
+                                                                       value="{{ record.first_name }}"/>
+                                                                <label for="first_name">Ad</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="text" class="form-control" id="last_name"
+                                                                       name="last_name" value="{{ record.last_name }}"/>
+                                                                <label for="last_name">Soyad</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="email" class="form-control" id="email"
+                                                                       name="email" autocomplete="off"
+                                                                       value="{{ record.email }}"/>
+                                                                <label for="email">E-mail</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="tel" class="form-control" id="mobile_phone"
+                                                                       name="mobile_phone" autocomplete="off"
+                                                                       value="{{ record.mobile_phone }}"/>
+                                                                <label for="mobile_phone">Telefon Numarası</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="text" class="form-control" id="username"
+                                                                       name="username" value="{{ record.username }}"/>
+                                                                <label for="username">Kullanıcı Adı</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="file" name="avatar" class="form-control"
+                                                                       accept="image/*"/>
+                                                                <label for="avatar">Avatar</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="password" class="form-control"
+                                                                       id="password" name="password" autocomplete="off"
+                                                                       placeholder="Lütfen Giriniz"/>
+                                                                <label for="password">Şifre</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="password" class="form-control"
+                                                                       id="password-again" autocomplete="off"
+                                                                       placeholder="Lütfen Giriniz"/>
+                                                                <label for="password-again">Şifre(Tekrar)</label>
+                                                                <p id="message"></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card mb-5 mb-xl-10">
+                                                        <div class="card-header border-0 cursor-pointer" role="button"
+                                                             data-bs-toggle="collapse"
+                                                             data-bs-target="#kt_account_signin_method">
+                                                            <div class="card-title m-0">
+                                                                <h3 class="fw-bold m-0">Oturum Açma Yöntemi</h3>
+                                                            </div>
+                                                        </div>
+                                                        <div id="kt_account_settings_signin_method"
+                                                             class="collapse show">
+                                                            <div class="card-body border-top p-9">
+                                                                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
+                                                                    <i class="ki-duotone ki-shield-tick fs-2tx text-primary me-4"><span
+                                                                            class="path1"></span><span
+                                                                            class="path2"></span></i>
+                                                                    <div id="two_factor_container"
+                                                                         class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                                                                        <div class="mb-3 mb-md-0 fw-semibold">
+                                                                            <h4 class="text-gray-900 fw-bold">Hesabınızı
+                                                                                Güvende Tutun</h4>
+                                                                            <div class="fs-6 text-gray-700 pe-7">İki
+                                                                                faktörlü kimlik doğrulaması hesabınıza
+                                                                                ekstra bir güvenlik katmanı ekler.
+                                                                            </div>
+                                                                        </div>
+                                                                        {% if record.activate_2fa %}
+                                                                            <a href="#"
+                                                                               class="btn btn-primary px-6 align-self-center text-nowrap"
+                                                                               onclick="changeTwoFactor(); return false;">Kaldır</a>
+                                                                        {% else %}
+                                                                            <a href="#"
+                                                                               class="btn btn-primary px-6 align-self-center text-nowrap"
+                                                                               data-bs-toggle="modal"
+                                                                               data-bs-target="#kt_modal_two_factor_authentication">Aktifleştir</a>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <div class="d-md-flex align-items-center mt-3">
+                                                                <div class="ms-auto mt-3 mt-md-0">
+                                                                    <a href="{% url "accounts:index" %}"
+                                                                       class="btn btn-light-danger font-medium text-danger">İptal</a>
+                                                                    <button type="submit" id="btnSave"
+                                                                            class="btn btn-light-info font-medium text-primary px-4">
+                                                                        Kaydet
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="NotTab" role="tabpanel">
+                                        <div class="d-flex flex-column gap-7 gap-lg-10">
+                                            <div class="card card-flush py-4"
+                                                 style="background: rgba(255,255,255,0.95);">
+                                                <div class="card-header">
+                                                    <div class="card-title"><h2> Notlar </h2></div>
+                                                    <div class="card-toolbar">
+                                                        <a href="#" class="btn btn-sm btn-flex btn-light-primary"
+                                                           data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                                                            <i class="ki-duotone ki-plus-square fs-3"><span
+                                                                    class="path1"></span><span
+                                                                    class="path2"></span><span class="path3"></span></i>Yeni
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body pt-0">
+                                                    <table class="table align-middle table-row-dashed fs-6 gy-5"
+                                                           id="kt_datatable_example_note">
+                                                        <thead>
+                                                        <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                            <th class="min-w-175px">Müşteri</th>
+                                                            <th class="min-w-175px">Not</th>
+                                                            <th class="min-w-100px text-end fs-7">Oluşturulma Tarihi
+                                                            </th>
+                                                            <th>Durum</th>
+                                                            <th class="text-end min-w-100px">İşlemler</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="addNoteModal">
+        <div class="modal-dialog">
+            <div class="modal-content" style="padding: 25px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Yeni Not</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"
+                         aria-label="Kapat">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <form id="addNoteForm" method="post" autocomplete="off" data-toggle="validator"
+                          enctype="multipart/form-data" role="form">
+                        {% csrf_token %}
+                        <input type="hidden" id="note_id" name="note_id"/>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="first_name"
+                                           value="{{ record.first_name }}" name="first_name" autocomplete="off"
+                                           placeholder="Lütfen girin" readonly/>
+                                    <label for="first_name">Şirket Adı</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="py-5">Not<textarea class="form-control" id="note"
+                                                       name="note">{{ record.note }}</textarea></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" id="btnSaveNote" class="btn btn-primary">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="kt_modal_two_factor_authentication" tabindex="-1" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered mw-650px">
+            <div class="modal-content">
+                <div class="modal-header flex-stack">
+                    <h2>Bir Kimlik Doğrulama Yöntemi Seçin</h2>
+                    <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"
+                         id="ki-duotone ki-cross fs-1">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+                <div class="modal-body scroll-y pt-10 pb-15 px-lg-17">
+                    <form id="TwoFactorForm" method="post" autocomplete="off" data-toggle="validator"
+                          enctype="multipart/form-data" role="form">
+                        {% csrf_token %}
+                        <div data-kt-element="options">
+                            <p class="text-muted fs-5 fw-semibold mb-10">Giriş yapmak için ek kod gerekecektir.</p>
+                            <div class="pb-10">
+                                <input type="radio" class="btn-check" name="auth_option" value="email" checked="checked"
+                                       id="kt_modal_two_factor_authentication_option_1">
+                                <label class="btn btn-outline btn-outline-dashed btn-active-light-primary p-7 d-flex align-items-center mb-5"
+                                       for="kt_modal_two_factor_authentication_option_1">
+                                    <i class="ki-duotone ki-sms fs-4x me-4"><span class="path1"></span><span
+                                            class="path2"></span></i>
+                                    <span class="d-block fw-semibold text-start">
+                                        <span class="text-gray-900 fw-bold d-block fs-3">E-posta</span>
+                                        <span class="text-muted fw-semibold fs-6">E-posta adresinize kod gönderilecektir.</span>
+                                    </span>
+                                </label>
+                                <input type="radio" class="btn-check" name="auth_option" value="sms"
+                                       id="kt_modal_two_factor_authentication_option_2" disabled>
+                                <label class="btn btn-outline btn-outline-dashed btn-active-light-primary p-7 d-flex align-items-center"
+                                       for="kt_modal_two_factor_authentication_option_2">
+                                    <i class="ki-duotone ki-message-text-2 fs-4x me-4"><span class="path1"></span><span
+                                            class="path2"></span><span class="path3"></span></i>
+                                    <span class="d-block fw-semibold text-start">
+                                        <span class="text-gray-900 fw-bold d-block fs-3">SMS</span>
+                                        <span class="text-muted fw-semibold fs-6">SMS yoluyla kod gönderilecektir.</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <button class="btn btn-primary w-100" id="activate_2fa" data-kt-element="options-select">
+                                Devam
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+
+{% block footer %}
+
+    <script>
+        const VARIANTS = {
+            default: {activeColor: null, gap: 5, speed: 35, colors: '#f8fafc,#f1f5f9,#cbd5e1', noFocus: false},
+            gold: {activeColor: '#FFD700', gap: 6, speed: 20, colors: '#FFD700,#FDB931,#FFF8DC,#E5E4E2', noFocus: false}
+        };
+
+        class Pixel {
+            constructor(canvas, context, x, y, color, speed, delay) {
+                this.width = canvas.width;
+                this.height = canvas.height;
+                this.ctx = context;
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.speed = this.getRandomValue(0.1, 0.9) * speed;
+                this.size = 0;
+                this.sizeStep = Math.random() * 0.4;
+                this.minSize = 0.5;
+                this.maxSizeInteger = 2;
+                this.maxSize = this.getRandomValue(this.minSize, this.maxSizeInteger);
+                this.delay = delay;
+                this.counter = 0;
+                this.counterStep = Math.random() * 4 + (this.width + this.height) * 0.01;
+                this.isIdle = false;
+                this.isReverse = false;
+                this.isShimmer = false;
+            }
+
+            getRandomValue(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            draw() {
+                const centerOffset = this.maxSizeInteger * 0.5 - this.size * 0.5;
+                this.ctx.fillStyle = this.color;
+                this.ctx.fillRect(this.x + centerOffset, this.y + centerOffset, this.size, this.size);
+            }
+
+            appear() {
+                this.isIdle = false;
+                if (this.counter <= this.delay) {
+                    this.counter += this.counterStep;
+                    return;
+                }
+                if (this.size >= this.maxSize) {
+                    this.isShimmer = true;
+                }
+                if (this.isShimmer) {
+                    this.shimmer();
+                } else {
+                    this.size += this.sizeStep;
+                }
+                this.draw();
+            }
+
+            disappear() {
+                this.isShimmer = false;
+                this.counter = 0;
+                if (this.size <= 0) {
+                    this.isIdle = true;
+                    return;
+                } else {
+                    this.size -= 0.1;
+                }
+                this.draw();
+            }
+
+            shimmer() {
+                if (this.size >= this.maxSize) {
+                    this.isReverse = true;
+                } else if (this.size <= this.minSize) {
+                    this.isReverse = false;
+                }
+                if (this.isReverse) {
+                    this.size -= this.speed;
+                } else {
+                    this.size += this.speed;
+                }
+            }
+        }
+
+        class PixelCard {
+            constructor(elementId, options = {}) {
+                this.container = document.getElementById(elementId);
+                if (!this.container) return;
+                this.canvas = document.createElement('canvas');
+                this.canvas.className = 'pixel-canvas';
+                this.container.appendChild(this.canvas);
+                this.container.prepend(this.canvas);
+                this.variant = options.variant || 'default';
+                this.variantCfg = VARIANTS[this.variant] || VARIANTS.default;
+                this.gap = options.gap ?? this.variantCfg.gap;
+                this.speed = options.speed ?? this.variantCfg.speed;
+                this.colors = options.colors ?? this.variantCfg.colors;
+                this.noFocus = options.noFocus ?? this.variantCfg.noFocus;
+                this.pixels = [];
+                this.animationReq = null;
+                this.timePrevious = performance.now();
+                this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                this.initPixels();
+                this.bindEvents();
+            }
+
+            getEffectiveSpeed(value) {
+                const min = 0, max = 100, throttle = 0.001;
+                const parsed = parseInt(value, 10);
+                if (parsed <= min || this.reducedMotion) return min;
+                if (parsed >= max) return max * throttle;
+                return parsed * throttle;
+            }
+
+            initPixels() {
+                const rect = this.container.getBoundingClientRect();
+                const width = Math.floor(rect.width);
+                const height = Math.floor(rect.height);
+                const ctx = this.canvas.getContext('2d');
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.canvas.style.width = `${width}px`;
+                this.canvas.style.height = `${height}px`;
+                const colorsArray = this.colors.split(',');
+                const pxs = [];
+                for (let x = 0; x < width; x += parseInt(this.gap, 10)) {
+                    for (let y = 0; y < height; y += parseInt(this.gap, 10)) {
+                        const color = colorsArray[Math.floor(Math.random() * colorsArray.length)];
+                        const dx = x - width / 2;
+                        const dy = y - height / 2;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const delay = this.reducedMotion ? 0 : distance;
+                        pxs.push(new Pixel(this.canvas, ctx, x, y, color, this.getEffectiveSpeed(this.speed), delay));
+                    }
+                }
+                this.pixels = pxs;
+            }
+
+            doAnimate(fnName) {
+                this.animationReq = requestAnimationFrame(() => this.doAnimate(fnName));
+                const timeNow = performance.now();
+                const timePassed = timeNow - this.timePrevious;
+                const timeInterval = 1000 / 60;
+                if (timePassed < timeInterval) return;
+                this.timePrevious = timeNow - (timePassed % timeInterval);
+                const ctx = this.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                let allIdle = true;
+                for (let i = 0; i < this.pixels.length; i++) {
+                    const pixel = this.pixels[i];
+                    pixel[fnName]();
+                    if (!pixel.isIdle) allIdle = false;
+                }
+                if (allIdle) cancelAnimationFrame(this.animationReq);
+            }
+
+            handleAnimation(name) {
+                cancelAnimationFrame(this.animationReq);
+                this.animationReq = requestAnimationFrame(() => this.doAnimate(name));
+            }
+
+            bindEvents() {
+                this.container.addEventListener('mouseenter', () => this.handleAnimation('appear'));
+                this.container.addEventListener('mouseleave', () => this.handleAnimation('disappear'));
+                const observer = new ResizeObserver(() => {
+                    this.initPixels();
+                });
+                observer.observe(this.container);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.pixel-card');
+            cards.forEach(card => {
+                const variant = card.getAttribute('data-variant') || 'default';
+                new PixelCard(card.id, {variant: variant});
+            });
+        });
+    </script>
+
+    <script>
+        $('#activate_2fa').click(function () {
+            $(this).prop("disabled", true);
+            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Kaydediliyor...');
+            $('#TwoFactorForm').submit();
+        });
+
+        $('#TwoFactorForm').submit(function (e) {
+            if ($("#TwoFactorForm")[0].checkValidity() === false) {
+                $("#TwoFactorForm").addClass('was-validated');
+                $("#activate_2fa").prop("disabled", false);
+                return false;
+            }
+            let formData = new FormData($(this)[0]);
+            $.ajax({
+                url: "/accounts/change-two-factor/" + '{{ record.id }}',
+                type: "POST",
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success(data) {
+                    if (data.result === true) {
+                        Swal.fire({
+                            title: 'Başarılı',
+                            html: "İki Faktörlü Doğrulama Tercihi Değiştirildi.",
+                            type: 'success',
+                            showCancelButton: false,
+                            confirmButtonText: 'Ok'
+                        }).then((result) => {
+                            if (result.value) {
+                                window.location.reload();
+                            }
+                        });
+                        $("#activate_2fa").prop("disabled", false);
+                    } else {
+                        Swal.fire({
+                            title: 'Hata',
+                            html: data.error_msg || "Hata oluştu.",
+                            type: 'error',
+                            showCancelButton: false,
+                            confirmButtonText: 'Ok'
+                        });
+                    }
+                    $("#activate_2fa").prop("disabled", false);
+                },
+                error: function (xhr) {
+                    alert("Error: " + xhr.status);
+                }
+            });
+            e.preventDefault();
+        });
+
+        let changeTwoFactor = function (id) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Durum değiştirilsin mi?",
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Değiştir!',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.value) {
+                    $.post("/accounts/change-two-factor/{{ record.id }}", {
+                        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                    }, function (data) {
+                        if (data.result === true) {
+                            Swal.fire('Değiştirildi!', 'İşlem başarılı.', 'success').then(() => {
+                                window.location.reload();
+                            })
+                        } else {
+                            Swal.fire('Hata!', data.error_msg, 'error')
+                        }
+                    });
+                }
+            });
+        };
+
+        $(document).ready(function () {
+            $('#password, #password-again').on('keyup', function () {
+                if ($('#password').val() === $('#password-again').val()) {
+                    $('#message').html('Şifreler Eşit').css('color', 'green');
+                } else {
+                    $('#message').html('Şifreler eşit değil').css('color', 'red');
+                }
+            });
+
+            $('#btnSave').click(function () {
+                $(this).prop("disabled", true);
+                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Kaydediliyor...');
+                $('#profile-form').submit();
+            });
+
+            $('#profile-form').submit(function (e) {
+                e.preventDefault();
+                if ($("#profile-form")[0].checkValidity() === false) {
+                    $("#profile-form").addClass('was-validated');
+                    $("#btnSave").prop("disabled", false).html('Kaydet');
+                    return false;
+                }
+                let formData = new FormData($(this)[0]);
+                $.ajax({
+                    url: "{% url 'accounts:add' %}",
+                    type: "POST",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        if (data.result === true) {
+                            Swal.fire({
+                                title: 'Başarılı',
+                                html: "Profil Güncelleme Başarılı",
+                                type: 'success',
+                                confirmButtonText: 'Ok'
+                            }).then((result) => {
+                                if (result.value) {
+                                    window.location.reload();
+                                }
+                            });
+                        } else {
+                            Swal.fire({title: 'Hata', html: data.error_msg, type: 'error', confirmButtonText: 'Ok'});
+                        }
+                        $("#btnSave").prop("disabled", false).html('Kaydet');
+                    },
+                    error: function (xhr) {
+                        alert("Error: " + xhr.status);
+                        $("#btnSave").prop("disabled", false).html('Kaydet');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

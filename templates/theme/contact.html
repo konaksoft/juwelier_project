@@ -1,0 +1,286 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}İletişim | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus ile iletişime geçin. Kuyumculuk sektörüne özel yazılım
+    çözümleri.{% endblock page_description %}
+{% block canonical_url %}https://www.kuyumplus.com/iletisim{% endblock canonical_url %}
+
+{% block header %}
+    <style>
+        /* --- GENEL DÜZENLEMELER --- */
+        body {
+            background-color: #ffffff; /* Arka planı sabitle */
+        }
+
+        /* Breadcrumb (Üst Başlık) Alanı */
+        .breadcrumb-area {
+            background-color: #F8F9FC;
+            padding: 80px 0 40px 0; /* Üstten boşluk (Navbar binmesin diye) */
+            margin-bottom: 50px;
+        }
+
+        .page-title {
+            color: #1a1a1a;
+            font-weight: 700;
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        /* --- İLETİŞİM KUTULARI (SOL) --- */
+        .contact-info-wrapper {
+            height: 100%;
+        }
+
+        .contact-info-box {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border-left: 5px solid #f8bc27; /* Sarı Çizgi */
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-info-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            background-color: #fffbf0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #f8bc27;
+            margin-bottom: 15px;
+        }
+
+        .contact-info-box h5 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .contact-info-box p,
+        .contact-info-box a {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 5px;
+            text-decoration: none;
+            display: block;
+            line-height: 1.5;
+        }
+
+        .contact-info-box a:hover {
+            color: #f8bc27;
+        }
+
+        /* --- FORM ALANI (SAĞ) --- */
+        .contact-form-card {
+            background: #fff;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); /* Daha derin gölge */
+            border: 1px solid #f1f1f1;
+        }
+
+        .form-control {
+            background-color: #fcfcfc;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.95rem;
+            color: #333;
+            margin-bottom: 20px; /* Inputlar arası boşluk */
+        }
+
+        .form-control:focus {
+            background-color: #fff;
+            border-color: #f8bc27;
+            box-shadow: 0 0 0 4px rgba(248, 188, 39, 0.1);
+        }
+
+        .btn-send {
+            background-color: #000;
+            color: #fff;
+            font-weight: 600;
+            padding: 16px;
+            border-radius: 8px;
+            width: 100%;
+            border: none;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .btn-send:hover {
+            background-color: #f8bc27; /* Hoverda sarı */
+            color: #000;
+        }
+
+        /* --- HARİTA --- */
+        .map-section {
+            margin-top: 80px;
+            width: 100%;
+            height: 450px;
+            background: #f1f1f1;
+        }
+
+        .map-section iframe {
+            width: 100%;
+            height: 100%;
+            display: block; /* Alt boşluğu önler */
+            border: 0;
+        }
+
+        /* --- MOBİL İÇİN DÜZELTMELER --- */
+        @media (max-width: 991px) {
+            .contact-form-card {
+                padding: 25px;
+                margin-top: 30px;
+            }
+
+            .breadcrumb-area {
+                padding: 60px 0 30px 0;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+
+    <div class="breadcrumb-area">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 col-md-6">
+                    <h2 class="page-title">İletişim</h2>
+                </div>
+                <div class="col-lg-6 col-md-6 text-md-end text-start mt-2 mt-md-0">
+                    <span style="color: #999; font-size: 0.9rem;">
+                        <a href="{% url '' %}" style="color: #666; text-decoration: none;">Anasayfa</a>
+                        / İletişim
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row">
+
+            <div class="col-lg-4">
+                <div class="contact-info-wrapper">
+                    <div class="mb-4">
+                        <span style="color: #f8bc27; font-weight: 700; letter-spacing: 1px; font-size: 0.85rem;">BİZE ULAŞIN</span>
+                        <h3 style="font-weight: 700; margin-top: 5px;">İletişim Bilgileri</h3>
+                        <p style="color: #666; font-size: 0.95rem;">Kuyumculuk yazılım çözümlerimiz için aşağıdaki
+                            kanallardan bize dilediğiniz zaman ulaşabilirsiniz.</p>
+                    </div>
+
+                    <div class="contact-info-box">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h5>Adres</h5>
+                        <p><strong>Konasoft Yazılım A.Ş.</strong></p>
+                        <p>Yenişehir Mah. Sümbül Sok. No: 6-1/79 Sweet Life Center, Pendik / İstanbul</p>
+                    </div>
+
+                    <div class="contact-info-box">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone-alt"></i>
+                        </div>
+                        <h5>Telefon</h5>
+                        <a href="tel:+902166068801">Sabit: +90 216 606 88 01</a>
+                        <a href="tel:+905324893954">GSM: +90 532 489 39 54</a>
+                    </div>
+
+                    <div class="contact-info-box">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h5>E-posta</h5>
+                        <a href="mailto:destek@kuyumplus.com">destek@kuyumplus.com</a>
+                        <a href="mailto:bilgi@konasoft.com">info@konasoft.com</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8 ps-lg-5">
+                <div class="contact-form-card">
+                    <h3 class="mb-3" style="font-weight: 700;">Mesaj Gönderin</h3>
+                    <p class="mb-4" style="color: #666;">Aşağıdaki formu doldurarak bize ulaşabilirsiniz. Ekibimiz en
+                        kısa sürede sizinle iletişime geçecektir.</p>
+
+                    {% if success %}
+                        <div class="alert alert-success d-flex align-items-center" role="alert"
+                             style="border-radius: 8px;">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <div>Mesajınız başarıyla tarafımıza ulaştı. Teşekkür ederiz!</div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="mb-2 fw-bold small text-muted">Adınız Soyadınız</label>
+                                <input class="form-control" type="text" name="full_name" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="mb-2 fw-bold small text-muted">E-posta Adresiniz</label>
+                                <input class="form-control" type="email" name="email" required>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="mb-2 fw-bold small text-muted">Telefon Numaranız</label>
+                                <input class="form-control" type="tel" name="phone">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="mb-2 fw-bold small text-muted">Mesajınız</label>
+                                <textarea class="form-control" name="message" rows="5" required></textarea>
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <button type="submit" class="btn-send">
+                                    GÖNDER <i class="fas fa-paper-plane ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="map-section">
+        <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3013.8879683696746!2d29.31481137644265!3d40.94012997136005!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cadb1b6088d839%3A0xc3f58e370e28d8b9!2sSweet%20Life%20Center!5e0!3m2!1str!2str!4v1709635000000!5m2!1str!2str"
+                width="100%"
+                height="450"
+                style="border:0;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+    </div>
+
+{% endblock body %}
+
+{% block footer %}
+{% endblock footer %}

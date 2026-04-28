@@ -1,0 +1,288 @@
+{# templates/management/roles/detail.html #}
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        @media (max-width: 991.98px) {
+            .mobilbtnn {
+                display: flex;
+            }
+        }
+
+        .perm-item {
+            transition: opacity .15s ease;
+        }
+
+        .role-badge {
+            font-size: 0.9rem;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-xxl">
+
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-body pt-9 pb-0">
+                            <div class="d-flex flex-wrap flex-sm-nowrap">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">
+                                                    Rol: {{ record.name }}
+                                                </a>
+
+                                                {% if record.category == 'SYSTEM' %}
+                                                    <span class="badge badge-light-primary role-badge">Sistem (Konasoft)</span>
+                                                {% elif record.category == 'CHAMBER' %}
+                                                    <span class="badge badge-light-warning role-badge">Dernek / Oda</span>
+                                                {% elif record.store_id %}
+                                                    <span class="badge badge-light-info role-badge">
+                                                        Mağaza Rolü — {{ record.store.title|default:record.store.store_id }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge badge-light-success role-badge">Global Mağaza Rolü</span>
+                                                {% endif %}
+
+                                                <a href="#"><i class="ki-duotone ki-verify fs-1 text-primary ms-2"><span
+                                                        class="path1"></span><span class="path2"></span></i></a>
+                                            </div>
+                                            <div class="text-muted">ID: {{ record.id }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="role-form" method="post" autocomplete="off">
+                        {% csrf_token %}
+
+                        <div class="row g-5">
+                            <div class="col-12 col-xl-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h4 class="card-title">Genel Bilgiler</h4>
+                                        <hr>
+                                        <div class="mb-3">
+                                            <label class="form-label">İsim</label>
+                                            <input type="text" name="name" class="form-control" maxlength="100"
+                                                   value="{{ record.name }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Açıklama</label>
+                                            <textarea name="description" class="form-control"
+                                                      rows="4">{{ record.description|default_if_none:'' }}</textarea>
+                                        </div>
+
+                                        <h5 class="mt-5">Bu Role Ait Kullanıcılar</h5>
+                                        <hr>
+                                        <div class="table-responsive" style="max-height: 320px; overflow:auto;">
+                                            <table class="table table-sm table-striped align-middle">
+                                                <thead>
+                                                <tr>
+                                                    <th>Ad Soyad</th>
+                                                    <th>E-posta</th>
+                                                    <th class="text-center">Durum</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for user in users %}
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex flex-column">
+                                                                <span class="fw-bold">{{ user.first_name }}</span>
+                                                                <small class="text-muted">{{ user.username }}</small>
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ user.email }}</td>
+                                                        <td class="text-center">
+                                                            {% if user.is_active %}
+                                                                <span class="badge badge-light-success">Aktif</span>
+                                                            {% else %}
+                                                                <span class="badge badge-light-danger">Pasif</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted py-3">Bu role
+                                                            atanmış kullanıcı yok.
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="d-grid mt-4">
+                                            <button type="submit" class="btn btn-primary" id="btnSave">
+                                                <i class="ki-duotone ki-save-2 fs-2 me-1"><span
+                                                        class="path1"></span><span class="path2"></span></i>
+                                                Güncelle
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-xl-8">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h3 class="card-title mb-0">Yetkiler ve İzinler</h3>
+                                        <div class="d-flex gap-2">
+                                            <input type="text" id="permSearch" class="form-control form-control-sm"
+                                                   placeholder="İzin ara…">
+                                            <button class="btn btn-light btn-sm" type="button" id="btnPermSelectAll">
+                                                Tümünü Seç
+                                            </button>
+                                            <button class="btn btn-light btn-sm" type="button" id="btnPermClearAll">
+                                                Temizle
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body bg-light-opacity">
+                                        <div class="alert alert-dismissible bg-light-primary border border-primary d-flex flex-column flex-sm-row p-5 mb-5">
+                                            <i class="ki-duotone ki-shield-tick fs-2hx text-primary me-4 mb-5 mb-sm-0"><span
+                                                    class="path1"></span><span class="path2"></span></i>
+                                            <div class="d-flex flex-column pe-0 pe-sm-10">
+                                                <h5 class="mb-1">Yetkilendirme Bilgisi</h5>
+                                                <span>Aşağıdaki listede sadece <strong>sizin sahip olduğunuz</strong> ve bu role atayabileceğiniz yetkiler görüntülenmektedir.</span>
+                                            </div>
+                                        </div>
+
+                                        {% regroup all_perms by group as perm_groups %}
+                                        {% for g in perm_groups %}
+                                            <div class="mb-5 border p-4 rounded bg-white shadow-sm">
+                                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                                    <strong class="text-dark fs-5 text-uppercase">{{ g.grouper|default:"Genel İzinler" }}</strong>
+                                                    <div class="d-flex gap-2">
+                                                        <button class="btn btn-xs btn-light-primary" type="button"
+                                                                data-group="{{ g.grouper|default:'__none__' }}"
+                                                                data-act="group-select">Grubu Seç
+                                                        </button>
+                                                        <button class="btn btn-xs btn-light-danger" type="button"
+                                                                data-group="{{ g.grouper|default:'__none__' }}"
+                                                                data-act="group-clear">Temizle
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row g-3">
+                                                    {% for p in g.list %}
+                                                        <div class="col-12 col-md-6 col-xl-4 perm-item"
+                                                             data-text="{{ p.name }} {{ p.code }} {{ p.group|default:'' }}"
+                                                             data-group="{{ p.group|default:'__none__' }}">
+                                                            <div class="border border-gray-300 border-hover-primary rounded p-3 h-100 bg-hover-light-primary transition-all">
+                                                                <div class="form-check form-check-custom form-check-solid">
+                                                                    <input class="form-check-input perm-check cursor-pointer"
+                                                                           type="checkbox"
+                                                                           id="perm_{{ p.id }}"
+                                                                           name="permission_ids[]"
+                                                                           value="{{ p.id }}"
+                                                                           {% if p.id in checked_perm_ids %}checked{% endif %}>
+                                                                    <label class="form-check-label fw-bold cursor-pointer text-gray-800"
+                                                                           for="perm_{{ p.id }}">
+                                                                        {{ p.name }}
+                                                                        <div class="fw-normal text-muted fs-8 mt-1">{{ p.code }}</div>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% empty %}
+                                            <div class="text-center py-5">
+                                                <i class="ki-duotone ki-lock fs-3x text-muted mb-3"><span
+                                                        class="path1"></span><span class="path2"></span><span
+                                                        class="path3"></span></i>
+                                                <div class="text-muted fw-bold">Atayabileceğiniz herhangi bir yetki
+                                                    bulunamadı.
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="card-footer d-flex justify-content-end gap-2">
+                                        <a href="{% url 'roles:index' %}" class="btn btn-light">Vazgeç</a>
+                                        <button type="submit" class="btn btn-success">Değişiklikleri Kaydet</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // İzin Arama Fonksiyonu
+            var permSearch = document.getElementById('permSearch');
+            var permItems = document.querySelectorAll('.perm-item');
+            if (permSearch) {
+                permSearch.addEventListener('input', function () {
+                    var q = (this.value || '').toLowerCase().trim();
+                    for (var i = 0; i < permItems.length; i++) {
+                        var el = permItems[i];
+                        var hay = (el.getAttribute('data-text') || '').toLowerCase();
+                        // Arama yapıldığında display:none yapıyoruz
+                        if (hay.indexOf(q) !== -1) {
+                            el.style.display = '';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            // Tümünü Seç / Temizle
+            var permSelectAll = document.getElementById('btnPermSelectAll');
+            var permClearAll = document.getElementById('btnPermClearAll');
+            if (permSelectAll) {
+                permSelectAll.addEventListener('click', function () {
+                    // Sadece görünür olanları seç (arama filtresine saygı duy)
+                    var visibleChecks = document.querySelectorAll('.perm-item:not([style*="display: none"]) .perm-check');
+                    for (var i = 0; i < visibleChecks.length; i++) visibleChecks[i].checked = true;
+                });
+            }
+            if (permClearAll) {
+                permClearAll.addEventListener('click', function () {
+                    var visibleChecks = document.querySelectorAll('.perm-item:not([style*="display: none"]) .perm-check');
+                    for (var i = 0; i < visibleChecks.length; i++) visibleChecks[i].checked = false;
+                });
+            }
+
+            // Grup Bazlı Seçim
+            var groupSelectButtons = document.querySelectorAll('[data-act="group-select"]');
+            for (var i = 0; i < groupSelectButtons.length; i++) {
+                groupSelectButtons[i].addEventListener('click', function () {
+                    var g = this.getAttribute('data-group');
+                    var checks = document.querySelectorAll('.perm-item[data-group="' + g + '"] .perm-check');
+                    for (var j = 0; j < checks.length; j++) checks[j].checked = true;
+                });
+            }
+            var groupClearButtons = document.querySelectorAll('[data-act="group-clear"]');
+            for (var i = 0; i < groupClearButtons.length; i++) {
+                groupClearButtons[i].addEventListener('click', function () {
+                    var g = this.getAttribute('data-group');
+                    var checks = document.querySelectorAll('.perm-item[data-group="' + g + '"] .perm-check');
+                    for (var j = 0; j < checks.length; j++) checks[j].checked = false;
+                });
+            }
+        });
+    </script>
+{% endblock footer %}

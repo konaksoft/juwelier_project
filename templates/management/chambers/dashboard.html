@@ -1,0 +1,537 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/select2/select2.min.css' %}">
+    <script src="{% static 'management/plugins/custom/select2/select2.min.js' %}"></script>
+    <style>
+        .kp-stat-card {
+            border-radius: 0.85rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        .kp-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .kp-stat-card .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .kp-stat-card .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .kp-stat-card .stat-label {
+            font-size: 0.82rem;
+            color: #a1a5b7;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .price-input-lg {
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            text-align: center;
+            padding: 0.65rem 0.5rem !important;
+            border-radius: 8px !important;
+            min-width: 100px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .price-input-lg:focus {
+            border-color: #009ef7 !important;
+            box-shadow: 0 0 0 0.2rem rgba(0,158,247,0.15) !important;
+        }
+        .price-input-lg::placeholder {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #b5b5c3;
+        }
+
+        .price-row:hover {
+            background-color: rgba(0,158,247,0.03);
+        }
+        .price-row td {
+            vertical-align: middle !important;
+        }
+
+        @media (max-width: 768px) {
+            .kp-stat-card .stat-value { font-size: 1.3rem; }
+            .price-input-lg { min-width: 80px; font-size: 0.85rem !important; }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div id="kt_app_content_container" class="app-container container-xxl">
+
+            <!-- HOŞGELDIN BAŞLIK -->
+            <div class="card mb-6 bg-light-primary border-0">
+                <div class="card-body py-6">
+                    <div class="d-flex flex-wrap flex-sm-nowrap align-items-center">
+                        <div class="me-5">
+                            <div class="d-flex align-items-center justify-content-center bg-primary rounded-circle"
+                                 style="width:64px;height:64px;">
+                                <i class="fa-solid fa-building-columns text-white fs-1"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap">
+                                <div class="d-flex flex-column">
+                                    <span class="text-gray-900 fs-2 fw-bold">{{ chamber.name }}</span>
+                                    <div class="d-flex flex-wrap mt-1 gap-3">
+                                        {% if chamber.president_name %}
+                                            <span class="d-flex align-items-center text-gray-500 fs-7">
+                                                <i class="fa-solid fa-user-tie me-1 text-primary"></i> {{ chamber.president_name }}
+                                            </span>
+                                        {% endif %}
+                                        {% if chamber.city %}
+                                            <span class="d-flex align-items-center text-gray-500 fs-7">
+                                                <i class="fa-solid fa-location-dot me-1 text-danger"></i> {{ chamber.city.name }}{% if chamber.district %} / {{ chamber.district.name }}{% endif %}
+                                            </span>
+                                        {% endif %}
+                                        {% if chamber.phone %}
+                                            <span class="d-flex align-items-center text-gray-500 fs-7">
+                                                <i class="fa-solid fa-phone me-1 text-success"></i> {{ chamber.phone }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge badge-primary fs-7 fw-bold px-4 py-2">Başkan Paneli</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İSTATİSTİK KARTLARI -->
+            <div class="row g-5 mb-6">
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kp-stat-card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-4 p-5">
+                            <div class="stat-icon bg-light-primary text-primary">
+                                <i class="fa-solid fa-store"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-gray-900">{{ member_store_count }}</div>
+                                <div class="stat-label">Aktif Mağaza</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kp-stat-card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-4 p-5">
+                            <div class="stat-icon bg-light-success text-success">
+                                <i class="fa-solid fa-building"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-gray-900">{{ member_company_count }}</div>
+                                <div class="stat-label">Üye Firma</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kp-stat-card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-4 p-5">
+                            <div class="stat-icon bg-light-warning text-warning">
+                                <i class="fa-solid fa-pen-nib"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-gray-900">{{ today_price_count }}</div>
+                                <div class="stat-label">Bugün Güncellenen Fiyat</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card kp-stat-card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-4 p-5">
+                            <div class="stat-icon bg-light-info text-info">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </div>
+                            <div>
+                                <div class="stat-value text-gray-900 fs-5 fw-bold">{{ last_store_name|truncatechars:18 }}</div>
+                                <div class="stat-label">Son Eklenen Mağaza</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKMELER -->
+            <div class="card shadow-sm">
+                <div class="card-header border-0 pt-6 pb-0">
+                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold" id="dashTabs">
+                        <li class="nav-item mt-2">
+                            <a class="nav-link text-active-primary ms-0 me-10 py-5 active" data-bs-toggle="tab" href="#tab_prices">
+                                <i class="fa-solid fa-coins fs-4 me-2 text-warning"></i> Canlı Fiyat Yönetimi
+                            </a>
+                        </li>
+                        <li class="nav-item mt-2">
+                            <a class="nav-link text-active-primary ms-0 me-10 py-5" data-bs-toggle="tab" href="#tab_stores">
+                                <i class="fa-solid fa-store fs-4 me-2 text-primary"></i> Üye Mağazalar
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body">
+                    <div class="tab-content">
+
+                        <!-- SEKME 1: FİYAT YÖNETİMİ -->
+                        <div class="tab-pane fade show active" id="tab_prices" role="tabpanel">
+
+                            <!-- Kategori + Arama + Kaydet -->
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-5">
+                                <div class="d-flex align-items-center gap-2">
+                                    <ul class="nav nav-pills nav-pills-custom gap-2" id="priceCategoryTabs">
+                                        <li class="nav-item">
+                                            <a class="nav-link btn btn-sm btn-flex btn-light-primary active py-2 px-4 fw-bold"
+                                               data-category="Altın" href="javascript:void(0);">
+                                                <i class="fa-solid fa-coins me-1"></i> Altın
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link btn btn-sm btn-flex btn-light-primary py-2 px-4 fw-bold"
+                                               data-category="Ziynet" href="javascript:void(0);">
+                                                <i class="fa-solid fa-ring me-1"></i> Ziynet
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link btn btn-sm btn-flex btn-light-primary py-2 px-4 fw-bold"
+                                               data-category="Döviz" href="javascript:void(0);">
+                                                <i class="fa-solid fa-money-bill-wave me-1"></i> Döviz
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="position-relative">
+                                        <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4" style="top:50%;transform:translateY(-50%);">
+                                            <span class="path1"></span><span class="path2"></span>
+                                        </i>
+                                        <input type="text" id="priceSearch"
+                                               class="form-control form-control-solid w-200px ps-12"
+                                               placeholder="Ürün Ara..."/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tümünü Seç + Kaydet -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                        <input class="form-check-input" type="checkbox" id="price-check-all">
+                                        <label class="form-check-label text-gray-500 fw-semibold" for="price-check-all">Tümünü Seç</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-light-warning btn-sm" id="btnBulkEdit">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i> Düzenle
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm px-5" id="btnBulkSave">
+                                        <i class="fa-solid fa-floppy-disk me-1"></i> Tümünü Kaydet
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table id="dtDashboardPrices" class="table align-middle table-row-dashed fs-6 gy-4 w-100">
+                                    <thead>
+                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                        <th class="w-10px pe-2"></th>
+                                        <th class="w-40px">Resim</th>
+                                        <th class="min-w-150px">Ürün</th>
+                                        <th class="min-w-120px text-center">Dernek Alış Has</th>
+                                        <th class="min-w-120px text-center">Dernek Satış Has</th>
+                                        <th class="min-w-100px text-center">İşçilik (TL)</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- SEKME 2: ÜYE MAĞAZALAR -->
+                        <div class="tab-pane fade" id="tab_stores" role="tabpanel">
+                            <div class="table-responsive">
+                                <table id="dtDashboardStores" class="table align-middle table-row-dashed fs-6 gy-5 w-100">
+                                    <thead>
+                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                        <th class="min-w-150px">Mağaza Adı</th>
+                                        <th class="min-w-150px">Firma</th>
+                                        <th>Telefon</th>
+                                        <th>E-posta</th>
+                                        <th>İl / İlçe</th>
+                                        <th class="text-center w-80px">Durum</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            var CHAMBER_ID = "{{ chamber.id }}";
+            var CSRF_TOKEN = '{{ csrf_token }}';
+
+            // =============================================================
+            // SEKME 2: MAĞAZA LİSTESİ
+            // =============================================================
+            var dtStores;
+
+            function initStoresDatatable() {
+                if (dtStores) return;
+
+                dtStores = $('#dtDashboardStores').DataTable({
+                    dom: "<'top d-flex justify-content-end'f>rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+                    info: false, paging: true,
+                    lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                    pageLength: 25, processing: true, serverSide: true,
+                    ajax: {url: "{% url 'chambers:dashboard-stores' %}", type: 'GET'},
+                    columns: [
+                        {
+                            data: 'title',
+                            render: function (data) {
+                                return '<span class="fw-bold text-gray-800">' + (data || '-') + '</span>';
+                            }
+                        },
+                        {
+                            data: 'company__title',
+                            render: function (data) {
+                                return '<span class="text-gray-600">' + (data || '-') + '</span>';
+                            }
+                        },
+                        {
+                            data: 'phone',
+                            render: function (d) { return d ? '<span class="text-gray-700">' + d + '</span>' : '<span class="text-gray-400">-</span>'; }
+                        },
+                        {
+                            data: 'email',
+                            render: function (d) { return d ? '<a href="mailto:' + d + '" class="text-primary">' + d + '</a>' : '<span class="text-gray-400">-</span>'; }
+                        },
+                        {
+                            data: 'city',
+                            render: function (data, type, row) {
+                                var loc = (row.city || '') + (row.city && row.district ? ' / ' : '') + (row.district || '');
+                                return loc || '<span class="text-gray-400">-</span>';
+                            }
+                        },
+                        {
+                            data: 'is_active', className: 'text-center',
+                            render: function (d) {
+                                return d
+                                    ? '<span class="badge badge-light-success fw-bold fs-8">Aktif</span>'
+                                    : '<span class="badge badge-light-danger fw-bold fs-8">Pasif</span>';
+                            }
+                        }
+                    ],
+                    language: {url: '/static/management/plugins/custom/datatables/TR.json'}
+                });
+            }
+
+            $('a[data-bs-toggle="tab"][href="#tab_stores"]').on('shown.bs.tab', function () {
+                initStoresDatatable();
+            });
+
+            // =============================================================
+            // SEKME 1: FİYAT YÖNETİMİ
+            // =============================================================
+            var dtPrices;
+            var activeCategory = "Altın";
+
+            dtPrices = $('#dtDashboardPrices').DataTable({
+                dom: 'rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
+                info: false, paging: true,
+                lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                pageLength: -1, processing: true, serverSide: true, autoWidth: false,
+                ajax: {
+                    url: "{% url 'chambers:dashboard-products' %}",
+                    type: 'GET',
+                    data: function (d) {
+                        d.category = activeCategory;
+                        d.search = {value: $('#priceSearch').val()};
+                    }
+                },
+                columns: [
+                    {
+                        data: 'id', orderable: false, className: 'text-center',
+                        render: function (data) {
+                            return "<input class='form-check-input row-check' type='checkbox' value='" + data + "'>";
+                        }
+                    },
+                    {
+                        data: 'image', orderable: false, className: 'text-center',
+                        render: function (data) {
+                            var img = data ? '/media/' + data : '/media/default/user.png';
+                            return "<img src='" + img + "' alt='P' class='rounded' style='width:36px;height:36px;object-fit:cover;'>";
+                        }
+                    },
+                    {
+                        data: 'name',
+                        render: function (data, type, row) {
+                            return '<span class="fw-bold text-gray-800">' + data + '</span>' +
+                                '<br><span class="text-muted fs-8">' + row.category_name + '</span>';
+                        }
+                    },
+                    {
+                        data: 'chamber_buy_hs', orderable: false, className: 'text-center',
+                        render: function (data, type, row) {
+                            var val = data !== "" ? parseFloat(data).toFixed(4) : "";
+                            var ph = row.global_buy_hs.toFixed(4);
+                            var display = val
+                                ? '<span class="badge badge-light-success fs-7 fw-bold">' + val + '</span>'
+                                : '<span class="text-muted fs-8">Global: ' + ph + '</span>';
+                            return "<span class='stock-value' data-id='" + row.id + "'>" + display + "</span>" +
+                                "<input type='number' class='form-control price-input-lg stock-input d-none' " +
+                                "data-field='chamber_buy_hs' data-id='" + row.id + "' value='" + val + "' step='0.0001' " +
+                                "placeholder='" + ph + "'>";
+                        }
+                    },
+                    {
+                        data: 'chamber_sale_hs', orderable: false, className: 'text-center',
+                        render: function (data, type, row) {
+                            var val = data !== "" ? parseFloat(data).toFixed(4) : "";
+                            var ph = row.global_sale_hs.toFixed(4);
+                            var display = val
+                                ? '<span class="badge badge-light-primary fs-7 fw-bold">' + val + '</span>'
+                                : '<span class="text-muted fs-8">Global: ' + ph + '</span>';
+                            return "<span class='stock-value' data-id='" + row.id + "'>" + display + "</span>" +
+                                "<input type='number' class='form-control price-input-lg stock-input d-none' " +
+                                "data-field='chamber_sale_hs' data-id='" + row.id + "' value='" + val + "' step='0.0001' " +
+                                "placeholder='" + ph + "'>";
+                        }
+                    },
+                    {
+                        data: 'chamber_labor', orderable: false, className: 'text-center',
+                        render: function (data, type, row) {
+                            var val = data !== "" ? parseFloat(data).toFixed(2) : "";
+                            var ph = row.global_labor.toFixed(2);
+                            var display = val
+                                ? '<span class="badge badge-light-warning fs-7 fw-bold">' + val + '</span>'
+                                : '<span class="text-muted fs-8">Global: ' + ph + '</span>';
+                            return "<span class='stock-value' data-id='" + row.id + "'>" + display + "</span>" +
+                                "<input type='number' class='form-control price-input-lg stock-input d-none' " +
+                                "data-field='chamber_labor' data-id='" + row.id + "' value='" + val + "' step='0.01' " +
+                                "placeholder='" + ph + "'>";
+                        }
+                    }
+                ],
+                rowCallback: function (row) {
+                    $(row).addClass('price-row');
+                },
+                language: {url: '/static/management/plugins/custom/datatables/TR.json'}
+            });
+
+            // Ürün Arama
+            $('#priceSearch').on('keyup', function () { dtPrices.ajax.reload(); });
+
+            // Kategori Değiştirme
+            $('#priceCategoryTabs .nav-link').on('click', function (e) {
+                e.preventDefault();
+                $('#priceCategoryTabs .nav-link').removeClass('active');
+                $(this).addClass('active');
+                activeCategory = $(this).data('category');
+                dtPrices.ajax.reload();
+                $('#price-check-all').prop('checked', false);
+            });
+
+            // Tümünü Seç
+            $('#price-check-all').on('change', function () {
+                $('#dtDashboardPrices tbody input.row-check').prop('checked', $(this).is(':checked'));
+            });
+
+            // Toplu Düzenle
+            $('#btnBulkEdit').on('click', function () {
+                var checked = $("#dtDashboardPrices tbody input.row-check:checked");
+                if (checked.length === 0) {
+                    Swal.fire('Uyarı', 'Lütfen düzenlemek için en az bir ürün seçin.', 'warning');
+                    return;
+                }
+                checked.each(function () {
+                    var id = $(this).val();
+                    $("#dtDashboardPrices .stock-value[data-id='" + id + "']").addClass('d-none');
+                    $("#dtDashboardPrices .stock-input[data-id='" + id + "']").removeClass('d-none');
+                });
+            });
+
+            // Toplu Kaydet
+            $('#btnBulkSave').on('click', function () {
+                var checked = $("#dtDashboardPrices tbody input.row-check:checked");
+                if (checked.length === 0) {
+                    Swal.fire('Uyarı', 'Lütfen kaydetmek için en az bir ürün seçin.', 'warning');
+                    return;
+                }
+
+                var items = [];
+                var btn = $(this);
+
+                checked.each(function () {
+                    var id = $(this).val();
+                    var rowData = {};
+                    var hasChange = false;
+
+                    var inputs = $("#dtDashboardPrices .stock-input[data-id='" + id + "']");
+                    inputs.each(function () {
+                        if (!$(this).hasClass('d-none')) {
+                            rowData[$(this).data('field')] = $(this).val();
+                            hasChange = true;
+                        }
+                    });
+                    if (hasChange) items.push({product_id: id, updated_data: rowData});
+                });
+
+                if (items.length === 0) return;
+
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Kaydediliyor...');
+
+                $.ajax({
+                    url: "{% url 'chambers:dashboard-save-prices' %}",
+                    type: 'POST',
+                    data: {
+                        items: JSON.stringify(items),
+                        csrfmiddlewaretoken: CSRF_TOKEN
+                    },
+                    success: function (resp) {
+                        if (resp.status === 'success') {
+                            Swal.fire({
+                                icon: 'success', title: 'Başarılı',
+                                text: resp.updated + ' ürün fiyatı güncellendi.',
+                                timer: 1500, showConfirmButton: false
+                            });
+                            $('#price-check-all').prop('checked', false);
+                            dtPrices.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Hata', resp.message || 'Bir hata oluştu.', 'error');
+                        }
+                    },
+                    error: function () { Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error'); },
+                    complete: function () {
+                        btn.prop('disabled', false).html('<i class="fa-solid fa-floppy-disk me-1"></i> Tümünü Kaydet');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

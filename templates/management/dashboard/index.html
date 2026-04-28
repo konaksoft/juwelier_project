@@ -1,0 +1,2550 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <style>
+
+        .is-rapor-active {
+
+        }
+
+        :root {
+            --bg-deep: #0F1B2B;
+            --bg-primary: #1A253A;
+            --bg-secondary: #22314A;
+            --bg-card: linear-gradient(135deg, rgba(26, 37, 58, 0.95) 0%, rgba(34, 49, 74, 0.9) 100%);
+            --glass-bg: rgba(34, 49, 74, 0.7);
+            --border-gold: rgba(255, 215, 0, 0.2);
+            --border-gold-strong: rgba(255, 215, 0, 0.5);
+            --accent-gold: #FFD700;
+            --accent-gold-dark: #B8860B;
+            --accent-emerald: #34D399;
+            --accent-red: #F87171;
+            --accent-blue: #60A5FA;
+            --accent-purple: #A78BFA;
+            --accent-orange: #FB923C;
+            --text-white: #FFFFFF;
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --shadow-gold: 0 0 40px rgba(255, 215, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-deep);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .dashboard-container {
+            position: relative;
+            min-height: 100vh;
+            background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 215, 0, 0.05) 0%, transparent 50%), linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
+        }
+
+        .dashboard-wrap {
+            max-width: 1700px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 3rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-gold);
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: relative;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dark) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-gold);
+        }
+
+        .header-icon i {
+            font-size: 1.75rem;
+            color: var(--bg-deep);
+        }
+
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-bottom: 0.25rem;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .header-title p span {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .kp-tabs-nav {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+            position: relative;
+        }
+
+        .kp-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 1rem 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .kp-tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: var(--accent-gold);
+            transition: width 0.3s ease;
+            box-shadow: 0 -2px 10px var(--accent-gold);
+        }
+
+        .kp-tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .kp-tab-btn.active {
+            color: var(--text-white);
+        }
+
+        .kp-tab-btn.active::after {
+            width: 100%;
+        }
+
+        .kp-tab-pane {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .kp-tab-pane.active {
+            display: block;
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pixel-card {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-gold);
+            border-radius: 20px;
+            isolation: isolate;
+            transition: all 0.4s ease;
+            user-select: none;
+            background: rgba(26, 37, 58, 0.6);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .pixel-card:hover {
+            border-color: var(--accent-gold);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.15);
+            background: rgba(34, 49, 74, 0.7);
+        }
+
+        .pixel-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .pixel-card-content {
+            position: relative;
+            z-index: 2;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .reports-grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats-pixel-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-pixel-card {
+            height: 140px;
+        }
+
+        .stat-pixel-card .pixel-card-content {
+            justify-content: space-between;
+        }
+
+        .stat-pixel-card .stat-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .stat-pixel-card .stat-icon-wrap i {
+            font-size: 1.4rem;
+            color: var(--stat-color, var(--accent-gold));
+        }
+
+        .stat-pixel-card .stat-value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--text-white);
+            line-height: 1;
+        }
+
+        .stat-pixel-card .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+
+        .stat-pixel-card.green {
+            --stat-color: var(--accent-emerald);
+        }
+
+        .stat-pixel-card.red {
+            --stat-color: var(--accent-red);
+        }
+
+        .stat-pixel-card.blue {
+            --stat-color: var(--accent-blue);
+        }
+
+        .stat-pixel-card.purple {
+            --stat-color: var(--accent-purple);
+        }
+
+        .stat-pixel-card.orange {
+            --stat-color: var(--accent-orange);
+        }
+
+        .stat-pixel-card.gold {
+            --stat-color: var(--accent-gold);
+        }
+
+        .donut-card {
+            height: 380px;
+        }
+
+        .gauge-card {
+            height: 180px;
+        }
+
+        .radar-card {
+            height: 380px;
+        }
+
+        .area-card {
+            height: 320px;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        .hbar-card {
+            height: 400px;
+        }
+
+        .summary-card {
+            height: 400px;
+        }
+
+        .chart-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .donut-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .donut-center-text .big-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-white);
+            display: block;
+        }
+
+        .donut-center-text .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .gauge-grid-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .gauge-card .pixel-card-content {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .gauge-card .gauge-wrap {
+            width: 120px;
+            height: 70px;
+            position: relative;
+        }
+
+        .gauge-card .gauge-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.75rem;
+        }
+
+        .gauge-card .gauge-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-top: 0.25rem;
+        }
+
+        .charts-bottom-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .chart-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 215, 0, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-icon i {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-white);
+        }
+
+        .chart-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .period-tabs {
+            display: flex;
+            gap: 0.35rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.3rem;
+            border-radius: 10px;
+        }
+
+        .period-tab {
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .period-tab:hover {
+            color: var(--text-white);
+        }
+
+        .period-tab.active {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dark) 100%);
+            color: var(--bg-deep);
+        }
+
+        .chart-area {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        .summary-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 215, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .summary-item:hover {
+            background: rgba(255, 215, 0, 0.05);
+            border-color: var(--border-gold);
+        }
+
+        .summary-item .item-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .summary-item .item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .summary-item .item-icon i {
+            font-size: 1.1rem;
+        }
+
+        .summary-item .item-icon.green {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--accent-emerald);
+        }
+
+        .summary-item .item-icon.green i {
+            color: var(--accent-emerald);
+        }
+
+        .summary-item .item-icon.red {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--accent-red);
+        }
+
+        .summary-item .item-icon.red i {
+            color: var(--accent-red);
+        }
+
+        .summary-item .item-icon.gold {
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--accent-gold);
+        }
+
+        .summary-item .item-icon.gold i {
+            color: var(--accent-gold);
+        }
+
+        .summary-item .item-icon.blue {
+            background: rgba(96, 165, 250, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .summary-item .item-icon.blue i {
+            color: var(--accent-blue);
+        }
+
+        .summary-item .item-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .summary-item .item-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-white);
+        }
+
+        .summary-item .item-value small {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .dropdown-menu {
+            background: var(--bg-secondary) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-gold) !important;
+            border-radius: 16px !important;
+            padding: 0.75rem !important;
+            min-width: 220px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5) !important;
+            z-index: 1000 !important;
+        }
+
+        .dropdown-menu .dropdown-item {
+            padding: 0.7rem 1rem;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            position: relative;
+            z-index: 1001;
+        }
+
+        .dropdown-menu .dropdown-item i {
+            font-size: 1rem;
+            color: var(--accent-gold);
+            opacity: 0.7;
+        }
+
+        .dropdown-menu .dropdown-item:hover {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--text-white);
+        }
+
+        .dropdown-menu .dropdown-header {
+            color: var(--text-muted) !important;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0.5rem 1rem 0.25rem;
+            font-weight: 700;
+        }
+
+        .dropdown-menu .dropdown-divider {
+            border-color: var(--border-gold);
+            opacity: 0.3;
+        }
+
+        #reportPdfModal .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-gold);
+            border-radius: 20px;
+        }
+
+        #reportPdfModal .modal-header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-gold);
+        }
+
+        #reportPdfModal .modal-title {
+            color: var(--text-white);
+            font-weight: 700;
+        }
+
+        #reportPdfModal .modal-footer {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-gold);
+        }
+
+        #reportPdfModal .btn-close {
+            filter: invert(1);
+        }
+
+        @media (max-width: 1400px) {
+            .stats-pixel-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .reports-grid-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .radar-card {
+                grid-column: 1 / -1;
+            }
+
+            .charts-bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .reports-grid-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .radar-card {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .stats-pixel-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-wrap {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .report-buttons {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .gauge-grid-inner {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .stats-pixel-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .stat-pixel-card {
+                height: 120px;
+            }
+
+            .stat-pixel-card .stat-value {
+                font-size: 1.6rem;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-gold);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-gold);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pixel-card {
+            animation: slideUp 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        .stats-pixel-grid .pixel-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .stats-pixel-grid .pixel-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .stats-pixel-grid .pixel-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .stats-pixel-grid .pixel-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .stats-pixel-grid .pixel-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .stats-pixel-grid .pixel-card:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        .kp-select-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-gold);
+            color: var(--text-white);
+            padding: 0.6rem;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .kp-select-input:hover, .kp-select-input:focus {
+            border-color: var(--accent-gold);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+        }
+
+        .kp-select-input option {
+            background: var(--bg-secondary);
+            color: var(--text-white);
+            padding: 10px;
+        }
+
+        .report-actions .period-tab {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .report-actions .period-tab:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: var(--accent-gold);
+            transform: translateY(-2px);
+        }
+
+        .select2-container--bootstrap5 .select2-selection {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid var(--border-gold) !important;
+            color: var(--text-white) !important;
+        }
+
+        .select2-container--bootstrap5 .select2-selection:hover {
+            border-color: var(--accent-gold) !important;
+        }
+
+        .select2-container--bootstrap5 .select2-selection__rendered {
+            color: var(--text-white) !important;
+        }
+    </style>
+
+{% endblock header %}
+
+{% block body %}
+    <div class="dashboard-container">
+        <div class="dashboard-wrap">
+
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <div class="header-icon">
+                        <i class="bi bi-bar-chart-line-fill"></i>
+                    </div>
+                    <div class="header-title">
+                        <h1>Raporlar ve Grafikler</h1>
+                        <p>Mağaza performansını <span>anlık</span> takip edin</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kp-tabs-nav">
+                <button class="kp-tab-btn active" onclick="switchTab('reports')">Dashboard</button>
+                <button class="kp-tab-btn" onclick="switchTab('charts')">Grafikler</button>
+                <button class="kp-tab-btn" onclick="switchTab('all-reports')">Rapor Merkezi</button>
+            </div>
+
+            <div id="tab-reports" class="kp-tab-pane active">
+                <div class="stats-pixel-grid">
+                    <div class="pixel-card stat-pixel-card green" id="stat-card-1" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-bag-check-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="daily-sales">0</div>
+                                <div class="stat-label">Günlük Satış</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card red" id="stat-card-2" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-bag-plus-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="daily-purchases">0</div>
+                                <div class="stat-label">Günlük Alış</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card blue" id="stat-card-3" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-box-seam-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="total-products">0</div>
+                                <div class="stat-label">Toplam Ürün</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card purple" id="stat-card-4" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-people-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="total-customers">0</div>
+                                <div class="stat-label">Müşteri</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card orange" id="stat-card-5" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-truck"></i></div>
+                            <div>
+                                <div class="stat-value" id="total-suppliers">0</div>
+                                <div class="stat-label">Tedarikçi</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card gold" id="stat-card-6" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-person-badge-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="total-employees">0</div>
+                                <div class="stat-label">Personel</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ MAĞAZA VARLIKLARI (Anlık Kasa + Stok Özeti) ═══ -->
+                <div id="store-assets-section" style="margin-top:1rem;">
+                    <div class="pixel-card" data-variant="gold" style="padding:1rem;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header" style="margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+                                <div class="chart-title-wrap" style="display:flex; align-items:center; gap:0.75rem;">
+                                    <div class="chart-icon"><i class="bi bi-safe2-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">Mağaza Varlıkları</div>
+                                        <div class="chart-subtitle">Kasa, Banka/POS ve Stok anlık özeti</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <span id="assets-generated-at" style="font-size:0.75rem; color:var(--text-muted);"></span>
+                                    <button type="button" id="assets-refresh-btn" class="btn btn-sm"
+                                            style="background:rgba(255,215,0,0.15); color:var(--accent-gold); border:1px solid var(--border-gold); padding:0.25rem 0.6rem; font-size:0.75rem;">
+                                        <i class="bi bi-arrow-clockwise"></i> Yenile
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Kasa / Banka / POS Bakiye Grid -->
+                            <div class="stats-pixel-grid" style="margin-bottom:1rem;">
+                                <div class="pixel-card stat-pixel-card green" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-cash-stack"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-cash-try" style="font-size:1.1rem;">₺0</div>
+                                            <div class="stat-label">Nakit (TRY)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pixel-card stat-pixel-card blue" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-credit-card-2-front-fill"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-pos-bank-try" style="font-size:1.1rem;">₺0</div>
+                                            <div class="stat-label">Banka / POS (TRY)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pixel-card stat-pixel-card gold" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-gem"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-stock-has" style="font-size:1.1rem;">0 gr</div>
+                                            <div class="stat-label">Stok HAS Değeri</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pixel-card stat-pixel-card purple" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-boxes"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-stock-gram" style="font-size:1.1rem;">0 gr</div>
+                                            <div class="stat-label">Toplam Stok Gram</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Döviz Kasa Detayı -->
+                            <div id="assets-fx-wrap" style="margin-bottom:1rem;">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Döviz Kasa Bakiyeleri
+                                </div>
+                                <div id="assets-fx-chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                    <span style="color:var(--text-muted); font-size:0.8rem;">Döviz hesabı yok</span>
+                                </div>
+                            </div>
+
+                            <!-- Ayar / Tip Kırılımı -->
+                            <div style="margin-bottom:1rem;">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Ayar / Tip Kırılımı (Altın)
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                    <span class="assets-chip" data-k="k22"><i class="bi bi-coin"></i> 22 Ayar: <b id="assets-k22">0 gr</b></span>
+                                    <span class="assets-chip" data-k="k18"><i class="bi bi-coin"></i> 18 Ayar: <b id="assets-k18">0 gr</b></span>
+                                    <span class="assets-chip" data-k="k14"><i class="bi bi-coin"></i> 14 Ayar: <b id="assets-k14">0 gr</b></span>
+                                    <span class="assets-chip" data-k="bracelet"><i class="bi bi-circle"></i> Bilezik: <b id="assets-bracelet">0 gr</b></span>
+                                    <span class="assets-chip" data-k="scrap"><i class="bi bi-recycle"></i> Hurda: <b id="assets-scrap">0 gr</b></span>
+                                    <span class="assets-chip" id="mm-hg-cash-chip" style="display:none; background:rgba(192,192,192,0.15); border:1px solid rgba(192,192,192,0.4);">
+                                        <i class="bi bi-piggy-bank"></i> HG Kasa: <b id="mm-hg-cash-value">0 HG</b>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {# ═══════════════════════════════════════════════════════════════════════ #}
+                            {# FAZ D: ÇOKLU MADEN/ÜRÜN ÖZET KARTLARI — Gümüş · Pırlanta · Saat        #}
+                            {# Veri kaynağı: /dashboard/assets-summary/ (FAZ C'de genişletildi).       #}
+                            {# Dolduran modül: static/js/modules/dashboard/multi_material_cards.js    #}
+                            {# ═══════════════════════════════════════════════════════════════════════ #}
+                            <div id="multi-material-assets-wrap" style="margin-bottom:1rem;">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Çoklu Maden / Ürün Stokları
+                                </div>
+                                <div class="stats-pixel-grid" style="margin-top:0.5rem;">
+                                    {# — Gümüş — #}
+                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
+                                         style="border:1px solid rgba(192,192,192,0.35);">
+                                        <canvas class="pixel-canvas"></canvas>
+                                        <div class="pixel-card-content">
+                                            <div class="stat-icon-wrap" style="color:#c0c0c0;">
+                                                <i class="bi bi-moon-stars-fill"></i>
+                                            </div>
+                                            <div>
+                                                <div class="stat-value" id="mm-silver-gram" style="font-size:1.05rem;">0 gr</div>
+                                                <div class="stat-label">Gümüş (Gram)</div>
+                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
+                                                    <span id="mm-silver-value-hg">0 HG</span>
+                                                    · <span id="mm-silver-value-tl">₺0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {# — Pırlanta — #}
+                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
+                                         style="border:1px solid rgba(173,216,230,0.45);">
+                                        <canvas class="pixel-canvas"></canvas>
+                                        <div class="pixel-card-content">
+                                            <div class="stat-icon-wrap" style="color:#add8e6;">
+                                                <i class="bi bi-gem"></i>
+                                            </div>
+                                            <div>
+                                                <div class="stat-value" id="mm-diamond-pieces" style="font-size:1.05rem;">0 adet</div>
+                                                <div class="stat-label">Pırlanta</div>
+                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
+                                                    <span id="mm-diamond-value-tl">₺0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {# — Saat — #}
+                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
+                                         style="border:1px solid rgba(255,165,0,0.35);">
+                                        <canvas class="pixel-canvas"></canvas>
+                                        <div class="pixel-card-content">
+                                            <div class="stat-icon-wrap" style="color:#ffa500;">
+                                                <i class="bi bi-watch"></i>
+                                            </div>
+                                            <div>
+                                                <div class="stat-value" id="mm-watch-pieces" style="font-size:1.05rem;">0 adet</div>
+                                                <div class="stat-label">Saat</div>
+                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
+                                                    <span id="mm-watch-value-tl">₺0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Kategori Gramaj Tablosu -->
+                            <div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Kategori Bazlı Stok
+                                </div>
+                                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                                    <thead>
+                                        <tr style="border-bottom:1px solid var(--border-gold); color:var(--text-secondary);">
+                                            <th style="text-align:left; padding:0.4rem 0.6rem;">Kategori</th>
+                                            <th style="text-align:right; padding:0.4rem 0.6rem;">Toplam Gram</th>
+                                            <th style="text-align:right; padding:0.4rem 0.6rem;">Adet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assets-category-table">
+                                        <tr><td colspan="3" style="padding:0.6rem; text-align:center; color:var(--text-muted);">Yükleniyor…</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ FAZ R-5: KPI ÖZET KARTLARI ═══ -->
+                <div class="stats-pixel-grid" id="kpi-row-profit" style="margin-top:1rem;">
+                    <div class="pixel-card stat-pixel-card green" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
+                            <div>
+                                <div class="stat-value" id="kpi-gross-profit" style="font-size:1.1rem;">₺0</div>
+                                <div class="stat-label">Brüt Kâr</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card gold" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-safe2-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="kpi-net-cash" style="font-size:1.1rem;">₺0</div>
+                                <div class="stat-label">Net Kasa</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card blue" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-box-seam-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="kpi-stock-value" style="font-size:1.1rem;">₺0</div>
+                                <div class="stat-label">Stok Değeri</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card orange" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="kpi-pending-recon" style="font-size:1.1rem;">0</div>
+                                <div class="stat-label">Bkl. Mutabakat</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card purple" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-percent"></i></div>
+                            <div>
+                                <div class="stat-value" id="kpi-commission" style="font-size:1.1rem;">₺0</div>
+                                <div class="stat-label">Komisyon</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card stat-pixel-card red" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="stat-icon-wrap"><i class="bi bi-person-check-fill"></i></div>
+                            <div>
+                                <div class="stat-value" id="kpi-unique-customers" style="font-size:1.1rem;">0</div>
+                                <div class="stat-label">Tekil Müşteri</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .assets-chip {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.35rem;
+                        padding: 0.35rem 0.7rem;
+                        background: rgba(255, 215, 0, 0.08);
+                        border: 1px solid var(--border-gold);
+                        border-radius: 999px;
+                        font-size: 0.8rem;
+                        color: var(--text-primary);
+                    }
+                    .assets-chip b { color: var(--accent-gold); font-weight: 700; }
+                    #assets-category-table tr { border-bottom: 1px solid rgba(255, 215, 0, 0.08); }
+                    #assets-category-table td { padding: 0.4rem 0.6rem; color: var(--text-primary); }
+                    #assets-category-table td.num { text-align: right; color: var(--accent-gold); font-weight: 600; }
+                </style>
+
+                <!-- ═══ FAZ R-5: PERSONEL PERFORMANS MINI LİSTESİ ═══ -->
+                <div id="kpi-employee-section" style="margin-top:1rem; display:none;">
+                    <div class="pixel-card" data-variant="gold" style="padding:1rem;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header" style="margin-bottom:0.5rem;">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-person-lines-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">Personel Performansı</div>
+                                        <div class="chart-subtitle">Bugünkü satış sıralaması</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                                <thead>
+                                <tr style="border-bottom:1px solid var(--border-gold); color:var(--text-secondary);">
+                                    <th style="text-align:left; padding:0.4rem 0.6rem;">Personel</th>
+                                    <th style="text-align:right; padding:0.4rem 0.6rem;">Satış</th>
+                                    <th style="text-align:right; padding:0.4rem 0.6rem;">Toplam (TL)</th>
+                                    <th style="text-align:right; padding:0.4rem 0.6rem;">Kâr (TL)</th>
+                                </tr>
+                                </thead>
+                                <tbody id="kpi-employee-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reports-grid-layout">
+                    <div class="pixel-card donut-card" id="donut-card" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-pie-chart-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">İşlem Dağılımı</div>
+                                        <div class="chart-subtitle">Günlük alış/satış oranı</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="donutChart"></canvas>
+                                <div class="donut-center-text"><span class="big-value" id="donut-total">0</span><span
+                                        class="label">Toplam İşlem</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gauge-grid-inner">
+                        <div class="pixel-card gauge-card" id="gauge-card-1" data-variant="gold">
+                            <canvas class="pixel-canvas"></canvas>
+                            <div class="pixel-card-content">
+                                <div class="gauge-wrap">
+                                    <canvas id="gaugeTlIn"></canvas>
+                                </div>
+                                <div class="gauge-label">TL Giriş</div>
+                                <div class="gauge-value" id="gauge-tl-in-value">₺0</div>
+                            </div>
+                        </div>
+                        <div class="pixel-card gauge-card" id="gauge-card-2" data-variant="gold">
+                            <canvas class="pixel-canvas"></canvas>
+                            <div class="pixel-card-content">
+                                <div class="gauge-wrap">
+                                    <canvas id="gaugeTlOut"></canvas>
+                                </div>
+                                <div class="gauge-label">TL Çıkış</div>
+                                <div class="gauge-value" id="gauge-tl-out-value">₺0</div>
+                            </div>
+                        </div>
+                        <div class="pixel-card gauge-card" id="gauge-card-3" data-variant="gold">
+                            <canvas class="pixel-canvas"></canvas>
+                            <div class="pixel-card-content">
+                                <div class="gauge-wrap">
+                                    <canvas id="gaugeHsIn"></canvas>
+                                </div>
+                                <div class="gauge-label">Has Giriş</div>
+                                <div class="gauge-value" id="gauge-hs-in-value">0 gr</div>
+                            </div>
+                        </div>
+                        <div class="pixel-card gauge-card" id="gauge-card-4" data-variant="gold">
+                            <canvas class="pixel-canvas"></canvas>
+                            <div class="pixel-card-content">
+                                <div class="gauge-wrap">
+                                    <canvas id="gaugeHsOut"></canvas>
+                                </div>
+                                <div class="gauge-label">Has Çıkış</div>
+                                <div class="gauge-value" id="gauge-hs-out-value">0 gr</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card radar-card" id="radar-card" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-diagram-3-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">Performans Özeti</div>
+                                        <div class="chart-subtitle">Çok boyutlu analiz</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-area">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-charts" class="kp-tab-pane">
+                <div class="pixel-card area-card" id="area-card" data-variant="gold">
+                    <canvas class="pixel-canvas"></canvas>
+                    <div class="pixel-card-content">
+                        <div class="chart-header">
+                            <div class="chart-title-wrap">
+                                <div class="chart-icon"><i class="bi bi-graph-up"></i></div>
+                                <div>
+                                    <div class="chart-title">TL & HAS Giriş/Çıkış Farkı</div>
+                                    <div class="chart-subtitle">Dönemsel karşılaştırma</div>
+                                </div>
+                            </div>
+                            <div class="period-tabs" id="area-tabs">
+                                <button class="period-tab" data-period="1">1G</button>
+                                <button class="period-tab active" data-period="7">7G</button>
+                                <button class="period-tab" data-period="30">1A</button>
+                                <button class="period-tab" data-period="90">3A</button>
+                                <button class="period-tab" data-period="180">6A</button>
+                            </div>
+                        </div>
+                        <div class="chart-area">
+                            <canvas id="areaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-bottom-grid">
+                    <div class="pixel-card hbar-card" id="hbar-card" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-trophy-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">En Çok Satılan 5 Ürün</div>
+                                        <div class="chart-subtitle">Satış performansı</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-area">
+                                <canvas id="hbarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pixel-card summary-card" id="summary-card" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-clipboard-data-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">Günlük Özet</div>
+                                        <div class="chart-subtitle">Nakit akışı</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="summary-list">
+                                <div class="summary-item">
+                                    <div class="item-left">
+                                        <div class="item-icon green"><i class="bi bi-arrow-down-circle-fill"></i></div>
+                                        <span class="item-label">TL Giriş</span></div>
+                                    <div class="item-value"><span id="sum-tl-in">0</span> <small>TRY</small></div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="item-left">
+                                        <div class="item-icon red"><i class="bi bi-arrow-up-circle-fill"></i></div>
+                                        <span class="item-label">TL Çıkış</span></div>
+                                    <div class="item-value"><span id="sum-tl-out">0</span> <small>TRY</small></div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="item-left">
+                                        <div class="item-icon gold"><i class="bi bi-arrow-down-circle-fill"></i></div>
+                                        <span class="item-label">Has Giriş</span></div>
+                                    <div class="item-value"><span id="sum-hs-in">0</span> <small>gr</small></div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="item-left">
+                                        <div class="item-icon blue"><i class="bi bi-arrow-up-circle-fill"></i></div>
+                                        <span class="item-label">Has Çıkış</span></div>
+                                    <div class="item-value"><span id="sum-hs-out">0</span> <small>gr</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-all-reports" class="kp-tab-pane">
+                <div class="row mb-6 report-actions">
+                    <div class="col-12 col-md-4">
+                        <p class="text-muted mb-3 fs-7">Rapor periyodunu seçerek PDF oluşturun:</p>
+                        <div class="d-flex flex-wrap gap-2 period-tabs">
+                            <button data-period="daily" class="period-tab flex-fill text-center py-2"><i
+                                    class="bi bi-calendar-day d-block mb-1 fs-5"></i> Bugün
+                            </button>
+                            <button data-period="weekly" class="period-tab flex-fill text-center py-2"><i
+                                    class="bi bi-calendar-week d-block mb-1 fs-5"></i> Bu Hafta
+                            </button>
+                            <button data-period="two_weeks" class="period-tab flex-fill text-center py-2"><i
+                                    class="bi bi-calendar-range d-block mb-1 fs-5"></i> 2 Hafta
+                            </button>
+                            <button data-period="monthly" class="period-tab flex-fill text-center py-2"><i
+                                    class="bi bi-calendar-month d-block mb-1 fs-5"></i> Bu Ay
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="">
+                            <label class="text-muted fs-7 mb-5 d-block">Tarih Aralığına Göre Rapor:</label>
+                            <div class="d-flex gap-2">
+                                <input type="date" id="customStartDate" class="kp-select-input flex-fill"
+                                       title="Başlangıç Tarihi">
+                                <div class="pb-2 text-muted-opacity-50 pt-2"><i class="bi bi-arrow-right fs-9"></i>
+                                </div>
+                                <input type="date" id="customEndDate" class="kp-select-input flex-fill"
+                                       title="Bitiş Tarihi">
+                                <button onclick="clearCustomDates()" class="period-tab px-3" style="color: #dc3545;"
+                                        title="Tarihleri Temizle"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4"></div>
+                </div>
+                <div class="reports-grid-layout"
+                     style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+
+                    <div class="pixel-card rapor-card" data-type="generate" data-variant="gold"
+                         style="min-height: 100px;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+                                    <div>
+                                        <div class="chart-title">Genel Durum Raporu</div>
+                                        <div class="chart-subtitle">Satış, stok ve kasa özeti</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="report-actions mt-auto"></div>
+                        </div>
+                    </div>
+
+                    <div class="pixel-card rapor-card" data-type="currency" data-variant="gold"
+                         style="min-height: 100px;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-currency-exchange"></i></div>
+                                    <div>
+                                        <div class="chart-title">Döviz Raporu</div>
+                                        <div class="chart-subtitle">Kur değişimleri ve döviz kasası</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pixel-card rapor-card" data-type="stock" data-variant="gold" style="min-height: 100px;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-boxes"></i></div>
+                                    <div>
+                                        <div class="chart-title">Güncel Stok Raporu</div>
+                                        <div class="chart-subtitle">Kritik stok ve envanter durumu</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pixel-card rapor-card" data-type="profit" data-variant="gold"
+                         style="min-height: 200px;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon" style="background: rgba(255, 215, 0, 0.2);"><i
+                                            class="bi bi-graph-up-arrow" style="color:#fff;"></i></div>
+                                    <div>
+                                        <div class="chart-title" style="color:var(--accent-gold);">Kâr Analiz
+                                            Raporları
+                                        </div>
+                                        <div class="chart-subtitle">Kategori bazlı kâr/zarar durumu</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <div class="mb-3">
+                                    <ul id="analiz-link"
+                                        class="nav nav-stretch nav-line-tabs border-transparent fs-5 fw-bold">
+                                        <li class="nav-item"><a
+                                                class="nav-link text-active-primary ms-0 me-10 py-5 chart-title active"
+                                                data-type="ziynet" data-bs-toggle="tab">Ziynet Grubu</a></li>
+                                        <li class="nav-item"><a
+                                                class="nav-link text-active-primary ms-0 me-10 py-5 chart-title"
+                                                data-type="bilezik" data-bs-toggle="tab">Bilezik Grubu</a></li>
+                                        <li class="nav-item"><a
+                                                class="nav-link text-active-primary ms-0 me-10 py-5 chart-title"
+                                                data-type="altin" data-bs-toggle="tab">Has Altın / Gram</a></li>
+                                        <li class="nav-item"><a
+                                                class="nav-link text-active-primary ms-0 me-10 py-5 chart-title"
+                                                data-type="hurda" data-bs-toggle="tab">Hurda İşlemleri</a></li>
+                                        <li class="nav-item"><a
+                                                class="nav-link text-active-primary ms-0 me-10 py-5 chart-title"
+                                                data-type="barkod" data-bs-toggle="tab">Barkodlu Ürünler</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pixel-card rapor-card" data-type="customer" data-variant="gold"
+                         style="min-height: 100px;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-people-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">Müşteri Cari Raporları</div>
+                                        <div class="chart-subtitle">TL/Has bakiye, işlem özeti, en borçlu/alacaklı
+                                            müşteriler
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ════════ MÜŞTERİ DETAY RAPORU KARTI ════════ #}
+                    <div class="pixel-card rapor-card" data-type="customer_detail" data-variant="gold"
+                         style="min-height: 100px;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon" style="background: rgba(96, 165, 250, 0.2);"><i
+                                            class="bi bi-person-lines-fill" style="color:#60A5FA;"></i></div>
+                                    <div>
+                                        <div class="chart-title" style="color:var(--accent-blue);">Müşteri Detay
+                                            Raporu
+                                        </div>
+                                        <div class="chart-subtitle">Seçilen müşteriye özel işlem, ödeme ve bakiye
+                                            raporu
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="report-actions mt-3" onclick="event.stopPropagation();">
+                                <select id="customerDetailSelect" class="form-select form-select-solid"
+                                        data-control="select2" data-placeholder="Müşteri ara (ad, soyad, telefon)...">
+                                    <option></option>
+                                </select>
+
+                                <input type="hidden" id="selectedCustomerDetailId" value=""/>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="reportPdfModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">İşlem Raporu Önizleme</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="reportModalBody">
+                    <div class="text-center my-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="mt-2">Rapor Yükleniyor...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <a href="#" id="downloadPdfBtn" class="btn btn-primary"><i class="ki-duotone ki-file-down fs-2"></i>
+                        PDF İndir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        function switchTab(tabName) {
+            const buttons = document.querySelectorAll('.kp-tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            const panes = document.querySelectorAll('.kp-tab-pane');
+            panes.forEach(pane => pane.classList.remove('active'));
+            const activePane = document.getElementById('tab-' + tabName);
+            if (activePane) activePane.classList.add('active');
+        }
+    </script>
+
+    <script>
+        console.log("Rapor Scripti Yüklendi...");
+
+        function kpBuildUrl(url, params) {
+            return url + (url.indexOf("?") === -1 ? "?" : "&") + new URLSearchParams(params).toString();
+        }
+
+        function getReportTypeFromUrl(url) {
+            if (url.indexOf('generate-customer-detail-report') !== -1) return 'customer_detail';
+            if (url.indexOf('generate-report') !== -1 && url.indexOf('customer') === -1) return 'process';
+            if (url.indexOf('generate-currency-report') !== -1) return 'currency';
+            if (url.indexOf('generate-current-stock-report') !== -1) return 'stock';
+            if (url.indexOf('generate-profit-report') !== -1) return 'profit';
+            if (url.indexOf('generate-customer-report') !== -1) return 'customer';
+            return 'process';
+        }
+
+        function openReportInModal(url, params) {
+            var fullUrl = kpBuildUrl(url, params || {});
+            var modalElement = document.getElementById('reportPdfModal');
+            var modalBody = document.getElementById('reportModalBody');
+            var downloadBtn = document.getElementById('downloadPdfBtn');
+            if (!modalElement || !modalBody || !downloadBtn) return;
+
+            currentReportConfig.reportType = getReportTypeFromUrl(url);
+            currentReportConfig.params = params || {};
+
+            try {
+                modalBody.innerHTML = '<div class="text-center my-5"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">Rapor Yükleniyor...</div></div>';
+                var myModal = bootstrap.Modal.getInstance(modalElement);
+                if (!myModal) myModal = new bootstrap.Modal(modalElement, {keyboard: false});
+                myModal.show();
+
+                var previewUrl = new URL(fullUrl, window.location.origin);
+                previewUrl.searchParams.set('preview', '1');
+
+                fetch(previewUrl.toString())
+                    .then(function (response) {
+                        if (!response.ok) throw new Error("Sunucu hatası: " + response.status);
+                        return response.text();
+                    })
+                    .then(function (html) {
+                        modalBody.innerHTML = html;
+                        downloadBtn.href = '#';
+                        downloadBtn.onclick = function (e) {
+                            e.preventDefault();
+                            triggerAsyncReportDownload();
+                        };
+                    });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function triggerAsyncReportDownload() {
+            var cfg = currentReportConfig;
+            if (!cfg.reportType) {
+                Swal.fire({text: "Rapor tipi belirlenemedi.", icon: "warning"});
+                return;
+            }
+
+            var qParams = new URLSearchParams({
+                report_type: cfg.reportType,
+                start_date: cfg.params.start_date || '',
+                end_date: cfg.params.end_date || '',
+                period: cfg.params.period || 'daily',
+                type: cfg.params.type || 'ziynet',
+                customer_id: cfg.params.customer_id || ''
+            });
+
+            Swal.fire({
+                title: "Rapor Hazırlanıyor",
+                html: "Rapor sıraya alındı, hazırlanıyor...<br><small>Lütfen bekleyin.</small>",
+                allowOutsideClick: false, allowEscapeKey: false,
+                didOpen: function () {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch(URL_QUEUE_REPORT + '?' + qParams.toString(), {
+                method: 'GET', headers: {'X-Requested-With': 'XMLHttpRequest'}, credentials: 'same-origin'
+            })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.error) {
+                        Swal.fire({icon: "error", text: data.message || "Rapor sıraya alınamadı."});
+                        return;
+                    }
+                    pollReportStatus(data.task_id);
+                })
+                .catch(function (err) {
+                    Swal.fire({icon: "error", text: "Bağlantı hatası: " + (err.message || "Bilinmeyen hata")});
+                });
+        }
+
+        function pollReportStatus(taskId) {
+            var checkUrl = '/dashboard/check-report-status/' + taskId;
+            fetch(checkUrl, {credentials: 'same-origin'})
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.status === 'SUCCESS' && data.file_url) {
+                        Swal.close();
+                        var a = document.createElement('a');
+                        a.href = data.file_url;
+                        a.download = 'rapor.pdf';
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        return;
+                    }
+                    if (data.status === 'FAILED') {
+                        Swal.fire({icon: "error", text: data.error || "Rapor oluşturulamadı."});
+                        return;
+                    }
+                    setTimeout(function () {
+                        pollReportStatus(taskId);
+                    }, 3000);
+                })
+                .catch(function () {
+                    setTimeout(function () {
+                        pollReportStatus(taskId);
+                    }, 3000);
+                });
+        }
+
+        var URL_REPORT = "/dashboard/generate-report";
+        var URL_CURRENCY_REPORT = "/dashboard/generate-currency-report";
+        var URL_CURRENT_STOCK_REPORT = "/dashboard/generate-current-stock-report";
+        var URL_PROFIT_REPORT = "/dashboard/generate-profit-report";
+        var URL_QUEUE_REPORT = "/dashboard/queue-report";
+        var URL_CHECK_STATUS = "/dashboard/check-report-status";
+        var URL_CUSTOMER_REPORT = "/dashboard/generate-customer-report";
+        var URL_CUSTOMER_DETAIL_REPORT = "/dashboard/generate-customer-detail-report";
+
+        var currentReportConfig = {reportType: null, params: {}};
+
+        function customDateReportFilter() {
+            var type = $(".rapor-card.is-rapor-active").data("type");
+            if (!type) {
+                Swal.fire({text: "Lütfen bir rapor tipi seçiniz!", icon: "warning", confirmButtonText: "Tamam"});
+                return;
+            }
+            generateCustomDateReport(type);
+        }
+
+        window.generateCustomDateReport = function (reportType) {
+            let url;
+            switch (reportType) {
+                case 'currency':
+                    url = URL_CURRENCY_REPORT;
+                    break;
+                case 'stock':
+                    url = URL_CURRENT_STOCK_REPORT;
+                    break;
+                case 'profit':
+                    url = URL_PROFIT_REPORT;
+                    break;
+                default:
+                    url = URL_REPORT;
+            }
+            const startDate = document.getElementById("customStartDate").value;
+            const endDate = document.getElementById("customEndDate").value;
+            if (!startDate || !endDate) {
+                Swal.fire({
+                    text: "Lütfen hem başlangıç hem de bitiş tarihini seçiniz!",
+                    icon: "warning",
+                    confirmButtonText: "Tamam"
+                });
+                return;
+            }
+            if (startDate > endDate) {
+                Swal.fire({
+                    text: "Başlangıç tarihi, bitiş tarihinden sonra olamaz!",
+                    icon: "error",
+                    confirmButtonText: "Tamam"
+                });
+                return;
+            }
+            const params = {start_date: startDate, end_date: endDate};
+            if (reportType === 'profit') {
+                const typeSelect = $("#analiz-link .nav-link.active").eq(0).data("type");
+                params.type = typeSelect ? typeSelect : 'ziynet';
+            }
+            openReportInModal(url, params);
+        }
+
+        function reportShow(period, url, selected) {
+            if (!selected) openReportInModal(url, {period: period});
+            else openReportInModal(url, {period: period, type: selected});
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('reportPdfModal');
+            if (modalEl) {
+                modalEl.addEventListener('hidden.bs.modal', function () {
+                    var iframe = document.getElementById('reportPdfIframe');
+                    if (iframe) iframe.src = "";
+                });
+            }
+        });
+
+        window.clearCustomDates = function () {
+            document.getElementById("customStartDate").value = "";
+            document.getElementById("customEndDate").value = "";
+        };
+
+        document.querySelectorAll('#customStartDate, #customEndDate').forEach(input => {
+            input.addEventListener('change', function () {
+                document.querySelectorAll('.period-tabs .period-tab').forEach(btn => btn.classList.remove('active'));
+            });
+        });
+
+        document.querySelectorAll('.period-tabs .period-tab').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.stopPropagation();
+                clearCustomDates();
+                const isActive = this.classList.contains('active');
+                document.querySelectorAll('.period-tabs .period-tab').forEach(btn => btn.classList.remove('active'));
+                if (!isActive) this.classList.add('active');
+            });
+        });
+
+        document.addEventListener('click', function (e) {
+            if (document.body.classList.contains('modal-open') || e.target.closest('.modal') || e.target.closest('.swal2-container')) return;
+            if (!e.target.closest('.period-tab') && !e.target.closest('.rapor-card') && !e.target.closest('.kp-select-input')) {
+                document.querySelectorAll('.period-tabs .period-tab').forEach(btn => btn.classList.remove('active'));
+            }
+        });
+
+        function triggerReport(type, selectedProfitType = null) {
+            let url;
+            if (type === "generate") url = URL_REPORT;
+            else if (type === "currency") url = URL_CURRENCY_REPORT;
+            else if (type === "stock") url = URL_CURRENT_STOCK_REPORT;
+            else if (type === "profit") url = URL_PROFIT_REPORT;
+            else if (type === "customer") url = URL_CUSTOMER_REPORT;
+
+            const activePeriodBtn = document.querySelector('.period-tabs .period-tab.active');
+            const startDate = document.getElementById("customStartDate").value;
+            const endDate = document.getElementById("customEndDate").value;
+
+            if (activePeriodBtn) {
+                const period = activePeriodBtn.getAttribute('data-period');
+                reportShow(period, url, selectedProfitType);
+            } else if (startDate && endDate) {
+                if (startDate > endDate) {
+                    Swal.fire({
+                        text: "Başlangıç tarihi, bitiş tarihinden sonra olamaz!",
+                        icon: "error",
+                        confirmButtonText: "Tamam"
+                    });
+                    return;
+                }
+                const params = {start_date: startDate, end_date: endDate};
+                if (selectedProfitType) params.type = selectedProfitType;
+                openReportInModal(url, params);
+            } else {
+                Swal.fire({
+                    text: "Lütfen raporu oluşturmak için bir periyot seçiniz veya tarih aralığını eksiksiz giriniz!",
+                    icon: "info",
+                    confirmButtonText: "Tamam"
+                });
+            }
+        }
+
+        $('.rapor-card').on('click', function (e) {
+            var targetLink = $(e.target).closest('#analiz-link');
+            var type = $(this).data("type");
+
+            $(".rapor-card").removeClass("is-rapor-active");
+            $(this).addClass('is-rapor-active');
+
+            if (type === "customer_detail") {
+                var custId = document.getElementById('selectedCustomerDetailId').value;
+                if (custId) {
+                    triggerCustomerDetailReport(custId);
+                }
+                return;
+            }
+
+            if (type === "profit" && targetLink.length === 0) return;
+            if (targetLink.length > 0) return;
+
+            triggerReport(type);
+        });
+
+        $('#analiz-link .nav-link').on('click', function (e) {
+            $(".rapor-card").removeClass("is-rapor-active");
+            $(this).closest('.rapor-card').addClass("is-rapor-active");
+            const profit_type = $(this).data("type");
+            triggerReport("profit", profit_type);
+        });
+
+        function triggerCustomerDetailReport(customerId) {
+            if (!customerId) {
+                Swal.fire({
+                    text: "Lütfen rapor için bir müşteri seçiniz!",
+                    icon: "warning",
+                    confirmButtonText: "Tamam"
+                });
+                return;
+            }
+
+            var activePeriodBtn = document.querySelector('.period-tabs .period-tab.active');
+            var startDate = document.getElementById("customStartDate").value;
+            var endDate = document.getElementById("customEndDate").value;
+            var params = {customer_id: customerId};
+
+            if (activePeriodBtn) {
+                params.period = activePeriodBtn.getAttribute('data-period');
+            } else if (startDate && endDate) {
+                if (startDate > endDate) {
+                    Swal.fire({
+                        text: "Başlangıç tarihi bitiş tarihinden sonra olamaz!",
+                        icon: "error",
+                        confirmButtonText: "Tamam"
+                    });
+                    return;
+                }
+                params.start_date = startDate;
+                params.end_date = endDate;
+            } else {
+                params.period = 'monthly';
+            }
+
+            openReportInModal(URL_CUSTOMER_DETAIL_REPORT, params);
+        }
+
+        // Müşteri Arama Select2 (AJAX)
+        $(document).ready(function () {
+            $('#customerDetailSelect').select2({
+                minimumInputLength: 2,
+                language: "tr",
+                allowClear: true,
+                ajax: {
+                    url: '/dashboard/get-customers-for-report',
+                    dataType: 'json',
+                    delay: 300, // Debounce süresi
+                    data: function (params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                }
+            }).on('select2:select', function (e) {
+                var selectedData = e.params.data;
+                var custId = selectedData.id;
+
+                $('#selectedCustomerDetailId').val(custId);
+
+                triggerCustomerDetailReport(custId);
+            }).on('select2:unselect', function (e) {
+                $('#selectedCustomerDetailId').val('');
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script>
+        const VARIANTS = {
+            default: {activeColor: null, gap: 5, speed: 35, colors: '#f8fafc,#f1f5f9,#cbd5e1', noFocus: false},
+            gold: {activeColor: '#FFD700', gap: 6, speed: 20, colors: '#FFD700,#FDB931,#FFF8DC,#E5E4E2', noFocus: false}
+        };
+
+        class Pixel {
+            constructor(canvas, context, x, y, color, speed, delay) {
+                this.width = canvas.width;
+                this.height = canvas.height;
+                this.ctx = context;
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.speed = this.getRandomValue(0.1, 0.9) * speed;
+                this.size = 0;
+                this.sizeStep = Math.random() * 0.4;
+                this.minSize = 0.5;
+                this.maxSizeInteger = 2;
+                this.maxSize = this.getRandomValue(this.minSize, this.maxSizeInteger);
+                this.delay = delay;
+                this.counter = 0;
+                this.counterStep = Math.random() * 4 + (this.width + this.height) * 0.01;
+                this.isIdle = false;
+                this.isReverse = false;
+                this.isShimmer = false;
+            }
+
+            getRandomValue(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            draw() {
+                const co = this.maxSizeInteger * 0.5 - this.size * 0.5;
+                this.ctx.fillStyle = this.color;
+                this.ctx.fillRect(this.x + co, this.y + co, this.size, this.size);
+            }
+
+            appear() {
+                this.isIdle = false;
+                if (this.counter <= this.delay) {
+                    this.counter += this.counterStep;
+                    return;
+                }
+                if (this.size >= this.maxSize) this.isShimmer = true;
+                if (this.isShimmer) this.shimmer(); else this.size += this.sizeStep;
+                this.draw();
+            }
+
+            disappear() {
+                this.isShimmer = false;
+                this.counter = 0;
+                if (this.size <= 0) {
+                    this.isIdle = true;
+                    return;
+                }
+                this.size -= 0.1;
+                this.draw();
+            }
+
+            shimmer() {
+                if (this.size >= this.maxSize) this.isReverse = true; else if (this.size <= this.minSize) this.isReverse = false;
+                if (this.isReverse) this.size -= this.speed; else this.size += this.speed;
+            }
+        }
+
+        class PixelCard {
+            constructor(container, options = {}) {
+                this.container = container;
+                if (!this.container) return;
+                this.canvas = this.container.querySelector('.pixel-canvas');
+                if (!this.canvas) return;
+                this.variant = options.variant || 'default';
+                this.variantCfg = VARIANTS[this.variant] || VARIANTS.default;
+                this.gap = options.gap ?? this.variantCfg.gap;
+                this.speed = options.speed ?? this.variantCfg.speed;
+                this.colors = options.colors ?? this.variantCfg.colors;
+                this.pixels = [];
+                this.animationReq = null;
+                this.timePrevious = performance.now();
+                this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                this.initPixels();
+                this.bindEvents();
+            }
+
+            getEffectiveSpeed(value) {
+                const min = 0, max = 100, throttle = 0.001;
+                const parsed = parseInt(value, 10);
+                if (parsed <= min || this.reducedMotion) return min;
+                if (parsed >= max) return max * throttle;
+                return parsed * throttle;
+            }
+
+            initPixels() {
+                const rect = this.container.getBoundingClientRect();
+                const width = Math.floor(rect.width);
+                const height = Math.floor(rect.height);
+                const ctx = this.canvas.getContext('2d');
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.canvas.style.width = `${width}px`;
+                this.canvas.style.height = `${height}px`;
+                const colorsArray = this.colors.split(',');
+                const pxs = [];
+                for (let x = 0; x < width; x += parseInt(this.gap, 10)) {
+                    for (let y = 0; y < height; y += parseInt(this.gap, 10)) {
+                        const color = colorsArray[Math.floor(Math.random() * colorsArray.length)];
+                        const dx = x - width / 2;
+                        const dy = y - height / 2;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const delay = this.reducedMotion ? 0 : distance;
+                        pxs.push(new Pixel(this.canvas, ctx, x, y, color, this.getEffectiveSpeed(this.speed), delay));
+                    }
+                }
+                this.pixels = pxs;
+            }
+
+            doAnimate(fnName) {
+                this.animationReq = requestAnimationFrame(() => this.doAnimate(fnName));
+                const timeNow = performance.now();
+                const timePassed = timeNow - this.timePrevious;
+                const timeInterval = 1000 / 60;
+                if (timePassed < timeInterval) return;
+                this.timePrevious = timeNow - (timePassed % timeInterval);
+                const ctx = this.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                let allIdle = true;
+                for (let i = 0; i < this.pixels.length; i++) {
+                    this.pixels[i][fnName]();
+                    if (!this.pixels[i].isIdle) allIdle = false;
+                }
+                if (allIdle) cancelAnimationFrame(this.animationReq);
+            }
+
+            handleAnimation(name) {
+                cancelAnimationFrame(this.animationReq);
+                this.animationReq = requestAnimationFrame(() => this.doAnimate(name));
+            }
+
+            bindEvents() {
+                this.container.addEventListener('mouseenter', () => this.handleAnimation('appear'));
+                this.container.addEventListener('mouseleave', () => this.handleAnimation('disappear'));
+                new ResizeObserver(() => this.initPixels()).observe(this.container);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.pixel-card').forEach(card => {
+                const variant = card.getAttribute('data-variant') || 'default';
+                new PixelCard(card, {variant});
+            });
+        });
+    </script>
+
+    <script>
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+        Chart.defaults.color = '#6B7280';
+        let donutChart, radarChart, areaChart, hbarChart;
+        let gaugeTlIn, gaugeTlOut, gaugeHsIn, gaugeHsOut;
+        let currentPeriod = 7;
+
+        function formatTL(v) {
+            return new Intl.NumberFormat('tr-TR', {maximumFractionDigits: 0}).format(parseFloat(v) || 0);
+        }
+
+        function formatHAS(v) {
+            const val = parseFloat(v) || 0;
+            return val >= 1000 ? (val / 1000).toFixed(2) + ' kg' : val.toFixed(2) + ' gr';
+        }
+
+        function createGauge(canvasId, value, max, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const percentage = Math.min((value / max) * 100, 100);
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [percentage, 100 - percentage],
+                        backgroundColor: [color, 'rgba(255,255,255,0.05)'],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {legend: {display: false}, tooltip: {enabled: false}}
+                }
+            });
+        }
+
+        function initDonutChart(sales, purchases) {
+            const ctx = document.getElementById('donutChart').getContext('2d');
+            if (donutChart) donutChart.destroy();
+            const total = sales + purchases;
+            document.getElementById('donut-total').textContent = total;
+            donutChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Satış', 'Alış'],
+                    datasets: [{
+                        data: [sales, purchases],
+                        backgroundColor: ['#34D399', '#F87171'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {color: '#9CA3AF', padding: 20, usePointStyle: true, pointStyle: 'circle'}
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17,24,39,0.95)',
+                            borderColor: 'rgba(255,215,0,0.3)',
+                            borderWidth: 1,
+                            titleColor: '#F3F4F6',
+                            bodyColor: '#9CA3AF',
+                            padding: 12,
+                            cornerRadius: 10
+                        }
+                    }
+                }
+            });
+        }
+
+        function initRadarChart(data) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Satış', 'Alış', 'Ürün', 'Müşteri', 'Tedarikçi'],
+                    datasets: [{
+                        label: 'Performans',
+                        data: data,
+                        backgroundColor: 'rgba(255, 215, 0, 0.2)',
+                        borderColor: '#FFD700',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#FFD700',
+                        pointBorderColor: '#080c14',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            grid: {color: 'rgba(255,215,0,0.1)'},
+                            angleLines: {color: 'rgba(255,215,0,0.1)'},
+                            pointLabels: {color: '#9CA3AF', font: {size: 11, weight: 600}},
+                            ticks: {display: false}
+                        }
+                    },
+                    plugins: {legend: {display: false}}
+                }
+            });
+        }
+
+        function initAreaChart(data) {
+            const ctx = document.getElementById('areaChart').getContext('2d');
+            if (areaChart) areaChart.destroy();
+            const gradientTL = ctx.createLinearGradient(0, 0, 0, 250);
+            gradientTL.addColorStop(0, 'rgba(52, 211, 153, 0.4)');
+            gradientTL.addColorStop(1, 'rgba(52, 211, 153, 0)');
+            const gradientHAS = ctx.createLinearGradient(0, 0, 0, 250);
+            gradientHAS.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+            gradientHAS.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            areaChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.date_labels,
+                    datasets: [{
+                        label: 'TL Farkı',
+                        data: data.daily_tl_diff,
+                        borderColor: '#34D399',
+                        backgroundColor: gradientTL,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#34D399'
+                    }, {
+                        label: 'HAS Farkı (x1000)',
+                        data: data.daily_has_diff.map(v => v * 1000),
+                        borderColor: '#FFD700',
+                        backgroundColor: gradientHAS,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#FFD700'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {intersect: false, mode: 'index'},
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {color: 'rgba(255,215,0,0.05)', drawBorder: false},
+                            ticks: {color: '#6B7280'}
+                        }, x: {display: false}
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {color: '#9CA3AF', usePointStyle: true, pointStyle: 'line', padding: 20}
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17,24,39,0.95)',
+                            borderColor: 'rgba(255,215,0,0.3)',
+                            borderWidth: 1,
+                            titleColor: '#F3F4F6',
+                            bodyColor: '#9CA3AF',
+                            padding: 14,
+                            cornerRadius: 10
+                        }
+                    }
+                }
+            });
+        }
+
+        function initHbarChart(data) {
+            const ctx = document.getElementById('hbarChart').getContext('2d');
+            if (hbarChart) hbarChart.destroy();
+            const colors = ['#FFD700', '#FB923C', '#34D399', '#60A5FA', '#A78BFA'];
+            hbarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.top_selling_product_names,
+                    datasets: [{
+                        label: 'Satış Adedi',
+                        data: data.top_selling_product_quantities,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        borderRadius: 8,
+                        barThickness: 35
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {padding: {right: 20}},
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {color: 'rgba(255,215,0,0.05)', drawBorder: false},
+                            ticks: {color: '#6B7280'}
+                        }, y: {grid: {display: false}, ticks: {color: '#F3F4F6', font: {weight: 600}}}
+                    },
+                    plugins: {
+                        legend: {display: false},
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 4,
+                            font: {size: 12, weight: 700},
+                            color: '#F3F4F6'
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function fetchDashboardData(period) {
+            fetch('/dashboard/data/?period=' + (period || currentPeriod)).then(r => r.json()).then(data => {
+                initAreaChart(data);
+                initHbarChart(data);
+            }).catch(console.error);
+        }
+
+        function fetchSummaryData() {
+            fetch('/dashboard/summary_data/').then(r => r.json()).then(data => {
+                document.getElementById('daily-sales').textContent = data.daily_sales;
+                document.getElementById('daily-purchases').textContent = data.daily_purchases;
+                document.getElementById('total-products').textContent = data.total_products;
+                document.getElementById('total-customers').textContent = data.total_customers;
+                document.getElementById('total-suppliers').textContent = data.total_suppliers;
+                document.getElementById('total-employees').textContent = data.total_employees;
+                document.getElementById('sum-tl-in').textContent = formatTL(data.daily_input_tl);
+                document.getElementById('sum-tl-out').textContent = formatTL(data.daily_output_tl);
+                document.getElementById('sum-hs-in').textContent = formatHAS(data.daily_input_hs);
+                document.getElementById('sum-hs-out').textContent = formatHAS(data.daily_output_hs);
+                document.getElementById('gauge-tl-in-value').textContent = '₺' + formatTL(data.daily_input_tl);
+                document.getElementById('gauge-tl-out-value').textContent = '₺' + formatTL(data.daily_output_tl);
+                document.getElementById('gauge-hs-in-value').textContent = formatHAS(data.daily_input_hs);
+                document.getElementById('gauge-hs-out-value').textContent = formatHAS(data.daily_output_hs);
+                const maxTL = Math.max(parseFloat(data.daily_input_tl) || 1, parseFloat(data.daily_output_tl) || 1) * 1.2;
+                const maxHS = Math.max(parseFloat(data.daily_input_hs) || 1, parseFloat(data.daily_output_hs) || 1) * 1.2;
+                if (gaugeTlIn) gaugeTlIn.destroy();
+                if (gaugeTlOut) gaugeTlOut.destroy();
+                if (gaugeHsIn) gaugeHsIn.destroy();
+                if (gaugeHsOut) gaugeHsOut.destroy();
+                gaugeTlIn = createGauge('gaugeTlIn', parseFloat(data.daily_input_tl) || 0, maxTL, '#34D399');
+                gaugeTlOut = createGauge('gaugeTlOut', parseFloat(data.daily_output_tl) || 0, maxTL, '#F87171');
+                gaugeHsIn = createGauge('gaugeHsIn', parseFloat(data.daily_input_hs) || 0, maxHS, '#FFD700');
+                gaugeHsOut = createGauge('gaugeHsOut', parseFloat(data.daily_output_hs) || 0, maxHS, '#60A5FA');
+                initDonutChart(data.daily_sales, data.daily_purchases);
+                const radarData = [data.daily_sales * 10, data.daily_purchases * 10, Math.min(data.total_products, 100), Math.min(data.total_customers, 100), Math.min(data.total_suppliers * 5, 100)];
+                initRadarChart(radarData);
+            }).catch(console.error);
+        }
+
+        document.addEventListener('click', e => {
+            const tab = e.target.closest('.period-tab');
+            if (tab) {
+                tab.closest('.period-tabs').querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentPeriod = tab.dataset.period;
+                fetchDashboardData(currentPeriod);
+            }
+        });
+        // ═══ FAZ R-5: Birleştirilmiş KPI Fetch ═══
+        function fetchDashboardKPI() {
+            fetch('/dashboard/api/dashboard-kpi').then(r => r.json()).then(data => {
+                // Kâr kartları
+                const el = (id) => document.getElementById(id);
+                if (el('kpi-gross-profit')) {
+                    el('kpi-gross-profit').textContent = '₺' + formatTL(data.today.total_gross_profit);
+                    el('kpi-gross-profit').style.color = parseFloat(data.today.total_gross_profit) >= 0 ? '#34D399' : '#F87171';
+                }
+                if (el('kpi-net-cash')) {
+                    el('kpi-net-cash').textContent = '₺' + formatTL(data.today.net_cash_flow);
+                    el('kpi-net-cash').style.color = parseFloat(data.today.net_cash_flow) >= 0 ? '#34D399' : '#F87171';
+                }
+                if (el('kpi-stock-value')) {
+                    el('kpi-stock-value').textContent = '₺' + formatTL(data.stock.value_tl);
+                }
+                if (el('kpi-pending-recon')) {
+                    el('kpi-pending-recon').textContent = data.pending_reconciliation;
+                    el('kpi-pending-recon').style.color = data.pending_reconciliation > 0 ? '#FB923C' : '#34D399';
+                }
+                if (el('kpi-commission')) {
+                    el('kpi-commission').textContent = '₺' + formatTL(data.today.commission_total);
+                }
+                if (el('kpi-unique-customers')) {
+                    el('kpi-unique-customers').textContent = data.today.unique_customers;
+                }
+
+                // Personel tablosu
+                const empSection = el('kpi-employee-section');
+                const empTable = el('kpi-employee-table');
+                if (empTable && data.employees && data.employees.length > 0) {
+                    empSection.style.display = 'block';
+                    empTable.innerHTML = '';
+                    data.employees.forEach(function(emp) {
+                        const profitColor = parseFloat(emp.total_gross_profit) >= 0 ? '#34D399' : '#F87171';
+                        const row = document.createElement('tr');
+                        row.style.borderBottom = '1px solid rgba(255,215,0,0.1)';
+                        row.innerHTML =
+                            '<td style="padding:0.4rem 0.6rem; color:var(--text-primary);">' + emp.name + '</td>' +
+                            '<td style="text-align:right; padding:0.4rem 0.6rem; color:var(--accent-gold);">' + emp.sale_count + '</td>' +
+                            '<td style="text-align:right; padding:0.4rem 0.6rem; color:var(--text-primary);">₺' + formatTL(emp.total_sales_tl) + '</td>' +
+                            '<td style="text-align:right; padding:0.4rem 0.6rem; color:' + profitColor + ';">₺' + formatTL(emp.total_gross_profit) + '</td>';
+                        empTable.appendChild(row);
+                    });
+                }
+            }).catch(function(err) { console.error('KPI fetch error:', err); });
+        }
+
+        // ═══ MAĞAZA VARLIKLARI (Anlık Kasa + Stok Özeti) ═══
+        function formatGram(v) {
+            const n = parseFloat(v) || 0;
+            if (n >= 1000) return (n / 1000).toFixed(3) + ' kg';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' gr';
+        }
+
+        function formatCurrencyAmount(v, code) {
+            const n = parseFloat(v) || 0;
+            const symbol = {TRY: '₺', USD: '$', EUR: '€', GBP: '£', CHF: '₣', CAD: 'C$', AUD: 'A$', QAR: 'ر.ق', SAR: 'ر.س'}[code] || (code + ' ');
+            return symbol + n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        function fetchStoreAssets() {
+            const btn = document.getElementById('assets-refresh-btn');
+            if (btn) btn.disabled = true;
+            fetch('/dashboard/assets-summary/').then(r => r.json()).then(data => {
+                // TRY nakit toplamı
+                const cashByCur = data.cash_total_by_currency || {};
+                const tryCash = cashByCur['TRY'] || 0;
+                const elById = (id) => document.getElementById(id);
+                if (elById('assets-cash-try')) elById('assets-cash-try').textContent = '₺' + formatTL(tryCash);
+
+                // TRY Banka/POS toplamı
+                let posBankTry = 0;
+                (data.pos_bank_accounts || []).forEach(a => {
+                    if ((a.currency || 'TRY') === 'TRY') posBankTry += parseFloat(a.balance) || 0;
+                });
+                if (elById('assets-pos-bank-try')) elById('assets-pos-bank-try').textContent = '₺' + formatTL(posBankTry);
+
+                // Stok HAS + Toplam Gram
+                const stock = data.stock_summary || {};
+                if (elById('assets-stock-has')) elById('assets-stock-has').textContent = formatGram(stock.total_has_value);
+                if (elById('assets-stock-gram')) elById('assets-stock-gram').textContent = formatGram(stock.total_gram);
+
+                // Döviz kasa chip'leri
+                const fxWrap = elById('assets-fx-chips');
+                if (fxWrap) {
+                    const fxEntries = Object.entries(cashByCur).filter(([k]) => k !== 'TRY');
+                    if (fxEntries.length === 0) {
+                        fxWrap.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">Döviz hesabı yok</span>';
+                    } else {
+                        fxWrap.innerHTML = fxEntries.map(([code, amt]) =>
+                            '<span class="assets-chip"><i class="bi bi-currency-exchange"></i> ' + code + ': <b>' + formatCurrencyAmount(amt, code) + '</b></span>'
+                        ).join('');
+                    }
+                }
+
+                // Ayar kırılımı
+                const k = data.karat_breakdown || {};
+                if (elById('assets-k22')) elById('assets-k22').textContent = formatGram(k.k22_gram);
+                if (elById('assets-k18')) elById('assets-k18').textContent = formatGram(k.k18_gram);
+                if (elById('assets-k14')) elById('assets-k14').textContent = formatGram(k.k14_gram);
+                if (elById('assets-bracelet')) elById('assets-bracelet').textContent = formatGram(k.bracelet_gram);
+                if (elById('assets-scrap')) elById('assets-scrap').textContent = formatGram(k.scrap_gram);
+
+                // Kategori tablosu
+                const tbody = elById('assets-category-table');
+                if (tbody) {
+                    const cats = stock.categories || [];
+                    if (cats.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="padding:0.6rem; text-align:center; color:var(--text-muted);">Stok verisi yok</td></tr>';
+                    } else {
+                        tbody.innerHTML = cats.map(c =>
+                            '<tr>' +
+                                '<td>' + (c.name || 'Kategorisiz') + '</td>' +
+                                '<td class="num">' + formatGram(c.total_gram) + '</td>' +
+                                '<td class="num">' + (c.total_pieces || 0) + '</td>' +
+                            '</tr>'
+                        ).join('');
+                    }
+                }
+
+                // Timestamp
+                const ts = elById('assets-generated-at');
+                if (ts && data.generated_at) {
+                    try {
+                        const d = new Date(data.generated_at);
+                        ts.textContent = 'Son güncelleme: ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
+                    } catch (e) { /* yut */ }
+                }
+
+                // FAZ D: Çoklu Maden (Gümüş/Pırlanta/Saat) özet kartları
+                // Modül yüklüyse aynı data payload'ını paylaşarak ekstra fetch yapmaz.
+                if (window.DashboardMultiMaterialCards &&
+                    typeof window.DashboardMultiMaterialCards.render === 'function') {
+                    window.DashboardMultiMaterialCards.render(data);
+                }
+            }).catch(err => {
+                console.error('Assets summary fetch error:', err);
+            }).finally(() => {
+                if (btn) btn.disabled = false;
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.closest && e.target.closest('#assets-refresh-btn')) {
+                fetchStoreAssets();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchSummaryData();
+            fetchDashboardData(currentPeriod);
+            fetchDashboardKPI();
+            fetchStoreAssets();
+        });
+    </script>
+
+    {# FAZ D: Çoklu Maden/Ürün Dashboard Kartları (Gümüş/Pırlanta/Saat) #}
+    {# fetchStoreAssets() bu modülü bulunca aynı data payload'ıyla çağırır. #}
+    <script src="{% static 'js/modules/dashboard/multi_material_cards.js' %}"></script>
+{% endblock footer %}

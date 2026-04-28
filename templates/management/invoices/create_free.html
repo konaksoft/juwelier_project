@@ -1,0 +1,1021 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* --- KART VE TABLO STİLLERİ (create_from_process_group ile aynı) --- */
+        .invoice-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card-flush {
+            border: 0;
+            box-shadow: 0 0 20px 0 rgba(76, 87, 125, 0.02);
+            background: #fff;
+            border-radius: 0.75rem;
+        }
+
+        .table-invoice {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-invoice th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #5e6278;
+            padding: 12px 10px;
+            background-color: #f9f9f9;
+            border-bottom: 2px solid #eff2f5;
+            letter-spacing: 0.5px;
+        }
+
+        .table-invoice td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eff2f5;
+            vertical-align: middle;
+        }
+
+        .col-metal {
+            background-color: rgba(255, 248, 225, 0.5);
+        }
+
+        .col-labor {
+            background-color: rgba(235, 245, 255, 0.5);
+        }
+
+        .form-control-sm-custom {
+            min-height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.95rem;
+            border-radius: 0.475rem;
+            border: 1px solid #e1e3ea;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .form-control-sm-custom:focus {
+            border-color: #009ef7;
+            background-color: #f1faff;
+            box-shadow: none;
+        }
+
+        .form-select-sm-custom {
+            min-height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            border-radius: 0.475rem;
+            border: 1px solid #e1e3ea;
+            font-weight: 600;
+            background-color: #fff;
+            color: #181c32;
+        }
+
+        .form-select-sm-custom:focus {
+            border-color: #009ef7;
+            box-shadow: none;
+        }
+
+        /* --- ÖZET KARTI --- */
+        .summary-box {
+            background-color: #f8f9fa;
+            border: 1px solid #eff2f5;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #7e8299;
+        }
+
+        .summary-row.total {
+            border-top: 1px dashed #d8d8d8;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #181c32;
+            align-items: center;
+        }
+
+        /* UYARI KUTULARI */
+        .alert-compliance {
+            font-size: 0.85rem;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .alert-warning-custom {
+            background-color: #fff8dd;
+            border: 1px solid #f1fa8c;
+            color: #b5840d;
+        }
+
+        .alert-danger-custom {
+            background-color: #fff5f8;
+            border: 1px solid #ffc9d6;
+            color: #d9214e;
+        }
+
+        .pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+        /* --- SİL BUTONU SÜTUNU --- */
+        .btn-del-row {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        /* Boş tablo mesajı */
+        .empty-table-msg td {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #a1a5b7;
+            font-size: 0.9rem;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div id="kt_app_content_container" class="app-container container-xxl invoice-container">
+
+            <!-- BAŞLIK KARTI -->
+            <div class="card card-flush mb-6">
+                <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+                    <div class="card-title">
+                        <div class="d-flex flex-column">
+                            <h2 class="fw-bold text-dark mb-1">Serbest Fatura Oluştur</h2>
+                            <div class="text-muted fs-7">
+                                Herhangi bir işlem kaydına bağlı kalmadan doğrudan fatura kes
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-toolbar gap-2">
+                        <span class="badge badge-light-warning fs-8 fw-bold me-1">Metal (KDV 0)</span>
+                        <span class="badge badge-light-primary fs-8 fw-bold me-3">İşçilik (KDV 20)</span>
+                        <a href="{% url 'invoices:index' %}" class="btn btn-light btn-sm">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Fatura Listesine Dön
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    <form id="invoiceForm">
+                        {% csrf_token %}
+
+                        <!-- Gizli limit değerleri -->
+                        <input type="hidden" id="limit_invoice" value="36000">
+                        <input type="hidden" id="limit_masak" value="185000">
+                        <input type="hidden" id="limit_cash" value="30000">
+
+                        <div class="row g-5">
+                            <div class="col-md-3">
+                                <label class="form-label fs-7 fw-bold text-gray-700">Fatura Tarihi</label>
+                                <input class="form-control form-control-solid" name="issue_date" id="issue_date_input"
+                                       type="datetime-local" value="{{ issue_dt }}">
+                                <div class="form-text text-muted fs-8">En fazla 7 gün geriye tarihlenebilir.</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fs-7 fw-bold text-gray-700">Vade Tarihi</label>
+                                <input class="form-control form-control-solid" name="due_date" id="due_date_input"
+                                       type="date">
+                                <div class="form-text text-muted fs-8">Fatura tarihinden önce olamaz.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fs-7 fw-bold text-gray-700 required">Müşteri</label>
+                                <select id="customer_select" class="form-select form-select-solid"
+                                        data-control="select2" data-placeholder="Müşteri seçiniz...">
+                                    <option value=""></option>
+                                    {% for cust in customers %}
+                                        <option value="{{ cust.id }}"
+                                                data-tckn="{{ cust.tckn }}"
+                                                data-has-image="{{ cust.has_image|yesno:'true,false' }}">
+                                            {{ cust.name }}{% if cust.tckn %} ({{ cust.tckn }}){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fs-7 fw-bold text-gray-700">Notlar / Açıklama</label>
+                                <textarea class="form-control form-control-solid" name="notes" rows="2"
+                                          placeholder="İsteğe bağlı not..."></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- KALEMLER KARTI -->
+            <div class="card card-flush mb-6">
+                <div class="card-header align-items-center py-4 gap-2">
+                    <div class="card-title">
+                        <h4 class="fw-bold text-dark mb-0">Fatura Kalemleri</h4>
+                    </div>
+                    <div class="card-toolbar">
+                        <button type="button" id="btnAddRow" class="btn btn-sm btn-light-primary fw-bold">
+                            <i class="fa-solid fa-plus me-1"></i> Kalem Ekle
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-invoice" id="tblItems">
+                            <thead>
+                            <tr>
+                                <th class="w-20px text-center ps-4">
+                                    <input type="checkbox" class="form-check-input w-15px h-15px" id="chkAll" checked>
+                                </th>
+                                <th class="min-w-200px">Ürün / Altın Tipi</th>
+                                <th class="min-w-70px text-center">Birim</th>
+                                <th class="min-w-80px text-end">Miktar</th>
+                                <th class="min-w-100px text-end col-metal border-start">Birim Fiyat (TL)</th>
+                                <th class="min-w-100px text-end col-metal">Metal Tutar</th>
+                                <th class="min-w-100px text-end col-labor border-start">İşçilik (TL)</th>
+                                <th class="min-w-80px text-end">KDV %20</th>
+                                <th class="min-w-125px text-end">Satır Toplam</th>
+                                <th class="w-40px text-center pe-3">Sil</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tbodyItems">
+                            <tr class="empty-table-msg" id="emptyRow">
+                                <td colspan="10">
+                                    <i class="fa-solid fa-box-open fs-2 mb-2 d-block"></i>
+                                    Henüz kalem eklenmedi. "Kalem Ekle" butonuna tıklayın.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALT BÖLÜM: Sol bilgi + Sağ Özet -->
+            <div class="d-flex flex-column flex-lg-row gap-6 justify-content-between align-items-start">
+                <div class="d-flex flex-column gap-3 w-100 w-lg-50 text-gray-600 fs-7">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-circle-info text-primary me-2"></i>
+                        Oluşturulan fatura önce Proforma olarak kaydedilir.
+                        Ardından e-Süreç'e göndererek GİB sürecini başlatabilirsiniz.
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-shield-halved text-success me-2"></i>
+                        GİB'den onay kodu (1300) geldiğinde fatura otomatik olarak
+                        <strong class="text-success ms-1">Kesildi</strong> statüsüne geçer.
+                    </div>
+                    <div class="mt-2">
+                        <a href="javascript:history.back()" class="btn btn-light btn-sm px-4 me-2">
+                            <i class="fa-solid fa-arrow-left me-1"></i> İptal / Geri
+                        </a>
+                    </div>
+                </div>
+
+                <div class="w-100 w-lg-400px">
+                    <div class="summary-box" id="summaryBox">
+                        <h4 class="fw-bold text-dark mb-4 border-bottom pb-2">Hesap Özeti</h4>
+                        <div class="summary-row">
+                            <span>Metal Toplamı:</span>
+                            <span class="fw-bold text-dark" id="ftMetal">₺0,00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>İşçilik Toplamı:</span>
+                            <span class="fw-bold text-dark" id="ftLabor">₺0,00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>KDV Tutarı:</span>
+                            <span class="fw-bold text-danger" id="ftVat">₺0,00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>GENEL TOPLAM</span>
+                            <span class="text-primary" id="ftGrand">₺0,00</span>
+                        </div>
+
+                        <div id="alertInvoice" class="alert-compliance alert-warning-custom">
+                            <i class="fa-solid fa-triangle-exclamation text-warning fs-5"></i>
+                            <div><strong>Fatura Sınırı Aşıldı:</strong><br>Müşteri TCKN girilmesi yasal zorunluluktur.</div>
+                        </div>
+
+                        <div id="alertMasak" class="alert-compliance alert-danger-custom">
+                            <i class="fa-solid fa-ban text-danger fs-5"></i>
+                            <div><strong>MASAK Limiti Aşıldı:</strong><br>Müşteri kimlik fotokopisi sisteme yüklenmelidir.</div>
+                        </div>
+
+                        <div id="alertCash" class="alert-compliance alert-warning-custom"
+                             style="background-color:#e8fff3; border-color:#a3ffc7; color:#1f6d43;">
+                            <i class="fa-solid fa-money-bill-transfer text-success fs-5"></i>
+                            <div><strong>Nakit Tahsilat Yapılamaz:</strong><br>Tutar 30.000 TL üzeri olduğu için banka/kart kullanınız.</div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button id="btnSubmit" class="btn btn-primary w-100 py-3 fs-6">
+                                <i class="fa-solid fa-check me-2"></i> Proforma Oluştur
+                            </button>
+                            <button id="btnSubmitAndSend" class="btn btn-light-primary w-100 py-2 fs-7">
+                                <i class="fa-solid fa-cloud-arrow-up me-2"></i> Oluştur ve e-Süreç'e Gönder
+                            </button>
+                            <button id="btnSubmitAndGib" class="btn btn-light-danger w-100 py-2 fs-7">
+                                <i class="fa-solid fa-paper-plane me-2"></i> Oluştur ve GİB'e Gönder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    {{ product_types|json_script:"product-types-data" }}
+
+    <script>
+        // ============================================================
+        // VERİ VE SABİTLER
+        // ============================================================
+        const PRODUCT_TYPES = JSON.parse(document.getElementById('product-types-data').textContent);
+        const SAVE_URL = "{% url 'invoices:save-free' %}";
+
+        // ── Banka Hareketi Parametreleri (Bankacılık ekranından yönlendirme) ──
+        const _urlParams = new URLSearchParams(window.location.search);
+        const BANK_TXN_ID = _urlParams.get('bank_txn_id') || '';
+        const BANK_TXN_AMOUNT = parseFloat(_urlParams.get('amount') || '0') || 0;
+        const ESUREC_URL = '/invoices/api/esurec/send/';
+        const GIB_URL = '/invoices/api/esurec/send-to-gib/';
+        const CSRF = document.querySelector("input[name='csrfmiddlewaretoken']").value;
+
+        const LIMIT_INVOICE = parseFloat(document.getElementById('limit_invoice').value) || 36000;
+        const LIMIT_MASAK = parseFloat(document.getElementById('limit_masak').value) || 185000;
+        const LIMIT_CASH = parseFloat(document.getElementById('limit_cash').value) || 30000;
+
+        const money = x => '₺' + (Math.round((+x || 0) * 100) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.').replace('.', ',').replace(/,(\d{3})/g, '.$1').replace(/\./g, 'X').replace(/,/, '.').replace(/X/g, ',') + '';
+        const fmtMoney = x => {
+            const num = Math.round((+x || 0) * 100) / 100;
+            return '₺' + num.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        };
+        const n = v => (v == null || v === '') ? 0 : parseFloat(String(v).replace(',', '.')) || 0;
+
+        function getCookie(name) {
+            const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+            return m ? m.pop() : '';
+        }
+
+        // ============================================================
+        // TARİH KISITLAMALARI (GİB 7 Gün Kuralı)
+        // ============================================================
+        (function initDateConstraints() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const minDate = new Date(today);
+            minDate.setDate(minDate.getDate() - 7);
+
+            const pad = (v) => String(v).padStart(2, '0');
+            const fmtDTL = (d, time) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${time}`;
+            const fmtD = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+            const issueInput = document.getElementById('issue_date_input');
+            const dueInput = document.getElementById('due_date_input');
+
+            if (issueInput) {
+                issueInput.min = fmtDTL(minDate, '00:00');
+                issueInput.max = fmtDTL(today, '23:59');
+            }
+            if (dueInput) {
+                dueInput.min = fmtD(minDate);
+            }
+
+            if (issueInput && dueInput) {
+                issueInput.addEventListener('change', function () {
+                    if (this.value) {
+                        dueInput.min = this.value.slice(0, 10);
+                        if (dueInput.value && dueInput.value < dueInput.min) {
+                            dueInput.value = '';
+                        }
+                    }
+                });
+            }
+        })();
+
+        // ============================================================
+        // SATIR YÖNETİMİ
+        // ============================================================
+        let rowIndex = 0;
+        const tbody = document.getElementById('tbodyItems');
+        const emptyRow = document.getElementById('emptyRow');
+
+        function buildProductTypeOptions() {
+            return PRODUCT_TYPES.map(pt =>
+                `<option value="${pt.value}">${pt.label}</option>`
+            ).join('');
+        }
+
+        function buildUnitOptions() {
+            return `
+                <option value="GR">Gram</option>
+                <option value="AD">Adet</option>
+                <option value="KG">Kilogram</option>
+            `;
+        }
+
+        function addRow() {
+            rowIndex++;
+            const idx = rowIndex;
+
+            const tr = document.createElement('tr');
+            tr.dataset.rowIndex = idx;
+            tr.innerHTML = `
+                <td class="text-center ps-4">
+                    <input type="checkbox" class="form-check-input row-check w-15px h-15px" checked>
+                </td>
+                <td style="min-width:200px;">
+                    <select class="form-select form-select-sm-custom w-100 product-type-select" style="min-width:180px; text-align:left;">
+                        <option value=""></option>
+                        ${buildProductTypeOptions()}
+                    </select>
+                </td>
+                <td class="text-center">
+                    <select class="form-select form-select-sm-custom unit-select" style="min-width:70px; text-align:center;">
+                        ${buildUnitOptions()}
+                    </select>
+                </td>
+                <td class="text-end">
+                    <input type="number" step="0.001" min="0" class="form-control form-control-sm-custom qty"
+                           value="0.000" style="min-width:75px;">
+                </td>
+                <td class="text-end col-metal border-start">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm-custom price_pu"
+                           value="0.00" style="min-width:95px;">
+                </td>
+                <td class="text-end col-metal">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm-custom metal_input"
+                           value="0.00" style="min-width:100px;">
+                </td>
+                <td class="text-end col-labor border-start">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm-custom labor"
+                           value="0.00" style="min-width:90px;">
+                </td>
+                <td class="text-end vat text-gray-600 fw-bold">₺0,00</td>
+                <td class="text-end grand text-dark fw-bolder pe-2">₺0,00</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-icon btn-sm btn-light-danger btn-del-row" title="Satırı Sil">
+                        <i class="fa-solid fa-trash fa-xs"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            toggleEmpty();
+
+            // Select2: Serbest metin girişli ürün tipi seçimi (tags: true)
+            if (window.$ && $.fn.select2) {
+                $(tr.querySelector('.product-type-select')).select2({
+                    tags: true,
+                    placeholder: 'Seçin veya yazın...',
+                    allowClear: true,
+                    width: '100%',
+                    createTag: function (params) {
+                        const term = (params.term || '').trim();
+                        if (!term) return null;
+                        return { id: term, text: term, newTag: true };
+                    },
+                });
+            }
+
+            // Miktar × Birim fiyat → Metal tutar
+            tr.querySelector('.qty').addEventListener('input', function () {
+                const q = n(this.value);
+                const p = n(tr.querySelector('.price_pu').value);
+                tr.querySelector('.metal_input').value = (q * p).toFixed(2);
+                recalcAll();
+            });
+
+            // Birim fiyat değişirse → Metal tutar
+            tr.querySelector('.price_pu').addEventListener('input', function () {
+                const q = n(tr.querySelector('.qty').value);
+                const p = n(this.value);
+                tr.querySelector('.metal_input').value = (q * p).toFixed(2);
+                recalcAll();
+            });
+
+            // Metal tutar değişirse → Birim fiyatı güncelle
+            tr.querySelector('.metal_input').addEventListener('input', () => recalcAll());
+            tr.querySelector('.labor').addEventListener('input', () => recalcAll());
+
+            // Sil butonu
+            tr.querySelector('.btn-del-row').addEventListener('click', function () {
+                tr.remove();
+                toggleEmpty();
+                recalcAll();
+            });
+
+            // İlk girişi odakla
+            tr.querySelector('.qty').focus();
+            recalcAll();
+        }
+
+        function toggleEmpty() {
+            const rows = tbody.querySelectorAll('tr[data-row-index]');
+            emptyRow.style.display = rows.length === 0 ? '' : 'none';
+        }
+
+        // ============================================================
+        // HESAPLAMA
+        // ============================================================
+        function recalcRow(tr) {
+            const qty = n(tr.querySelector('.qty').value);
+            const metal = n(tr.querySelector('.metal_input').value);
+            const labor = Math.max(0, n(tr.querySelector('.labor').value));
+
+            if (qty > 0) {
+                tr.querySelector('.price_pu').value = (metal / qty).toFixed(2);
+            }
+
+            const vat = Math.round(labor * 0.20 * 100) / 100;
+            const grand = metal + labor + vat;
+
+            tr.querySelector('.vat').textContent = fmtMoney(vat);
+            tr.querySelector('.grand').textContent = fmtMoney(grand);
+            return {metal, labor, vat, grand};
+        }
+
+        function recalcAll() {
+            let tMetal = 0, tLabor = 0, tVat = 0, tGrand = 0;
+            tbody.querySelectorAll('tr[data-row-index]').forEach(tr => {
+                if (!tr.querySelector('.row-check').checked) return;
+                const r = recalcRow(tr);
+                tMetal += r.metal;
+                tLabor += r.labor;
+                tVat += r.vat;
+                tGrand += r.grand;
+            });
+            document.getElementById('ftMetal').textContent = fmtMoney(tMetal);
+            document.getElementById('ftLabor').textContent = fmtMoney(tLabor);
+            document.getElementById('ftVat').textContent = fmtMoney(tVat);
+            document.getElementById('ftGrand').textContent = fmtMoney(tGrand);
+            window.currentGrandTotal = tGrand;
+            validateCompliance(tGrand);
+        }
+
+        // ============================================================
+        // UYUMLULUK KONTROL
+        // ============================================================
+        function validateCompliance(total) {
+            const btn = document.getElementById('btnSubmit');
+            const btn2 = document.getElementById('btnSubmitAndSend');
+            const alertInvoice = document.getElementById('alertInvoice');
+            const alertMasak = document.getElementById('alertMasak');
+            const alertCash = document.getElementById('alertCash');
+            const summaryBox = document.getElementById('summaryBox');
+
+            const custSelect = document.getElementById('customer_select');
+            const selectedOpt = custSelect.options[custSelect.selectedIndex];
+            const hasTckn = !!(selectedOpt && selectedOpt.getAttribute('data-tckn'));
+            const hasImage = !!(selectedOpt && selectedOpt.getAttribute('data-has-image') === 'true');
+
+            let block = false;
+
+            alertCash.style.display = total >= LIMIT_CASH ? 'flex' : 'none';
+
+            if (total >= LIMIT_INVOICE) {
+                if (!hasTckn) { alertInvoice.style.display = 'flex'; block = true; }
+                else alertInvoice.style.display = 'none';
+            } else {
+                alertInvoice.style.display = 'none';
+            }
+
+            if (total >= LIMIT_MASAK) {
+                if (!hasImage) {
+                    alertMasak.style.display = 'flex';
+                    summaryBox.classList.add('pulse-red');
+                    block = true;
+                } else {
+                    alertMasak.style.display = 'none';
+                    summaryBox.classList.remove('pulse-red');
+                }
+            } else {
+                alertMasak.style.display = 'none';
+                summaryBox.classList.remove('pulse-red');
+            }
+
+            btn.disabled = block;
+            btn2.disabled = block;
+        }
+
+        // ============================================================
+        // FORM VERİSİ TOPLAMA
+        // ============================================================
+        function collectPayload() {
+            const items = [];
+            tbody.querySelectorAll('tr[data-row-index]').forEach(tr => {
+                if (!tr.querySelector('.row-check').checked) return;
+
+                const typeSelect = tr.querySelector('.product-type-select');
+                const productName = (typeSelect.value || '').trim() || 'Altın';
+
+                const qty = n(tr.querySelector('.qty').value);
+                if (qty <= 0) return;
+
+                const metalTotal = n(tr.querySelector('.metal_input').value);
+                const price_pu = qty > 0 ? metalTotal / qty : 0;
+                const labor = n(tr.querySelector('.labor').value);
+                const unit = tr.querySelector('.unit-select').value;
+
+                // Altın / Metal kalemi (KDV %0, gram altın)
+                items.push({
+                    product_name: productName,
+                    quantity: qty,
+                    unit: unit,
+                    unit_price: price_pu,
+                    vat_rate: 0,
+                    discount_rate: 0,
+                    is_gram_bullion: true,
+                });
+
+                // İşçilik kalemi (KDV %20, gram altın DEĞİL)
+                if (labor > 0) {
+                    items.push({
+                        product_name: productName + ' İşçilik',
+                        quantity: 1,
+                        unit: 'C62',
+                        unit_price: labor,
+                        vat_rate: 20,
+                        discount_rate: 0,
+                        is_gram_bullion: false,
+                    });
+                }
+            });
+
+            var payload = {
+                customer_id: document.getElementById('customer_select').value || null,
+                issue_date: document.querySelector('input[name="issue_date"]').value,
+                due_date: document.querySelector('input[name="due_date"]').value || null,
+                notes: document.querySelector('textarea[name="notes"]').value,
+                items: items,
+            };
+
+            // Banka hareketi bağlantısı (bankacılık ekranından yönlendirme ise)
+            if (BANK_TXN_ID) {
+                payload.bank_txn_id = BANK_TXN_ID;
+            }
+
+            return payload;
+        }
+
+        function validatePayload(payload) {
+            if (!payload.items.length) {
+                Swal.fire('Uyarı', 'En az bir seçili fatura kalemi ekleyin.', 'warning');
+                return false;
+            }
+
+            // ── GİB 7 Gün Kuralı: Fatura tarihi kontrolü ──
+            if (payload.issue_date) {
+                const issueMs = new Date(payload.issue_date).getTime();
+                const now = new Date();
+                const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+                const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0).getTime();
+
+                if (isNaN(issueMs)) {
+                    Swal.fire('Geçersiz Tarih', 'Fatura tarihi geçerli bir tarih değil.', 'error');
+                    return false;
+                }
+                if (issueMs > todayEnd) {
+                    Swal.fire('Tarih Hatası', 'Fatura tarihi bugünden ileri bir tarih olamaz.', 'warning');
+                    return false;
+                }
+                if (issueMs < minDate) {
+                    Swal.fire('GİB Mevzuat Uyarısı', 'Fatura tarihi bugünden en fazla 7 gün geriye tarihlenebilir (GİB 7 Gün Kuralı).', 'warning');
+                    return false;
+                }
+            }
+
+            // ── Vade tarihi kontrolü ──
+            if (payload.due_date && payload.issue_date) {
+                const issueDateOnly = payload.issue_date.slice(0, 10);
+                if (payload.due_date < issueDateOnly) {
+                    Swal.fire('Tarih Hatası', 'Vade tarihi, fatura tarihinden önce olamaz.', 'warning');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // ============================================================
+        // SUBMIT (Sadece Kaydet)
+        // ============================================================
+        document.getElementById('btnSubmit').addEventListener('click', async () => {
+            const payload = collectPayload();
+            if (!validatePayload(payload)) return;
+
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> İşleniyor...';
+
+            try {
+                const res = await fetch(SAVE_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+
+                if (data.result) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Proforma Oluşturuldu',
+                        html: `<b>${data.invoice_no}</b> numaralı proforma fatura başarıyla kaydedildi.<br>
+                               <small class="text-muted">Fatura listesinden e-Süreç'e gönderebilirsiniz.</small>`,
+                        confirmButtonText: 'Fatura Listesine Git',
+                        showCancelButton: true,
+                        cancelButtonText: 'Yeni Fatura Oluştur',
+                        customClass: {confirmButton: 'btn btn-success', cancelButton: 'btn btn-light'},
+                    }).then(r => {
+                        if (r.isConfirmed) window.location.href = data.redirect_url;
+                        else window.location.reload();
+                    });
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-check me-2"></i> Proforma Oluştur';
+                    Swal.fire('Hata', data.error_msg || 'Kayıt hatası', 'error');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check me-2"></i> Proforma Oluştur';
+                Swal.fire('Hata', 'Sunucu hatası: ' + err.message, 'error');
+            }
+        });
+
+        // ============================================================
+        // SUBMIT + e-SÜREÇ GÖNDER
+        // ============================================================
+        document.getElementById('btnSubmitAndSend').addEventListener('click', async () => {
+            const payload = collectPayload();
+            if (!validatePayload(payload)) return;
+
+            const confirmed = await Swal.fire({
+                title: 'Oluştur ve e-Süreç\'e Gönder',
+                html: 'Fatura oluşturulup e-Süreç kuyruğuna eklenecek.<br>' +
+                    '<small class="text-muted">GİB\'den onay gelene kadar "Fatura Kesildi" olmaz.</small>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-cloud-arrow-up me-1"></i> Gönder',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light'},
+            });
+            if (!confirmed.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Kaydediliyor...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading(),
+            });
+
+            try {
+                // 1. Kaydet
+                const saveRes = await fetch(SAVE_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify(payload),
+                });
+                const saveData = await saveRes.json();
+
+                if (!saveData.result) {
+                    Swal.close();
+                    Swal.fire('Hata', saveData.error_msg || 'Kayıt hatası', 'error');
+                    return;
+                }
+
+                // 2. e-Süreç'e Gönder
+                const sendRes = await fetch(ESUREC_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify({invoice_ids: [saveData.invoice_id]}),
+                });
+                const sendData = await sendRes.json();
+
+                Swal.close();
+
+                if (sendData.result || sendData.mode === 'async') {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı!',
+                        html: `<b>${saveData.invoice_no}</b> oluşturuldu ve e-Süreç kuyruğuna alındı.<br>
+                               <small class="text-muted">GİB onayı gelince otomatik "Kesildi" olacak.</small>`,
+                        confirmButtonText: 'Fatura Listesine Git',
+                        customClass: {confirmButton: 'btn btn-success'},
+                    });
+                    window.location.href = saveData.redirect_url;
+                } else {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Kaydedildi, Gönderim Hatası',
+                        html: `<b>${saveData.invoice_no}</b> oluşturuldu ancak e-Süreç gönderiminde sorun oluştu.<br>
+                               <small>${sendData.error_msg || ''}</small>`,
+                        confirmButtonText: 'Fatura Listesine Git',
+                        customClass: {confirmButton: 'btn btn-warning'},
+                    });
+                    window.location.href = saveData.redirect_url;
+                }
+            } catch (err) {
+                Swal.close();
+                Swal.fire('Hata', 'Sunucu hatası: ' + err.message, 'error');
+            }
+        });
+
+        // ============================================================
+        // SUBMIT + OTOMATİK TASLAK + GİB'E GÖNDER (TEK TIK)
+        // ============================================================
+        document.getElementById('btnSubmitAndGib').addEventListener('click', async () => {
+            const payload = collectPayload();
+            if (!validatePayload(payload)) return;
+
+            const confirmed = await Swal.fire({
+                title: 'Oluştur ve GİB\'e Gönder',
+                html: 'Fatura oluşturulup <b>doğrudan GİB\'e</b> gönderilecek.<br>' +
+                    '<small class="text-danger fw-bold">Bu işlem geri alınamaz!</small>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-paper-plane me-1"></i> GİB\'e Gönder',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light'},
+            });
+            if (!confirmed.isConfirmed) return;
+
+            Swal.fire({
+                title: 'İşlem yapılıyor...',
+                html: '1/3 — Fatura kaydediliyor...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading(),
+            });
+
+            try {
+                // ADIM 1: Faturayı kaydet (Proforma/Taslak oluştur)
+                const saveRes = await fetch(SAVE_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify(payload),
+                });
+                const saveData = await saveRes.json();
+
+                if (!saveData.result) {
+                    Swal.close();
+                    Swal.fire('Hata', saveData.error_msg || 'Kayıt hatası', 'error');
+                    return;
+                }
+
+                const invoiceId = saveData.invoice_id;
+
+                // ADIM 2: GİB'e gönder (Backend taslak yoksa otomatik oluşturur)
+                Swal.update({html: '2/3 — GİB\'e gönderiliyor...'});
+
+                const gibRes = await fetch(GIB_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify({invoice_ids: [invoiceId]}),
+                });
+                const gibData = await gibRes.json();
+
+                if (gibData.result) {
+                    // Senkron başarılı — hemen listeye yönlendir
+                    Swal.close();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı!',
+                        html: `<b>${saveData.invoice_no}</b> oluşturuldu ve GİB'e gönderildi.<br>
+                               <small class="text-muted">GİB onayı gelince otomatik güncellenecek.</small>`,
+                        confirmButtonText: 'Fatura Listesine Git',
+                        customClass: {confirmButton: 'btn btn-success'},
+                        timer: 3000,
+                        timerProgressBar: true,
+                    });
+                    window.location.href = saveData.redirect_url;
+                } else if (gibData.mode === 'async') {
+                    // Asenkron mod — Polling yapmadan hemen yönlendir
+                    // GİB sonucu fatura listesinden takip edilebilir
+                    Swal.close();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Fatura Oluşturuldu!',
+                        html: `<b>${saveData.invoice_no}</b> kaydedildi ve GİB'e gönderim başlatıldı.<br>
+                               <small class="text-muted">GİB işlem durumunu fatura listesinden takip edebilirsiniz.</small>`,
+                        confirmButtonText: 'Fatura Listesine Git',
+                        customClass: {confirmButton: 'btn btn-success'},
+                        timer: 4000,
+                        timerProgressBar: true,
+                    });
+                    window.location.href = saveData.redirect_url;
+                } else {
+                    // GİB gönderiminde hata — fatura kaydedilmiş durumda
+                    Swal.close();
+                    let errDetail = '';
+                    if (gibData.details && gibData.details.length) {
+                        errDetail = gibData.details.map(d => d.error_msg || '').filter(Boolean).join('<br>');
+                    }
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Kaydedildi, GİB Gönderim Hatası',
+                        html: `<b>${saveData.invoice_no}</b> oluşturuldu ancak GİB gönderiminde sorun oluştu.<br>
+                               <small>${errDetail || gibData.error_msg || ''}</small><br>
+                               <small class="text-muted">Fatura listesinden tekrar deneyebilirsiniz.</small>`,
+                        confirmButtonText: 'Fatura Listesine Git',
+                        customClass: {confirmButton: 'btn btn-warning'},
+                    });
+                    window.location.href = saveData.redirect_url;
+                }
+            } catch (err) {
+                Swal.close();
+                Swal.fire('Hata', 'Sunucu hatası: ' + err.message, 'error');
+            }
+        });
+
+        // ============================================================
+        // EVENT LISTENERS
+        // ============================================================
+        document.getElementById('btnAddRow').addEventListener('click', addRow);
+
+        document.getElementById('chkAll').addEventListener('change', function () {
+            tbody.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+            recalcAll();
+        });
+
+        tbody.addEventListener('change', function (e) {
+            if (e.target.classList.contains('row-check')) recalcAll();
+        });
+
+        document.getElementById('customer_select').addEventListener('change', function () {
+            validateCompliance(window.currentGrandTotal || 0);
+        });
+
+        // ============================================================
+        // SELECT2 INIT (Müşteri Seçimi)
+        // ============================================================
+        if (window.$ && $.fn.select2) {
+            $('#customer_select').select2({
+                placeholder: 'Müşteri seçiniz...',
+                allowClear: true,
+                width: '100%',
+            });
+            $('#customer_select').on('change', function () {
+                validateCompliance(window.currentGrandTotal || 0);
+            });
+        }
+
+        // Sayfa açılınca 1 boş satır ekle
+        addRow();
+
+        // ── Banka Hareketi → Serbest Fatura Oto-Doldurma ──────────────
+        // Bankacılık ekranından ?bank_txn_id=XYZ&amount=15000 ile gelindiyse:
+        //   - İlk satırın "Metal Tutar" alanına tutarı yaz
+        //   - Miktar'ı 1.000 yap (gram olarak)
+        //   - Birim fiyatı da tutara eşitle (1 × tutar = tutar)
+        //   - Hesaplamayı tetikle
+        //   - Bilgi mesajı göster
+        if (BANK_TXN_ID && BANK_TXN_AMOUNT > 0) {
+            const firstRow = tbody.querySelector('tr[data-row-index]');
+            if (firstRow) {
+                const qtyInput = firstRow.querySelector('.qty');
+                const priceInput = firstRow.querySelector('.price_pu');
+                const metalInput = firstRow.querySelector('.metal_input');
+
+                qtyInput.value = '1.000';
+                metalInput.value = BANK_TXN_AMOUNT.toFixed(2);
+                priceInput.value = BANK_TXN_AMOUNT.toFixed(2);
+
+                recalcAll();
+
+                // Bilgi banner'ı göster
+                Swal.fire({
+                    toast: true,
+                    position: 'top',
+                    icon: 'info',
+                    title: 'Banka hareketi tutari otomatik dolduruldu: ' +
+                        fmtMoney(BANK_TXN_AMOUNT),
+                    showConfirmButton: false,
+                    timer: 5000,
+                });
+            }
+        }
+    </script>
+{% endblock footer %}

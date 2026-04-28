@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <title>{{ error_title|default:"Erişim Engellendi" }} - Kuyum Plus</title>
+    <meta charset="utf-8"/>
+    <meta name="description" content="Yetkisiz erişim bildirimi"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="shortcut icon" href="{% static 'management/favicon.ico' %}"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/>
+    <link href="{% static 'management/plugins/global/plugins.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static 'management/css/style.bundle.css' %}" rel="stylesheet" type="text/css"/>
+
+    <style>
+        body {
+            background-image: url('/static/management/media/auth/bg7.jpg');
+        }
+
+        [data-bs-theme="dark"] body {
+            background-image: url('/static/management/media/auth/bg7-dark.jpg');
+        }
+    </style>
+</head>
+
+<body class="app-blank">
+<div class="d-flex flex-column flex-root">
+    <div class="d-flex flex-column flex-center text-center p-10">
+        <div class="card card-flush w-lg-650px py-5">
+            <div class="card-body py-15 py-lg-20">
+
+                {# Başlık (reason veya mesajlardan gelen tonlamaya göre) #}
+                <h1 class="fw-bolder fs-2qx {{ title_class|default:'text-danger' }} mb-4">
+                    {{ error_title|default:"Erişim Engellendi" }}
+                </h1>
+
+                {# Özet açıklama (reason varsa özel; yoksa ilk mesaj) #}
+                <div class="fw-semibold fs-6 text-gray-600 mb-7">
+                    {% if error_summary %}
+                        {{ error_summary }}
+                    {% elif error_messages and error_messages.0 %}
+                        {{ error_messages.0.message }}
+                    {% else %}
+                        Bu sayfaya erişim izniniz bulunmamaktadır.<br> Lütfen yöneticinizle iletişime geçin.
+                    {% endif %}
+                </div>
+
+
+
+                <div class="mb-11">
+                    <img src="{{ '/static/management/media/auth/404-error.png' }}"
+                         class="mw-100 mh-300px" alt="Yetki Hatası Görseli"/>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-center">
+
+                    <a href="javascript:history.back();" class="btn btn-sm btn-light">
+                        Geri
+                    </a>
+                </div>
+
+                {% if support_text %}
+                    <div class="text-muted fs-7 mt-5">
+                        {{ support_text }}
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'management/plugins/global/plugins.bundle.js' %}"></script>
+<script src="{% static 'management/js/scripts.bundle.js' %}"></script>
+</body>
+</html>

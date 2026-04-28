@@ -1,0 +1,749 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/select2/select2.min.css' %}">
+    <script src="{% static 'management/plugins/custom/select2/select2.min.js' %}"></script>
+    <style>
+        /* CSS AYARLARI */
+        #kt_datatable_example_1_wrapper .top {
+            display: none;
+        }
+
+        #tableToolbar .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem;
+        }
+
+        .toolbar-btn-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 6.5rem;
+            height: 2.7rem;
+        }
+
+        .my-margin {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            margin-right: 0.8rem;
+            margin-left: 0.8rem;
+        }
+
+        /* Select2 Düzenlemeleri */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .form-select.select2-hidden-accessible {
+            display: none;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="container-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar">
+                <div class="card shadow-sm w-100 my-margin">
+                    <div class="card-body">
+                        <div class="app-container container-xxl d-flex flex-stack">
+                            <div class="page-title d-flex flex-column justify-content-center me-3">
+                                <h1 class="page-heading text-gray-900 fw-bold fs-3">Tedarikçiler</h1>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-light-primary toolbar-btn-size"
+                                        data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                    <i class="fa-solid fa-download"></i> <span
+                                        class="d-none d-lg-inline ms-1">Rapor</span>
+                                </button>
+                                <div class="menu menu-sub menu-sub-dropdown w-200px" data-kt-menu="true"
+                                     id="kt_datatable_example_export_menu">
+                                    <div class="menu-item px-3"><a href="#" class="menu-link px-3"
+                                                                   data-kt-export="excel">Excel</a></div>
+                                    <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-kt-export="pdf">PDF</a>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-primary toolbar-btn-size" data-bs-toggle="modal"
+                                        data-bs-target="#addSupplierModal">
+                                    <i class="ki-duotone ki-plus fs-2"></i> <span
+                                        class="d-none d-lg-inline ms-1">Ekle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+                <div class="card">
+                    <div class="card-body">
+                        <div id="tableToolbar"
+                             class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div class="d-flex gap-2 my-margin1">
+                                <button type="button" class="btn btn-light-danger toolbar-btn-size" id="deleteSelected"
+                                        data-bs-toggle="tooltip" title="Seçilenleri Sil">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                                <button type="button" class="btn btn-light-success toolbar-btn-size"
+                                        id="changeStatusSelected" data-bs-toggle="tooltip" title="Durum Değiştir">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </button>
+                            </div>
+                            <div id="dataTableSearch"></div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="kt_datatable_example_1" class="table align-middle table-row-dashed fs-6">
+                                <thead>
+                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                    <th class="w-10px pe-2">#</th>
+                                    <th>Firma</th>
+                                    <th>İrtibat</th>
+                                    <th>Telefon</th>
+                                    <th>Lokasyon</th>
+                                    <th class="text-end">Bakiye (HS)</th>
+                                    <th class="text-center">Durum</th>
+                                    <th class="text-end">İşlemler</th>
+                                </tr>
+                                </thead>
+                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addSupplierModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yeni Tedarikçi Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" id="addForm">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="required form-label">Firma Ünvanı</label>
+                                <input type="text" class="form-control" name="company_name" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hesap Türü</label>
+                                <select class="form-select" name="account_type" id="add_account_type">
+                                    <option value="SUPPLIER">Tedarikçi</option>
+                                    <option value="CANTACI">Çantacı</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Yetkili Adı</label>
+                                <input type="text" class="form-control" name="person_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Yetkili Soyadı</label>
+                                <input type="text" class="form-control" name="person_surname">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Mükellefiyet</label>
+                                <select class="form-select" name="tax_payer_type">
+                                    <option value="CORPORATE">Tüzel Kişi / Şirket</option>
+                                    <option value="INDIVIDUAL">Şahıs / Bireysel</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">VKN / TCKN</label>
+                                <input type="text" class="form-control" name="tax_number" maxlength="11">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Posta Kodu</label>
+                                <input type="text" class="form-control" name="post_code">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_einvoice_user"
+                                           id="add_is_einvoice">
+                                    <label class="form-check-label" for="add_is_einvoice">E-Fatura Mükellefi</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">E-posta</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telefon</label>
+                                <input type="text" class="form-control" name="phone">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">İl</label>
+                                <select class="form-select city-select" name="city" id="add_city"
+                                        data-placeholder="İl Seçiniz">
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Vergi Dairesi</label>
+                                <select class="form-select tax-office-select" name="tax_office" id="add_tax_office"
+                                        data-placeholder="Önce İl Seçiniz" disabled>
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">İlçe</label>
+                                <select class="form-select district-select" name="district" id="add_district"
+                                        data-placeholder="Önce İl Seçiniz" disabled>
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Açık Adres</label>
+                                <textarea class="form-control" name="company_address" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-primary" id="btnSave">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editSupplierModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tedarikçi Güncelle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" id="editForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="edit_supplier_id" name="supplier_id">
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="required form-label">Firma Ünvanı</label>
+                                <input type="text" class="form-control" id="edit_company_name" name="company_name"
+                                       required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hesap Türü</label>
+                                <select class="form-select" name="account_type" id="edit_account_type">
+                                    <option value="SUPPLIER">Tedarikçi</option>
+                                    <option value="CANTACI">Çantacı</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Yetkili Adı</label>
+                                <input type="text" class="form-control" id="edit_person_name" name="person_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Yetkili Soyadı</label>
+                                <input type="text" class="form-control" id="edit_person_surname" name="person_surname">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Mükellefiyet</label>
+                                <select class="form-select" id="edit_tax_payer_type" name="tax_payer_type">
+                                    <option value="CORPORATE">Tüzel Kişi / Şirket</option>
+                                    <option value="INDIVIDUAL">Şahıs / Bireysel</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">VKN / TCKN</label>
+                                <input type="text" class="form-control" id="edit_tax_number" name="tax_number"
+                                       maxlength="11">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Posta Kodu</label>
+                                <input type="text" class="form-control" id="edit_post_code" name="post_code">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_einvoice_user"
+                                           id="edit_is_einvoice_user">
+                                    <label class="form-check-label" for="edit_is_einvoice_user">E-Fatura
+                                        Mükellefi</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">E-posta</label>
+                                <input type="email" class="form-control" id="edit_email" name="email">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telefon</label>
+                                <input type="text" class="form-control" id="edit_phone" name="phone">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">İl</label>
+                                <select class="form-select city-select" id="edit_city" name="city"
+                                        data-placeholder="İl Seçiniz">
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Vergi Dairesi</label>
+                                <select class="form-select tax-office-select" id="edit_tax_office" name="tax_office"
+                                        data-placeholder="Önce İl Seçiniz" disabled>
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">İlçe</label>
+                                <select class="form-select district-select" id="edit_district" name="district"
+                                        data-placeholder="Önce İl Seçiniz" disabled>
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Açık Adres</label>
+                                <textarea class="form-control" id="edit_company_address" name="company_address"
+                                          rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-primary" id="btnUpdate">Güncelle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+
+            // --- 1. FONKSİYONLAR: API İSTEKLERİ ---
+
+            // Şehirleri API'den Çek
+            function loadCities(targetSelector) {
+                return $.ajax({
+                    url: "{% url 'locations:get-cities' %}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function (resp) {
+                        let opts = '<option value=""></option>';
+                        let dataList = resp.data ? resp.data : resp;
+                        if (Array.isArray(dataList)) {
+                            dataList.forEach(c => {
+                                opts += `<option value="${c.id}">${c.name}</option>`;
+                            });
+                        }
+                        $(targetSelector).html(opts);
+                    }
+                });
+            }
+
+            // İlçeleri API'den Çek (Şehre Bağlı)
+            function loadDistricts(cityId, targetSelector) {
+                if (!cityId) {
+                    $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change');
+                    return Promise.resolve();
+                }
+
+                return $.ajax({
+                    url: "{% url 'locations:get-districts' %}",
+                    type: "GET",
+                    data: {city_id: cityId},
+                    dataType: "json",
+                    success: function (resp) {
+                        let opts = '<option value=""></option>';
+                        let dataList = resp.data ? resp.data : resp;
+                        if (Array.isArray(dataList)) {
+                            dataList.forEach(d => {
+                                opts += `<option value="${d.id}">${d.name}</option>`;
+                            });
+                        }
+                        $(targetSelector).html(opts).prop('disabled', false).trigger('change.select2');
+                    }
+                });
+            }
+
+            // Vergi Dairelerini API'den Çek (ARTIK ŞEHRE BAĞLI)
+            function loadTaxOffices(cityId, targetSelector) {
+                if (!cityId) {
+                    $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change');
+                    return Promise.resolve();
+                }
+
+                return $.ajax({
+                    url: "{% url 'locations:get-tax_offices' %}",
+                    type: "GET",
+                    data: {city_id: cityId}, // district_id yerine city_id gönderiyoruz
+                    dataType: "json",
+                    success: function (resp) {
+                        let opts = '<option value=""></option>';
+                        let dataList = resp.data ? resp.data : resp;
+                        if (Array.isArray(dataList)) {
+                            dataList.forEach(t => {
+                                opts += `<option value="${t.id}">${t.name} (${t.code})</option>`;
+                            });
+                        }
+                        $(targetSelector).html(opts).prop('disabled', false).trigger('change.select2');
+                    }
+                });
+            }
+
+
+            // --- 2. SELECT2 BAŞLATMA ---
+
+            $('#addSupplierModal').on('shown.bs.modal', function () {
+                $('#add_city, #add_district, #add_tax_office').select2({
+                    dropdownParent: $('#addSupplierModal'),
+                    width: '100%',
+                    allowClear: true,
+                    language: "tr"
+                });
+            });
+
+            $('#editSupplierModal').on('shown.bs.modal', function () {
+                $('#edit_city, #edit_district, #edit_tax_office').select2({
+                    dropdownParent: $('#editSupplierModal'),
+                    width: '100%',
+                    allowClear: true,
+                    language: "tr"
+                });
+            });
+
+
+            // --- 3. OLAY DİNLEYİCİLERİ (CHANGE EVENTS) ---
+
+            loadCities('#add_city');
+            loadCities('#edit_city');
+
+            // EKLEME MODALI: İl Değişince -> İlçe ve Vergi Dairesi Yükle
+            $('#add_city').on('change', function () {
+                let val = $(this).val();
+
+                // Temizle
+                $('#add_district').val(null).empty().trigger('change').prop('disabled', true);
+                $('#add_tax_office').val(null).empty().trigger('change').prop('disabled', true);
+
+                if (val) {
+                    // İkisini de şehre göre yükle
+                    loadDistricts(val, '#add_district');
+                    loadTaxOffices(val, '#add_tax_office');
+                }
+            });
+
+            // GÜNCELLEME MODALI: İl Değişince (Manuel)
+            $('#edit_city').on('select2:select', function (e) {
+                let val = $(this).val();
+                $('#edit_district').val(null).empty().trigger('change');
+                $('#edit_tax_office').val(null).empty().trigger('change');
+
+                if (val) {
+                    loadDistricts(val, '#edit_district');
+                    loadTaxOffices(val, '#edit_tax_office');
+                }
+            });
+
+
+            // --- 4. DATATABLE ---
+
+            var table = $("#kt_datatable_example_1").DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{% url 'suppliers:get-all' %}",
+                    data: function (d) {
+                        d.is_active = $('[data-kt-docs-table-filter="status"]').val();
+                    }
+                },
+                columns: [
+                    {
+                        data: "id", orderable: false, className: "text-center",
+                        render: function (data) {
+                            return `<div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center">
+                                        <input class="form-check-input" type="checkbox" value="${data}" />
+                                    </div>`;
+                        }
+                    },
+                    {
+                        data: "company_name",
+                        render: function(data, type, row) {
+                            let url = row.account_type === 'CANTACI'
+                                ? `/suppliers/cantaci/${row.id}`
+                                : `/suppliers/detail/${row.id}`;
+                            let badge = row.account_type === 'CANTACI'
+                                ? ' <span class="badge bg-light-info text-info ms-1">Çantacı</span>'
+                                : '';
+                            return `<a href="${url}" class="text-gray-800 text-hover-primary fw-bold">${data}</a>${badge}`;
+                        }
+                    },
+                    {
+                        data: null, orderable: false,
+                        render: function (data, type, row) {
+                            let parts = [];
+                            if (row.person_name) parts.push(row.person_name);
+                            if (row.person_surname) parts.push(row.person_surname);
+                            return parts.join(' ') || '-';
+                        }
+                    },
+                    {data: "phone", render: d => d || '-'},
+                    {
+                        data: null, orderable: false,
+                        render: function (d, t, r) {
+                            let parts = [];
+                            if (r.city__name) parts.push(r.city__name);
+                            if (r.district__name) parts.push(r.district__name);
+                            return parts.join(' / ') || '-';
+                        }
+                    },
+                    {
+                        data: "payable_hs", className: "text-end",
+                        render: function (d, t, r) {
+                            let rec = parseFloat(r.receivable_hs || 0);
+                            let pay = parseFloat(r.payable_hs || 0);
+                            let bal = rec - pay;
+                            let color = bal > 0 ? 'success' : (bal < 0 ? 'danger' : 'secondary');
+                            return `<span class="badge bg-light-${color} text-${color}">${bal.toFixed(3)} HS</span>`;
+                        }
+                    },
+                    {
+                        data: "is_active", className: "text-center",
+                        render: function (d) {
+                            return d ? '<span class="badge bg-light-success text-success">Aktif</span>' : '<span class="badge bg-light-danger text-danger">Pasif</span>';
+                        }
+                    },
+                    {
+                        data: null, className: "text-end", orderable: false,
+                        render: function (data, type, row) {
+                            let safeData = encodeURIComponent(JSON.stringify(row));
+                            return `
+                                <button class="btn btn-icon btn-light btn-sm btn-edit-row" data-payload="${safeData}">
+                                    <i class="ki-duotone ki-pencil fs-4"></i>
+                                </button>
+                            `;
+                        }
+                    }
+                ],
+                order: [[1, 'asc']],
+                language: {url: "https://cdn.datatables.net/plug-ins/1.11.5/i18n/tr.json"},
+                initComplete: function () {
+                    $('#kt_datatable_example_1_filter').appendTo('#dataTableSearch').addClass('mb-0');
+                    new $.fn.dataTable.Buttons(table, {
+                        buttons: [
+                            {extend: 'excelHtml5', title: 'Tedarikciler'},
+                            {extend: 'pdfHtml5', title: 'Tedarikciler'}
+                        ]
+                    }).container().appendTo($('#kt_datatable_example_export_menu'));
+
+                    const exportButtons = document.querySelectorAll('[data-kt-export]');
+                    exportButtons.forEach(exportButton => {
+                        exportButton.addEventListener('click', e => {
+                            e.preventDefault();
+                            const exportValue = e.target.getAttribute('data-kt-export');
+                            table.button(`.buttons-${exportValue}`).trigger();
+                        });
+                    });
+                }
+            });
+
+
+            // --- 5. DÜZENLEME BUTONU (ZİNCİRLEME VERİ DOLDURMA) ---
+
+            $('#kt_datatable_example_1').on('click', '.btn-edit-row', function () {
+                let rawData = $(this).data('payload');
+                let data = JSON.parse(decodeURIComponent(rawData));
+
+                // Statik Alanlar
+                $('#edit_supplier_id').val(data.id);
+                $('#edit_company_name').val(data.company_name);
+                $('#edit_person_name').val(data.person_name);
+                $('#edit_person_surname').val(data.person_surname);
+                $('#edit_email').val(data.email);
+                $('#edit_phone').val(data.phone);
+                $('#edit_company_address').val(data.company_address);
+                $('#edit_post_code').val(data.post_code);
+                $('#edit_tax_payer_type').val(data.tax_payer_type);
+                $('#edit_tax_number').val(data.tax_number);
+                $('#edit_is_einvoice_user').prop('checked', data.is_einvoice_user);
+                $('#edit_account_type').val(data.account_type || 'SUPPLIER');
+
+                // Modal Göster
+                $('#editSupplierModal').modal('show');
+
+                // DİNAMİK SELECTLER (Promise Chain)
+                // 1. Şehri Seç
+                $('#edit_city').val(data.city_id).trigger('change');
+
+                // 2. Şehir Varsa Bağlıları Yükle (Paralel)
+                if (data.city_id) {
+                    Promise.all([
+                        loadDistricts(data.city_id, '#edit_district'),
+                        loadTaxOffices(data.city_id, '#edit_tax_office')
+                    ]).then(() => {
+                        // Yüklemeler bitti, seçimleri yap
+                        if (data.district_id) {
+                            $('#edit_district').val(data.district_id).trigger('change');
+                        }
+
+                        let toId = data.tax_office_id ? data.tax_office_id : data.tax_office;
+                        if (toId) {
+                            $('#edit_tax_office').val(toId).trigger('change');
+                        }
+                    });
+                } else {
+                    $('#edit_district').val(null).trigger('change');
+                    $('#edit_tax_office').val(null).trigger('change');
+                }
+            });
+
+
+            // --- 6. FORM GÖNDERİMİ (AJAX) ---
+
+            function handleFormSubmit(formId, btnId, url) {
+                $(formId).submit(function (e) {
+                    e.preventDefault();
+                    let btn = $(btnId);
+
+                    if (this.checkValidity() === false) {
+                        e.stopPropagation();
+                        $(this).addClass('was-validated');
+                        return;
+                    }
+
+                    btn.prop('disabled', true);
+                    let formData = new FormData(this);
+
+                    $.ajax({
+                        url: url, type: "POST", data: formData,
+                        processData: false, contentType: false,
+                        success: function (resp) {
+                            if (resp.result) {
+                                Swal.fire({
+                                    icon: 'success', title: 'Başarılı', text: 'İşlem tamamlandı.',
+                                    timer: 1500, showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Hata', resp.error_msg || 'Bir hata oluştu', 'error');
+                                btn.prop('disabled', false);
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Hata', 'Sunucu hatası', 'error');
+                            btn.prop('disabled', false);
+                        }
+                    });
+                });
+            }
+
+            handleFormSubmit('#addForm', '#btnSave', "{% url 'suppliers:add' %}");
+            handleFormSubmit('#editForm', '#btnUpdate', "{% url 'suppliers:add' %}");
+
+
+            // --- 7. TOPLU İŞLEMLER ---
+
+            $('#deleteSelected').click(function () {
+                let ids = [];
+                $('#kt_datatable_example_1 .form-check-input:checked').each(function () {
+                    if ($(this).val()) ids.push($(this).val());
+                });
+
+                if (ids.length === 0) {
+                    Swal.fire('Uyarı', 'Lütfen kayıt seçiniz.', 'warning');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Emin misiniz?', text: "Seçili kayıtlar silinecek!",
+                    icon: 'warning', showCancelButton: true,
+                    confirmButtonText: 'Evet, Sil', cancelButtonText: 'İptal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post("{% url 'suppliers:delete' %}", {
+                            ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
+                        }, function (resp) {
+                            if (resp.result) {
+                                table.ajax.reload(null, false);
+                                Swal.fire('Silindi!', 'Kayıtlar silindi.', 'success');
+                            }
+                        });
+                    }
+                });
+            });
+
+            $('#changeStatusSelected').click(function () {
+                let ids = [];
+                $('#kt_datatable_example_1 .form-check-input:checked').each(function () {
+                    if ($(this).val()) ids.push($(this).val());
+                });
+
+                if (ids.length === 0) {
+                    Swal.fire('Uyarı', 'Lütfen kayıt seçiniz.', 'warning');
+                    return;
+                }
+
+                $.post("{% url 'suppliers:change-status' %}", {
+                    ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
+                }, function (resp) {
+                    if (resp.result) {
+                        table.ajax.reload(null, false);
+                        Swal.mixin({
+                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
+                        }).fire({icon: 'success', title: 'Durumlar güncellendi'});
+                    }
+                });
+            });
+
+        });
+    </script>
+{% endblock footer %}

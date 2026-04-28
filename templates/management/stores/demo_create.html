@@ -1,0 +1,272 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link rel="stylesheet" href="{% static 'management/plugins/custom/select2/select2.min.css' %}">
+    <script src="{% static 'management/plugins/custom/select2/select2.min.js' %}"></script>
+    <style>
+        .demo-card-hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #6d4c00;
+            font-size: 0.92rem;
+        }
+
+        .demo-result-box {
+            display: none;
+            margin-top: 16px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            background: #e8f5e9;
+            border: 1px solid #66bb6a;
+            color: #1b5e20;
+        }
+
+        .demo-result-box.error {
+            background: #ffebee;
+            border-color: #ef5350;
+            color: #b71c1c;
+        }
+
+        .demo-result-box code {
+            background: rgba(0, 0, 0, .05);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .module-pill {
+            display: inline-block;
+            margin: 2px;
+            padding: 4px 10px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 999px;
+            font-size: 0.85rem;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main"
+         style="border-style:groove;border-radius:10px;border-color:aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+
+                    <!-- Header -->
+                    <div class="card mb-5 shadow-sm">
+                        <div class="card-body py-4">
+                            <h2 class="mb-1">
+                                <i class="fa-solid fa-bolt text-warning me-2"></i>
+                                Hızlı Demo Mağaza Aç
+                            </h2>
+                            <p class="text-muted mb-0">
+                                FAZ 19 — Fast-Track Onboarding. Bu form ile bir kuyumcuya
+                                <strong>0 TL'lik</strong> demo mağaza açılır.
+                                Süre dolduğunda mağaza otomatik <code>EXPIRED</code> statüsüne çekilir.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card shadow-sm">
+                                <div class="card-header">
+                                    <h4 class="card-title mb-0">Demo Bilgileri</h4>
+                                </div>
+                                <div class="card-body">
+
+                                    <div class="demo-card-hint mb-4">
+                                        <i class="fa-solid fa-circle-info me-1"></i>
+                                        <strong>Bilgi:</strong> Telefon numarası zorunludur ve
+                                        çakışma kontrolünde anahtar olarak kullanılır.
+                                        Aynı numarayla EXPIRED mağaza varsa <em>reaktive</em> edilir.
+                                    </div>
+
+                                    <form id="demoCreateForm" autocomplete="off">
+                                        {% csrf_token %}
+
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label required">Ad</label>
+                                                <input type="text" class="form-control"
+                                                       name="first_name" placeholder="Ahmet">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label required">Soyad</label>
+                                                <input type="text" class="form-control"
+                                                       name="last_name" placeholder="Yılmaz">
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label required">Telefon</label>
+                                                <input type="text" class="form-control"
+                                                       name="phone" placeholder="+90 555 000 00 00" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">E-posta</label>
+                                                <input type="email" class="form-control"
+                                                       name="email" placeholder="ornek@firma.com">
+                                            </div>
+
+                                            <div class="col-md-12">
+                                                <label class="form-label required">Firma / Mağaza Adı</label>
+                                                <input type="text" class="form-control"
+                                                       name="business_name" placeholder="Yılmaz Kuyumculuk" required>
+                                            </div>
+
+                                            <div class="col-md-8">
+                                                <label class="form-label">Şehir</label>
+                                                <input type="text" class="form-control"
+                                                       name="city" placeholder="İstanbul">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Süre (Gün)</label>
+                                                <input type="number" class="form-control"
+                                                       name="duration_days" value="{{ default_duration|default:14 }}"
+                                                       min="1" max="90">
+                                            </div>
+
+                                            <div class="col-md-12">
+                                                <label class="form-label">Demoda Açılacak Modüller</label>
+                                                <select id="moduleSelect" name="module_ids[]"
+                                                        class="form-select" multiple>
+                                                    {% for m in available_modules %}
+                                                        <option value="{{ m.id }}">
+                                                            {{ m.name }}{% if m.is_core %} (çekirdek){% endif %}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                                <div class="form-text">
+                                                    Boş bırakılırsa <code>demo-access</code> modülü
+                                                    otomatik atanır.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end gap-2 mt-4">
+                                            <button type="reset" class="btn btn-light">
+                                                <i class="fa-solid fa-rotate-left me-1"></i> Temizle
+                                            </button>
+                                            <button type="submit" class="btn btn-warning" id="submitBtn">
+                                                <i class="fa-solid fa-bolt me-1"></i> Demo Mağaza Aç
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <div id="resultBox" class="demo-result-box"></div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fa-solid fa-circle-question text-primary me-1"></i>
+                                        Test Senaryosu
+                                    </h5>
+                                </div>
+                                <div class="card-body small">
+                                    <ol class="ps-3">
+                                        <li>Konasoft personeli (is_staff veya superuser) olarak giriş yap.</li>
+                                        <li>Bu sayfayı aç: <code>/stores/create-demo</code>.</li>
+                                        <li>Formu doldur ve gönder.</li>
+                                        <li>Başarılı dönüşte sağda <code>store_id</code> ve
+                                            <code>expires_at</code> görünür.</li>
+                                        <li>Mağaza listesinde (<code>/stores/index</code>) yeni
+                                            DEMO mağaza belirir.</li>
+                                        <li>Mağazaya bağlı 3 varsayılan kasa otomatik açılır
+                                            (sinyal — Adım 2).</li>
+                                        <li>Aynı telefonla tekrar denersen "zaten aktif" hatası gelir.</li>
+                                    </ol>
+
+                                    <hr>
+
+                                    <p class="mb-1"><strong>Doğrulama Komutları:</strong></p>
+                                    <pre class="bg-dark text-light p-2 rounded small">python manage.py shell
+>>> from apps.stores.models import Stores
+>>> Stores.objects.filter(status='DEMO').count()</pre>
+
+                                    <p class="mb-1"><strong>Süreyi Manuel Test:</strong></p>
+                                    <pre class="bg-dark text-light p-2 rounded small">python manage.py expire_demos --dry-run
+python manage.py expire_demos --verbose</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block scripts %}
+    <script>
+        $(function () {
+            $('#moduleSelect').select2({
+                placeholder: 'Modül seçiniz (opsiyonel)',
+                allowClear: true,
+                width: '100%'
+            });
+
+            const $form = $('#demoCreateForm');
+            const $btn = $('#submitBtn');
+            const $box = $('#resultBox');
+
+            $form.on('submit', function (e) {
+                e.preventDefault();
+
+                $box.removeClass('error').hide().html('');
+                $btn.prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm me-1"></span> Açılıyor...'
+                );
+
+                const fd = new FormData(this);
+
+                $.ajax({
+                    url: "{% url 'stores:create-demo' %}",
+                    method: 'POST',
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function (resp) {
+                        $btn.prop('disabled', false).html(
+                            '<i class="fa-solid fa-bolt me-1"></i> Demo Mağaza Aç'
+                        );
+
+                        if (resp.error) {
+                            $box.addClass('error').show().html(
+                                '<strong>Hata:</strong> ' + (resp.error_msg || 'Bilinmeyen hata.')
+                            );
+                            return;
+                        }
+
+                        const isNew = resp.is_new ? 'YENİ' : 'REAKTİVE';
+                        $box.show().html(
+                            '<strong><i class="fa-solid fa-check-circle me-1"></i> Başarılı (' + isNew + ')</strong><br>' +
+                            'Mağaza ID: <code>' + resp.store_id + '</code><br>' +
+                            'UUID: <code>' + resp.store_uuid + '</code><br>' +
+                            'Bitiş: <code>' + (resp.expires_at || '-') + '</code>'
+                        );
+                    },
+                    error: function (xhr) {
+                        $btn.prop('disabled', false).html(
+                            '<i class="fa-solid fa-bolt me-1"></i> Demo Mağaza Aç'
+                        );
+                        $box.addClass('error').show().html(
+                            '<strong>HTTP Hatası:</strong> ' + xhr.status + ' ' + xhr.statusText
+                        );
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock scripts %}

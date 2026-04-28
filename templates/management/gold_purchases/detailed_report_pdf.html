@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Detayli Rapor</title>
+    <style>
+        /* xhtml2pdf: A4 LANDSCAPE (yatay) - 10 kolonlu detayli analiz */
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+            @frame footer_frame {
+                -pdf-frame-content: footerContent;
+                bottom: 0cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 8.5pt;
+            color: #222;
+        }
+
+        /* ── BASLIK ── */
+        .header-line {
+            border-bottom: 2px solid #d4af37;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .report-title {
+            font-size: 15pt;
+            font-weight: bold;
+            color: #0F1B2B;
+        }
+
+        .report-sub {
+            font-size: 9pt;
+            color: #d4af37;
+            margin-top: 2px;
+        }
+
+        .meta-info {
+            text-align: right;
+            font-size: 8pt;
+            color: #666;
+        }
+
+        .filter-box {
+            background-color: #fffbea;
+            border: 1px solid #e6c74d;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            font-size: 8pt;
+            color: #555;
+        }
+
+        /* ── KPI KUTULARI (iki satir: Tezgahta + Satilan) ── */
+        .kpi-table {
+            width: 100%;
+            margin-bottom: 10px;
+            border-collapse: collapse;
+        }
+
+        .kpi-label-row td {
+            padding: 0 3px 3px 3px;
+            font-size: 7.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        .kpi-cell {
+            width: 25%;
+            padding: 2px;
+        }
+
+        .kpi-box {
+            border: 1px solid #ddd;
+            padding: 5px 4px;
+            text-align: center;
+            background-color: #fafafa;
+        }
+
+        .kpi-box-green { border-bottom: 2px solid #1a7a42; }
+        .kpi-box-amber { border-bottom: 2px solid #b8860b; }
+
+        .kpi-label {
+            font-size: 7pt;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        .kpi-val {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #0F1B2B;
+            margin-top: 2px;
+        }
+
+        .kpi-val-green { color: #1a7a42; }
+        .kpi-val-amber { color: #b8860b; }
+
+        /* ── RAPOR TABLOSU (10 kolon) ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+
+        .data-table thead tr {
+            background-color: #0F1B2B;
+        }
+
+        .data-table thead th {
+            color: #d4af37;
+            padding: 5px 3px;
+            font-size: 7.5pt;
+            text-align: center;
+        }
+
+        .data-table thead th.th-group-green { background-color: #1a7a42; color: #fff; }
+        .data-table thead th.th-group-amber { background-color: #b8860b; color: #fff; }
+        .data-table thead th.th-left { text-align: left; padding-left: 6px; }
+
+        .data-table tbody td {
+            border-bottom: 1px solid #eee;
+            padding: 4px 3px;
+            font-size: 8pt;
+        }
+
+        .data-table tbody td.text-center {
+            text-align: center;
+        }
+
+        .data-table tbody td.text-right {
+            text-align: right;
+            padding-right: 6px;
+        }
+
+        .data-table tbody td.td-cat {
+            padding-left: 6px;
+            font-weight: bold;
+        }
+
+        /* Genel Toplam satiri */
+        .data-table tfoot tr {
+            background-color: #0F1B2B;
+        }
+
+        .data-table tfoot td {
+            color: #d4af37;
+            padding: 5px 3px;
+            font-size: 8.5pt;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .data-table tfoot td.text-center {
+            text-align: center;
+        }
+
+        .data-table tfoot td.td-label {
+            text-align: left;
+            padding-left: 6px;
+        }
+
+        .badge-ayar {
+            background-color: #e8f0fe;
+            color: #1a56db;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 7pt;
+            white-space: nowrap;
+        }
+
+        .text-green { color: #1a7a42; }
+        .text-amber { color: #b8860b; }
+        .cat-separator td {
+            padding: 0;
+            height: 2px;
+            background-color: #d4af37;
+            border: 0;
+        }
+
+        /* ── FOOTER ── */
+        #footerContent {
+            text-align: center;
+            color: #888;
+            font-size: 7pt;
+            border-top: 1px solid #ccc;
+            padding-top: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- BASLIK -->
+<div class="header-line">
+    <table border="0" style="width:100%;">
+        <tr>
+            <td style="width:60%;">
+                <div class="report-title">{{ store_name }}</div>
+                <div class="report-sub">BARKODLU URUNLER - DETAYLI ANALIZ RAPORU</div>
+            </td>
+            <td style="width:40%;">
+                <div class="meta-info">
+                    <strong>Rapor Tarihi:</strong> {{ report_date }}<br>
+                    <strong>Kapsam:</strong> Kategori &amp; Ayar &middot; Adet / Gram / Has / Maliyet
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% if filter_labels %}
+<div class="filter-box">
+    <strong>Aktif Filtreler:</strong>
+    {% for fl in filter_labels %}{{ fl }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- KPI KUTULARI: 2 SATIR (Tezgahta / Satilan) -->
+<table class="kpi-table" border="0" cellpadding="0" cellspacing="0">
+    <tr class="kpi-label-row">
+        <td colspan="4" style="color:#1a7a42;">TEZGAHTAKI URUNLER</td>
+    </tr>
+    <tr>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-green">
+                <div class="kpi-label">Adet</div>
+                <div class="kpi-val kpi-val-green">{{ total_tezgahta_count }}</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-green">
+                <div class="kpi-label">Gram</div>
+                <div class="kpi-val kpi-val-green">{{ total_tezgahta_gram }} gr</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-green">
+                <div class="kpi-label">Has (Saf Altin)</div>
+                <div class="kpi-val kpi-val-green">{{ total_tezgahta_has }} gr</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-green">
+                <div class="kpi-label">Maliyet (Has)</div>
+                <div class="kpi-val kpi-val-green">{{ total_tezgahta_maliyet }}</div>
+            </div>
+        </td>
+    </tr>
+    <tr class="kpi-label-row">
+        <td colspan="4" style="color:#b8860b; padding-top:6px;">SATILAN URUNLER</td>
+    </tr>
+    <tr>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-amber">
+                <div class="kpi-label">Adet</div>
+                <div class="kpi-val kpi-val-amber">{{ total_satilan_count }}</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-amber">
+                <div class="kpi-label">Gram</div>
+                <div class="kpi-val kpi-val-amber">{{ total_satilan_gram }} gr</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-amber">
+                <div class="kpi-label">Has (Saf Altin)</div>
+                <div class="kpi-val kpi-val-amber">{{ total_satilan_has }} gr</div>
+            </div>
+        </td>
+        <td class="kpi-cell">
+            <div class="kpi-box kpi-box-amber">
+                <div class="kpi-label">Maliyet (Has)</div>
+                <div class="kpi-val kpi-val-amber">{{ total_satilan_maliyet }}</div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- DETAY TABLOSU (10 KOLON) -->
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="th-left" rowspan="2" style="width:16%;">Taki Tipi</th>
+            <th rowspan="2" style="width:9%;">Ayar</th>
+            <th class="th-group-green" colspan="4">Tezgahtaki</th>
+            <th class="th-group-amber" colspan="4">Satilan</th>
+        </tr>
+        <tr>
+            <th style="width:8%;" class="th-group-green">Adet</th>
+            <th style="width:10%;" class="th-group-green">Gram</th>
+            <th style="width:10%;" class="th-group-green">Has</th>
+            <th style="width:12%;" class="th-group-green">Maliyet</th>
+            <th style="width:8%;" class="th-group-amber">Adet</th>
+            <th style="width:9%;" class="th-group-amber">Gram</th>
+            <th style="width:9%;" class="th-group-amber">Has</th>
+            <th style="width:9%;" class="th-group-amber">Maliyet</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+            {% ifchanged row.category %}{% if not forloop.first %}
+            <tr class="cat-separator"><td colspan="10"></td></tr>
+            {% endif %}{% endifchanged %}
+            <tr>
+                <td class="td-cat">{{ row.category }}</td>
+                <td class="text-center"><span class="badge-ayar">{{ row.ayar }}</span></td>
+                <td class="text-center text-green">{{ row.tezgahta_count }}</td>
+                <td class="text-right text-green">{{ row.tezgahta_gram }}</td>
+                <td class="text-right text-green">{{ row.tezgahta_has }}</td>
+                <td class="text-right text-green">{{ row.tezgahta_maliyet }}</td>
+                <td class="text-center text-amber">{{ row.satilan_count }}</td>
+                <td class="text-right text-amber">{{ row.satilan_gram }}</td>
+                <td class="text-right text-amber">{{ row.satilan_has }}</td>
+                <td class="text-right text-amber">{{ row.satilan_maliyet }}</td>
+            </tr>
+        {% empty %}
+        <tr>
+            <td colspan="10" style="text-align:center; color:#777; padding:12px;">Filtre sonucuna gore kayit bulunamadi.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td class="td-label" colspan="2">GENEL TOPLAM</td>
+            <td class="text-center">{{ total_tezgahta_count }}</td>
+            <td>{{ total_tezgahta_gram }}</td>
+            <td>{{ total_tezgahta_has }}</td>
+            <td>{{ total_tezgahta_maliyet }}</td>
+            <td class="text-center">{{ total_satilan_count }}</td>
+            <td>{{ total_satilan_gram }}</td>
+            <td>{{ total_satilan_has }}</td>
+            <td>{{ total_satilan_maliyet }}</td>
+        </tr>
+    </tfoot>
+</table>
+
+<div id="footerContent">
+    Kuyum Plus Kuyumculuk Yonetim Sistemi tarafindan otomatik olusturulmustur. | Sayfa
+    <pdf:pagenumber>
+</div>
+
+</body>
+</html>

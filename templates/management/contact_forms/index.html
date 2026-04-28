@@ -1,0 +1,519 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        .custom-toolbar-card {
+            width: 100% !important;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            margin-left: 2.3rem;
+            margin-right: 3.2rem;
+            border-radius: 0.5rem;
+        }
+
+        .custom-toolbar-card .card-body {
+            padding: 1.5rem 2rem;
+
+        }
+
+
+        .custom-toolbar-card .container-xxl {
+            max-width: 100% !important;
+        }
+
+
+        #dataTableSearch .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            margin: 0 !important;
+            gap: .5rem;
+        }
+
+
+        #tableToolbar {
+            margin-top: 1rem;
+        }
+
+
+        #dataTableSearch .dataTables_filter {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        #kt_datatable_example_1 td:nth-child(5),
+        #kt_datatable_example_1 th:nth-child(5) {
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 4rem !important;
+        }
+@media (min-width: 768px) and (max-width: 991.98px) {
+     .my-button-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 5.5rem!important;
+            height: 2.5rem!important;
+        }
+}
+        @media (max-width: 767.98px) {
+            .my-margin{
+                margin-top: 1rem;
+            }
+            .btn-icon-lg {
+                width: 5rem;
+                height: 3rem;
+                padding: .55rem 1rem !important;
+            }
+             .my-button-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 5rem !important;
+            height: 2.5rem !important;
+        }
+        }
+
+        .action-col {
+            padding-right: 1.5rem !important;
+        }
+
+    .my-button-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 6.5rem;
+            height: 2.7rem;
+        }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-10" id="kt_app_main"
+         style="border-style: groove; border-radius: 10px; border-color: aliceblue;">
+
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-fluid">
+                    <div id="kt_content_container"
+                         class="d-flex flex-column-fluid align-items-start container-xxl"
+                         style="max-width: 100%;">
+                        <div class="content flex-row-fluid" id="kt_content">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div id="kt_toolbar_container"
+                                                 class="container-xxl d-flex flex-stack flex-wrap"
+                                                 style="max-width: 100%;">
+                                                <div class="page-title d-flex flex-column me-3">
+                                                    <h1 class="fw-bold my-1 fs-3">İletişim Formu</h1>
+                                                    <div id="kt_datatable_example_buttons" class="d-none"></div>
+                                                </div>
+
+                                                <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                                    <button type="button"
+                                                            class="my-button-size btn btn-light-primary d-flex align-items-center gap-2 btn-icon-lg"
+                                                            data-kt-menu-trigger="click"
+                                                            data-kt-menu-placement="bottom-end"
+                                                            title="Raporlar">
+                                                        <i class="fa-solid fa-download"></i>
+                                                       <span class="d-none d-lg-inline ms-1">Rapor</span>
+                                                    </button>
+                                                    <div id="kt_datatable_example_export_menu"
+                                                         class="menu menu-sub menu-sub-dropdown menu-column menu-rounded
+                                                            menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7
+                                                            w-200px py-4"
+                                                         data-kt-menu="true">
+                                                        <div class="menu-item px-3">
+                                                            <a href="#" class="menu-link px-3" data-kt-export="copy">
+                                                                Panoya Kopyala
+                                                            </a>
+                                                        </div>
+                                                        <div class="menu-item px-3">
+                                                            <a href="#" class="menu-link px-3" data-kt-export="excel">
+                                                                Dışa Aktar Excel
+                                                            </a>
+                                                        </div>
+                                                        <div class="menu-item px-3">
+                                                            <a href="#" class="menu-link px-3" data-kt-export="csv">
+                                                                Dışa Aktar CSV
+                                                            </a>
+                                                        </div>
+                                                        <div class="menu-item px-3">
+                                                            <a href="#" class="menu-link px-3" data-kt-export="pdf">
+                                                                Dışa Aktar PDF
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button"
+                                                            class="my-button-size btn btn-primary d-flex align-items-center gap-2 btn-icon-lg"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#addModal"
+                                                            title="Ekle">
+                                                        <i class="ki-duotone ki-plus fs-2"></i>
+                                                        <span class="d-none d-lg-inline ms-1">Ekle</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div id="tableToolbar"
+                                                 class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+
+                                                <div class="d-flex gap-2" id="toolbarButtons">
+                                                    <button type="button" class="btn btn-light-danger my-button-size my-margin"
+                                                            id="deleteSelected">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+
+                                                    <button type="button" class="btn btn-light-success my-button-size my-margin"
+                                                            id="changeStatusSelected"
+                                                            title="Durum Değiştir">
+                                                        <i class="fa-solid fa-circle-check"></i>
+                                                    </button>
+                                                </div>
+
+                                                <div id="dataTableSearch"></div>
+                                            </div>
+
+                                            <div class="table-responsive mt-4">
+                                                <table id="kt_datatable_example_1"
+                                                       class="table align-middle table-row-dashed fs-6 gy-5">
+                                                    <thead>
+                                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+
+                                                        <th class="w-10px pe-2">
+                                                            <div class="form-check form-check-sm form-check-custom form-check-solid d-flex align-items-center">
+                                                                <label class="form-check-label mb-0"
+                                                                       for="select_all"> </label>
+                                                                <input class="form-check-input me-2" type="checkbox"
+                                                                       id="select_all">
+                                                            </div>
+                                                        </th>
+                                                        <th>Ad Soyad</th>
+                                                        <th style="padding-left: 7rem!important">E‑posta</th>
+                                                        <th>Telefon</th>
+                                                        <th>Mesaj</th>
+                                                        <th>Durum</th>
+                                                        <th>Oluşturma Tarihi</th>
+                                                        <th class="text-end min-w-100px action-col">İşlemler</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered mw-900px">
+            <div class="modal-content p-4">
+                <div class="modal-header">
+                    <h3 class="modal-title">Yeni</h3>
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                            data-bs-dismiss="modal" aria-label="Kapat">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </button>
+                </div>
+
+                <form id="add-form" method="post" autocomplete="off"
+                      enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="record_id" id="record_id">
+
+                    <div class="row mb-3">
+                        <div class="col-md-12 col-sm-6 col-lg-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="full_name"
+                                       name="full_name" required>
+                                <label for="full_name">Ad Soyad</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 col-sm-6 col-lg-6">
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email"
+                                       name="email" required>
+                                <label for="email">E‑posta</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="phone"
+                                       name="phone" required>
+                                <label for="phone">Telefon</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Mesaj</label>
+                            <textarea class="form-control" id="message"
+                                      name="message" rows="6"></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-light-danger me-2"
+                                data-bs-dismiss="modal">İptal
+                        </button>
+                        <button type="button" id="btnSave" class="btn btn-light-success">
+                            Kaydet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        let dt;
+
+        function getSelectedIds() {
+            return $('#kt_datatable_example_1 tbody input.form-check-input:checked')
+                .map((_, el) => $(el).data('id')).get();
+        }
+
+        function edit_record(id, full_name, email, phone, message) {
+            $("#addModal").modal("show");
+            $("#record_id").val(id);
+            $("#full_name").val(full_name);
+            $("#email").val(email);
+            $("#phone").val(phone);
+            $("#message").val(message || "");
+            $("#addModal .modal-title").text("Güncelle");
+        }
+
+        const KTDatatablesServerSide = (function () {
+
+            function initDatatable() {
+                dt = $("#kt_datatable_example_1").DataTable({
+                    "dom": 'frt<"bottom d-flex justify-content-between align-items-center"l p><"clear">',
+
+                    processing: true,
+                    serverSide: true,
+                    paging: true,
+                    pageLength: 10,
+                    searchDelay: 400,
+                    orderMulti: false,
+                    autoWidth: false,
+                    stateSave: true,
+                    initComplete: function () {
+                        $('#kt_datatable_example_1_filter').appendTo('#dataTableSearch');
+                    },
+                    ajax: {
+                        url: "/contact-forms/get-all/",
+                        type: "GET",
+                        dataType: "json"
+                    },
+                    columns: [
+                        {
+                            data: "id",
+                            orderable: false,
+                            className: "text-center",
+                            render: (_, __, row) =>
+                                `<input class="form-check-input" type="checkbox" data-id="${row.id}">`
+                        },
+                        {data: "full_name", width: "10%"},
+                        {data: "email"},
+                        {data: "phone"},
+                        {data: "message"},
+                        {
+                            data: "is_active",
+                            width: "150px",
+                            className: "text-center",
+                            render: (d, t) => t === "display"
+                                ? d ? "<span class='badge bg-light-success text-success'>Aktif</span>"
+                                    : "<span class='badge bg-light-danger text-danger'>Pasif</span>"
+                                : d
+                        },
+                        {
+                            data: "created_on",
+                            render: (d, t) => t === "display"
+                                ? (d ? new Date(d).toLocaleString() : "N/A") : d
+                        },
+                        {
+                            data: "id",
+                            orderable: false,
+                            className: "text-end action-col",
+                            render: function (data, type, row) {
+
+                                const esc = s => String(s ?? '').replace(/'/g, "\\'");
+                                return `
+          <a href="#"
+             class="btn btn-light btn-active-light-primary btn-sm"
+             title="Detay Göster"
+             onclick="edit_record(
+               '${esc(row.id)}',
+               '${esc(row.full_name)}',
+               '${esc(row.email)}',
+               '${esc(row.phone)}',
+               '${esc(row.message)}'
+             )">
+            <i class="ki-duotone ki-entrance-left" style="font-size:1.7em;">
+              <span class="path1"></span>
+              <span class="path2"></span>
+            </i>
+          </a>`;
+                            }
+                        }
+
+                    ],
+                    language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+                });
+                $("#select_all").on("change", function () {
+                    $('#kt_datatable_example_1 tbody input.form-check-input')
+                        .prop('checked', this.checked);
+                });
+            }
+
+            function sendBulk(url, successMessage = "Başarılı") {
+    const ids = getSelectedIds();
+    if (!ids.length) {
+        Swal.fire({
+            title: 'Hata!', text: 'Lütfen en az bir kayıt seçin.', icon: 'error',
+            timer: 1200, showConfirmButton: false
+        });
+        return;
+    }
+    $.post(url, {
+        'ids[]': ids,
+        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+    }).done(resp => {
+        if (resp.result) {
+            Swal.fire({
+                title: successMessage,
+                icon: 'success',
+                timer: 1000,
+                showConfirmButton: false
+            }).then(() => dt.ajax.reload(null, false));
+        } else {
+            Swal.fire('Hata', resp.error_msg || 'Bilinmeyen hata', 'error');
+        }
+    });
+}
+
+
+            function exportButtons() {
+                const title = 'İletişim Formu Tablosu';
+                new $.fn.dataTable.Buttons(dt, {
+                    buttons: [
+                        {extend: 'copyHtml5', title, exportOptions: {columns: ':not(:last-child)'}},
+                        {extend: 'excelHtml5', title, exportOptions: {columns: ':not(:last-child)'}},
+                        {extend: 'csvHtml5', title, exportOptions: {columns: ':not(:last-child)'}},
+                        {
+                            extend: 'pdfHtml5',
+                            title,
+                            exportOptions: {columns: ':not(:last-child)'},
+                            orientation: 'landscape',
+                            pageSize: 'A4',
+                            customize: function (doc) {
+                                doc.styles.tableHeader.alignment = 'left';
+                                doc.content[1].table.widths = [
+                                    20,
+                                    '15%',
+                                    '20%',
+                                    '15%',
+                                    '30%',
+                                    '10%',
+                                    '10%'
+                                ];
+                                doc.content[1].table.body.forEach(function (row) {
+                                    row.forEach(function (cell) {
+                                        cell.margin = [0, 5, 0, 5];
+                                    });
+                                });
+                            }
+                        }
+                    ]
+                }).container().appendTo($('#kt_datatable_example_buttons'));
+
+                document.querySelectorAll('#kt_datatable_example_export_menu [data-kt-export]')
+                    .forEach(btn => btn.addEventListener('click', e => {
+                        e.preventDefault();
+                        const type = e.target.getAttribute('data-kt-export');
+                        document.querySelector(`.dt-buttons .buttons-${type}`).click();
+                    }));
+            }
+
+            return {
+                init() {
+                    initDatatable();
+                    exportButtons();
+        $("#deleteSelected").on("click", () => sendBulk("/contact-forms/delete/", "Kayıtlar başarıyla silindi"));
+        $("#changeStatusSelected").on("click", () => sendBulk("/contact-forms/change-status/", "Kayıtlar başarıyla güncellendi"));
+                }
+            };
+        })();
+        KTUtil.onDOMContentLoaded(() => {
+            KTDatatablesServerSide.init();
+        });
+        $(function () {
+            $('#addModal').on('hidden.bs.modal', function () {
+                $('#add-form')[0].reset();
+                $('#add-form').removeClass('was-validated');
+                $('#record_id').val('');
+                $("#addModal .modal-title").text("Yeni");
+                $('body').removeClass('modal-open');
+                $('.modal-backdrop').remove();
+            });
+            $('#btnSave').on('click', function () {
+                $(this).prop("disabled", true);
+                $('#add-form').submit();
+            });
+            $('#add-form').on('submit', function (e) {
+                e.preventDefault();
+                if (!this.checkValidity()) {
+                    $(this).addClass('was-validated');
+                    $("#btnSave").prop("disabled", false);
+                    return;
+                }
+                const formData = new FormData(this);
+                $.ajax({
+                    url: "/contact-forms/add/",
+                    type: "POST",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false
+                }).done(resp => {
+                    if (resp.result) {
+                        const msg = $('#record_id').val() ? 'Kayıt güncellendi' : 'Kayıt eklendi';
+                        $("#addModal").modal('hide');
+                        $('#addModal').one('hidden.bs.modal', function () {
+                            Swal.fire({
+                                title: 'Başarılı', text: msg, icon: 'success',
+                                timer: 1000, showConfirmButton: false
+                            })
+                                .then(() => dt.ajax.reload(null, false));
+                        });
+                    } else {
+                        Swal.fire('Hata', resp.error_msg || 'Bilinmeyen hata', 'error');
+                    }
+                }).fail((xhr, _, err) => {
+                    Swal.fire('Hata!', `Sunucu hatası: ${xhr.status} ${err}`, 'error');
+                }).always(() => $("#btnSave").prop("disabled", false));
+            });
+        });
+    </script>
+{% endblock footer %}

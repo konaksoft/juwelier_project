@@ -1,0 +1,314 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="app-toolbar py-3 py-lg-6">
+                <div class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            {{ pkg.name }} - Düzenle
+                        </h1>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'packages:index' %}" class="btn btn-light btn-sm">Geri Dön</a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+                    <form id="pkgForm" method="post" autocomplete="off" class="row g-5">
+                        {% csrf_token %}
+
+                        <div class="col-12 col-lg-8">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h3 class="card-title">Paket Detayları & Fiyatlandırma</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-5">
+                                        <div class="col-md-8">
+                                            <label class="required form-label">Paket Adı</label>
+                                            <input type="text" class="form-control" name="name" value="{{ pkg.name }}"
+                                                   required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="required form-label">Kod (Slug)</label>
+                                            <input type="text" class="form-control" name="code" value="{{ pkg.code }}"
+                                                   required>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="required form-label">Kur</label>
+                                            <select class="form-select" name="currency">
+                                                <option value="USD" {% if pkg.currency == "USD" %}selected{% endif %}>
+                                                    USD
+                                                </option>
+                                                <option value="TRY" {% if pkg.currency == "TRY" %}selected{% endif %}>
+                                                    TRY
+                                                </option>
+                                                <option value="EUR" {% if pkg.currency == "EUR" %}selected{% endif %}>
+                                                    EUR
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">Lisans Bedeli (Tek Seferlik)</label>
+                                            <input type="text" class="form-control input-decimal" name="price_license"
+                                                   value="{{ pkg.price_license|floatformat:'-2' }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Yıllık Bakım Oranı (%)</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control input-decimal"
+                                                       name="maintenance_percent"
+                                                       value="{{ pkg.maintenance_percent|floatformat:'-2' }}">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">Sıra</label>
+                                            <input type="number" class="form-control" name="order"
+                                                   value="{{ pkg.order|default:100 }}">
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label">Rozet (Örn: En Popüler)</label>
+                                            <input type="text" class="form-control" name="badge_text"
+                                                   value="{{ pkg.badge_text }}">
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <div class="d-flex gap-5 mt-2">
+                                                <div class="form-check form-switch form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" id="active"
+                                                           name="is_active"
+                                                           {% if pkg.is_active %}checked{% endif %}>
+                                                    <label class="form-check-label fw-bold text-gray-700" for="active">Aktif</label>
+                                                </div>
+                                                <div class="form-check form-switch form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" id="rec"
+                                                           name="is_recommended"
+                                                           {% if pkg.is_recommended %}checked{% endif %}>
+                                                    <label class="form-check-label fw-bold text-gray-700" for="rec">Önerilen</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ──── Faz 12.2: Modül Seçim Paneli ──── #}
+                        <div class="col-12 col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fa-solid fa-cubes me-2 text-primary"></i>
+                                        Dahil Modüller
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted fs-7 mb-4">
+                                        Bu pakete dahil olacak modülleri seçin. Modül seçildiğinde ilgili yetkiler
+                                        otomatik olarak paket yetki matrisine eklenir.
+                                        <span class="badge badge-light-success fs-8 ms-1">Çekirdek</span> modüller
+                                        her pakete dahildir.
+                                    </p>
+
+                                    {% for m in all_modules %}
+                                        <div class="d-flex align-items-center border rounded p-3 mb-3 module-card
+                                                    {% if m.id in checked_module_ids or m.id in core_module_ids %}bg-light-primary{% else %}bg-light{% endif %}">
+                                            <div class="form-check form-check-custom form-check-solid me-3">
+                                                <input class="form-check-input module-check"
+                                                       type="checkbox"
+                                                       name="module_ids[]"
+                                                       value="{{ m.id }}"
+                                                       id="mod_{{ m.id }}"
+                                                       {% if m.id in checked_module_ids or m.id in core_module_ids %}checked{% endif %}
+                                                       {% if m.is_core %}disabled{% endif %}>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="{{ m.icon|default:'fa-solid fa-cube' }} me-2 text-primary fs-5"></i>
+                                                    <span class="fw-bold text-gray-800">{{ m.name }}</span>
+                                                    {% if m.is_core %}
+                                                        <span class="badge badge-light-success ms-2 fs-9">Çekirdek</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if m.description %}
+                                                    <small class="text-muted d-block mt-1">{{ m.description|truncatewords:12 }}</small>
+                                                {% endif %}
+                                                <small class="text-gray-500">
+                                                    {{ m.permissions.count }} yetki
+                                                    {% if m.license_price and m.license_price > 0 %}
+                                                        &middot; {{ m.currency_symbol }}{{ m.license_price|floatformat:"-2" }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-center text-muted py-5">
+                                            <i class="fa-solid fa-cube fs-2 mb-3 d-block opacity-50"></i>
+                                            Henüz SaaS modülü tanımlanmamış.
+                                        </div>
+                                    {% endfor %}
+
+                                    {# Çekirdek modüller disabled olduğu için hidden input ile gönder #}
+                                    {% for m in all_modules %}
+                                        {% if m.is_core %}
+                                            <input type="hidden" name="module_ids[]" value="{{ m.id }}">
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ──── Yetkiler (Permissions) Paneli ──── #}
+                        <div class="col-12 col-lg-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title m-0">Yetkiler (Permissions)</h3>
+                                    <div class="d-flex gap-2">
+                                        <input type="text" id="permSearch" class="form-control form-control-sm"
+                                               placeholder="İzin ara...">
+                                        <button type="button" class="btn btn-sm btn-light" id="btnSelectAll">Tümünü
+                                            Seç
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% regroup all_perms by group as perm_groups %}
+                                    {% for g in perm_groups %}
+                                        <div class="mb-5">
+                                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                                <h5 class="fw-bold text-gray-800 m-0">{{ g.grouper|default:"Genel" }}</h5>
+                                                <div class="d-flex gap-2">
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-light-primary px-2 py-1 fs-8 js-group-select"
+                                                            data-group="{{ g.grouper|default:'__none__' }}">
+                                                        Seç
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-light-danger px-2 py-1 fs-8 js-group-clear"
+                                                            data-group="{{ g.grouper|default:'__none__' }}">
+                                                        Temizle
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3">
+                                                {% for p in g.list %}
+                                                    <div class="col-sm-6 col-lg-4 col-xl-3 perm-item"
+                                                         data-text="{{ p.name }} {{ p.code }}"
+                                                         data-group="{{ p.group|default:'__none__' }}">
+
+                                                        <div class="form-check form-check-custom form-check-solid border rounded p-3 h-100 align-items-start
+                                                                    {% if p.id in module_sourced_perm_ids %}bg-light-success{% elif p.id in checked_perm_ids %}bg-light-info{% else %}bg-light{% endif %}">
+                                                            <input class="form-check-input perm-check mt-1"
+                                                                   type="checkbox"
+                                                                   name="permission_ids[]" value="{{ p.id }}"
+                                                                   id="perm_{{ p.id }}"
+                                                                   {% if p.id in checked_perm_ids %}checked{% endif %}>
+                                                            <label class="form-check-label fw-semibold text-gray-800 ms-3"
+                                                                   for="perm_{{ p.id }}">
+                                                                {{ p.name }}
+                                                                {% if p.id in module_sourced_perm_ids %}
+                                                                    <span class="badge badge-light-success fs-9 ms-1">Modül</span>
+                                                                {% endif %}
+                                                                <br>
+                                                                <small class="text-muted fw-normal">{{ p.code }}</small>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="card-footer d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa-solid fa-save"></i> Değişiklikleri Kaydet
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // 1. Permission Search
+            document.getElementById('permSearch').addEventListener('input', function () {
+                const val = this.value.toLowerCase();
+                document.querySelectorAll('.perm-item').forEach(item => {
+                    const txt = item.getAttribute('data-text').toLowerCase();
+                    item.style.display = txt.includes(val) ? '' : 'none';
+                });
+            });
+
+            // 2. Select All (Global)
+            document.getElementById('btnSelectAll').addEventListener('click', function () {
+                const visibleItems = document.querySelectorAll('.perm-item:not([style*="display: none"]) .perm-check');
+                const allChecked = Array.from(visibleItems).every(c => c.checked);
+                visibleItems.forEach(c => c.checked = !allChecked);
+            });
+
+            // 3. Grup Bazlı Seçim
+            document.querySelectorAll('.js-group-select').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const groupName = this.getAttribute('data-group');
+                    const checks = document.querySelectorAll(`.perm-item[data-group="${groupName}"] .perm-check`);
+                    checks.forEach(c => c.checked = true);
+                });
+            });
+
+            document.querySelectorAll('.js-group-clear').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const groupName = this.getAttribute('data-group');
+                    const checks = document.querySelectorAll(`.perm-item[data-group="${groupName}"] .perm-check`);
+                    checks.forEach(c => c.checked = false);
+                });
+            });
+
+            // 4. Form Submit — Decimal dönüşüm
+            document.getElementById('pkgForm').addEventListener('submit', function () {
+                document.querySelectorAll('.input-decimal').forEach(inp => {
+                    let val = inp.value;
+                    if (val) {
+                        if (val.includes(',') && val.includes('.')) {
+                            val = val.replace(/\./g, '').replace(',', '.');
+                        } else if (val.includes(',')) {
+                            val = val.replace(',', '.');
+                        }
+                        inp.value = val;
+                    }
+                });
+            });
+
+            // 5. Modül seçim kartları — görsel geri bildirim
+            document.querySelectorAll('.module-check').forEach(chk => {
+                chk.addEventListener('change', function () {
+                    const card = this.closest('.module-card');
+                    if (this.checked) {
+                        card.classList.remove('bg-light');
+                        card.classList.add('bg-light-primary');
+                    } else {
+                        card.classList.remove('bg-light-primary');
+                        card.classList.add('bg-light');
+                    }
+                });
+            });
+
+        });
+    </script>
+{% endblock footer %}

@@ -1,0 +1,1386 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
+    <style>
+        /* --- GENEL AYARLAR --- */
+        .toolbar-btn-size {
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- TABLOLAR --- */
+        table.dataTable td, table.dataTable th {
+            vertical-align: middle !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dataTables_wrapper .top {
+            display: none !important;
+        }
+
+        /* Scrollbar */
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #1a1a2e;
+            border-radius: 3px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #c9a84c, #f7d56e);
+            border-radius: 3px;
+        }
+
+        /* Bakiye renklendirme */
+        .balance-positive {
+            color: #28a745;
+            font-weight: 700;
+        }
+
+        .balance-negative {
+            color: #dc3545;
+            font-weight: 700;
+        }
+
+        .balance-zero {
+            color: #6c757d;
+            font-weight: 700;
+        }
+
+        /* Tip badge */
+        .type-badge-POS {
+            background: rgba(128, 0, 255, 0.12);
+            color: #7c3aed;
+        }
+
+        .type-badge-BANK {
+            background: rgba(0, 123, 255, 0.12);
+            color: #007bff;
+        }
+
+        .type-badge-CASH {
+            background: rgba(40, 167, 69, 0.12);
+            color: #28a745;
+        }
+
+        /* Satir hover */
+        #tableBanks tbody tr {
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        #tableBanks tbody tr:hover {
+            background: rgba(0, 123, 255, 0.04) !important;
+        }
+
+        /* --- MOBIL BUTON DUZENLEMESI --- */
+        @media (max-width: 767.98px) {
+            .mobile-action-btns {
+                flex-wrap: nowrap !important;
+            }
+
+            .mobile-action-btns .btn {
+                width: 38px !important;
+                height: 38px !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .mobile-action-btns .btn i {
+                margin: 0 !important;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                    <div class="card shadow-sm w-100 mt-3">
+                        <div class="card-body p-3 p-md-5">
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+                                <div>
+                                    <h1 class="page-heading text-dark fw-bold fs-3 my-0">Kasa Yönetimi</h1>
+                                    <div class="text-muted fs-7 fw-semibold d-none d-md-block">
+                                        Nakit, POS ve Havale kasalarınızı yönetin
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mobile-action-btns">
+                                    <button id="btnConsolidated" class="btn btn-sm btn-light-success fw-bold"
+                                            title="Tum kasalarin genel durumu">
+                                        <i class="fa-solid fa-chart-pie me-md-1"></i>
+                                        <span class="d-none d-md-inline">Genel Durum</span>
+                                    </button>
+                                    <button id="btnTransfer" class="btn btn-sm btn-light-info fw-bold"
+                                            data-bs-toggle="modal" data-bs-target="#modalTransfer"
+                                            title="Kasalar arasi para transferi (virman)">
+                                        <i class="fa-solid fa-right-left me-md-1"></i>
+                                        <span class="d-none d-md-inline">Kasa Arası Transfer</span>
+                                    </button>
+                                    <button id="btnNewAccount" class="btn btn-sm btn-primary fw-bold"
+                                            data-bs-toggle="modal" data-bs-target="#modalBankAccounts"
+                                            title="Yeni kasa ekle">
+                                        <i class="fa-solid fa-plus me-md-1"></i>
+                                        <span class="d-none d-md-inline">Yeni Kasa</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- =============== FILTRELER =============== -->
+                            <div class="d-flex gap-2 mb-4 flex-wrap align-items-center">
+                                <div class="btn-group btn-group-sm" id="typeFilterBtns" role="group">
+                                    <button type="button" class="btn btn-light-dark active" data-type="ALL">Tümünü
+                                        Göster
+                                    </button>
+                                    <button type="button" class="btn btn-light-primary" data-type="BANK">Havale/EFT
+                                    </button>
+                                    <button type="button" class="btn btn-light-purple" data-type="POS">POS Kasası
+                                    </button>
+                                    <button type="button" class="btn btn-light-success" data-type="CASH">Nakit Kasasi
+                                    </button>
+                                    <button type="button" class="btn btn-light-warning" data-type="PENDING">
+                                        <i class="bi bi-hourglass-split me-1"></i> Onay Bekleyenler
+                                        <span class="badge bg-danger ms-1" id="pendingBadgeTab"
+                                              style="display:none;">0</span>
+                                    </button>
+                                </div>
+                                <div class="ms-auto">
+                                    <input type="text" id="searchInput"
+                                           class="form-control form-control-sm form-control-solid"
+                                           placeholder="Ara..." style="width: 200px;">
+                                </div>
+                            </div>
+
+                            <!-- =============== KASA LİSTESİ DATATABLE =============== -->
+                            <div id="bankTableWrapper">
+                                <div class="table-responsive">
+                                    <table id="tableBanks"
+                                           class="table table-row-dashed table-row-gray-300 gy-4 gs-4 align-middle">
+                                        <thead>
+                                        <tr class="fw-bold text-gray-500 fs-7 text-uppercase">
+                                            <th>Hesap Adı</th>
+                                            <th>Banka</th>
+                                            <th>Tip</th>
+                                            <th>IBAN</th>
+                                            <th class="text-end">Bakiye</th>
+                                            <th class="text-center">Durum</th>
+                                            <th class="text-center" style="width:100px;">İşlem</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- =============== ONAY BEKLEYEN İŞLEMLER (Aynı kart içinde, gizli) =============== -->
+                            <div id="pendingPaymentsSection" style="display:none;">
+                                <div class="d-flex align-items-center mb-3">
+                                    <h5 class="fw-bold my-0">
+                                        <i class="bi bi-hourglass-split text-warning me-2"></i>
+                                        Onay Bekleyen İşlemler
+                                        <span class="badge bg-warning text-dark ms-2" id="pendingBadge"
+                                              style="display:none;">0</span>
+                                    </h5>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="tablePendingPayments"
+                                           class="table table-row-dashed table-row-gray-300 gy-4 gs-4 align-middle">
+                                        <thead>
+                                        <tr class="fw-bold text-gray-500 fs-7 text-uppercase">
+                                            <th>Tarih</th>
+                                            <th>İşlem No</th>
+                                            <th>Tip</th>
+                                            <th>Detay (Kasa / Yön / Tutar)</th>
+                                            <th class="text-center" style="width:180px;">İşlem</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Banka Hesabi Ekle / Duzenle                                -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalBankAccounts" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-700px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold" id="accModalTitle">Yeni Kasa</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-8">
+
+                    <!-- Yeni / Duzenle Formu -->
+                    <div class="border rounded p-4 bg-light">
+                        <input type="hidden" id="accId">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Hesap Tipi *</label>
+                                <select id="accAccountType" class="form-select form-select-solid">
+                                    <option value="BANK">Havale/EFT Kasasi</option>
+                                    <option value="POS">POS Kasasi (Kredi Karti)</option>
+                                    <option value="CASH">Nakit Kasasi</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Hesap Adi *</label>
+                                <input type="text" id="accName" class="form-control form-control-solid"
+                                       placeholder="Ornek: Ziraat TL Hesabi">
+                            </div>
+                            <div class="col-md-4" id="accBankNameWrap">
+                                <label class="form-label">Banka Adi</label>
+                                <input type="text" id="accBankName" class="form-control form-control-solid"
+                                       placeholder="Ornek: Ziraat Bankasi">
+                            </div>
+                            <div class="col-md-8" id="accIbanWrap">
+                                <label class="form-label">IBAN</label>
+                                <input type="text" id="accIban" class="form-control form-control-solid"
+                                       placeholder="TR..." maxlength="34">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Para Birimi</label>
+                                <select id="accCurrency" class="form-select form-select-solid" disabled>
+                                    <option value="TRY">TRY</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="accToleranceWrap">
+                                <label class="form-label">Mutabakat Toleransi (TL)</label>
+                                <input type="number" id="accTolerance" class="form-control form-control-solid"
+                                       step="0.01" value="0.50" placeholder="0.50"
+                                       title="Banka komisyon farki toleransi">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Durum</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="accIsActive" checked>
+                                    <label class="form-check-label" for="accIsActive">Aktif</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- POS Komisyon Oranlari (sadece account_type=POS ise gorunur) -->
+                        <div id="commissionRatesSection" class="mt-4 pt-4 border-top" style="display:none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0"><i class="fa-solid fa-percent me-1"></i> Komisyon Oranlari</h6>
+                                <button type="button" class="btn btn-sm btn-light-primary" id="btnAddCommRate">
+                                    <i class="fa-solid fa-plus me-1"></i> Oran Ekle
+                                </button>
+                            </div>
+                            <div id="commissionRatesList"></div>
+
+                            <!-- Hizli Oran Ekleme Formu -->
+                            <div id="commRateForm" class="border rounded p-3 bg-white mt-2" style="display:none;">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Kart Tipi</label>
+                                        <select id="crCardType" class="form-select form-select-sm form-select-solid">
+                                            <option value="GENERIC">Genel</option>
+                                            <option value="VISA">Visa</option>
+                                            <option value="MASTERCARD">Mastercard</option>
+                                            <option value="AMEX">Amex</option>
+                                            <option value="TROY">Troy</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Taksit</label>
+                                        <select id="crInstallment" class="form-select form-select-sm form-select-solid">
+                                            <option value="1">Tek Cekim</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Oran (%)</label>
+                                        <input type="number" id="crRate"
+                                               class="form-control form-control-sm form-control-solid"
+                                               step="0.01" placeholder="1.89">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Vade (gun)</label>
+                                        <input type="number" id="crMaturityDays"
+                                               class="form-control form-control-sm form-control-solid"
+                                               value="1" min="0" placeholder="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-sm btn-primary w-100" id="btnSaveCommRate">
+                                            <i class="fa-solid fa-check me-1"></i> Kaydet
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" class="btn btn-sm btn-primary" id="btnAccSave">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Kaydet
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light" id="btnAccReset">Temizle</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Kasa Arasi Transfer (Virman)                               -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalTransfer" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-550px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">
+                        <i class="fa-solid fa-right-left me-2 text-info"></i>Kasa Arasi Transfer
+                    </h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-8">
+                    <div class="border rounded p-4 bg-light">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Gonderen Kasa *</label>
+                                <select id="trFromAccount" class="form-select form-select-solid">
+                                    <option value="">-- Kasa Secin --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Alici Kasa *</label>
+                                <select id="trToAccount" class="form-select form-select-solid">
+                                    <option value="">-- Kasa Secin --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Tutar (TL) *</label>
+                                <input type="number" id="trAmount" class="form-control form-control-solid"
+                                       step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Aciklama</label>
+                                <input type="text" id="trNote" class="form-control form-control-solid"
+                                       placeholder="Ornek: Bankadan nakit cekim">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" class="btn btn-sm btn-info" id="btnTransferSave">
+                                <i class="fa-solid fa-right-left me-1"></i> Transfer Yap
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Vazgec</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Konsolide Rapor (Tum Kasalar Genel Durum)                  -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalConsolidated" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">
+                        <i class="fa-solid fa-chart-pie me-2 text-success"></i>Tum Kasalar — Genel Durum
+                    </h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4 px-lg-6">
+
+                    <!-- Sirket Geneli Ozet -->
+                    <div class="row g-3 mb-5">
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <div class="text-muted small fw-semibold text-uppercase mb-1">Toplam Giris</div>
+                                <div class="fs-4 fw-bold text-success" id="crGrandIn">0,00 TL</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <div class="text-muted small fw-semibold text-uppercase mb-1">Toplam Cikis</div>
+                                <div class="fs-4 fw-bold text-danger" id="crGrandOut">0,00 TL</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <div class="text-muted small fw-semibold text-uppercase mb-1">Toplam Komisyon</div>
+                                <div class="fs-4 fw-bold text-warning" id="crGrandComm">0,00 TL</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded-3 p-3 text-center h-100"
+                                 style="background: rgba(0,123,255,0.05);">
+                                <div class="text-muted small fw-semibold text-uppercase mb-1">Net Kasa</div>
+                                <div class="fs-3 fw-bold text-primary" id="crGrandNet">0,00 TL</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAZ 20.2: Döviz Varlıkları -->
+                    <div id="crFxBreakdown" style="display:none;" class="mb-4">
+                        <div class="border border-warning rounded-3 p-3">
+                            <div class="fw-bold text-warning mb-2">
+                                <i class="fa-solid fa-coins me-1"></i> Döviz Varlıkları
+                            </div>
+                            <div class="d-flex flex-wrap gap-3" id="crFxCards"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tip Bazli Detay -->
+                    <div id="crTypeDetails">
+                        <div class="text-center text-muted py-4">Yukleniyor...</div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script>
+        "use strict";
+
+        // =====================================================================
+        // FAZ 20.1: INLINE TÜRKÇE DİL OBJESİ (CDN CORS Hatası Çözümü)
+        // Dışarıdan dosya çekme riski tamamen ortadan kaldırıldı.
+        // =====================================================================
+        var _dtTurkish = {
+            emptyTable: "Tabloda veri bulunmuyor",
+            info: "_TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor",
+            infoEmpty: "Kayıt yok",
+            infoFiltered: "(_MAX_ toplam kayıttan filtrelendi)",
+            lengthMenu: "_MENU_ kayıt göster",
+            loadingRecords: "Yükleniyor...",
+            processing: "İşleniyor...",
+            search: "Ara:",
+            zeroRecords: "Eşleşen kayıt bulunamadı",
+            paginate: {
+                first: "İlk",
+                last: "Son",
+                next: "Sonraki",
+                previous: "Önceki"
+            },
+            aria: {
+                sortAscending: ": artan sıralama",
+                sortDescending: ": azalan sıralama"
+            }
+        };
+
+        // =====================================================================
+        // CSRF + URL SABiTLERi
+        // =====================================================================
+
+        var CSRF = document.querySelector("input[name='csrfmiddlewaretoken']").value;
+        var URLS = {
+            getAll: "{% url 'bank-management:get_all' %}",
+            save: "{% url 'bank-management:save' %}",
+            del: "{% url 'bank-management:delete' %}",
+            transfer: "{% url 'bank-management:transfer' %}",
+            consolidated: "{% url 'bank-management:consolidated' %}",
+            commissionRatesGet: "{% url 'banking:commission_rates_get' %}",
+            commissionRatesSave: "{% url 'banking:commission_rates_save' %}",
+            commissionRatesDelete: "{% url 'banking:commission_rates_delete' %}",
+        };
+        var DETAIL_BASE = "{% url 'bank-management:index' %}";
+
+        // =====================================================================
+        // DATATABLE — BANKA HESAPLARI LiSTESi
+        // =====================================================================
+
+        var activeTypeFilter = 'ALL';
+
+        var dtBanks = $('#tableBanks').DataTable({
+            dom: "rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+            info: false,
+            paging: true,
+            pageLength: 25,
+            processing: true,
+            serverSide: true,
+            orderMulti: false,
+            autoWidth: false,
+            stateSave: false,
+            language: _dtTurkish,
+            responsive: false,
+            ajax: {
+                url: URLS.getAll,
+                data: function (d) {
+                    if (activeTypeFilter !== 'ALL') {
+                        d.account_type = activeTypeFilter;
+                    }
+                    d.active_only = 'false';
+                }
+            },
+            order: [[0, 'asc']],
+            columns: [
+                {
+                    data: 'name',
+                    render: function (data, type, row) {
+                        return '<span class="fw-bold text-dark">' + data + '</span>';
+                    }
+                },
+                {data: 'bank_name'},
+                {
+                    data: 'account_type',
+                    render: function (data, type, row) {
+                        return '<span class="badge type-badge-' + data + ' px-3 py-2 rounded-pill">' +
+                            row.account_type_display + '</span>';
+                    }
+                },
+                {
+                    data: 'iban',
+                    render: function (data) {
+                        if (!data || data === '-') return '<span class="text-muted">-</span>';
+                        return '<span class="text-muted small">' + data + '</span>';
+                    }
+                },
+                {
+                    data: 'balance',
+                    className: 'text-end',
+                    render: function (data, type, row) {
+                        var cur = row.currency || 'TRY';
+
+                        // FAZ 20.2: FX kasası — döviz kırılımı göster
+                        if (cur === 'FX' && row.fx_breakdown) {
+                            var parts = [];
+                            for (var code in row.fx_breakdown) {
+                                var val = parseFloat(row.fx_breakdown[code]) || 0;
+                                var fxCls = val > 0 ? 'text-success' : (val < 0 ? 'text-danger' : 'text-muted');
+                                parts.push('<span class="' + fxCls + ' fw-bold">' +
+                                    val.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) +
+                                    ' ' + code + '</span>');
+                            }
+                            return parts.length > 0 ? parts.join(' <span class="text-muted">|</span> ') : '<span class="text-muted">0 Döviz</span>';
+                        }
+
+                        // Normal kasalar (TRY, POS, BANK)
+                        var num = parseFloat(data) || 0;
+                        var cls = num > 0 ? 'balance-positive' : (num < 0 ? 'balance-negative' : 'balance-zero');
+                        var sign = num > 0 ? '+' : '';
+                        return '<span class="' + cls + '">' + sign +
+                            num.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) +
+                            ' ' + cur + '</span>';
+                    }
+                },
+                {
+                    data: 'is_active',
+                    className: 'text-center',
+                    render: function (data) {
+                        return data
+                            ? '<span class="badge badge-light-success">Aktif</span>'
+                            : '<span class="badge badge-light-danger">Pasif</span>';
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        return '<div class="d-flex justify-content-center gap-1">' +
+                            '<a href="' + DETAIL_BASE + row.id + '/" class="btn btn-icon btn-sm btn-light-primary toolbar-btn-size" title="Detay">' +
+                            '<i class="fa-solid fa-eye fs-5"></i></a>' +
+                            '<button class="btn btn-icon btn-sm btn-light-warning toolbar-btn-size" onclick="editAccount(\'' + row.id + '\')" title="Duzenle">' +
+                            '<i class="fa-solid fa-pen fs-5"></i></button>' +
+                            '<button class="btn btn-icon btn-sm btn-light-danger toolbar-btn-size" onclick="deleteAccount(\'' + row.id + '\')" title="Sil">' +
+                            '<i class="fa-solid fa-trash fs-5"></i></button>' +
+                            '</div>';
+                    }
+                }
+            ],
+            createdRow: function (row, data) {
+                $(row).attr('data-id', data.id);
+            }
+        });
+
+        // Satira tiklaninca detay sayfasina git (butonlar disinda)
+        $('#tableBanks tbody').on('click', 'tr', function (e) {
+            if ($(e.target).closest('button, a').length) return;
+            var data = dtBanks.row(this).data();
+            if (data && data.id) {
+                window.location.href = DETAIL_BASE + data.id + '/';
+            }
+        });
+
+        // =====================================================================
+        // FiLTRELER
+        // =====================================================================
+
+        // Tip filtresi
+        // FAZ 20.1: Filtre butonları — AJAX ile tablo yenile (reload YOK)
+        $('#typeFilterBtns').on('click', '[data-type]:not([data-type="PENDING"])', function () {
+            $('#typeFilterBtns .btn').removeClass('active');
+            $(this).addClass('active');
+            activeTypeFilter = $(this).data('type');
+            dtBanks.ajax.reload();
+        });
+
+        // Arama
+        var searchTimer;
+        $('#searchInput').on('keyup', function () {
+            clearTimeout(searchTimer);
+            var val = this.value;
+            searchTimer = setTimeout(function () {
+                dtBanks.search(val).draw();
+            }, 400);
+        });
+
+        // =====================================================================
+        // BANKA HESABI CRUD
+        // =====================================================================
+
+        var _bankAccountsCache = {};
+
+        function toggleCashFields() {
+            var isCash = $('#accAccountType').val() === 'CASH';
+            if (isCash) {
+                $('#accBankNameWrap').slideUp(150);
+                $('#accIbanWrap').slideUp(150);
+                $('#accToleranceWrap').slideUp(150);
+                $('#accBankName').removeAttr('required');
+                $('#accIban').removeAttr('required');
+                $('#accTolerance').removeAttr('required');
+            } else {
+                $('#accBankNameWrap').slideDown(150);
+                $('#accIbanWrap').slideDown(150);
+                $('#accToleranceWrap').slideDown(150);
+            }
+        }
+
+        function resetAccForm() {
+            $('#accId').val('');
+            $('#accName').val('');
+            $('#accBankName').val('');
+            $('#accAccountType').val('BANK');
+            $('#accIban').val('');
+            $('#accCurrency').html('<option value="TRY">TRY</option>');
+            $('#accCurrency').val('TRY');
+            $('#accCurrency').prop('disabled', true);
+            $('#accTolerance').val('0.50');
+            $('#accIsActive').prop('checked', true);
+            $('#accModalTitle').text('Yeni Kasa');
+            toggleCommissionSection();
+            toggleCashFields();
+        }
+
+        function editAccount(id) {
+            // DataTable cache'inden veri al
+            var row = null;
+            dtBanks.rows().every(function () {
+                var d = this.data();
+                if (d && d.id === id) {
+                    row = d;
+                    return false;
+                }
+            });
+
+            if (!row) {
+                Swal.fire('Hata', 'Hesap bilgisi bulunamadi.', 'error');
+                return;
+            }
+
+            $('#accId').val(row.id);
+            $('#accName').val(row.name);
+            $('#accBankName').val(row.bank_name === '-' ? '' : row.bank_name);
+            $('#accAccountType').val(row.account_type);
+            $('#accIban').val(row.iban === '-' ? '' : row.iban);
+            if (row.currency !== 'TRY') {
+                $('#accCurrency').html('<option value="TRY">TRY</option><option value="' + row.currency + '">' + row.currency + '</option>');
+                $('#accCurrency').val(row.currency);
+            } else {
+                $('#accCurrency').html('<option value="TRY">TRY</option>');
+                $('#accCurrency').val('TRY');
+            }
+            $('#accCurrency').prop('disabled', true);
+            $('#accTolerance').val(row.reconciliation_tolerance);
+            $('#accIsActive').prop('checked', row.is_active);
+            $('#accModalTitle').text('Hesap Duzenle');
+
+            toggleCommissionSection();
+            if (row.account_type === 'POS') {
+                loadCommissionRates(row.id);
+            }
+
+            var modalEl = document.getElementById('modalBankAccounts');
+            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        function deleteAccount(id) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: 'Bu hesap silinecektir.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Sil',
+                cancelButtonText: 'Vazgec'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    fetch(URLS.del, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                        body: JSON.stringify({id: id})
+                    })
+                        .then(function (r) {
+                            return r.json();
+                        })
+                        .then(function (data) {
+                            if (data.result) {
+                                Swal.fire('Silindi', data.msg, 'success');
+                                dtBanks.ajax.reload(null, false);
+                            } else {
+                                Swal.fire('Hata', data.msg, 'error');
+                            }
+                        });
+                }
+            });
+        }
+
+        // Kaydet butonu
+        $('#btnAccSave').on('click', function () {
+            var payload = {
+                id: $('#accId').val() || null,
+                name: $('#accName').val().trim(),
+                bank_name: $('#accBankName').val().trim(),
+                account_type: $('#accAccountType').val(),
+                iban: $('#accIban').val().trim(),
+                currency: $('#accCurrency').val() || 'TRY',
+                reconciliation_tolerance: $('#accTolerance').val(),
+                is_active: $('#accIsActive').is(':checked')
+            };
+
+            if (!payload.name) {
+                Swal.fire('Uyari', 'Hesap adi zorunludur.', 'warning');
+                return;
+            }
+
+            fetch(URLS.save, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body: JSON.stringify(payload)
+            })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.result) {
+                        // 1. Modalı güvenli bir şekilde kapat (getOrCreateInstance kullanarak null hatasını önleriz)
+                        var modalEl = document.getElementById('modalBankAccounts');
+                        var modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modal.hide();
+
+                        // 2. Tabloyu yenile ve formu sıfırla
+                        resetAccForm();
+                        dtBanks.ajax.reload(null, false);
+
+                        // 3. SweetAlert ve Bootstrap çakışmasını önlemek için gecikmeli bildirim ve temizlik
+                        setTimeout(function () {
+                            Swal.fire('Başarılı', data.msg, 'success');
+                            // Kilitli kalan gri arka planı ve scroll engelini zorla kaldır (Garanti Çözüm)
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open').css({
+                                'overflow': '',
+                                'padding-right': ''
+                            });
+                        }, 300);
+                    } else {
+                        Swal.fire('Hata', data.msg, 'error');
+                    }
+                });
+        });
+
+        // Temizle butonu
+        $('#btnAccReset').on('click', function () {
+            resetAccForm();
+        });
+
+        // Modal acildiginda formu sifirla (yeni hesap icin)
+        document.getElementById('modalBankAccounts').addEventListener('show.bs.modal', function (e) {
+            // Sadece "Yeni Hesap" butonundan acildiysa sifirla
+            if (e.relatedTarget && e.relatedTarget.id === 'btnNewAccount') {
+                resetAccForm();
+            }
+        });
+
+        // =====================================================================
+        // KOMiSYON ORANLARI (POS)
+        // =====================================================================
+
+        function toggleCommissionSection() {
+            var isPOS = $('#accAccountType').val() === 'POS';
+            $('#commissionRatesSection').toggle(isPOS);
+            if (!isPOS) {
+                $('#commissionRatesList').html('');
+                $('#commRateForm').hide();
+            }
+        }
+
+        $('#accAccountType').on('change', function () {
+            toggleCommissionSection();
+            toggleCashFields();
+            var accId = $('#accId').val();
+            if (this.value === 'POS' && accId) {
+                loadCommissionRates(accId);
+            }
+        });
+
+        function loadCommissionRates(bankAccountId) {
+            fetch(URLS.commissionRatesGet + '?bank_account_id=' + bankAccountId)
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (!data.result) return;
+                    var rates = data.data || [];
+                    var container = $('#commissionRatesList');
+
+                    if (rates.length === 0) {
+                        container.html('<div class="text-muted small p-2">Henuz komisyon orani tanimlanmamis.</div>');
+                        return;
+                    }
+
+                    var html = '<table class="table table-sm table-bordered mb-0"><thead>' +
+                        '<tr class="text-muted small"><th>Kart</th><th>Taksit</th><th>Oran</th><th>Vade</th><th></th></tr>' +
+                        '</thead><tbody>';
+
+                    rates.forEach(function (r) {
+                        // 1. Backend'den gelen card_type verisini Turkce etiketlerle eslestiriyoruz
+                        var cardLabels = {
+                            'GENERIC': 'Genel',
+                            'VISA': 'Visa',
+                            'MASTERCARD': 'Mastercard',
+                            'AMEX': 'Amex',
+                            'TROY': 'Troy'
+                        };
+
+                        // 2. Eger card_type_display varsa onu kullan, yoksa map'ten al, o da yoksa ham card_type'i bas
+                        var displayLabel = r.card_type_display || cardLabels[r.card_type] || r.card_type || '-';
+
+                        html += '<tr>' +
+                            '<td>' + displayLabel + '</td>' +
+                            '<td>' + (r.installment_count === 1 ? 'Tek Cekim' : r.installment_count + ' Taksit') + '</td>' +
+                            '<td>%' + r.commission_rate + '</td>' +
+                            '<td>' + r.maturity_days + ' gun</td>' +
+                            '<td class="text-center"><button class="btn btn-icon btn-sm btn-light-danger" style="width:24px;height:24px;" ' +
+                            'onclick="deleteCommRate(\'' + r.id + '\')"><i class="fa-solid fa-xmark fs-7"></i></button></td>' +
+                            '</tr>';
+                    });
+
+                    html += '</tbody></table>';
+                    container.html(html);
+                });
+        }
+
+        function deleteCommRate(rateId) {
+            Swal.fire({
+                title: 'Komisyon oranini sil?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sil',
+                cancelButtonText: 'Vazgec'
+            }).then(function (res) {
+                if (res.isConfirmed) {
+                    fetch(URLS.commissionRatesDelete, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                        body: JSON.stringify({id: rateId})
+                    })
+                        .then(function (r) {
+                            return r.json();
+                        })
+                        .then(function (data) {
+                            if (data.result) {
+                                var accId = $('#accId').val();
+                                if (accId) loadCommissionRates(accId);
+                            }
+                        });
+                }
+            });
+        }
+
+        // Oran Ekle butonu — formu ac/kapat
+        $('#btnAddCommRate').on('click', function () {
+            $('#commRateForm').toggle();
+        });
+
+        // Komisyon orani kaydet
+        $('#btnSaveCommRate').on('click', function () {
+            var accId = $('#accId').val();
+            if (!accId) {
+                Swal.fire('Uyari', 'Once hesabi kaydedin.', 'warning');
+                return;
+            }
+
+            var payload = {
+                bank_account_id: accId,
+                card_type: $('#crCardType').val(),
+                installment_count: parseInt($('#crInstallment').val()),
+                commission_rate: parseFloat($('#crRate').val()),
+                maturity_days: parseInt($('#crMaturityDays').val()) || 1
+            };
+
+            if (!payload.commission_rate || payload.commission_rate <= 0) {
+                Swal.fire('Uyari', 'Gecerli bir oran girin.', 'warning');
+                return;
+            }
+
+            fetch(URLS.commissionRatesSave, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body: JSON.stringify(payload)
+            })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.result) {
+                        loadCommissionRates(accId);
+                        // Formu sifirla
+                        $('#crCardType').val('GENERIC');
+                        $('#crInstallment').val('1');
+                        $('#crRate').val('');
+                        $('#crMaturityDays').val('1');
+                        $('#commRateForm').hide();
+                    } else {
+                        Swal.fire('Hata', data.msg || 'Kaydedilemedi.', 'error');
+                    }
+                });
+        });
+
+        // =====================================================================
+        // KASA ARASI TRANSFER (VİRMAN)
+        // =====================================================================
+
+        function loadTransferAccounts() {
+            fetch(URLS.getAll + '?length=-1&active_only=true')
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (res) {
+                    var data = res.data || [];
+                    var fromOpts = '<option value="" data-currency="">-- Gonderen Kasa --</option>';
+                    var toOpts = '<option value="" data-currency="">-- Alici Kasa --</option>';
+
+                    data.forEach(function (acc) {
+                        var label = acc.name + (acc.bank_name && acc.bank_name !== '-' ? ' (' + acc.bank_name + ')' : '');
+
+                        // YENİ: Para birimini hem arka planda (data-currency) tutuyoruz hem de ismin yanına yazıyoruz
+                        var opt = '<option value="' + acc.id + '" data-currency="' + acc.currency + '">' + label + ' [' + acc.currency + ']</option>';
+                        fromOpts += opt;
+                        toOpts += opt;
+                    });
+
+                    $('#trFromAccount').html(fromOpts);
+                    $('#trToAccount').html(toOpts);
+                });
+        }
+
+        // Modal acildiginda kasa listesini yukle
+        document.getElementById('modalTransfer').addEventListener('show.bs.modal', function () {
+            loadTransferAccounts();
+            $('#trAmount').val('');
+            $('#trNote').val('');
+        });
+
+        // Transfer kaydet
+        $('#btnTransferSave').on('click', function () {
+            // Seçili option elementlerini bulalım
+            var fromOption = $('#trFromAccount option:selected');
+            var toOption = $('#trToAccount option:selected');
+
+            var fromId = fromOption.val();
+            var toId = toOption.val();
+
+            // Para birimlerini alalım
+            var fromCurrency = fromOption.data('currency');
+            var toCurrency = toOption.data('currency');
+
+            var amountRaw = $('#trAmount').val();
+            var note = $('#trNote').val();
+
+            if (!fromId || !toId) {
+                Swal.fire('Uyari', 'Gonderen ve alici kasa secmelisiniz.', 'warning');
+                return;
+            }
+            if (fromId === toId) {
+                Swal.fire('Uyari', 'Gonderen ve alici kasa ayni olamaz.', 'warning');
+                return;
+            }
+
+            // YENİ: FARKLI PARA BİRİMLERİ ARASINDA TRANSFER KONTROLÜ
+            if (fromCurrency !== toCurrency) {
+                Swal.fire('Hata', 'Farklı para birimlerine sahip kasalar arasında transfer yapılamaz. (' + fromCurrency + ' ➔ ' + toCurrency + ')', 'error');
+                return;
+            }
+
+            // Virgüllü girildiyse noktaya çevir ki JS ve Backend doğru okusun
+            var amountFixed = amountRaw ? amountRaw.replace(',', '.') : '0';
+
+            if (!amountFixed || parseFloat(amountFixed) <= 0) {
+                Swal.fire('Uyari', 'Gecerli bir tutar girin.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Transfer Onay',
+                // Tutarın yanına dinamik olarak ilgili para birimi (TRY, USD vb.) yazdırılır
+                html: '<b>' + parseFloat(amountFixed).toFixed(2) + ' ' + fromCurrency + '</b> transfer edilecek.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Onayla',
+                cancelButtonText: 'Vazgec'
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                fetch(URLS.transfer, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                    body: JSON.stringify({
+                        from_account_id: fromId,
+                        to_account_id: toId,
+                        amount: amountFixed,
+                        note: note
+                    })
+                })
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        if (data.result) {
+                            var transferModalEl = document.getElementById('modalTransfer');
+                            var transferModal = bootstrap.Modal.getInstance(transferModalEl) || bootstrap.Modal.getOrCreateInstance(transferModalEl);
+                            transferModal.hide();
+
+                            dtBanks.ajax.reload();
+
+                            setTimeout(function () {
+                                Swal.fire('Başarılı', data.msg, 'success').then(function () {
+                                    $('.modal-backdrop').remove();
+                                    $('body').removeClass('modal-open').css({
+                                        'overflow': '',
+                                        'padding-right': ''
+                                    });
+                                });
+                            }, 300);
+                        } else {
+                            Swal.fire('Hata', data.msg, 'error');
+                        }
+                    });
+            });
+        });
+
+        // =====================================================================
+        // KONSOLiDE RAPOR (TUM KASALAR GENEL DURUM)
+        // =====================================================================
+
+        function fmtMoney(val) {
+            var num = parseFloat(val) || 0;
+            return num.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' TL';
+        }
+
+        var typeIcons = {
+            'CASH': {icon: 'fa-solid fa-coins', color: '#28a745', label: 'Nakit Kasalari'},
+            'POS': {icon: 'fa-solid fa-credit-card', color: '#7c3aed', label: 'POS Kasalari'},
+            'BANK': {icon: 'fa-solid fa-building-columns', color: '#0d6efd', label: 'Havale/EFT Kasalari'}
+        };
+
+        function loadConsolidatedReport() {
+            $('#crTypeDetails').html('<div class="text-center text-muted py-4">Yukleniyor...</div>');
+
+            fetch(URLS.consolidated)
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (res) {
+                    if (!res.result) {
+                        $('#crTypeDetails').html('<div class="alert alert-danger">' + (res.msg || 'Hata') + '</div>');
+                        return;
+                    }
+
+                    var d = res.data;
+
+                    // Grand kartlari guncelle (TL)
+                    $('#crGrandIn').text(fmtMoney(d.grand.total_in));
+                    $('#crGrandOut').text(fmtMoney(d.grand.total_out));
+                    $('#crGrandComm').text(fmtMoney(d.grand.total_commission));
+                    $('#crGrandNet').text(fmtMoney(d.grand.balance_net));
+
+                    // FAZ 20.2: Döviz Varlıkları (Gelişmiş Kartlar)
+                    if (d.fx_summary && Object.keys(d.fx_summary).length > 0) {
+                        var fxHtml = '';
+                        for (var fxCode in d.fx_summary) {
+                            var f = d.fx_summary[fxCode];
+                            var fIn = parseFloat(f.in) || 0;
+                            var fOut = parseFloat(f.out) || 0;
+                            var fNet = parseFloat(f.net) || 0;
+                            var fxCls = fNet >= 0 ? 'text-success' : 'text-danger';
+
+                            fxHtml += '<div class="px-3 py-2 rounded-2 bg-white shadow-sm border" style="min-width: 170px;">' +
+                                '<div class="text-muted small fw-bold mb-2 text-center border-bottom pb-1">' + fxCode + ' Kasası</div>' +
+                                '<div class="d-flex justify-content-between small mb-1"><span class="text-muted">Giriş:</span><span class="text-success fw-semibold">' + fIn.toLocaleString('tr-TR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + '</span></div>' +
+                                '<div class="d-flex justify-content-between small mb-1"><span class="text-muted">Çıkış:</span><span class="text-danger fw-semibold">' + fOut.toLocaleString('tr-TR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + '</span></div>' +
+                                '<div class="d-flex justify-content-between mt-2 pt-1 border-top"><span class="fw-bold">Net:</span><span class="fw-bold ' + fxCls + '">' + fNet.toLocaleString('tr-TR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + '</span></div>' +
+                                '</div>';
+                        }
+                        $('#crFxCards').html(fxHtml);
+                        $('#crFxBreakdown').show();
+                    } else {
+                        $('#crFxBreakdown').hide();
+                    }
+
+                    // Tip bazli detay kartlari
+                    var html = '<div class="row g-3">';
+                    var types = ['CASH', 'POS', 'BANK'];
+                    types.forEach(function (t) {
+                        var info = typeIcons[t] || {};
+                        var td = d.by_type[t];
+                        if (!td) return;
+
+                        var balNet = parseFloat(td.balance_net) || 0;
+                        var balCls = balNet >= 0 ? 'text-success' : 'text-danger';
+
+                        html += '<div class="col-md-4">' +
+                            '<div class="border rounded-3 p-3 h-100">' +
+                            '<div class="d-flex align-items-center gap-2 mb-3">' +
+                            '<i class="' + info.icon + ' fs-3" style="color:' + info.color + ';"></i>' +
+                            '<div><div class="fw-bold">' + info.label + '</div>' +
+                            '<div class="text-muted small">' + td.account_count + ' hesap</div></div></div>' +
+                            '<div class="d-flex justify-content-between mb-1"><span class="text-muted small">Giris:</span><span class="fw-semibold text-success">' + fmtMoney(td.total_in) + '</span></div>' +
+                            '<div class="d-flex justify-content-between mb-1"><span class="text-muted small">Cikis:</span><span class="fw-semibold text-danger">' + fmtMoney(td.total_out) + '</span></div>' +
+                            '<div class="d-flex justify-content-between mb-1"><span class="text-muted small">Komisyon:</span><span class="fw-semibold text-warning">' + fmtMoney(td.total_commission) + '</span></div>' +
+                            '<hr class="my-2">' +
+                            '<div class="d-flex justify-content-between"><span class="fw-bold">Net:</span><span class="fw-bold ' + balCls + '">' + fmtMoney(td.balance_net) + '</span></div>' +
+                            '</div></div>';
+                    });
+                    html += '</div>';
+                    $('#crTypeDetails').html(html);
+                })
+                .catch(function () {
+                    $('#crTypeDetails').html('<div class="alert alert-danger">Rapor yuklenemedi.</div>');
+                });
+        }
+
+        // Genel Durum butonuna tikla → modali ac ve veriyi yukle
+        $('#btnConsolidated').on('click', function () {
+            loadConsolidatedReport();
+            new bootstrap.Modal(document.getElementById('modalConsolidated')).show();
+        });
+
+
+        // ================================================================
+        // FAZ 20: BEKLEYEN İŞLEMLER — SEKME + PROCESS_NO BAZLI TABLO
+        // ================================================================
+
+        // FAZ 20.1: "Onay Bekleyenler" sekme — bankTableWrapper ile güvenli toggle
+        var _pendingMode = false;
+        $('#typeFilterBtns').on('click', '[data-type="PENDING"]', function () {
+            _pendingMode = true;
+            $('#typeFilterBtns .btn').removeClass('active');
+            $(this).addClass('active');
+            document.getElementById('bankTableWrapper').style.display = 'none';
+            document.getElementById('pendingPaymentsSection').style.display = 'block';
+            pendingTable.ajax.reload();
+        });
+
+        // Diğer sekmelere tıklayınca pending modundan çık
+        $('#typeFilterBtns').on('click', '[data-type]:not([data-type="PENDING"])', function () {
+            if (_pendingMode) {
+                _pendingMode = false;
+                document.getElementById('bankTableWrapper').style.display = 'block';
+                document.getElementById('pendingPaymentsSection').style.display = 'none';
+            }
+        });
+
+        var pendingTable = $('#tablePendingPayments').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{% url "bank-management:pending_payments" %}',
+                type: 'GET'
+            },
+            columns: [
+                {data: 'date'},
+                {data: 'process_no'},
+                {data: 'payment_type_display'},
+                {
+                    data: 'detail_html',
+                    render: function (data) {
+                        return data || '-';
+                    }
+                },
+                {
+                    data: null,
+                    className: 'text-center',
+                    orderable: false,
+                    render: function (data, type, row) {
+                        var pno = row.process_no || '';
+                        var cnt = row.payment_count || 1;
+                        var cntBadge = cnt > 1 ? ' <span class="badge bg-secondary">' + cnt + ' kayıt</span>' : '';
+                        return '<button class="btn btn-sm btn-success me-1 btn-approve-payment" data-pno="' + pno + '">' +
+                            '<i class="bi bi-check-lg"></i> Onayla' + cntBadge + '</button>' +
+                            '<button class="btn btn-sm btn-danger btn-reject-payment" data-pno="' + pno + '">' +
+                            '<i class="bi bi-x-lg"></i> Reddet</button>';
+                    }
+                }
+            ],
+            order: [[0, 'desc']],
+            pageLength: 10,
+            language: _dtTurkish,
+            drawCallback: function (settings) {
+                var total = settings._iRecordsTotal || 0;
+                var badge = document.getElementById('pendingBadge');
+                var tabBadge = document.getElementById('pendingBadgeTab');
+                if (total > 0) {
+                    if (badge) {
+                        badge.textContent = total;
+                        badge.style.display = 'inline';
+                    }
+                    if (tabBadge) {
+                        tabBadge.textContent = total;
+                        tabBadge.style.display = 'inline';
+                    }
+                } else {
+                    if (badge) badge.style.display = 'none';
+                    if (tabBadge) tabBadge.style.display = 'none';
+                    // Pending modunda isek ve veri yoksa, boş tablo göster (gizleme)
+                }
+            }
+        });
+
+        // Sayfa yüklendiğinde pending badge'i güncelle (sekme kapalıyken bile sayıyı göster)
+        pendingTable.on('xhr', function () {
+            var json = pendingTable.ajax.json();
+            if (json) {
+                var total = json.recordsTotal || 0;
+                var tabBadge = document.getElementById('pendingBadgeTab');
+                if (tabBadge) {
+                    if (total > 0) {
+                        tabBadge.textContent = total;
+                        tabBadge.style.display = 'inline';
+                    } else {
+                        tabBadge.style.display = 'none';
+                    }
+                }
+            }
+        });
+
+        // FAZ 20: process_no bazlı ONAYLA
+        $(document).on('click', '.btn-approve-payment', function () {
+            var pno = $(this).data('pno');
+            var btn = $(this);
+            Swal.fire({
+                title: 'İşlemi Onayla',
+                html: 'İşlem No: <b>' + pno + '</b><br>Bu işleme ait TÜM ödeme kayıtları aynı anda onaylanacaktır.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Toplu Onayla',
+                cancelButtonText: 'İptal',
+                confirmButtonColor: '#28a745'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    btn.prop('disabled', true);
+                    $.post('{% url "bank-management:approve_payment" %}', {
+                        process_no: pno,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    }, function (res) {
+                        if (res.result) {
+                            Swal.fire('Onaylandı', res.msg, 'success');
+                            pendingTable.ajax.reload(null, false);
+                            dtBanks.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Hata', res.msg, 'error');
+                        }
+                        btn.prop('disabled', false);
+                    }).fail(function () {
+                        Swal.fire('Hata', 'İstek başarısız.', 'error');
+                        btn.prop('disabled', false);
+                    });
+                }
+            });
+        });
+
+        // FAZ 20: process_no bazlı REDDET
+        $(document).on('click', '.btn-reject-payment', function () {
+            var pno = $(this).data('pno');
+            var btn = $(this);
+            Swal.fire({
+                title: 'İşlemi Reddet',
+                html: 'İşlem No: <b>' + pno + '</b><br>Bu işleme ait TÜM ödeme kayıtları iptal edilecektir. Geri alınamaz!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Toplu Reddet',
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: '#dc3545'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    btn.prop('disabled', true);
+                    $.post('{% url "bank-management:reject_payment" %}', {
+                        process_no: pno,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    }, function (res) {
+                        if (res.result) {
+                            Swal.fire('Reddedildi', res.msg, 'success');
+                            pendingTable.ajax.reload(null, false);
+                            dtBanks.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Hata', res.msg, 'error');
+                        }
+                        btn.prop('disabled', false);
+                    }).fail(function () {
+                        Swal.fire('Hata', 'İstek başarısız.', 'error');
+                        btn.prop('disabled', false);
+                    });
+                }
+            });
+        });
+
+    </script>
+{% endblock footer %}

@@ -1,0 +1,171 @@
+{% extends 'management/base.html' %} 
+
+{% block body %}
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="card-title mb-0">Adres ve Vergi Dairesi Seçimi</h3>
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="countrySelect" class="form-label fw-bold">Ülke</label>
+                        <select id="countrySelect" class="form-select">
+                            <option value="" selected disabled>Yükleniyor...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="citySelect" class="form-label fw-bold">Şehir</label>
+                        <select id="citySelect" class="form-select" disabled>
+                            <option value="" selected disabled>Önce Ülke Seçiniz</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="districtSelect" class="form-label fw-bold">İlçe</label>
+                        <select id="districtSelect" class="form-select" disabled>
+                            <option value="" selected disabled>Önce Şehir Seçiniz</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="taxOfficeSelect" class="form-label fw-bold">Vergi Dairesi</label>
+                        <select id="taxOfficeSelect" class="form-select" disabled>
+                            <option value="" selected disabled>Önce İlçe Seçiniz</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert alert-success mt-3 d-none" id="resultBox">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Seçim Tamamlandı:</strong> <span id="resultText"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+
+{% block footer %}
+<script>
+    $(document).ready(function () {
+        // Element tanımları
+        const $countrySelect = $('#countrySelect');
+        const $citySelect = $('#citySelect');
+        const $districtSelect = $('#districtSelect');
+        const $taxSelect = $('#taxOfficeSelect');
+        const $resultBox = $('#resultBox');
+        const $resultText = $('#resultText');
+
+        // --- 1. Adım: Sayfa Yüklendiğinde ÜLKELERİ Getir ---
+        $.ajax({
+            url: "{% url 'locations:get_countries' %}",
+            type: "GET",
+            success: function (res) {
+                let options = '<option value="" selected disabled>Ülke Seçiniz...</option>';
+                res.data.forEach(function (country) {
+                    // Varsayılan olarak Türkiye'yi seçili getirmek istersen iso_code kontrolü yapabilirsin
+                    // Örneğin: const selected = country.iso_code === 'TR' ? 'selected' : '';
+                    options += `<option value="${country.id}">(${country.iso_code}) ${country.name}</option>`;
+                });
+                $countrySelect.html(options);
+            }
+        });
+
+        // --- 2. Adım: Ülke Değişince ŞEHİRLERİ Getir ---
+        $countrySelect.change(function () {
+            const countryId = $(this).val();
+
+            // Alt dropdownları sıfırla
+            resetSelect($citySelect, 'Yükleniyor...');
+            resetSelect($districtSelect, 'Önce Şehir Seçiniz', true);
+            resetSelect($taxSelect, 'Önce İlçe Seçiniz', true);
+            $resultBox.addClass('d-none');
+
+            if (countryId) {
+                $.ajax({
+                    url: "{% url 'locations:get_cities' %}",
+                    data: { 'country_id': countryId },
+                    success: function (res) {
+                        let options = '<option value="" selected disabled>Şehir Seçiniz...</option>';
+                        res.data.forEach(function (city) {
+                            // Plaka kodu varsa başına ekle
+                            const label = city.plate_code ? `${city.plate_code} - ${city.name}` : city.name;
+                            options += `<option value="${city.id}">${label}</option>`;
+                        });
+                        $citySelect.html(options).prop('disabled', false);
+                    }
+                });
+            }
+        });
+
+        // --- 3. Adım: Şehir Değişince İLÇELERİ Getir ---
+        $citySelect.change(function () {
+            const cityId = $(this).val();
+
+            resetSelect($districtSelect, 'Yükleniyor...');
+            resetSelect($taxSelect, 'Önce İlçe Seçiniz', true);
+            $resultBox.addClass('d-none');
+
+            if (cityId) {
+                $.ajax({
+                    url: "{% url 'locations:get_districts' %}",
+                    data: { 'city_id': cityId },
+                    success: function (res) {
+                        let options = '<option value="" selected disabled>İlçe Seçiniz...</option>';
+                        res.data.forEach(function (dist) {
+                            options += `<option value="${dist.id}">${dist.name}</option>`;
+                        });
+                        $districtSelect.html(options).prop('disabled', false);
+                    }
+                });
+            }
+        });
+
+        // --- 4. Adım: İlçe Değişince VERGİ DAİRELERİNİ Getir ---
+        $districtSelect.change(function () {
+            const distId = $(this).val();
+
+            resetSelect($taxSelect, 'Yükleniyor...');
+            $resultBox.addClass('d-none');
+
+            if (distId) {
+                $.ajax({
+                    url: "{% url 'locations:get_tax_offices' %}",
+                    data: { 'district_id': distId },
+                    success: function (res) {
+                        let options = '<option value="" selected disabled>Vergi Dairesi Seçiniz...</option>';
+                        if (res.data.length === 0) {
+                            options = '<option value="" disabled>Bu ilçede V.D. bulunamadı</option>';
+                        } else {
+                            res.data.forEach(function (tax) {
+                                options += `<option value="${tax.id}" data-code="${tax.code}">${tax.code} - ${tax.name}</option>`;
+                            });
+                        }
+                        $taxSelect.html(options).prop('disabled', false);
+                    }
+                });
+            }
+        });
+
+        // --- 5. Adım: Sonuç Göster ---
+        $taxSelect.change(function () {
+            const country = $("#countrySelect option:selected").text();
+            const city = $("#citySelect option:selected").text();
+            const district = $("#districtSelect option:selected").text();
+            const tax = $("#taxOfficeSelect option:selected").text();
+
+            $resultText.html(`${country} <i class="fa fa-angle-right mx-1"></i> ${city} <i class="fa fa-angle-right mx-1"></i> ${district} <br> <b>V.D:</b> ${tax}`);
+            $resultBox.removeClass('d-none');
+        });
+
+        // Yardımcı Fonksiyon: Select Temizleme
+        function resetSelect($el, placeholder, disabled = true) {
+            $el.html(`<option value="" selected disabled>${placeholder}</option>`);
+            $el.prop('disabled', disabled);
+        }
+    });
+</script>
+{% endblock footer %}

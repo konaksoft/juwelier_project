@@ -1,0 +1,99 @@
+KOD ÜRETİM KURALLARI (KESİNLİKLE UYULACAK)
+
+1. TERMİNAL, SUNUCU VE TEST MÜDAHALESİ KESİNLİKLE YASAKTIR (KRİTİK):
+Hiçbir koşulda kendi inisiyatifinle terminal komutu ÇALIŞTIRMA. `python manage.py makemigrations`, `migrate`, `runserver`, `pytest`, `npm run dev` veya herhangi bir test/derleme komutu girmek KESİNLİKLE YASAKTIR. Senin tek görevin istenen dosyalardaki kodları yazmak ve güncellemektir. Kodun test edilmesi, sunucunun ayağa kaldırılması, veritabanı göçlerinin (migration) onaylanıp uygulanması ve terminalin yönetilmesi %100 benim (geliştiricinin) sorumluluğumdadır. Sen sadece kodu yaz ve bekle.
+
+2. MİMARİ KORUMA VE HASSAS DOKUNUŞ:
+Her zaman mevcut kod mimarisini ve proje yapısını kesinlikle koru. Geleneksel yapıyı bozacak dış kütüphaneler önerme. İstenen görev dışındaki çalışan kodlara, fonksiyonlara veya sayfa yapılarına asla dokunma.
+
+3. EKSİKSİZ KOD VE KOPYALA-YAPIŞTIR FORMATI (NO OMISSION):
+Frontend ve backend kodlarını yazarken ASLA "// önceki kodlar burada kalacak" veya "..." gibi kısaltmalar yapma. Kodları parça parça bölme. İlgili fonksiyonları veya sayfaları, doğrudan kopyalayıp mevcut dosyaya yapıştırılabilecek şekilde, baştan sona eksiksiz ve bütün bir blok halinde ver.
+
+4. SÜREKLİ BAĞLAM (CONTEXT) GÜNCELLİĞİ:
+Yapılan her başarılı geliştirmenin ve işlemin ardından, uygulanan değişiklikleri ve projenin geldiği son aşamayı özetleyerek SANA SÖYLEDĞİM CONTEXT DOSYASINNA dosyasını otomatik olarak güncelle. Her görevin sonunda bana bu   VE HER İŞLEMDEN SONRA MEVCUT CONTEXT DOSYALARINDAN HANGİSİ GELİŞTİRME İLE ALAKALI İSE ONU BUL ORAYA EKLE GELİŞTİRMELERİ EKLE
+
+5. DJANGO ADMIN KULLANIMI KESİNLİKLE YASAKTIR (ÖZEL YÖNETİM MİMARİSİ):
+Projede standart Django Admin paneli (`django.contrib.admin`, `admin.py`) KESİNLİKLE KULLANILMAMAKTADIR. Hiçbir model için `admin.py` dosyası oluşturma, mevcut olanları güncelleme veya `@admin.register` gibi dekoratörler kullanma. Veri girişi ve yönetimsel işlemler sadece `is_superuser=True` yetkisine (veya özel rollere) sahip kullanıcılar için tasarlanmış özel view'lar, formlar ve arayüzler üzerinden yapılmaktadır. Bir modelin yönetimi istendiğinde, bunu her zaman özel bir UI (Frontend/Backend) iş akışı olarak kurgula.
+
+---
+
+## FRONTEND/JAVASCRIPT GÜVENLİK KURALLARI
+*(2026-04-27 UI Outage'ı sonrası eklendi — bkz. `INCIDENT_REPORT_UI_BUGS.md`)*
+
+### KURAL 6 — DEFENSIVE DOM (NULL-CHECK ZORUNLU):
+Canlı projede JavaScript ile DOM manipülasyonu yaparken **DAİMA null-check** ve mümkünse optional chaining (`?.`) kullanılacaktır. Bir elementin varlığından emin olmadan `.value`, `.textContent`, `.addEventListener`, `.classList` veya başka bir property çağrısı **YAPILAMAZ**.
+
+```javascript
+// ❌ YANLIŞ — production'da TypeError fırlatır, scriptin geri kalanı durur
+document.getElementById('txtFoo').value = '0';
+
+// ✅ DOĞRU
+const el = document.getElementById('txtFoo');
+if (el) el.value = '0';
+
+// ✅ Optional chaining (modern tarayıcı)
+document.getElementById('txtFoo')?.setAttribute('value', '0');
+```
+
+Kritik UI hesaplamaları **try/catch içine** alınarak silent-fail edilmelidir; bir hata tüm sayfayı çökertmemelidir.
+
+### KURAL 7 — EVENT LISTENER ISOLATION (CURSOR KORUMASI):
+Reverse-calculation (ters hesaplama) yapan `oninput` veya `keyup` event handler'ları yazılırken, **kullanıcı yazım halindeyken inputun KENDİ value'sunu yeniden formatlayıp üzerine yazmak KESİNLİKLE YASAKTIR**. Bu işlem cursor pozisyonunu kaybettirir, klavye vuruşlarını siler ve focus loop'a sebep olur.
+
+```javascript
+// ❌ YANLIŞ — kullanıcı totalInput'a yazarken cursor'u resetler
+totalInput.addEventListener('input', () => {
+    const v = computeAutoCorrect();
+    totalInput.value = v.toFixed(2);  // CURSOR KAYBI — TUŞLAR EZİLİR
+});
+
+// ✅ DOĞRU — auto-correct yalnızca BLUR'da uygulanır
+totalInput.addEventListener('input', () => {
+    // Sadece DİĞER input'ları güncelle (adet/gram), bu inputu DEĞİL
+    document.getElementById('txtAdet').value = newAdet;
+});
+totalInput.addEventListener('change', () => {
+    // Kullanıcı yazımı bitirince auto-correct uygula
+    totalInput.value = lockedTotal.toFixed(2);
+});
+
+// ✅ Çift güvenlik — focus check
+function safeWrite(el, v) {
+    if (document.activeElement !== el) el.value = v;
+}
+```
+
+`oninput` içinde inputun kendisini yeniden formatlamak gerekiyorsa, `setTimeout(0)` veya `requestAnimationFrame` ile cursor pozisyonu (`selectionStart`/`selectionEnd`) **manuel olarak korunmalıdır**.
+
+### KURAL 8 — SCOPE LIMITS (DEĞİŞİKLİK İZOLASYONU):
+Sadece bir sayfada (örn. `fast_index.html`) değişiklik istendiğinde, global JS fonksiyonlarına veya ortak template patern'lerine müdahale edilip diğer sayfalar (`retail_index.html`, `wholesale_index.html`, `operations_index.html`) **ASLA** tehlikeye atılmayacaktır.
+
+- Aynı isimli helper fonksiyon birden fazla template'de varsa (`recalcAll`, `selectProduct`, `calculateTotal*`), her birinin **ayrı scope**'unda çalıştığı unutulmamalıdır.
+- Aynı patern'i (örn. reverse-calculation) birden fazla sayfaya uygulamak gerekiyorsa, **her sayfa için ayrı patch'ler** yazılmalı; tek bir copy-paste ile tüm sayfalar değiştirilmemelidir.
+- Ortak fonksiyonlara mecburi bir müdahale varsa, çağrıldığı tüm template'ler `grep` ile listelenip, etki alanı raporlanmalıdır.
+
+### KURAL 9 — LOCALE & NaN AUDIT:
+Tüm sayısal input parse'larında:
+- Türkçe locale (virgül → nokta dönüşümü) yapılmalıdır: `value.replace(',', '.')`
+- `parseFloat` / `parseInt` çıktısı için `isNaN` veya `isFinite` kontrolü zorunludur
+- `Infinity`, `NaN`, `null`, `undefined` değerleri DOM input'larına yazılmadan önce sanitize edilmelidir
+
+```javascript
+function parseNumberInput(id) {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    const raw = (el.value || '0').toString().replace(',', '.');
+    const n = parseFloat(raw);
+    return isFinite(n) ? n : 0;  // NaN/Infinity → 0
+}
+```
+
+### KURAL 10 — ZORUNLU TEST CHECKLIST (Production-Touching JS):
+Ödeme/hesaplama/stok ile etkileşen herhangi bir JS değişikliğinden sonra geliştirici aşağıdaki checklist'i tamamlamadan kod commit etmemelidir:
+
+- [ ] Etkilenen TÜM sayfalarda ürün seçimi → form doldurma çalışıyor mu?
+- [ ] İlgili input'a manuel yazım, silme, yapıştırma çalışıyor mu? (cursor kayıp YOK)
+- [ ] +/- butonları, programatik value değişiklikleri sonsuz döngü tetiklemiyor mu?
+- [ ] SALE / PURCHASE her iki tab'da test edildi mi?
+- [ ] Boş ürün, sıfır fiyat, yetersiz stok edge case'leri doğrulandı mı?
+- [ ] Browser console'da TypeError / ReferenceError var mı?

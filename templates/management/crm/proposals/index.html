@@ -1,0 +1,376 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* Mevcut stilleriniz korundu */
+        .custom-toolbar-card {
+            width: 100% !important;
+            margin: 1rem 3.2rem 0 2.3rem;
+            border-radius: .5rem;
+        }
+
+        .custom-toolbar-card .card-body {
+            padding: 1.5rem 2rem;
+        }
+
+        .custom-toolbar-card .container-xxl {
+            max-width: 100% !important;
+        }
+
+        .toolbar-btn-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 6.5rem;
+            height: 2.7rem;
+        }
+
+        #tableToolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .custom-toolbar-card {
+                margin: 1rem 1rem 0 !important;
+            }
+
+            .toolbar-btn-size {
+                width: 5.5rem !important;
+            }
+        }
+
+        /* Yeni Tab Stili */
+        .nav-line-tabs .nav-item .nav-link {
+            color: #7e8299;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-line-tabs .nav-item .nav-link.active {
+            color: #009ef7; /* Primary renk */
+            border-bottom: 2px solid #009ef7;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card custom-toolbar-card">
+                    <div class="card-body">
+                        <div class="app-container container-xxl d-flex flex-stack">
+                            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                    Teklif Yönetimi
+                                </h1>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                <a href="{% url 'proposals:add' %}" class="btn btn-primary toolbar-btn-size">
+                                    <i class="ki-duotone ki-plus fs-2"></i><span
+                                        class="d-none d-lg-inline ms-1">Ekle</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content_container" class="app-container container-fluid ">
+
+                <div class="card card-flush mb-5">
+                    <div class="card-header card-header-stretch pb-0">
+                        <div class="card-title"></div>
+                        <div class="card-toolbar">
+                            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold"
+                                role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link text-active-primary py-5 me-6 active" data-bs-toggle="tab"
+                                       href="#tab_content_general" onclick="filterByStatus('draft')">
+                                        <i class="fa-solid fa-pen-ruler me-2"></i> Taslaklar
+                                    </a>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link text-active-success py-5 me-6" data-bs-toggle="tab"
+                                       href="#tab_content_general" onclick="filterByStatus('accepted')">
+                                        <i class="fa-solid fa-check-circle me-2"></i> Onaylananlar
+                                    </a>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link text-active-warning py-5" data-bs-toggle="tab"
+                                       href="#tab_content_general" onclick="filterByStatus('others')">
+                                        <i class="fa-solid fa-list me-2"></i> Diğer (Gönderildi/Ret/Revize)
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card card-flush">
+                    <div class="card-body pt-0">
+                        <div class="tab-content" id="myTabContent">
+                            <div class="tab-pane fade show active" id="tab_content_general" role="tabpanel">
+
+                                <div class="table-responsive">
+                                    <div id="tableToolbar"
+                                         class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 mt-5">
+                                        <div class="d-flex toolbar-buttons" style="gap:.6rem">
+                                            <button type="button" class="btn btn-light-danger me-3 toolbar-btn-size"
+                                                    id="deleteSelected" data-bs-toggle="tooltip"
+                                                    title="Seçilenleri Sil">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </div>
+                                        <div id="dataTableSearch"></div>
+                                    </div>
+
+                                    <table id="kt_datatable_proposals"
+                                           class="table align-middle table-row-dashed fs-6 gy-5">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-10px pe-2">
+                                                <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                    <input id="selectAll" class="form-check-input" type="checkbox"
+                                                           value="1">
+                                                </div>
+                                            </th>
+                                            <th>Teklif No</th>
+                                            <th>Başlık</th>
+                                            <th>Müşteri / Lead</th>
+                                            <th>Tarih</th>
+                                            <th>Tutar</th>
+                                            <th>Durum</th>
+                                            <th class="text-end">İşlemler</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-400px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Durum Güncelle</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="statusForm">
+                        <input type="hidden" id="status_proposal_id" name="id">
+                        <div class="mb-3">
+                            <label class="form-label">Yeni Durum:</label>
+                            <select class="form-select" name="status" id="new_status">
+                                {% for k, v in status_choices %}
+                                    <option value="{{ k }}">{{ v }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveStatus">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        function relocateFilter() {
+            $('#dataTableSearch .dataTables_filter').remove();
+            const $f = $('#kt_datatable_proposals_wrapper .dataTables_filter').detach();
+            if ($f.length) {
+                $('#dataTableSearch').append($f);
+                $f.addClass('mb-0');
+            }
+        }
+
+        // Global değişken: Aktif sekme durumu (Default: draft)
+        let currentScope = 'draft';
+        let dt; // DataTable instance
+
+        // Tablara tıklandığında çalışacak fonksiyon
+        function filterByStatus(scope) {
+            currentScope = scope;
+
+            // Eğer Taslak değilse Silme butonunu gizle (UX iyileştirmesi)
+            if (scope !== 'draft') {
+                $('#deleteSelected').hide();
+            } else {
+                $('#deleteSelected').show();
+            }
+
+            // Tabloyu yeni parametre ile yenile
+            dt.ajax.reload();
+        }
+
+        $(document).ready(function () {
+
+            const initDatatable = () => {
+                dt = $("#kt_datatable_proposals").DataTable({
+                    destroy: true,
+                    dom: "<'top d-flex justify-content-end'f>rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+                    info: false,
+                    paging: true,
+                    serverSide: true,
+                    processing: true,
+                    orderMulti: false,
+                    autoWidth: false,
+                    initComplete: relocateFilter,
+                    ajax: {
+                        url: "{% url 'proposals:get_all' %}",
+                        type: "GET",
+                        // Backend'e aktif sekmeyi gönderiyoruz
+                        data: function (d) {
+                            d.scope = currentScope;
+                        }
+                    },
+                    columns: [
+                        {
+                            data: "id", orderable: false, className: "text-center",
+                            render: (data, type, row) => `<input class="form-check-input row-checkbox" type="checkbox" value="${row.id}">`
+                        },
+                        {data: "proposal_no", className: "fw-bold text-gray-800"},
+                        {data: "title"},
+                        {data: "client"},
+                        {data: "date"},
+                        {data: "grand_total", className: "fw-bold text-primary"},
+                        {
+                            data: "status_code",
+                            render: function (data, type, row) {
+                                const badges = {
+                                    'draft': 'badge-light-warning',
+                                    'sent': 'badge-light-primary',
+                                    'accepted': 'badge-light-success',
+                                    'rejected': 'badge-light-danger',
+                                    'revised': 'badge-light-info'
+                                };
+                                return `<span class="badge ${badges[data] || 'badge-light'}">${row.status}</span>`;
+                            }
+                        },
+                        // ... index.html içindeki columns kısmında ...
+                        {
+                            data: null, orderable: false, className: "text-end",
+                            render: function (data, type, row) {
+                                const editUrl = "{% url 'proposals:add' %}?id=" + row.id;
+                                const detailUrl = "{% url 'proposals:detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.id);
+                                const packageUrl = "{% url 'proposals:package_details' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.id);
+
+                                // YENİ EKLENEN HISTORY URL
+                                const historyUrl = "{% url 'proposals:history' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.id);
+
+                                return `
+            <button onclick="openStatusModal('${row.id}', '${row.status_code}')" class="btn btn-icon btn-bg-light btn-active-color-warning btn-sm me-1" title="Durum Güncelle">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+
+            <a href="${historyUrl}" class="btn btn-icon btn-bg-light btn-active-color-dark btn-sm me-1" title="İşlem Geçmişi (Loglar)">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </a>
+
+            <a href="${packageUrl}" class="btn btn-icon btn-bg-light btn-active-color-info btn-sm me-1" title="Paket Karşılaştırma & Sözleşme Eki" target="_blank">
+                <i class="fa-solid fa-list-check"></i>
+            </a>
+
+            <a href="${detailUrl}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Teklif Önizle">
+                <i class="fa-solid fa-eye"></i>
+            </a>
+            <a href="${editUrl}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm" title="Düzenle">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </a>
+        `;
+                            }
+                        }
+                    ],
+                    language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+                });
+
+                $('#selectAll').on('change', function () {
+                    $(".row-checkbox").prop('checked', $(this).is(':checked'));
+                });
+            };
+
+            initDatatable();
+
+            // Status Modal Açma
+            window.openStatusModal = function (id, currentStatus) {
+                $('#status_proposal_id').val(id);
+                $('#new_status').val(currentStatus);
+                $('#statusModal').modal('show');
+            };
+
+            // Status Kaydetme
+            $('#btnSaveStatus').click(function () {
+                const id = $('#status_proposal_id').val();
+                const status = $('#new_status').val();
+
+                $.post("{% url 'proposals:update_status' %}", {
+                    id: id,
+                    status: status,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                }, function (resp) {
+                    if (resp.result) {
+                        $('#statusModal').modal('hide');
+                        dt.ajax.reload(null, false);
+                        Swal.fire('Başarılı', 'Durum güncellendi', 'success');
+                    } else {
+                        Swal.fire('Hata', resp.error_msg, 'error');
+                    }
+                });
+            });
+
+            // Toplu Silme
+            $('#deleteSelected').on('click', function () {
+                const ids = $(".row-checkbox:checked").map(function () {
+                    return $(this).val();
+                }).get();
+                if (!ids.length) return Swal.fire('Hata!', 'Lütfen seçim yapın.', 'error');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "Seçili teklifler silinecek! (Sadece TASLAK olanlar silinir)",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Sil!',
+                    cancelButtonText: 'İptal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post("{% url 'proposals:delete' %}", {
+                            ids: ids,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        }, function (resp) {
+                            if (resp.result) {
+                                Swal.fire('Başarılı', 'Kayıtlar silindi.', 'success');
+                                dt.ajax.reload();
+                            } else {
+                                Swal.fire('Hata', resp.error_msg, 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

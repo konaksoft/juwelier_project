@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sözleşme ve Paket Onayı - {{ company.title }}</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+    <style>
+        body { background-color: #f4f6f8; font-family: 'Inter', sans-serif; -webkit-overflow-scrolling: touch; color: #334155; }
+
+        /* Container */
+        .contract-container { max-width: 950px; margin: 30px auto; background: #fff; border-radius: 12px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); overflow: hidden; }
+        .contract-header { background: #1e1e2d; color: #fff; padding: 25px; text-align: center; }
+        .contract-body { padding: 30px; }
+
+        /* Stepper */
+        .stepper { display: flex; justify-content: center; margin-bottom: 40px; position: relative; }
+        .stepper-item { position: relative; display: flex; flex-direction: column; align-items: center; flex: 1; z-index: 2; }
+        .stepper-item::before { position: absolute; content: ""; border-bottom: 2px solid #e1e1e1; width: 100%; top: 20px; left: -50%; z-index: 1; }
+        .stepper-item:first-child::before { content: none; }
+        .stepper-circle { width: 40px; height: 40px; border-radius: 50%; background-color: #e1e1e1; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 10px; transition: all 0.3s; }
+        .stepper-title { font-size: 13px; color: #aaa; font-weight: 600; text-align: center; margin-top: 5px; }
+
+        /* Stepper Active/Completed */
+        .stepper-item.active .stepper-circle { background-color: #009ef7; box-shadow: 0 0 0 4px rgba(0, 158, 247, 0.2); }
+        .stepper-item.active .stepper-title { color: #1e1e2d; }
+        .stepper-item.completed .stepper-circle { background-color: #50cd89; }
+        .stepper-item.completed::before { border-color: #50cd89; }
+
+        /* Step Transitions */
+        .step-content { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .step-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- STEP 1: PROPOSAL TABLES --- */
+        .proposal-table th { background-color: #f8fafc; color: #475569; font-weight: 600; font-size: 0.9rem; }
+        .proposal-table td { font-size: 0.95rem; vertical-align: middle; }
+        .total-row { background-color: #f1faff !important; font-weight: 700; color: #009ef7; font-size: 1.1rem; }
+
+        /* --- STEP 2: PACKAGE MATRIX --- */
+        .package-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+        .package-table th { background-color: #f8fafc; color: #334155; padding: 12px 10px; text-align: center; font-weight: 700; font-size: 12px; border-bottom: 2px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+        .package-table th:first-child { text-align: left; padding-left: 20px; width: 35%; background-color: #f1f5f9; }
+        .package-table th:last-child { border-right: none; }
+        .package-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
+        .package-table td:first-child { text-align: left; padding-left: 20px; font-weight: 600; font-size: 12px; color: #334155; background-color: #fff; }
+        .package-table tr:last-child td { border-bottom: none; }
+        .package-table td:last-child { border-right: none; }
+
+        .status-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; }
+        .status-available { background-color: #dcfce7; color: #166534; box-shadow: 0 0 0 1px #bbf7d0; }
+        .status-unavailable { background-color: #f1f5f9; color: #94a3b8; }
+        .note-text { display: block; font-size: 10px; color: #64748b; margin-top: 4px; font-style: italic; }
+
+        /* --- STEP 3: CONTRACT & SIGNATURE --- */
+        .contract-text-box { background-color: #f9f9f9; border: 1px solid #e1e1e1; border-radius: 8px; padding: 20px; height: 350px; overflow-y: scroll; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #333; }
+
+        .signature-wrapper { position: relative; width: 100%; height: 220px; border: 2px dashed #cbd5e1; border-radius: 8px; background-color: #fff; margin-bottom: 15px; touch-action: none; }
+        .signature-wrapper.error { border-color: #f1416c; background-color: #fff5f8; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .sign-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #cbd5e1; font-size: 1.4rem; font-weight: 600; pointer-events: none; }
+        .clear-btn { position: absolute; top: 10px; right: 10px; z-index: 10; }
+
+        /* Buttons */
+        .btn-action { background-color: #1e1e2d; color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: 600; transition: 0.3s; }
+        .btn-action:hover { background-color: #2b2b40; color: white; }
+        .btn-primary-custom { background-color: #009ef7; color: white; border: none; }
+        .btn-primary-custom:hover { background-color: #0087d4; color: white; }
+        .btn-primary-custom:disabled { background-color: #a1a5b7; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            .contract-container { margin: 0; border-radius: 0; min-height: 100vh; }
+            .contract-text-box { height: 250px; }
+            .package-table th, .package-table td { font-size: 11px; padding: 8px 4px; }
+        }
+    </style>
+</head>
+<body>
+<div style="display:none;">
+    {% csrf_token %}
+</div>
+<div class="contract-container">
+    <div class="contract-header">
+        <div class="mb-3">
+            {% if company.avatar %}
+                <img src="{{ company.avatar.url }}" alt="Logo" style="max-height: 50px; background: white; padding: 5px; border-radius: 4px;">
+            {% else %}
+                <i class="fa-solid fa-file-signature fa-3x"></i>
+            {% endif %}
+        </div>
+        <h4 class="mb-1">{{ process.contract.name }}</h4>
+        <p class="mb-0 opacity-75 small">Sözleşme Onay ve İmza Platformu</p>
+    </div>
+
+    <div class="contract-body">
+
+        {% if process.proposal %}
+        <div class="stepper">
+            <div class="stepper-item active" id="stepIndicator1">
+                <div class="stepper-circle">1</div>
+                <div class="stepper-title">Fiyat & Teklif</div>
+            </div>
+            <div class="stepper-item" id="stepIndicator2">
+                <div class="stepper-circle">2</div>
+                <div class="stepper-title">{% if display_mode == 'package' %}Paket İçeriği{% else %}Modül Kapsamı{% endif %}</div>
+            </div>
+            <div class="stepper-item" id="stepIndicator3">
+                <div class="stepper-circle">3</div>
+                <div class="stepper-title">Sözleşme & İmza</div>
+            </div>
+        </div>
+        {% endif %}
+
+
+        {% if process.proposal %}
+        <div id="step1" class="step-content active">
+            <div class="text-center mb-4">
+                <h5 class="fw-bold text-dark">Teklif Detayları</h5>
+                <p class="text-muted small">Lütfen finansal teklifi inceleyiniz.</p>
+            </div>
+
+            <div class="row mb-3 fs-7">
+                <div class="col-6">
+                    <strong>Teklif No:</strong> {{ process.proposal.proposal_no }}<br>
+                    <strong>Tarih:</strong> {{ process.proposal.date|date:"d.m.Y" }}
+                </div>
+                <div class="col-6 text-end">
+                    <strong>Geçerlilik:</strong> <span class="text-danger">{{ process.proposal.valid_until|date:"d.m.Y"|default:"-" }}</span>
+                </div>
+            </div>
+
+            <div class="table-responsive border rounded mb-4">
+                <table class="table proposal-table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Açıklama</th>
+                            <th class="text-center" width="80">Adet</th>
+                            <th class="text-end" width="120">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in process.proposal.items.all %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ item.description }}</div>
+                                {% if item.store_name %}
+                                    <div class="small text-muted fst-italic"><i class="fa-solid fa-store me-1"></i>{{ item.store_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end fw-bold">{{ item.total_price|floatformat:2 }} {{ process.proposal.currency }}</td>
+                        </tr>
+                        {% endfor %}
+
+                        <tr>
+                            <td colspan="2" class="text-end text-muted small">Ara Toplam:</td>
+                            <td class="text-end small">{{ process.proposal.subtotal|floatformat:2 }} {{ process.proposal.currency }}</td>
+                        </tr>
+                        {% if process.proposal.discount_amount > 0 %}
+                        <tr>
+                            <td colspan="2" class="text-end text-muted small">İndirim:</td>
+                            <td class="text-end text-danger small">-{{ process.proposal.discount_amount|floatformat:2 }} {{ process.proposal.currency }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td colspan="2" class="text-end text-muted small">KDV (%{{ process.proposal.tax_rate|floatformat:0 }}):</td>
+                            <td class="text-end small">{{ process.proposal.tax_amount|floatformat:2 }} {{ process.proposal.currency }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="2" class="text-end">GENEL TOPLAM:</td>
+                            <td class="text-end">{{ process.proposal.grand_total|floatformat:2 }} {{ process.proposal.currency }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% if process.proposal.notes %}
+    <div class="alert alert-warning bg-light-warning border border-warning border-dashed p-4 mb-4 rounded">
+        <div class="d-flex align-items-center mb-2">
+            <i class="fa-solid fa-file-contract text-warning fs-4 me-2"></i>
+            <h6 class="fw-bold text-dark mb-0">Özel Şartlar ve Notlar</h6>
+        </div>
+        <div class="fs-7 text-gray-700 ps-1">
+            {{ process.proposal.notes|linebreaksbr }}
+        </div>
+    </div>
+    {% endif %}
+
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-action w-100" onclick="goToStep(2)">
+                    {% if display_mode == 'package' %}Fiyatı Onayla ve Paketi İncele{% else %}Fiyatı Onayla ve Modülleri İncele{% endif %} <i class="fa-solid fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+
+        {% if process.proposal %}
+        <div id="step2" class="step-content">
+            <div class="text-center mb-4">
+                {% if display_mode == 'package' %}
+                    <h5 class="fw-bold text-dark">Paket Kapsamı ve Özellikler</h5>
+                    <p class="text-muted small">Seçilen paketinizin teknik detayları aşağıdadır.</p>
+                {% else %}
+                    <h5 class="fw-bold text-dark">Modül Kapsamı ve Özellikler</h5>
+                    <p class="text-muted small">Satın aldığınız modüllerin teknik detayları aşağıdadır.</p>
+                {% endif %}
+            </div>
+
+            <div class="alert alert-light border border-dashed d-flex align-items-center p-3 mb-4">
+                <i class="fa-solid fa-info-circle fs-2 text-primary me-3"></i>
+                <div class="fs-7 text-gray-600">
+                    {% if display_mode == 'package' %}
+                        Aşağıdaki tabloda her modül ve altındaki özellikler listelenmektedir.
+                        İşaretli özellikler ilgili pakete dahildir, işaretsiz olanlar dahil değildir.
+                    {% else %}
+                        Aşağıdaki tabloda satın aldığınız modüller ve her modülün içerdiği özellikler listelenmektedir.
+                        Tüm işaretli özellikler kapsamınıza dahildir.
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if module_rows %}
+
+                {% if display_mode == 'package' %}
+                {# ═══════ PAKET MODU: Karşılaştırma Tablosu ═══════ #}
+                <div class="table-responsive">
+                    <table class="package-table">
+                        <thead>
+                        <tr>
+                            <th>MODÜL / ÖZELLİK</th>
+                            {% for pkg in packages %}
+                                <th class="text-center">
+                                    {{ pkg.name|upper }}
+                                    {% if process.package and pkg.id == process.package.id %}
+                                        <br><span class="badge bg-success small mt-1">SEÇİLEN</span>
+                                    {% endif %}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for group in module_rows %}
+                            <tr style="background-color: #f0f9ff;">
+                                <td colspan="{{ packages|length|add:'1' }}" style="font-weight: 600; color: #1e3a8a; padding: 10px 12px; font-size: 0.95rem; border-bottom: 2px solid #bfdbfe;">
+                                    <i class="{{ group.module.icon }} me-2"></i> {{ group.module.name }}
+                                </td>
+                            </tr>
+                            {% for row in group.rows %}
+                                <tr>
+                                    <td style="padding-left: 28px;">{{ row.permission.name }}</td>
+                                    {% for cell in row.cells %}
+                                        <td>
+                                            {% if cell.available %}
+                                                <div class="status-badge status-available" title="Mevcut">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </div>
+                                            {% else %}
+                                                <div class="status-badge status-unavailable" title="Dahil Değil">
+                                                    <i class="fa-solid fa-minus"></i>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if cell.note %}
+                                                <span class="note-text">{{ cell.note }}</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% else %}
+                {# ═══════ MODÜL MODU: Satın Alınan Modüller Tablosu ═══════ #}
+                <div class="table-responsive">
+                    <table class="package-table">
+                        <thead>
+                        <tr>
+                            <th>MODÜL / ÖZELLİK</th>
+                            <th class="text-center" style="width: 120px;">DAHİL</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for group in module_rows %}
+                            <tr style="background-color: #f0f9ff;">
+                                <td colspan="2" style="font-weight: 600; color: #1e3a8a; padding: 10px 12px; font-size: 0.95rem; border-bottom: 2px solid #bfdbfe;">
+                                    <i class="{{ group.module.icon }} me-2"></i> {{ group.module.name }}
+                                    {% if group.is_core %}
+                                        <span class="badge bg-secondary ms-2" style="font-size: 10px;">Çekirdek</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% for row in group.rows %}
+                                <tr>
+                                    <td style="padding-left: 28px;">{{ row.permission.name }}</td>
+                                    <td>
+                                        <div class="status-badge status-available" title="Dahil">
+                                            <i class="fa-solid fa-check"></i>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <div class="alert alert-warning">
+                    Modül detay tablosu yüklenemedi. Lütfen yönetici ile iletişime geçiniz.
+                </div>
+            {% endif %}
+
+            <div class="form-check bg-light p-3 rounded border mb-4">
+                <input class="form-check-input" type="checkbox" id="packageAcceptCheck" style="transform: scale(1.2);">
+                <label class="form-check-label fw-semibold ms-2" for="packageAcceptCheck" style="font-size: 0.9rem; cursor: pointer;">
+                    {% if display_mode == 'package' %}
+                        Yukarıdaki tabloda belirtilen paket özelliklerini ve kapsamlarını inceledim, <u>onaylıyorum</u>.
+                    {% else %}
+                        Yukarıdaki tabloda belirtilen modül özelliklerini ve kapsamlarını inceledim, <u>onaylıyorum</u>.
+                    {% endif %}
+                </label>
+            </div>
+
+            <div class="d-flex justify-content-between gap-2">
+                <button type="button" class="btn btn-light border" onclick="goToStep(1)">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Fiyata Dön
+                </button>
+                <button type="button" class="btn btn-action" id="btnGoToContract" disabled onclick="goToStep(3)">
+                    {% if display_mode == 'package' %}Paket Kapsamını Onayla ve Sözleşmeye Geç{% else %}Modül Kapsamını Onayla ve Sözleşmeye Geç{% endif %} <i class="fa-solid fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+
+        <div id="step3" class="step-content {% if not process.proposal %}active{% endif %}">
+
+            <div class="text-center mb-3">
+                <h5 class="fw-bold text-dark">Hizmet Sözleşmesi ve İmza</h5>
+                {% if process.proposal %}
+                <div class="badge bg-light-success text-success border border-success p-2 mb-2">
+                    <i class="fa-solid fa-check me-1"></i> Fiyat ve {% if display_mode == 'package' %}Paket{% else %}Modül{% endif %} Kapsamı Onaylandı
+                </div>
+                {% endif %}
+            </div>
+
+           <div class="contract-text-box" id="contractContent">
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; border: 1px solid #e2e8f0; font-family: 'Inter', sans-serif;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding: 15px; border-right: 1px solid #e2e8f0;">
+                <div style="font-size: 9pt; font-weight: 700; color: #64748b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    HİZMET SAĞLAYICI (SATICI)
+                </div>
+                <div style="font-size: 10pt; font-weight: 700; color: #1e1e2d; margin-bottom: 8px;">
+                    KONASOFT YAZILIM A.Ş.
+                </div>
+                <div style="font-size: 8.5pt; color: #475569; line-height: 1.5;">
+                    Yenişehir Mah. Sümbül Sk. No: 6-1/79<br>
+                    Pendik / İstanbul<br><br>
+                    <strong style="color: #334155;">V.D.:</strong> Pendik VD<br>
+                    <strong style="color: #334155;">Vergi No:</strong> 5761183628<br>
+                    <strong style="color: #334155;">Mersis:</strong> 0576118362800001
+                </div>
+            </td>
+
+            <td style="width: 50%; vertical-align: top; background-color: #f8fafc; padding: 15px;">
+                <div style="font-size: 9pt; font-weight: 700; color: #64748b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    MÜŞTERİ (ALICI)
+                </div>
+                <div style="font-size: 10pt; font-weight: 700; color: #1e1e2d; margin-bottom: 8px;">
+                    {{ company.title|default:"-" }}
+                </div>
+                <div style="font-size: 8.5pt; color: #475569; line-height: 1.5;">
+                    {{ company.address|default:"-" }}<br>
+                    {{ company.district }} / {{ company.city }}<br><br>
+                    <strong style="color: #334155;">VKN/TCKN:</strong> {{ company.tax_number|default:"-" }}<br>
+                    <strong style="color: #334155;">Telefon:</strong> {{ company.phone|default:"-" }}<br>
+                    <strong style="color: #334155;">E-Posta:</strong> {{ company.email|default:"-" }}
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div style="font-size: 14px; line-height: 1.7;">
+        {{ contract_html|safe|linebreaks }}
+    </div>
+
+</div>
+
+            <div id="readAlert" class="alert alert-warning py-2 fs-7 mb-3" style="display:none;">
+                <i class="fa-solid fa-arrow-down me-1"></i> Sözleşmeyi onaylamak için lütfen metni sonuna kadar okuyunuz (aşağı kaydırınız).
+            </div>
+
+            <div class="form-check mb-3 bg-light p-3 rounded border">
+                <input class="form-check-input" type="checkbox" id="finalAgreeCheck" disabled style="transform: scale(1.3); margin-top: 3px;">
+                <label class="form-check-label ms-2 small" for="finalAgreeCheck" id="finalAgreeLabel" style="opacity: 0.6; cursor: pointer;">
+                    Hizmet sözleşmesini okudum, anladım ve kabul ediyorum.
+                    {% if process.proposal %}
+                        Ayrıca önceki adımlarda onayladığım <b>{{ process.proposal.grand_total }} {{ process.proposal.currency }}</b> tutarındaki teklifi ve {% if display_mode == 'package' %}paket{% else %}modül{% endif %} kapsamını gayrikabili rücu kabul ederim.
+                    {% endif %}
+                </label>
+            </div>
+
+            <div id="signatureSection" style="display:none; opacity: 0; transition: opacity 0.5s;">
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">İmza Alanı <span class="text-danger">*</span></h6>
+                        <span class="text-muted" style="font-size: 11px;">Lütfen kutu içine imzanızı atınız.</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="clearSignature()">
+                        <i class="fa-solid fa-eraser"></i> Temizle
+                    </button>
+                </div>
+
+                <div class="signature-wrapper" id="signatureWrapper">
+                    <span class="sign-placeholder">İmza</span>
+                    <canvas id="signature-pad"></canvas>
+                </div>
+
+                <div class="alert alert-secondary d-flex align-items-center p-2 mt-2 mb-0">
+                    <i class="fa-solid fa-scale-balanced me-3 fs-4 text-secondary"></i>
+                    <div style="font-size: 11px; line-height: 1.3; color: #555;">
+                        <strong>Hukuki Bilgilendirme:</strong>
+                        Bu alana atacağınız imza ve cep telefonunuza gelecek <strong>SMS Onay Kodunu (OTP)</strong> girmeniz;
+                        Türk Borçlar Kanunu ve HMK 193. Madde (Delil Sözleşmesi) uyarınca, sözleşmeyi okuyup onayladığınızın ve
+                        işlemin hukuken bağlayıcı olduğunun <strong>kesin delili</strong> sayılacaktır.
+                        İşlem güvenliği için IP adresiniz ve SMS loglarınız kayıt altına alınmaktadır.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between gap-2 mt-4">
+                    {% if process.proposal %}
+                    <button type="button" class="btn btn-light border" onclick="goToStep(2)">
+                        <i class="fa-solid fa-arrow-left"></i> {% if display_mode == 'package' %}Pakete Dön{% else %}Modüllere Dön{% endif %}
+                    </button>
+                    {% endif %}
+
+                    <button id="btnStartSign" class="btn btn-primary-custom w-100 py-3" disabled>
+                        <i class="fa-solid fa-file-signature me-2"></i> İmzayı Kaydet & SMS Onayı
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <div class="text-center text-muted mb-5" style="font-size: 11px;">
+        &copy; {% now "Y" %} Dijital Sözleşme Platformu <br>
+        Güvenli IP: {{ request.META.REMOTE_ADDR }}
+    </div>
+</div>
+
+<script>
+    const TOKEN = "{{ process.token }}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let signaturePad;
+
+    // --- GLOBAL NAVIGASYON FONKSİYONU ---
+    window.goToStep = function(stepNumber) {
+        // Tüm stepleri gizle
+        $('.step-content').removeClass('active');
+
+        // İlgili stepi aç
+        $(`#step${stepNumber}`).addClass('active');
+
+        // Stepper UI Güncelle
+        $('.stepper-item').removeClass('active');
+
+        // Geçmiş stepleri 'completed' yap, aktif olanı 'active' yap
+        for(let i=1; i<=3; i++) {
+            if(i < stepNumber) {
+                $(`#stepIndicator${i}`).addClass('completed').removeClass('active');
+            } else if (i === stepNumber) {
+                $(`#stepIndicator${i}`).addClass('active').removeClass('completed');
+            } else {
+                $(`#stepIndicator${i}`).removeClass('active completed');
+            }
+        }
+
+        // Eğer Step 3'e gelindiyse Scroll kontrolünü başlat
+        if(stepNumber === 3) {
+            setTimeout(checkScroll, 300);
+            resizeCanvas();
+        }
+
+        // Sayfayı yukarı kaydır
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    // --- SÖZLEŞME OKUMA KONTROLÜ FONKSİYONLARI ---
+    window.checkScroll = function() {
+        const box = $('#contractContent')[0];
+        if (!box) return;
+
+        if (box.scrollHeight <= box.offsetHeight + 20) {
+            enableCheckbox();
+        } else {
+            $('#readAlert').show();
+        }
+    }
+
+    window.enableCheckbox = function() {
+        const $chk = $('#finalAgreeCheck');
+        if ($chk.prop('disabled')) {
+            $chk.prop('disabled', false);
+            $('#finalAgreeLabel').css('opacity', '1');
+            $('#readAlert').slideUp();
+        }
+    }
+
+    window.resizeCanvas = function() {
+        const canvas = document.getElementById('signature-pad');
+        if (!canvas) return;
+
+        const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+
+        if(signaturePad) signaturePad.clear();
+        $('.sign-placeholder').show();
+        $('#btnStartSign').prop('disabled', true);
+    }
+
+    window.clearSignature = function() {
+        if(signaturePad) signaturePad.clear();
+        $('.sign-placeholder').show();
+        validateSignature();
+    }
+
+    window.validateSignature = function() {
+        if (signaturePad.isEmpty()) {
+            $('#btnStartSign').prop('disabled', true);
+            $('#signatureWrapper').addClass('error');
+        } else {
+            $('#btnStartSign').prop('disabled', false);
+            $('#signatureWrapper').removeClass('error');
+        }
+    }
+
+
+    // --- JQUERY DOCUMENT READY ---
+    $(function() {
+
+        // 1. Step 2 Paket Onay Checkbox
+        $('#packageAcceptCheck').on('change', function() {
+            if(this.checked) {
+                $('#btnGoToContract').prop('disabled', false);
+            } else {
+                $('#btnGoToContract').prop('disabled', true);
+            }
+        });
+
+        // 2. Sözleşme Scroll Event
+        $('#contractContent').on('scroll', function () {
+            if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
+                enableCheckbox();
+            }
+        });
+
+        // 3. Step 3 Son Onay Checkbox -> İmza Alanını Aç
+        $('#finalAgreeCheck').on('change', function () {
+            if(this.checked) {
+                $('#signatureSection').show().css('opacity', '1');
+                resizeCanvas();
+                $('html, body').animate({ scrollTop: $("#signatureSection").offset().top }, 500);
+            } else {
+                $('#signatureSection').css('opacity', '0');
+                setTimeout(() => $('#signatureSection').hide(), 300);
+                $('#btnStartSign').prop('disabled', true);
+            }
+        });
+
+        // 4. İmza Pad Başlatma
+        const canvas = document.getElementById('signature-pad');
+        if (canvas) {
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgba(255, 255, 255, 0)',
+                penColor: 'rgb(0, 0, 0)',
+                velocityFilterWeight: 0.7
+            });
+
+            signaturePad.addEventListener("beginStroke", () => {
+                 $('.sign-placeholder').hide();
+            });
+
+            signaturePad.addEventListener("endStroke", () => {
+                validateSignature();
+            });
+
+            window.addEventListener("resize", resizeCanvas);
+        }
+
+        // Eğer teklif yoksa direkt Step 3 açıktır, kontrolü yap
+        if ($('#step3').hasClass('active')) {
+            checkScroll();
+        }
+
+
+        // 5. SMS GÖNDERİM BUTONU (BİYOMETRİK VERİ YOK)
+        $('#btnStartSign').click(function () {
+            if (signaturePad.isEmpty()) {
+                Swal.fire('Uyarı', 'Lütfen imza atınız.', 'warning');
+                return;
+            }
+
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> İşleniyor...');
+
+            // SADECE GÖRSEL VERİYİ ALIYORUZ
+            const signatureImage = signaturePad.toDataURL('image/png');
+
+            $.ajax({
+                url: "{% url 'contracts:public_send_sms' %}",
+                type: "POST",
+                data: {
+                    token: TOKEN,
+                    signature_data: signatureImage,
+                    csrfmiddlewaretoken: CSRF_TOKEN
+                },
+                success: function (response) {
+                    if (response.result) {
+                        askVerificationCode(response.masked_phone, btn, originalText);
+                    } else {
+                        Swal.fire('Hata', response.msg || 'İşlem başarısız.', 'error');
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                },
+                error: function () {
+                    Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                    btn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // 6. POPUP VE ONAY
+        function askVerificationCode(phone, btnObj, originalBtnText) {
+            Swal.fire({
+                title: 'SMS Doğrulama',
+                html: `
+                    <div class="mb-3">Güvenlik amacıyla <b>${phone}</b> numarasına gönderilen onay kodunu giriniz.</div>
+                    <div class="small text-muted">Sözleşme ve imzanız sisteme kaydedildi.</div>
+                `,
+                input: 'text',
+                inputAttributes: {
+                    maxlength: 6,
+                    autocomplete: 'one-time-code',
+                    style: 'text-align:center; font-size:24px; letter-spacing:5px;'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'ONAYLA',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: false,
+                preConfirm: (code) => {
+                    return $.ajax({
+                        url: "{% url 'contracts:public_confirm' %}",
+                        type: "POST",
+                        data: { token: TOKEN, code: code, csrfmiddlewaretoken: CSRF_TOKEN }
+                    }).then(response => {
+                        if (response.error) throw new Error(response.msg);
+                        return response;
+                    }).catch(error => Swal.showValidationMessage(error.message));
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success', title: 'Tebrikler!', text: 'Sözleşme başarıyla imzalandı. Kopyası mail adresinize gönderildi.',
+                        showConfirmButton: false, timer: 3000
+                    }).then(() => window.location.reload());
+                } else {
+                    btnObj.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        }
+
+    });
+</script>
+
+</body>
+</html>

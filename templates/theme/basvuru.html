@@ -1,0 +1,964 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}Özel Paket Başvurusu | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus modüllerinden ihtiyacınıza uygun olanları seçin, size özel paketinizi oluşturun.{% endblock page_description %}
+{% block page_keywords %}kuyum plus başvuru, kuyumcu yazılım paketi, özel paket{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/kuyumplus/basvuru{% endblock canonical_url %}
+{% block og_title %}Özel Paket Başvurusu | Kuyum Plus{% endblock og_title %}
+{% block og_description %}Kuyum Plus modüllerinden ihtiyacınıza uygun olanları seçin, size özel teklif oluşturalım.{% endblock og_description %}
+
+{% block header %}
+    <style>
+        :root {
+            --gold-primary: #f8bc27;
+            --gold-dark: #b88b0b;
+        }
+
+        .basvuru-hero {
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #0f0f0f 100%);
+            padding: 100px 0 60px;
+            text-align: center;
+        }
+
+        .basvuru-hero h1 {
+            color: #fff;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        .basvuru-hero h1 span {
+            color: var(--gold-primary);
+        }
+
+        .basvuru-hero p {
+            color: #bbb;
+            font-size: 1.15rem;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .form-section {
+            background: #fdfbf7;
+            padding: 60px 0;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 50px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-item .step-num {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #666;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all .3s;
+        }
+
+        .step-item.active .step-num {
+            background: var(--gold-primary);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(248, 188, 39, 0.4);
+        }
+
+        .step-item .step-text {
+            font-weight: 600;
+            color: #999;
+            font-size: .9rem;
+            transition: color .3s;
+        }
+
+        .step-item.active .step-text {
+            color: #222;
+        }
+
+        .step-divider {
+            width: 60px;
+            height: 2px;
+            background: #e0e0e0;
+            align-self: center;
+            margin: 0 15px;
+        }
+
+        .step-panel {
+            display: none;
+        }
+
+        .step-panel.active {
+            display: block;
+            animation: fadeInUp .4s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, .06);
+        }
+
+        .form-card label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .form-card .form-control {
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1.5px solid #e5e5e5;
+            font-size: .95rem;
+            transition: border-color .2s;
+        }
+
+        .form-card .form-control:focus {
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 0 3px rgba(248, 188, 39, .15);
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .module-card {
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 14px;
+            padding: 24px 20px;
+            cursor: pointer;
+            transition: all .25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            border-color: #ccc;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, .08);
+        }
+
+        .module-card.selected {
+            border-color: var(--gold-primary);
+            background: linear-gradient(135deg, #fffbf0, #fff9e6);
+            box-shadow: 0 8px 30px rgba(248, 188, 39, .15);
+        }
+
+        .module-card.core-module {
+            border-color: #d4edda;
+            background: #f8fff8;
+        }
+
+        .module-card.core-module .core-badge {
+            display: inline-block;
+        }
+
+        .module-card .core-badge {
+            display: none;
+            background: #28a745;
+            color: #fff;
+            font-size: .7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 700;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+
+        .module-card.dep-locked {
+            border-color: var(--gold-primary);
+            background: linear-gradient(135deg, #fffbf0, #fff9e6);
+            opacity: .85;
+        }
+
+        .module-card.dep-locked::after {
+            content: '\f023';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: var(--gold-dark);
+            font-size: .85rem;
+        }
+
+        .module-card .module-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f0f0f0, #e8e8e8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #555;
+            margin-bottom: 14px;
+            transition: all .3s;
+        }
+
+        .module-card.selected .module-icon,
+        .module-card.dep-locked .module-icon {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+            color: #fff;
+        }
+
+        .module-card .module-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #222;
+            margin-bottom: 6px;
+        }
+
+        .module-card .module-desc {
+            font-size: .85rem;
+            color: #888;
+            line-height: 1.4;
+            min-height: 38px;
+        }
+
+        .module-card .check-mark {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .25s;
+        }
+
+        .module-card.selected .check-mark,
+        .module-card.dep-locked .check-mark {
+            background: var(--gold-primary);
+            border-color: var(--gold-primary);
+            color: #000;
+        }
+
+        .module-card .check-mark i {
+            font-size: .75rem;
+            opacity: 0;
+            transition: opacity .2s;
+        }
+
+        .module-card.selected .check-mark i,
+        .module-card.dep-locked .check-mark i {
+            opacity: 1;
+        }
+
+        .selection-summary {
+            background: linear-gradient(135deg, #0f0f0f, #1a1a2e);
+            border-radius: 16px;
+            padding: 30px;
+            color: #fff;
+            position: sticky;
+            top: 120px;
+        }
+
+        .selection-summary h5 {
+            color: var(--gold-primary);
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .selection-summary .module-count {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, .05);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .selection-summary .module-count .num {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--gold-primary);
+        }
+
+        .selection-summary .module-count .txt {
+            font-size: .85rem;
+            color: #aaa;
+        }
+
+        .selection-summary .mod-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        .selection-summary .mod-row:last-child {
+            border-bottom: none;
+        }
+
+        .selection-summary .mod-row .name {
+            color: #ccc;
+            font-size: .9rem;
+        }
+
+        .selection-summary .mod-row .tag {
+            font-size: .75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .selection-summary .info-text {
+            text-align: center;
+            padding: 15px;
+            background: rgba(248, 188, 39, .08);
+            border: 1px solid rgba(248, 188, 39, .2);
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: .85rem;
+            color: #ddd;
+        }
+
+        .selection-summary .info-text i {
+            color: var(--gold-primary);
+            margin-right: 6px;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 40px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: .5px;
+            transition: all .3s ease;
+            width: 100%;
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(248, 188, 39, .4);
+            color: #000;
+        }
+
+        .btn-gold:disabled {
+            opacity: .5;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-outline-gold {
+            background: transparent;
+            color: var(--gold-primary);
+            border: 2px solid var(--gold-primary);
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 700;
+            transition: all .3s;
+        }
+
+        .btn-outline-gold:hover {
+            background: var(--gold-primary);
+            color: #000;
+        }
+
+        .dep-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #333;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: .9rem;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all .3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, .3);
+            max-width: 350px;
+        }
+
+        .dep-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dep-toast i {
+            color: var(--gold-primary);
+            margin-right: 8px;
+        }
+
+        .success-panel {
+            text-align: center;
+            padding: 60px 30px;
+        }
+
+        .success-panel .success-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(40, 167, 69, .3);
+        }
+
+        .success-panel h2 {
+            font-weight: 800;
+            color: #222;
+            margin-bottom: 10px;
+        }
+
+        .success-panel p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .success-panel .app-no {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: 700;
+            color: var(--gold-dark);
+            font-size: 1.2rem;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .basvuru-hero {
+                padding: 85px 15px 40px;
+            }
+
+            .basvuru-hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .step-indicator {
+                gap: 0;
+            }
+
+            .step-text {
+                display: none;
+            }
+
+            .step-divider {
+                width: 30px;
+                margin: 0 8px;
+            }
+
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-card {
+                padding: 25px 20px;
+            }
+
+            .selection-summary {
+                position: static;
+                margin-top: 30px;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <section class="basvuru-hero">
+        <div class="container">
+            <h1>İşletmenize Özel <span>Paket Oluşturun</span></h1>
+            <p>İhtiyacınız olan modülleri seçin, size özel fiyat teklifi hazırlayalım.
+                Sadece kullandığınız kadar ödeyin.</p>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="container">
+            <div class="step-indicator" id="stepIndicator">
+                <div class="step-item active" data-step="1">
+                    <span class="step-num">1</span>
+                    <span class="step-text">Bilgileriniz</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step-item" data-step="2">
+                    <span class="step-num">2</span>
+                    <span class="step-text">Modül Seçimi</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step-item" data-step="3">
+                    <span class="step-num">3</span>
+                    <span class="step-text">Onay</span>
+                </div>
+            </div>
+
+            <div id="step1" class="step-panel active">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="form-card">
+                            <h4 class="mb-4" style="font-weight:700; color:#222;">
+                                <i class="fa-solid fa-user-pen me-2" style="color:var(--gold-primary)"></i>
+                                Kişisel ve Firma Bilgileri
+                            </h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label>Ad <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="inp_first_name" placeholder="Adınız"
+                                           required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Soyad <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="inp_last_name" placeholder="Soyadınız"
+                                           required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Telefon <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" id="inp_phone"
+                                           placeholder="05xx xxx xx xx" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>E-Posta</label>
+                                    <input type="email" class="form-control" id="inp_email"
+                                           placeholder="ornek@mail.com">
+                                </div>
+                                <div class="col-md-8">
+                                    <label>Firma / Mağaza Adı <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="inp_business"
+                                           placeholder="Firma veya mağazanızın adı" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>İl</label>
+                                    <input type="text" class="form-control" id="inp_city" placeholder="İstanbul">
+                                </div>
+                                <div class="col-12">
+                                    <label>Not / Ek Bilgi</label>
+                                    <textarea class="form-control" id="inp_notes" rows="3"
+                                              placeholder="Varsa eklemek istediğiniz bilgiler..."></textarea>
+                                </div>
+                            </div>
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn-gold" style="width:auto; padding:12px 40px;"
+                                        onclick="goToStep(2)">
+                                    Devam Et <i class="fa-solid fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step2" class="step-panel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="form-card">
+                            <h4 class="mb-2" style="font-weight:700; color:#222;">
+                                <i class="fa-solid fa-cubes me-2" style="color:var(--gold-primary)"></i>
+                                Modül Seçimi
+                            </h4>
+                            <p class="text-muted mb-4">İhtiyacınız olan modüllere tıklayarak seçim yapın.
+                                Bağımlı modüller otomatik eklenir.</p>
+
+                            <div class="module-grid" id="moduleGrid">
+                                {% for m in modules %}
+                                    <div class="module-card {% if m.is_core %}core-module selected{% endif %}"
+                                         data-id="{{ m.id }}"
+                                         data-core="{{ m.is_core|yesno:'true,false' }}"
+                                         onclick="toggleModule(this)">
+                                        <div class="check-mark">
+                                            <i class="fa-solid fa-check"></i>
+                                        </div>
+                                        <span class="core-badge">DAHİL</span>
+                                        <div class="module-icon">
+                                            <i class="{{ m.icon }}"></i>
+                                        </div>
+                                        <div class="module-name">{{ m.name }}</div>
+                                        <div class="module-desc">{{ m.description|truncatewords:15 }}</div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn-outline-gold" onclick="goToStep(1)">
+                                <i class="fa-solid fa-arrow-left me-2"></i> Geri
+                            </button>
+                            <button type="button" class="btn-gold" style="width:auto; padding:12px 40px;"
+                                    onclick="goToStep(3)">
+                                Özete Git <i class="fa-solid fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="selection-summary" id="selectionSummary">
+                            <h5><i class="fa-solid fa-list-check me-2"></i> Seçim Özeti</h5>
+                            <div class="module-count">
+                                <div class="num" id="selectedCount">0</div>
+                                <div class="txt">Seçili Modül</div>
+                            </div>
+                            <div id="selectedModulesList"></div>
+                            <div class="info-text">
+                                <i class="fa-solid fa-info-circle"></i>
+                                Fiyatlandırma, seçimlerinize göre size özel olarak hazırlanacaktır.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step3" class="step-panel">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="form-card">
+                            <h4 class="mb-4" style="font-weight:700; color:#222;">
+                                <i class="fa-solid fa-clipboard-check me-2" style="color:var(--gold-primary)"></i>
+                                Başvuru Özeti
+                            </h4>
+
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless mb-0">
+                                        <tr>
+                                            <td class="text-muted" style="width:120px">Ad Soyad</td>
+                                            <td class="fw-bold" id="sum_name"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Telefon</td>
+                                            <td class="fw-bold" id="sum_phone"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">E-Posta</td>
+                                            <td class="fw-bold" id="sum_email"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless mb-0">
+                                        <tr>
+                                            <td class="text-muted" style="width:120px">Firma</td>
+                                            <td class="fw-bold" id="sum_business"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">İl</td>
+                                            <td class="fw-bold" id="sum_city"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold mb-3">
+                                <i class="fa-solid fa-list-check me-2" style="color:var(--gold-primary)"></i>
+                                Seçilen Modüller (<span id="sum_count">0</span> adet)
+                            </h6>
+                            <div id="sum_modules" class="mb-4"></div>
+
+                            <div style="background:#f0f7ff; border:1px solid #cce5ff; border-radius:12px; padding:18px 22px; text-align:center;">
+                                <i class="fa-solid fa-handshake me-2" style="color:var(--gold-dark); font-size:1.2rem;"></i>
+                                <span style="font-weight:600; color:#333;">Seçimlerinize göre size özel fiyat teklifi hazırlanacaktır.</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn-outline-gold" onclick="goToStep(2)">
+                                    <i class="fa-solid fa-arrow-left me-2"></i> Modüllere Dön
+                                </button>
+                                <button type="button" class="btn-gold" id="btnSubmit"
+                                        style="width:auto; padding:14px 50px;" onclick="submitApplication()">
+                                    <i class="fa-solid fa-paper-plane me-2"></i> Başvuruyu Tamamla
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stepSuccess" class="step-panel">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="form-card">
+                            <div class="success-panel">
+                                <div class="success-icon">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                                <h2>Başvurunuz Alındı!</h2>
+                                <p>Seçimlerinize göre size özel bir fiyat teklifi hazırlayacağız.<br>
+                                    En kısa sürede sizinle iletişime geçeceğiz.<br>Başvuru numaranız:</p>
+                                <div class="app-no" id="successAppNo"></div>
+                                <div class="mt-4">
+                                    <a href="{% url 'kuyumplus:index' %}" class="btn-outline-gold">
+                                        <i class="fa-solid fa-home me-2"></i> Ana Sayfaya Dön
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="dep-toast" id="depToast">
+        <i class="fa-solid fa-link"></i>
+        <span id="depToastMsg"></span>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        const MODULES = {{ modules_json|safe }};
+        const DEP_MAP = {{ dependency_map_json|safe }};
+        const CSRF = '{{ csrf_token }}';
+        const SUBMIT_URL = '{% url "kuyumplus:basvuru-gonder" %}';
+        const UTM_SOURCE = '{{ utm_source|escapejs }}';
+
+        let currentStep = 1;
+
+        function goToStep(step) {
+            if (step === 2 && currentStep === 1) {
+                if (!validateStep1()) return;
+            }
+            if (step === 3) {
+                populateSummary();
+            }
+
+            document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+
+            document.querySelectorAll('.step-item').forEach(s => {
+                const sn = parseInt(s.dataset.step);
+                s.classList.toggle('active', sn <= step);
+            });
+
+            currentStep = step;
+            window.scrollTo({top: 200, behavior: 'smooth'});
+        }
+
+        function validateStep1() {
+            const fn = document.getElementById('inp_first_name').value.trim();
+            const ln = document.getElementById('inp_last_name').value.trim();
+            const ph = document.getElementById('inp_phone').value.trim();
+            const biz = document.getElementById('inp_business').value.trim();
+
+            if (!fn || !ln || !ph || !biz) {
+                showToast('Lütfen zorunlu alanları (Ad, Soyad, Telefon, Firma Adı) doldurun.', true);
+                return false;
+            }
+            return true;
+        }
+
+        function toggleModule(el) {
+            const mid = el.dataset.id;
+            const isCore = el.dataset.core === 'true';
+            if (isCore) return;
+
+            const isLocked = el.classList.contains('dep-locked');
+            if (isLocked) {
+                showToast('Bu modül başka bir modülün bağımlılığıdır, önce onu kaldırın.');
+                return;
+            }
+
+            const isSelected = el.classList.contains('selected');
+
+            if (isSelected) {
+                el.classList.remove('selected');
+                uncheckDependencies(mid);
+            } else {
+                el.classList.add('selected');
+                autoSelectDependencies(mid);
+            }
+
+            recalculate();
+        }
+
+        function autoSelectDependencies(moduleId) {
+            const deps = DEP_MAP[moduleId] || [];
+            const added = [];
+
+            deps.forEach(depId => {
+                const card = document.querySelector(`.module-card[data-id="${depId}"]`);
+                if (card && !card.classList.contains('selected') && !card.classList.contains('dep-locked')) {
+                    card.classList.add('selected', 'dep-locked');
+                    added.push(card.querySelector('.module-name').textContent);
+                    autoSelectDependencies(depId);
+                } else if (card && card.classList.contains('selected')) {
+                    card.classList.add('dep-locked');
+                }
+            });
+
+            if (added.length) {
+                showToast('"' + added.join('", "') + '" bağımlılık olarak eklendi.');
+            }
+        }
+
+        function uncheckDependencies(moduleId) {
+            document.querySelectorAll('.module-card.dep-locked').forEach(card => {
+                card.classList.remove('dep-locked');
+            });
+            refreshLocks();
+        }
+
+        function refreshLocks() {
+            document.querySelectorAll('.module-card').forEach(c => c.classList.remove('dep-locked'));
+
+            const selected = document.querySelectorAll('.module-card.selected');
+            selected.forEach(card => {
+                const mid = card.dataset.id;
+                const deps = DEP_MAP[mid] || [];
+                deps.forEach(depId => {
+                    const depCard = document.querySelector(`.module-card[data-id="${depId}"]`);
+                    if (depCard && depCard.dataset.core !== 'true') {
+                        if (!depCard.classList.contains('selected')) {
+                            depCard.classList.add('selected', 'dep-locked');
+                        } else {
+                            depCard.classList.add('dep-locked');
+                        }
+                    }
+                });
+            });
+        }
+
+        function recalculate() {
+            let count = 0;
+            const listHtml = [];
+
+            document.querySelectorAll('.module-card.selected, .module-card.dep-locked').forEach(card => {
+                count++;
+                const name = card.querySelector('.module-name').textContent;
+                const isCore = card.dataset.core === 'true';
+                const isLocked = card.classList.contains('dep-locked');
+                let tagHtml = '';
+                if (isCore) {
+                    tagHtml = '<span class="tag" style="background:rgba(40,167,69,.15); color:#28a745;">Dahil</span>';
+                } else if (isLocked) {
+                    tagHtml = '<span class="tag" style="background:rgba(248,188,39,.15); color:#f8bc27;">Bağımlılık</span>';
+                } else {
+                    tagHtml = '<span class="tag" style="background:rgba(0,158,247,.12); color:#009ef7;">Seçildi</span>';
+                }
+                listHtml.push(`<div class="mod-row"><span class="name">${name}</span>${tagHtml}</div>`);
+            });
+
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('selectedModulesList').innerHTML = listHtml.join('');
+        }
+
+        function populateSummary() {
+            document.getElementById('sum_name').textContent =
+                document.getElementById('inp_first_name').value + ' ' + document.getElementById('inp_last_name').value;
+            document.getElementById('sum_phone').textContent = document.getElementById('inp_phone').value;
+            document.getElementById('sum_email').textContent = document.getElementById('inp_email').value || '—';
+            document.getElementById('sum_business').textContent = document.getElementById('inp_business').value;
+            document.getElementById('sum_city').textContent = document.getElementById('inp_city').value || '—';
+
+            let count = 0;
+            let modHtml = '';
+            document.querySelectorAll('.module-card.selected, .module-card.dep-locked').forEach(card => {
+                count++;
+                const name = card.querySelector('.module-name').textContent;
+                const icon = card.querySelector('.module-icon i').className;
+                const isCore = card.dataset.core === 'true';
+                modHtml += `<span style="display:inline-flex; align-items:center; gap:6px; background:#f8f9fa; border:1px solid #eee; border-radius:8px; padding:6px 14px; margin:4px; font-size:.85rem;">
+                    <i class="${icon}" style="color:var(--gold-dark)"></i>
+                    <b>${name}</b>
+                    ${isCore ? '<span style="color:#28a745; font-size:.75rem;">(Dahil)</span>' : ''}
+                </span>`;
+            });
+            document.getElementById('sum_modules').innerHTML = modHtml;
+            document.getElementById('sum_count').textContent = count;
+        }
+
+        function submitApplication() {
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Gönderiliyor...';
+
+            const moduleIds = [];
+            document.querySelectorAll('.module-card.selected, .module-card.dep-locked').forEach(card => {
+                moduleIds.push(card.dataset.id);
+            });
+
+            const formData = new FormData();
+            formData.append('first_name', document.getElementById('inp_first_name').value.trim());
+            formData.append('last_name', document.getElementById('inp_last_name').value.trim());
+            formData.append('phone', document.getElementById('inp_phone').value.trim());
+            formData.append('email', document.getElementById('inp_email').value.trim());
+            formData.append('business_name', document.getElementById('inp_business').value.trim());
+            formData.append('city', document.getElementById('inp_city').value.trim());
+            formData.append('notes', document.getElementById('inp_notes').value.trim());
+            formData.append('utm_source', UTM_SOURCE);
+            formData.append('csrfmiddlewaretoken', CSRF);
+            moduleIds.forEach(id => formData.append('modules[]', id));
+
+            fetch(SUBMIT_URL, {
+                method: 'POST',
+                body: formData,
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.result) {
+                        document.getElementById('successAppNo').textContent = data.application_no;
+                        document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+                        document.getElementById('stepSuccess').classList.add('active');
+                        document.getElementById('stepIndicator').style.display = 'none';
+                        window.scrollTo({top: 200, behavior: 'smooth'});
+                    } else {
+                        showToast(data.error_msg || 'Bir hata oluştu.', true);
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Başvuruyu Tamamla';
+                    }
+                })
+                .catch(() => {
+                    showToast('Bağlantı hatası. Lütfen tekrar deneyin.', true);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Başvuruyu Tamamla';
+                });
+        }
+
+        let toastTimer = null;
+
+        function showToast(msg, isError) {
+            const t = document.getElementById('depToast');
+            const icon = t.querySelector('i');
+            icon.className = isError ? 'fa-solid fa-exclamation-circle' : 'fa-solid fa-link';
+            icon.style.color = isError ? '#ff6b6b' : 'var(--gold-primary)';
+            document.getElementById('depToastMsg').textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            recalculate();
+        });
+    </script>
+{% endblock footer %}

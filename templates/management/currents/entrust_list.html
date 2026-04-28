@@ -1,0 +1,359 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block body %}
+
+     <div class="app-main flex-column flex-row-fluid " id="kt_app_main"
+         style="border-style: groove;border-radius: 10px;border-color: aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            Emanetler</h1>
+                        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                            <li class="breadcrumb-item text-muted">Emanetler
+                            </li>
+                        </ul>
+                        <div id="kt_datatable_example_buttons" class="d-none"></div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 gap-lg-3">
+                        <div class="d-flex align-items-center gap-2 gap-lg-3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="kt_app_content" class="app-content flex-column-fluid ">
+                <div id="kt_app_content_container" class="app-container container-fluid ">
+                    <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl"
+                         style="max-width: 100%;">
+                        <div class="content flex-row-fluid" id="kt_content">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card ">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Emanetler</h3>
+                                        </div>
+                                        <div class="card-body" style="overflow-x: auto;">
+                                            <table id="emanet_listesi_table"
+                                                   class="table table-striped table-row-bordered gy-5 gs-7">
+                                                <thead>
+                                                <tr class="fw-semibold fs-6 text-gray-800">
+                                                    <th>Ad Soyad</th>
+                                                    <th>T.C.</th>
+                                                    <th>Telefon</th>
+                                                    <th>Emanet (Gram/Adet)</th>
+                                                    <th>Teslim Tarihi</th>
+                                                    <th style="width: 200px;">İşlemler</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="fw-semibold text-gray-600">
+                                                {% for islem in emanet_islemler %}
+                                                    <tr>
+                                                        <td>{{ islem.customer.first_name }} {{ islem.customer.last_name }}</td>
+                                                        <td>{{ islem.customer.identification_number }}</td>
+                                                        <td>{{ islem.customer.phone }}</td>
+                                                        <td>
+                                                            {% if islem.product %}
+                                                                {{ islem.quantity|floatformat:2 }} (
+                                                                {{ islem.product.name }})
+                                                            {% else %}
+                                                                {{ islem.quantity|floatformat:2 }}
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ islem.payment_date|date:"d.m.Y H:i:s" }}</td>
+                                                        <td class="d-flex align-items-center">
+                                                            <button class="btn btn-secondary btn-sm btn-gecmis me-2 flex-grow-1"
+                                                                    data-islem-id="{{ islem.id }}">Geçmiş
+                                                            </button>
+                                                            <button class="btn btn-primary btn-sm btn-islem flex-grow-1"
+                                                                    data-islem-id="{{ islem.id }}"
+                                                                    data-customer-id="{{ islem.customer.id }}"
+                                                                    data-customer-name="{{ islem.customer.first_name }} {{ islem.customer.last_name }}"
+                                                                    data-product-id="
+                                                                            {% if islem.product %}{{ islem.product.id }}{% endif %}"
+                                                                    data-product-name="
+                                                                            {% if islem.product %}{{ islem.product.name }}{% endif %}"
+                                                                    data-amount="{{ islem.amount|floatformat:2 }}"
+                                                                    data-payment-date="{{ islem.payment_date|date:'d.m.Y H:i:s' }}"
+                                                                    data-quantity="{{ islem.quantity|floatformat:2 }}">
+                                                                İşlem
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="islemModal" tabindex="-1" aria-labelledby="islemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="islemModalLabel"><i
+                            class="fas fa-hand-holding-usd me-2"></i>Emanet İşlemi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted"><i
+                                            class="fas fa-info-circle me-1"></i>Emanet Bilgileri</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Müşteri</label>
+                                        <input type="text" id="modalCustomerName" class="form-control" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Ürün</label>
+                                        <input type="text" id="modalProductName" class="form-control" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Emanet (Gram/Adet)</label>
+                                        <input type="text" id="modalQuantity" class="form-control" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Tutar</label>
+                                        <input type="text" id="modalAmount" class="form-control" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Teslim Tarihi</label>
+                                        <input type="text" id="modalPaymentDate" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <form id="islemForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="product_id" id="hiddenProductId">
+                                <input type="hidden" name="customer_id" id="hiddenCustomerId">
+                                <div class="mb-3">
+                                    <label for="islemTipi" class="form-label"><i
+                                            class="fas fa-exchange-alt me-1"></i>İşlem Tipi</label>
+                                    <select class="form-select" id="islemTipi" name="transaction_type">
+                                        <option value="CREDITORS">Müşteri Emanet Bırakma</option>
+                                        <option value="DEBTORS">Müşteri Emanet İade</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="miktar" class="form-label"><i
+                                            class="fas fa-balance-scale me-1"></i>Gram/Adet</label>
+                                    <input type="number" class="form-control" id="miktar" name="quantity">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="amount" class="form-label"><i
+                                            class="fas fa-money-bill me-1"></i>Tutar</label>
+                                    <input type="number" class="form-control" id="amount" name="amount">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="teslimTarihi" class="form-label"><i
+                                            class="fas fa-calendar-alt me-1"></i>Teslim Tarihi</label>
+                                    <input type="datetime-local" class="form-control" id="teslimTarihi"
+                                           name="payment_date">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="aciklama" class="form-label"><i
+                                            class="fas fa-comment me-1"></i>Açıklama</label>
+                                    <textarea class="form-control" id="aciklama" name="description" rows="3"></textarea>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i
+                            class="fas fa-times me-1"></i>Kapat
+                    </button>
+                    <button type="submit" form="islemForm" class="btn btn-primary"><i
+                            class="fas fa-save me-1"></i>Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="gecmisModal" tabindex="-1" aria-labelledby="gecmisModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header"
+                     style="background: linear-gradient(to right, #854702, #ca9500); color: white;">
+                    <h5 class="modal-title" id="gecmisModalLabel" style="font-weight: bold;"><i
+                            class="fas fa-history me-2" style="color: white;"></i>İŞLEM GEÇMİŞİ</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body" style="overflow-x: auto;">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                <tr>
+                                    <th style="font-weight: bold;">İşlem</th>
+                                    <th style="font-weight: bold;">Tipi</th>
+                                    <th style="font-weight: bold;">Ürün</th>
+                                    <th style="font-weight: bold;">Adet/Gram</th>
+                                    <th style="font-weight: bold;">Açıklama</th>
+                                    <th style="font-weight: bold;">Teslim Tarihi</th>
+                                </tr>
+                                </thead>
+                                <tbody id="gecmisTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            var table = $('#emanet_listesi_table').DataTable({
+                "dom": '<"top"f>rt<"bottom"ilp><"clear">',
+                "info": true,
+                "paging": true,
+                searchDelay: 400,
+                processing: true,
+                serverSide: false,
+                "orderMulti": false,
+                "autoWidth": false,
+                stateSave: true,
+                language: {
+                    url: "/static/management/plugins/custom/datatables/TR.json",
+                },
+            });
+
+            $('#searchButton').on('click', function () {
+                var searchText = $('#searchInput').val().toLowerCase();
+                table.search(searchText).draw();
+            });
+
+            $(document).on('click', '.btn-islem', function () {
+                var islemId = $(this).data('islem-id');
+                var customerId = $(this).data('customer-id');
+                var customerName = $(this).data('customer-name');
+                var productId = $(this).data('product-id');
+                var productName = $(this).data('product-name');
+                var amount = $(this).data('amount');
+                var paymentDate = $(this).data('payment-date');
+                var quantity = $(this).data('quantity');
+                var trimmedProductName = (productName || '-').trim();
+                $('#modalCustomerName').val(customerName);
+                const productNameInput = $('#modalProductName');
+                productNameInput.val(trimmedProductName);
+
+                $('#modalAmount').val(amount);
+                $('#modalPaymentDate').val(paymentDate);
+                $('#modalQuantity').val(quantity);
+                $('#hiddenProductId').val(productId);
+                $('#hiddenCustomerId').val(customerId);
+
+
+                $('#islemModal').modal('show');
+
+            });
+
+            $(document).on('click', '.btn-gecmis', function () {
+                var islemId = $(this).data('islem-id');
+
+                $.ajax({
+                    url: '/currents/get_transaction_details/' + islemId + '/',
+                    type: 'GET',
+                    success: function (response) {
+                        if (!response.error) {
+                            $('#gecmisTableBody').empty();
+                            if (response.gecmis && response.gecmis.length > 0) {
+                                response.gecmis.forEach(function (item) {
+                                    var row = '<tr>' +
+                                        '<td>' + item.islem + '</td>' +
+                                        '<td>' + item.tipi + '</td>' +
+                                        '<td>' + (item.urun || '') + '</td>' +
+                                        '<td>' + (item.adet_gram || '') + '</td>' +
+                                        '<td>' + (item.aciklama || '') + '</td>' +
+                                        '<td>' + (item.islem_tarihi || '') + '</td>' +
+                                        '<td>' + (item.teslim_tarihi || '') + '</td>' +
+                                        '</tr>';
+                                    $('#gecmisTableBody').append(row);
+                                });
+                            } else {
+                                var emptyRow = '<tr><td colspan="7">İşlem geçmişi bulunamadı.</td></tr>';
+                                $('#gecmisTableBody').append(emptyRow);
+                            }
+
+                            $('#gecmisModal').modal('show');
+                        } else {
+                            Swal.fire({
+                                title: 'Hata!',
+                                text: response.error,
+                                icon: 'error',
+                                confirmButtonText: 'Tamam'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            title: 'Hata!',
+                            text: 'İşlem geçmişi alınırken bir hata oluştu.',
+                            icon: 'error',
+                            confirmButtonText: 'Tamam'
+                        });
+                    }
+                });
+            });
+
+            $('#islemForm').on('submit', function (e) {
+                e.preventDefault();
+                var customerId = $('#hiddenCustomerId').val();
+                var formData = $(this).serialize();
+                $.ajax({
+                    url: '/currents/entrust_add/' + customerId + '/',
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        if (response.result) {
+                            Swal.fire({
+                                title: 'Başarılı!',
+                                text: 'İşlem başarıyla kaydedildi.',
+                                icon: 'success',
+                                confirmButtonText: 'Tamam'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#islemModal').modal('hide');
+                                    location.reload();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Hata!',
+                                text: 'Hata oluştu: ' + response.error_msg,
+                                icon: 'error',
+                                confirmButtonText: 'Tamam'
+                            });
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        Swal.fire({
+                            title: 'Hata!',
+                            text: 'İstek işlenirken bir hata oluştu.',
+                            icon: 'error',
+                            confirmButtonText: 'Tamam'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

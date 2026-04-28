@@ -1,0 +1,674 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="icon" href="{% static 'theme/img/new_logo/1.png' %}">
+
+    <style>
+        /* --- TEMEL DEĞİŞKENLER (Koyu Tema - fast_index Uyumlu) --- */
+        :root {
+            --bg-body: #0F172A; /* Çok koyu lacivert */
+            --bg-card: #1E293B; /* Kart arka planı */
+            --bg-header: #0F172A;
+
+            --text-primary: #F8FAFC; /* Parlak Beyaz */
+            --text-secondary: #94A3B8; /* Gri-Mavi */
+            --text-muted: #64748B; /* Sönük Gri */
+
+            --accent-gold: #FFCD02; /* Altın Sarısı */
+            --accent-gold-hover: #E6B800;
+
+            --border-color: rgba(255, 255, 255, 0.08); /* İnce şeffaf kenarlık */
+
+            /* Durum Renkleri (Daha Canlı) */
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            background-image: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: 0.2s;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* --- ÜST BAR (TOPBAR) --- */
+        .topbar {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            padding: 16px 24px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand img {
+            height: 48px;
+            width: auto;
+        }
+
+        .brand-text h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text p {
+            margin: 2px 0 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* --- BUTONLAR (Okunabilirlik Artırıldı) --- */
+        .actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        /* Geri Dön Butonu - Daha Belirgin */
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.1); /* Biraz daha opak */
+            color: #fff; /* Tam beyaz yazı */
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Yazdır Butonu - Altın */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B; /* Koyu lacivert yazı (Kontrast için) */
+            box-shadow: 0 4px 10px rgba(255, 205, 2, 0.2);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(255, 205, 2, 0.3);
+        }
+
+        /* --- KARTLAR --- */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--accent-gold);
+        }
+
+        /* --- BİLGİ GRID --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-item div {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .info-item .sub {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* --- KPI KARTLARI --- */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(160deg, #1E293B 0%, #111827 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-gold);
+            opacity: 0.5;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            margin: 8px 0 4px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .kpi-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* --- TABLOLAR --- */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .font-mono {
+            font-family: 'ui-monospace', 'SFMono-Regular', monospace;
+        }
+
+        /* --- ROZETLER (BADGES) - Okunabilirlik Düzeltildi --- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* Arka plan biraz şeffaf, yazı rengi parlak */
+        .bg-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .bg-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .bg-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .bg-info {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60A5FA;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .actions {
+                width: 100%;
+            }
+
+            .actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .kpi-row {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- PRINT --- */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            .topbar, .actions {
+                display: none !important;
+            }
+
+            .card, .kpi-card {
+                background: #fff;
+                border: 1px solid #ddd;
+                box-shadow: none;
+                break-inside: avoid;
+            }
+
+            .info-val, .kpi-value, h1, h2, h3 {
+                color: #000 !important;
+            }
+
+            .badge {
+                border: 1px solid #000;
+                color: #000 !important;
+                background: transparent !important;
+            }
+
+            thead th {
+                color: #000;
+                border-bottom: 2px solid #000;
+            }
+
+            tbody td {
+                border-bottom: 1px solid #ccc;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="topbar">
+        <div class="brand">
+            <a href="{% url 'accounts:profile' %}">
+                <img src="{% static 'theme/img/new_logo/1.png' %}" alt="Logo">
+            </a>
+            <div class="brand-text">
+                <h1>İşlem Özeti</h1>
+                <p>Belge No: #{{ process_no }} | Tarih: {{ date }}</p>
+            </div>
+        </div>
+        <div class="actions">
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Geri Dön
+            </a>
+            <a href="javascript:window.print()" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Yazdır
+            </a>
+        </div>
+    </div>
+
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">NET İŞLEM TUTARI</div>
+            <div class="kpi-value">{{ summary.net_total }} ₺</div>
+            <div class="kpi-sub">
+                Satış: {{ summary.total_sales }} ₺ <span style="margin:0 4px; color:var(--text-muted)">|</span>
+                Alış: {{ summary.total_purchases }} ₺
+            </div>
+            <div class="kpi-sub" style="margin-top: 4px;">
+                Has Karşılığı: <span style="color:var(--accent-gold); font-weight:600;">{{ summary.net_hs }} Gr</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">TAHSİLAT / ÖDEME</div>
+            <div class="kpi-value text-success" style="color: var(--success) !important;">{{ summary.paid_total }} ₺
+            </div>
+            <div class="kpi-sub">
+                {% if summary.paid_in != "0,00" %}
+                    <i class="bi bi-arrow-down-left"></i> Giriş: {{ summary.paid_in }}
+                {% endif %}
+                {% if summary.paid_out != "0,00" %}
+                    <span style="margin-left:8px;">
+                        <i class="bi bi-arrow-up-right"></i> Çıkış: {{ summary.paid_out }}
+                    </span>
+                {% endif %}
+                {% if summary.paid_in == "0,00" and summary.paid_out == "0,00" %}
+                    Henüz ödeme yok (Cari)
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="kpi-card"
+             style="border-color: {% if summary.balance_raw > 0 %}var(--danger){% elif summary.balance_raw < 0 %}var(--info){% else %}var(--success){% endif %}">
+            <div class="kpi-label">KALAN BAKİYE</div>
+            <div class="kpi-value"
+                 style="color: {% if summary.balance_raw > 0 %}var(--danger){% elif summary.balance_raw < 0 %}var(--info){% else %}var(--success){% endif %} !important;">
+                {{ summary.balance }} ₺
+            </div>
+            <div class="kpi-sub">
+                {% if summary.balance_raw != 0 %}
+                    Has: <strong>{{ summary.balance_hs }} Gr</strong>
+                    <span class="badge {{ balance_badge.class }}" style="margin-left:8px; font-size:10px;">
+                        {{ balance_badge.text }}
+                    </span>
+                {% else %}
+                    <span class="badge bg-success" style="font-size:10px;"><i
+                            class="bi bi-check2"></i> Hesap Kapandı</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="bi bi-person-vcard"></i> Taraf Bilgileri</div>
+        </div>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Müşteri</label>
+                <div>
+                    {% if customer %}
+                        {{ customer.first_name }} {{ customer.last_name }}
+                    {% else %}
+                        <span style="color:var(--text-muted); font-style: italic;">Misafir Müşteri</span>
+                    {% endif %}
+                </div>
+                {% if customer.phone %}
+                    <div class="sub">{{ customer.phone }}</div>
+                {% endif %}
+            </div>
+
+            <div class="info-item">
+                <label>Personel</label>
+                <div style="color: var(--accent-gold);">{{ employee }}</div>
+            </div>
+
+            <div class="info-item">
+                <label>İşlem Tarihi</label>
+                <div class="font-mono">{{ date }}</div>
+            </div>
+
+            {% if has_partial_payment %}
+                <div class="info-item">
+                    <label>Ödeme Tipi</label>
+                    <div style="color: var(--warning);">Parçalı / Karma Ödeme</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="bi bi-box-seam"></i> İşlem Kalemleri</div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                <tr>
+                    <th width="40%">Ürün / Hizmet</th>
+                    <th width="15%">İşlem Türü</th>
+                    <th width="15%" class="text-end">Miktar</th>
+                    <th width="15%" class="text-end">Birim Fiyat</th>
+                    <th width="15%" class="text-end">Toplam</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; color: #fff;">{{ item.product_name }}</div>
+                            {% if item.is_unique %}
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                    <i class="bi bi-upc-scan"></i> Barkodlu Ürün
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ item.type_code|yesno:'bg-success,bg-danger,bg-warning' }}">
+                                {{ item.type }}
+                            </span>
+                        </td>
+                        <td class="text-end font-mono">{{ item.quantity }}</td>
+                        <td class="text-end font-mono">{{ item.unit_price }} ₺</td>
+                        <td class="text-end font-mono" style="font-weight: 700; color: #fff;">
+                            {{ item.total_price }} ₺
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            Kayıtlı işlem kalemi bulunamadı.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="bi bi-wallet2"></i> Ödeme Hareketleri</div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                <tr>
+                    <th width="30%">Ödeme Yöntemi</th>
+                    <th width="20%">Tarih</th>
+                    <th width="30%">Açıklama</th>
+                    <th width="20%" class="text-end">Tutar</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for pay in payments %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    {% if pay.type_label == 'Nakit' %}
+                                        <i class="fa-solid fa-money-bill text-success"></i>
+                                    {% elif pay.type_label == 'Kredi Kartı' %}
+                                        <i class="fa-regular fa-credit-card text-info"></i>
+                                    {% elif pay.type_label == 'Havale / EFT' %}
+                                        <i class="fa-solid fa-building-columns text-warning"></i>
+                                    {% else %}<i class="fa-solid fa-coins text-muted"></i>{% endif %}
+                                </div>
+                                <span style="font-weight: 600;">{{ pay.type_label }}</span>
+                            </div>
+                        </td>
+                        <td class="font-mono" style="color: var(--text-secondary);">{{ pay.date }}</td>
+                        <td>
+                            {% if pay.is_refund %}
+                                <span class="badge bg-danger">İade / Çıkış</span>
+                            {% else %}
+                                <span class="badge bg-success">Tahsilat</span>
+                            {% endif %}
+
+                            {% if pay.installment %}
+                                <span class="badge bg-info"
+                                      style="margin-left: 6px;">{{ pay.installment }} Taksit</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end font-mono"
+                            style="font-weight: 700; color: {% if pay.is_refund %}var(--danger){% else %}var(--success){% endif %}">
+                            {% if pay.is_refund %}-{% endif %}{{ pay.amount }} ₺
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            Herhangi bir ödeme kaydı bulunamadı (Veresiye işlem olabilir).
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if custody_info %}
+        <div class="card" style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05);">
+            <div class="card-header" style="border-bottom-color: rgba(245, 158, 11, 0.2);">
+                <div class="card-title" style="color: var(--warning);"><i class="bi bi-safe"></i> Emanet Bilgisi</div>
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>İşlem Türü</label>
+                    <div>{{ custody_info.type }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Emanet Tutarı</label>
+                    <div style="color: var(--warning);">{{ custody_info.amount_hs }} HAS</div>
+                </div>
+                <div class="info-item">
+                    <label>Açıklama</label>
+                    <div>{{ custody_info.desc }}</div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Bu belge bilgilendirme amaçlıdır. Resmi fatura yerine geçmez.</p>
+        <p>© 2025 KuyumPlus Otomasyon Sistemleri</p>
+    </div>
+
+</div>
+
+</body>
+</html>

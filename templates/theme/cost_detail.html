@@ -1,0 +1,262 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+{% block page_title %}Masraf (Gider) Modülü | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus Masraf Modülü ile tüm giderlerinizi tek panelde yönetin; kategori bazlı analiz,
+    fatura/fiş görsel arşivi ve otomatik vade hatırlatıcılarıyla masraflarınızı kontrolde
+    tutun.{% endblock page_description %}
+{% block page_keywords %}masraf modülü, gider takibi, maliyet analizi, kuyumcu masraf programı, fatura arşivi, vade
+    hatırlatıcı{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/moduller/masraf/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus – Masraf Modülü{% endblock og_title %}
+{% block og_description %}Kategori bazlı maliyet raporları, fiş/fatura görsel arşivi ve otomatik ödeme
+    hatırlatıcılarıyla gider yönetiminde tam kontrol.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/masraf.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/moduller/masraf/{% endblock og_url %}
+{% block twitter_title %}Masraf Modülü | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}Giderlerinizi analiz edin, vade uyarılarıyla nakit akışınızı
+    koruyun.{% endblock twitter_description %}
+{% block header %}
+    <style>
+        .breadcrumb-slim {
+            padding-top: 4rem !important;
+            padding-bottom: 4rem !important;
+        }
+
+        .my-ul-padding {
+            padding-top: 1rem !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .breadcrumb-slim {
+                padding-bottom: 2rem !important;
+                padding-top: 2rem !important;
+
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.6rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: 1rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .my-padding{
+                padding: 2rem 0 !important;
+            }
+            .breadcrumb-slim {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.2rem !important;
+                margin-bottom: .5rem !important;
+
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: .8rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="breadcrumb-area bg-cover breadcrumb-responsive breadcrumb-slim"
+         style="margin: 0!important; background-color:#F8F9FC">
+        <div class="container">
+            <div class="breadcrumb-inner">
+                <div class="row justify-content-center breadcrumb-row">
+                    <div class="col-lg-6 breadcrumb-col">
+                        <h2 class="page-title">Hızlı İşlem Modülü</h2>
+                    </div>
+                    <div class="col-lg-6 text-lg-end breadcrumb-col">
+                        <ul class="page-list my-ul-padding">
+                            <li><a href="{% url '' %}" style="color:black!important">Anasayfa</a></li>
+                            <li><a href="#" style="color: black!important">Modüller</a></li>
+                            <li>Hızlı İşlem</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="service-area pd-top-90 pd-bottom-0 my-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-12 mb-4 mb-lg-0">
+                    <div class="td-sidebar service-sidebar">
+                        <div class="widget widget_info">
+                            <h5 class="widget-title"><i class="fas fa-receipt"></i> Modül Bilgisi</h5>
+                            <div class="widget-info-inner">
+                                <h6>Amaç</h6>
+                                <p>Gider Yönetimi</p>
+                                <h6>Kapsam</h6>
+                                <p>Kasa, Banka, Fatura, Fiş</p>
+                                <h6>Sürüm</h6>
+                                <p>v1.0</p>
+                                <h6>Destek</h6>
+                                <p>7/24 Teknik Destek</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="blog-details-page-content">
+                        <div class="single-blog-inner mb-0">
+                            <div class="thumb mb-4">
+                                <img src="{% static 'theme/media/masraf.webp' %}" alt="Masraf Modülü Görseli">
+                            </div>
+
+                            <div class="details">
+                                <h3>Giderlerinizi Kontrol Altına Alın</h3>
+                                <p>Kuyum Plus Masraf Modülü, tüm giderlerinizi tek ekranda toplayarak maliyetlerinizi
+                                    net bir şekilde görmenizi sağlar. Fiş/fatura görüntülerini yükleyebilir, giderleri
+                                    kategori-merkez bazında ayırabilir ve vadeli ödemeler için otomatik hatırlatıcılar
+                                    oluşturabilirsiniz.</p>
+
+                                <h4>Öne Çıkan Özellikler</h4>
+                                <ul class="single-list-inner style-check style-heading">
+                                    <li><i class="far fa-check-circle"></i> <strong>Kategori Bazlı Maliyet
+                                        Analizi</strong></li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Fiş / Fatura Görsel Arşivi</strong>
+                                        (Mobil Kamera Desteği)
+                                    </li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Otomatik Vade
+                                        Hatırlatıcıları</strong> (E-posta &amp; Uygulama Bildirimi)
+                                    </li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Günlük &amp; Aylık PDF/Excel
+                                        Raporları</strong></li>
+                                </ul>
+
+                                <h4 class="mt-5">Nasıl Çalışır?</h4>
+                                <p>Masraf fişinizi sisteme kaydederken kategorisini (kira, personel, lojistik vb.)
+                                    seçer, tutarı ve vadesini girersiniz. İsterseniz fatura fotoğrafını yükleyerek arşiv
+                                    oluşturursunuz. Vade günü geldiğinde sistem otomatik bildirim ve e-posta ile sizi
+                                    uyarır.</p>
+
+                                <h4 class="mt-5">Sıkça Sorulan Sorular</h4>
+                                <div class="accordion accordion-inner style-2 accordion-icon-left" id="expenseFAQ">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="eq1">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                                    data-bs-target="#ec1" aria-expanded="true">
+                                                Fotoğraf yüklemek zorunlu mu?
+                                            </button>
+                                        </h2>
+                                        <div id="ec1" class="accordion-collapse collapse show" aria-labelledby="eq1"
+                                             data-bs-parent="#expenseFAQ">
+                                            <div class="accordion-body">Hayır, opsiyoneldir; ancak belge arşivi ve
+                                                denetim süreçleri için önerilir.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="eq2">
+                                            <button class="accordion-button collapsed" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#ec2">
+                                                Dövizli masraf kaydı yapabilir miyim?
+                                            </button>
+                                        </h2>
+                                        <div id="ec2" class="accordion-collapse collapse" aria-labelledby="eq2"
+                                             data-bs-parent="#expenseFAQ">
+                                            <div class="accordion-body">Evet. USD, EUR, GBP ve TL para birimlerini
+                                                destekler; raporlarınızı kur farkı ile TL’ye çevirebilirsiniz.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="eq3">
+                                            <button class="accordion-button collapsed" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#ec3">
+                                                Hatırlatıcı saatini değiştirebilir miyim?
+                                            </button>
+                                        </h2>
+                                        <div id="ec3" class="accordion-collapse collapse" aria-labelledby="eq3"
+                                             data-bs-parent="#expenseFAQ">
+                                            <div class="accordion-body">Ayarlar &gt; Bildirimler menüsünden hatırlatma
+                                                saatini ve kanallarını (e-posta, push) güncelleyebilirsiniz.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

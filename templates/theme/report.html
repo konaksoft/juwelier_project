@@ -1,0 +1,207 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+{% block page_title %}Raporlama Modülü | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Satış, stok ve kârlılık analizlerinizi Kuyum Plus Raporlama modülüyle tek tıkla alın.
+    Planlanmış e-postalar ve PDF/Excel dışa aktarma ile veriye her zaman erişin.{% endblock page_description %}
+{% block page_keywords %}raporlama,kuyumcu rapor,stok raporu,satış analizi,kâr analizi,pdf excel rapor,kuyum
+    plus{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/raporlama/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus Raporlama Modülü{% endblock og_title %}
+{% block og_description %}Gerçek zamanlı dashboard, pivot analiz ve planlanmış e-posta raporlarıyla verinizi
+    dönüştürün.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/report1.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/raporlama/{% endblock og_url %}
+{% block twitter_title %}Raporlama | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}PDF/Excel dışa aktarma ve günlük otomatik rapor e-postalarıyla işinizi
+    büyütün.{% endblock twitter_description %}
+{% block header %}
+    <style>
+        .my-padding12 {
+            padding-top: 3rem;
+            padding-bottom: 1rem;
+        }
+
+        @media (max-width: 575.98px) {
+
+            .my-padding12 {
+                padding-top: 2rem !important;
+                padding-bottom: 0 !important;
+            }
+
+            .col-3 {
+                flex: 0 0 25%;
+                max-width: 25%;
+            }
+
+            .my-space {
+                margin-top: 1rem !important;
+            }
+
+            .my-imge-size {
+                width: 100% !important;
+                height: 20rem !important;
+            }
+
+            .my-padding {
+                padding: 2rem 0 !important;
+            }
+
+            .bg-gray {
+                padding: 1rem !important;
+            }
+
+            .banner-inner h2.title {
+                font-size: 1.6rem !important;
+                line-height: 1.3;
+                text-align: center !important;
+            }
+
+            .banner-inner h6.subtitle {
+                font-size: 0.7rem !important;
+                text-align: center !important;
+            }
+
+            .img-right {
+                max-width: 100%;
+                height: auto;
+                margin-bottom: 1rem;
+            }
+
+            .banner-inner {
+                text-align: center !important;
+            }
+
+            .banner-area .col-lg-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .my-padding-bottom {
+                padding-bottom: 1rem !important;
+            }
+        }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="banner-area bg-relative banner-area-3">
+        <div class="container custom-container">
+            <div class="bg-gray ">
+                <img class="img-right " src="{% static 'theme/media/report1.webp' %}" alt="Raporlama Kuyum Plus">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-6 align-self-center">
+                            <div class="banner-inner" style="z-index:4;">
+                                <h6 class="subtitle wow animated fadeInLeft" data-wow-duration="1.5s"
+                                    data-wow-delay="0.3s">Raporlar & Grafikler Modülü</h6>
+                                <h2 class="title wow animated fadeInLeft" data-wow-duration="1.5s"
+                                    data-wow-delay="0.4s">Verinizi <span>Analize</span> Dönüştürün</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="about-area pd-top-60 pd-bottom-60 my-padding-bottom">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-5 wow fadeInLeft " data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <img class="w-100 border-radius-5 my-imge-size" src="{% static 'theme/media/report2.webp' %}"
+                         alt="Rapor Dashboard">
+                </div>
+                <div class="col-lg-7 wow fadeInRight" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <div class="section-title mt-4 mt-lg-0">
+                        <h6 class="sub-title">Ölç, Analiz Et, Büyü</h6>
+                        <h2 class="title">Gerçek Zamanlı <span>Raporlar</span> & Anlık Grafikler</h2>
+                        <p class="content">Satış, stok, TL ve has giriş-çıkış farklarını anında görüntüleyin. Günlük,
+                            haftalık ve aylık kapsamlı raporlarla tüm verilerinizi analiz edin, grafiklerle
+                            görselleştirin</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="service-area bg-cover pd-top-60  pd-bottom-50 my-padding12"
+         style="background-image:url('/static/theme/img/bg/3.png');">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.1s">
+                    <img src="{% static 'theme/media/pdf.webp' %}" width="70" class="mb-3" alt="PDF Excel">
+                    <h6>PDF & Excel Çıktı</h6>
+                </div>
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.2s">
+                    <img src="{% static 'theme/media/dashboard.webp' %}" width="70" class="mb-3" alt="Dashboard">
+                    <h6>Canlı Dashboard</h6>
+                </div>
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.3s">
+                    <img src="{% static 'theme/media/data-transformation.webp' %}" width="70" class="mb-3" alt="Pivot">
+                    <h6>Pivot & Drill-Down</h6>
+                </div>
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.4s">
+                    <img src="{% static 'theme/media/whatsapp1.webp' %}" width="70" class="mb-3" alt="Mail">
+                    <h6>Whatsapp & E-Posta</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="faq-area pd-top-90 pd-bottom-0 my-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 order-lg-last"><img class="w-100 border-radius-5 my-imge-size"
+                                                         src="{% static 'theme/media/report4.webp' %}"
+                                                         alt="Raporlama SSS"></div>
+                <div class="col-lg-6 order-lg-first">
+                    <div class="section-title mb-4"><h6 class="sub-title my-space">SSS</h6>
+                        <h2 class="title">Raporlar & Grafikler <span>Soruları</span></h2></div>
+                    <div class="accordion accordion-inner style-2 accordion-icon-left" id="repFAQ">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="qExport">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#cExport" aria-expanded="true" aria-controls="cExport">Hangi
+                                    raporları alabilirim?
+                                </button>
+                            </h2>
+                            <div id="cExport" class="accordion-collapse collapse show" aria-labelledby="qExport"
+                                 data-bs-parent="#repFAQ">
+                                <div class="accordion-body">Günlük, haftalık ve aylık satış, TL giriş-çıkış, müşteri ve
+                                    stok raporlarını alabilirsiniz.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="qSchedule">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#cSchedule" aria-expanded="false" aria-controls="cSchedule">
+                                    Grafikler nasıl çalışıyor?
+                                </button>
+                            </h2>
+                            <div id="cSchedule" class="accordion-collapse collapse" aria-labelledby="qSchedule"
+                                 data-bs-parent="#repFAQ">
+                                <div class="accordion-body">Satış, stok ve kâr verilerinizi farklı zaman aralıklarında
+                                    grafiklerle inceleyebilirsiniz.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="qCustom">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#cCustom" aria-expanded="false" aria-controls="cCustom">
+                                    Raporları paylaşabilir miyim?
+                                </button>
+                            </h2>
+                            <div id="cCustom" class="accordion-collapse collapse" aria-labelledby="qCustom"
+                                 data-bs-parent="#repFAQ">
+                                <div class="accordion-body">Evet. Raporlarınızı PDF veya Excel olarak dışa aktarabilir,
+                                    e-posta ile otomatik gönderebilirsiniz.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

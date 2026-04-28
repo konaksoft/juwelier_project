@@ -1,0 +1,1474 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* ===== Panel genel yardımcı stiller (sade tutuldu) ===== */
+        .toolbar-btn-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 8rem;
+            height: 2.7rem;
+        }
+
+        @media (max-width: 575.98px) {
+            .card-header {
+                flex-wrap: wrap;
+                row-gap: .5rem;
+            }
+
+            .toolbar-btn-size {
+                width: auto !important;
+                min-width: 2.5rem;
+                height: 2.5rem !important;
+                padding: 0 .5rem !important;
+            }
+
+            .toolbar-btn-size span {
+                display: none !important;
+            }
+        }
+
+        #tableToolbar {
+            padding-top: .5rem;
+            padding-bottom: .2rem;
+            align-items: center;
+        }
+
+        #tableToolbar .toolbar-buttons {
+            margin-top: 0;
+            padding-top: 2px;
+            display: flex;
+            gap: .6rem;
+            align-items: center;
+        }
+
+        #tableToolbar .dataTables_filter {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        #tableToolbar .dataTables_filter label {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 34px;
+            line-height: 34px;
+            border-radius: .45rem;
+        }
+
+        /* Tablo okunabilirlik */
+        .dt-nowrap {
+            white-space: nowrap;
+        }
+
+        .num-cell {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: .1px;
+        }
+
+        @media (max-width: 767.98px) {
+            #kt_datatable_example_1 th.col-rate,
+            #kt_datatable_example_1 td.col-rate,
+            #kt_datatable_example_1 th.col-purchase,
+            #kt_datatable_example_1 td.col-purchase,
+            #kt_datatable_example_1 th.col-sale,
+            #kt_datatable_example_1 td.col-sale {
+                display: none;
+            }
+        }
+
+        /* İşlem tipi pill */
+        .tx-pill {
+            font-weight: 700;
+            padding: .25rem .5rem;
+            border-radius: .5rem;
+        }
+
+        .tx-pill.sale {
+            background: #ffe6e6;
+            color: #b50000;
+        }
+
+        .tx-pill.purchase {
+            background: #e9f7ef;
+            color: #0a7a2d;
+        }
+
+        .tx-pill.return {
+            background: #fff4e5;
+            color: #a15b00;
+        }
+
+        .tx-pill.stock {
+            background: #e7f1ff;
+            color: #0b5ed7;
+        }
+
+        .tx-pill.order {
+            background: #eee;
+            color: #333;
+        }
+
+        tr.tx-sale td {
+            border-left: 3px solid #b50000;
+        }
+
+        tr.tx-buy td {
+            border-left: 3px solid #0a7a2d;
+        }
+
+        tr.tx-return td {
+            border-left: 3px solid #a15b00;
+        }
+
+        tr.tx-stock td {
+            border-left: 3px solid #0b5ed7;
+        }
+
+        tr.tx-order td {
+            border-left: 3px solid #6c757d;
+        }
+
+        /* ===== PANEL UYUMLU FİLTRE BAR ===== */
+        .panel-filters {
+            background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+            border: 1px solid #eef1f4;
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 1px 0 rgba(16, 24, 40, .04);
+        }
+
+        .chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .42rem .8rem;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            color: #334155;
+            font-weight: 600;
+            font-size: .875rem;
+            cursor: pointer;
+            transition: background .2s ease, border-color .2s ease, transform .15s ease;
+        }
+
+        .chip:hover {
+            background: #f8fafc;
+        }
+
+        .chip.active {
+            background: #fff8e1;
+            border-color: #ffe08a;
+            box-shadow: 0 0 0 2px #fff inset;
+        }
+
+        .chip.success.active {
+            background: #ecfdf5;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+
+        .chip.danger.active {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+
+        .chip.neutral.active {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .date-quick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .35rem;
+        }
+
+        .date-quick .dq {
+            @apply chip;
+        }
+
+        /* sadece okunurluk için; gerçek kurallar aşağıda */
+        .date-quick .dq {
+            padding: .38rem .7rem;
+        }
+
+        .date-quick .dq.active {
+            background: #fef3c7;
+            border-color: #fde68a;
+            color: #92400e;
+        }
+
+        .date-quick .dq.range {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #9a3412;
+        }
+
+        /* ====== TARİH ARALIĞI BLOĞU (GÜNCELLENDİ) ====== */
+        .date-range {
+            display: none;
+            gap: .5rem;
+            margin-top: .5rem;
+            flex-wrap: wrap; /* YENİ: taşmayı engellemek için wrap */
+        }
+
+        .date-range .form-control {
+            height: 36px;
+            border-radius: 10px;
+            flex: 1 1 150px; /* YENİ: inputlar esnek genişlik */
+            min-width: 0;
+        }
+
+        .date-range .btn {
+            flex: 0 0 auto; /* YENİ: buton sabit kalsın */
+            white-space: nowrap;
+        }
+
+        /* Aktif filtre özet çipleri */
+        .chips-active {
+            display: flex;
+            gap: .35rem;
+            flex-wrap: wrap;
+            margin-top: .5rem;
+        }
+
+        .chip-mini {
+            display: inline-flex;
+            gap: .4rem;
+            align-items: center;
+            padding: .25rem .55rem;
+            border-radius: 999px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #334155;
+            font-weight: 600;
+            font-size: .8rem;
+        }
+
+        .chip-mini .x {
+            cursor: pointer;
+            font-weight: 900;
+            color: #64748b;
+        }
+
+        /* Mini özet rozetleri */
+        .mini-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+            margin-top: .35rem;
+        }
+
+        .mini-stats .badge {
+            font-weight: 600;
+        }
+
+        .process-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .process-table-wrapper table {
+            width: 100% !important;
+            min-width: 920px;
+            table-layout: auto;
+        }
+
+        @media (max-width: 767.98px) {
+            .process-table-wrapper table {
+                min-width: 920px;
+            }
+        }
+
+        @media (min-width: 992px) and (max-width: 3400px) {
+            .pf-col-date {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+                margin-top: .5rem;
+            }
+
+            .pf-col-date .date-quick {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .pf-col-date .date-range .form-control {
+                flex: 1 1 100%;
+            }
+
+            .pf-col-date .date-range .btn {
+                margin-top: .25rem;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-5" id="kt_app_main"
+         style="border:1px groove aliceblue;border-radius:10px;">
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+                <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl"
+                     style="max-width:100%;">
+                    <div class="content flex-row-fluid" id="kt_content">
+                        <div class="row my-margin">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-header border-0 pt-5 d-flex justify-content-between align-items-center">
+                                            <h3 class="card-title align-items-start flex-column">
+                                                <span class="card-label fw-bold text-dark">İşlem Tablosu</span>
+                                            </h3>
+                                            <div class="card-toolbar d-flex align-items-center gap-3">
+                                                <div class="card-toolbar d-flex align-items-center gap-3">
+                                                    <button type="button" class="btn btn-light-primary toolbar-btn-size"
+                                                            data-kt-menu-trigger="click"
+                                                            data-kt-menu-placement="bottom-end">
+                                                        <i class="fa-solid fa-file-export"></i> <span
+                                                            class="d-none d-lg-inline ms-1">Rapor</span>
+                                                    </button>
+                                                    <div class="menu menu-sub menu-sub-dropdown w-250px"
+                                                         data-kt-menu="true">
+                                                        <div class="menu-item px-3"><a href="#" class="menu-link"
+                                                                                       onclick="generateReport('daily')">Bugünün
+                                                            Raporu</a></div>
+                                                        <div class="menu-item px-3"><a href="#" class="menu-link"
+                                                                                       onclick="generateReport('weekly')">Haftalık
+                                                            Rapor</a></div>
+                                                        <div class="menu-item px-3"><a href="#" class="menu-link"
+                                                                                       onclick="generateReport('monthly')">Aylık
+                                                            Rapor</a></div>
+                                                        <div class="separator my-1"></div>
+                                                        <div class="menu-item px-3">
+                                                            <a href="#" class="menu-link text-primary fw-bold"
+                                                               data-bs-toggle="modal" data-bs-target="#profitReportModal">
+                                                                <i class="fa-solid fa-chart-column me-1"></i>Detaylı Kârlılık Raporu
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <a href="#" class="btn btn-primary toolbar-btn-size"
+                                                   data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+                                                    <i class="ki-duotone ki-plus fs-2"></i><span
+                                                        class="d-none d-lg-inline ms-1">Ekle</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="panel-filters mb-3">
+                                            <div class="row g-3 align-items-end">
+
+                                                <!-- İşlem Türü -->
+                                                <div class="col-12 col-lg-4">
+                                                    <label class="form-label mb-1">İşlem Türü</label>
+                                                    <div class="chip-group" id="pf_process">
+                                                        <button type="button" class="chip active" data-val="all"><i
+                                                                class="bi bi-list-ul"></i> Tümü
+                                                        </button>
+                                                        <button type="button" class="chip" data-val="fast"><i
+                                                                class="bi bi-lightning-fill"></i> Hızlı
+                                                        </button>
+                                                        <button type="button" class="chip" data-val="retail"><i
+                                                                class="bi bi-shop"></i> Perakende
+                                                        </button>
+                                                        <button type="button" class="chip" data-val="wholesale"><i
+                                                                class="bi bi-box-seam"></i> Toptan
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- İşlem Yönü -->
+                                                <div class="col-12 col-lg-3">
+                                                    <label class="form-label mb-1">İşlem Yönü</label>
+                                                    <div class="chip-group" id="pf_tx">
+                                                        <button type="button" class="chip active" data-val="all">Tümü
+                                                        </button>
+                                                        <button type="button" class="chip success" data-val="SALE"><i
+                                                                class="bi bi-arrow-up-right-circle"></i> Satış
+                                                        </button>
+                                                        <button type="button" class="chip danger" data-val="PURCHASE"><i
+                                                                class="bi bi-arrow-down-left-circle"></i> Alış
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Müşteri -->
+                                                <div class="col-12 col-lg-3">
+                                                    <label class="form-label mb-1">Müşteri</label>
+                                                    <div class="chip-group" id="pf_customer">
+                                                        <button type="button" class="chip active" data-val="all">Tümü
+                                                        </button>
+                                                        <button type="button" class="chip" data-val="with_customer"><i
+                                                                class="bi bi-person-check"></i> Müşterili
+                                                        </button>
+                                                        <button type="button" class="chip" data-val="without_customer">
+                                                            <i class="bi bi-person-x"></i> Müşterisiz
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- FAZ: Ürün Tipi filtresi -->
+                                                <div class="col-12 col-lg-4">
+                                                    <label class="form-label mb-1">Ürün Tipi</label>
+                                                    <div class="chip-group" id="pf_product">
+                                                        <button type="button" class="chip active" data-val="all">Tümü</button>
+                                                        <button type="button" class="chip" data-val="barcoded"><i class="bi bi-upc-scan"></i> Barkodlu</button>
+                                                        <button type="button" class="chip" data-val="gram"><i class="bi bi-coin"></i> Gram Altın</button>
+                                                        <button type="button" class="chip" data-val="bracelet"><i class="bi bi-circle"></i> Bilezik</button>
+                                                        <button type="button" class="chip" data-val="scrap"><i class="bi bi-recycle"></i> Hurda</button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- FAZ: Ayar (Milyem) filtresi -->
+                                                <div class="col-12 col-lg-3">
+                                                    <label class="form-label mb-1">Ayar (Milyem)</label>
+                                                    <div class="chip-group" id="pf_mileage">
+                                                        <button type="button" class="chip active" data-val="">Tümü</button>
+                                                        <button type="button" class="chip" data-val="995">24 Ayar</button>
+                                                        <button type="button" class="chip" data-val="916">22 Ayar</button>
+                                                        <button type="button" class="chip" data-val="750">18 Ayar</button>
+                                                        <button type="button" class="chip" data-val="585">14 Ayar</button>
+                                                        <button type="button" class="chip" data-val="417">10 Ayar</button>
+                                                        <button type="button" class="chip" data-val="333">8 Ayar</button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Tarih -->
+                                                <div class="col-12 col-lg-2 pf-col-date">
+                                                    <label class="form-label mb-1">Tarih</label>
+                                                    <div class="date-quick" id="pf_dates">
+                                                        <button type="button" class="dq chip active" data-scope="today">
+                                                            <i class="bi bi-calendar-day"></i> Bugün
+                                                        </button>
+                                                        <button type="button" class="dq chip" data-scope="yesterday">
+                                                            Dün
+                                                        </button>
+                                                        <button type="button" class="dq chip" data-scope="week">Hafta
+                                                        </button>
+                                                        <button type="button" class="dq chip" data-scope="month">Ay
+                                                        </button>
+                                                        <button type="button" class="dq chip range" data-scope="range">
+                                                            <i class="bi bi-calendar-range"></i> Aralık
+                                                        </button>
+                                                        <button type="button" class="dq chip" data-scope="all"><i
+                                                                class="bi bi-infinity"></i> Tümü
+                                                        </button>
+                                                    </div>
+                                                    <div class="date-range" id="pf_range">
+                                                        <input type="text" id="pf_from"
+                                                               class="form-control form-control-sm"
+                                                               placeholder="Başlangıç">
+                                                        <input type="text" id="pf_to"
+                                                               class="form-control form-control-sm" placeholder="Bitiş">
+                                                        <button class="btn btn-sm btn-primary" id="pf_apply">Uygula
+                                                        </button>
+                                                        <button class="btn btn-sm btn-light" id="pf_clear"><i
+                                                                class="bi bi-x"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="chips-active" id="pf_active"></div>
+                                        </div>
+                                        <div class="table-responsive process-table-wrapper">
+                                            <div id="tableToolbar"
+                                                 class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                                                <div class="d-flex toolbar-buttons" style="gap:.6rem">
+                                                    <button type="button" class="btn btn-light-danger toolbar-btn-size"
+                                                            id="deleteSelected">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-light-success toolbar-btn-size"
+                                                            id="changeStatusSelected">
+                                                        <i class="fa-solid fa-repeat"></i>
+                                                    </button>
+                                                </div>
+                                                <div id="dataTableSearch"></div>
+                                            </div>
+
+                                            <table id="kt_datatable_example_1"
+                                                   class="table align-middle table-row-dashed fs-6 gy-5 text-nowrap">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th class="w-10px pe-2">
+                                                        <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                   id="checkAll" value="1"/>
+                                                        </div>
+                                                    </th>
+                                                    <th>İşlem No</th>
+                                                    <th>Miktar</th>
+                                                    <th>Ürün</th>
+                                                    <th>İşlem Türü</th>
+                                                    <th>Personel</th>
+                                                    <th>Müşteri</th>
+                                                    <th>Tarih</th>
+                                                    <th>Detay</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detay Modal -->
+    <div class="modal fade" id="processDetailsModal" tabindex="-1" aria-labelledby="processDetailsModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-sm modal-dialog-centered modal-fullscreen-md-down modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="processDetailsModalLabel">İşlem Detayları Bilgi Fişi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="printableArea">
+                        <h3 class="title-fis" style="text-align:center;margin:5px 0;">İşlem Detayları Bilgi Fişi</h3>
+                        <div style="text-align:left;">
+                            <p style="margin:2px 0;"><strong>Satış Yapan Personel:</strong> <span
+                                    id="employeeName"></span></p>
+                            <p style="margin:2px 0;"><strong>Müşteri:</strong> <span id="customerName"></span></p>
+                            <p style="margin:2px 0;"><strong>Telefon Numarası:</strong> <span id="customerPhone"></span>
+                            </p>
+                            <p style="margin:2px 0;"><strong>Toplam Satış Tutarı:</strong> <span id="totalAmountSale"
+                                                                                                 style="color:green;"></span>
+                            </p>
+                            <p style="margin:2px 0;"><strong>Toplam Alış/İade Tutarı:</strong> <span
+                                    id="totalAmountPurchaseReturn" style="color:red;"></span></p>
+                            <p style="margin:2px 0;"><strong>Net Toplam Tutar:</strong> <span id="totalAmount"
+                                                                                              style="color:blue;"></span>
+                            </p>
+                        </div>
+                        <hr style="border:none;border-top:1px solid #000;margin:5px 0;"/>
+                        <table id="processDetailsTable" style="width:100%;border-collapse:collapse;">
+                            <thead>
+                            <tr>
+                                <th style="border:1px solid #000;padding:3px;text-align:left;">Ürün</th>
+                                <th style="border:1px solid #000;padding:3px;text-align:left;">Satış Has</th>
+                                <th style="border:1px solid #000;padding:3px;text-align:left;">Tutar</th>
+                                <th style="border:1px solid #000;padding:3px;text-align:left;">Tarih</th>
+                            </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-print-none">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <button type="button" class="btn btn-success" onclick="exportToExcel()">Excel İndir</button>
+                    <button type="button" class="btn btn-danger" onclick="exportToPDF()">PDF İndir</button>
+                    <button type="button" class="btn btn-primary" onclick="printDetails()">Yazdır</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- DETAYLI KÂRLILIK RAPORU MODALI                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="profitReportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-chart-column text-primary me-2"></i>
+                        Detaylı Kârlılık Raporu
+                        <span class="text-muted fs-7 ms-2" id="profitReportPeriod"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Uygulanan filtre rozetleri -->
+                    <div id="profitReportFilters" class="mb-3"></div>
+
+                    <!-- KPI Kartları -->
+                    <div class="row g-3 mb-4" id="profitReportKpi" style="display:none;">
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center">
+                                <div class="text-muted small mb-1">Toplam Satış</div>
+                                <div class="fw-bold fs-4 text-success" id="kpi_sale_tl">-</div>
+                                <div class="text-muted small"><span id="kpi_sale_count">0</span> işlem</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center">
+                                <div class="text-muted small mb-1">Toplam Maliyet</div>
+                                <div class="fw-bold fs-4 text-warning" id="kpi_cost_tl">-</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center">
+                                <div class="text-muted small mb-1">Brüt Kâr (TL)</div>
+                                <div class="fw-bold fs-4 text-primary" id="kpi_profit_tl">-</div>
+                                <div class="text-muted small">%<span id="kpi_kar_pct">0,00</span></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center">
+                                <div class="text-muted small mb-1">Kâr (Has)</div>
+                                <div class="fw-bold fs-4 text-primary" id="kpi_kar_hs">-</div>
+                                <div class="text-muted small">gr</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rapor tablosu -->
+                    <div class="table-responsive">
+                        <table class="table table-row-bordered table-row-gray-300 align-middle gs-2 gy-2 fs-7"
+                               id="profitReportTable">
+                            <thead>
+                                <tr class="fw-bold text-muted bg-light">
+                                    <th class="ps-3" rowspan="2">Kategori</th>
+                                    <th class="text-center" rowspan="2">Adet</th>
+                                    <th class="text-center" colspan="4" style="background:#e8f5ed;">Satış (TL / Has)</th>
+                                    <th class="text-center" colspan="3" style="background:#fff3cd;">Maliyet</th>
+                                    <th class="text-center" colspan="3" style="background:#d1e7ff;">Kâr</th>
+                                </tr>
+                                <tr class="fw-bold text-muted bg-light">
+                                    <th class="text-end" style="background:#e8f5ed;">Gram</th>
+                                    <th class="text-end" style="background:#e8f5ed;">Satış (TL)</th>
+                                    <th class="text-end" style="background:#e8f5ed;">Satış (Has)</th>
+                                    <th class="text-end" style="background:#e8f5ed;">Birim (TL)</th>
+                                    <th class="text-end" style="background:#fff3cd;">Maliyet (TL)</th>
+                                    <th class="text-end" style="background:#fff3cd;">Maliyet (Has)</th>
+                                    <th class="text-end" style="background:#fff3cd;">Birim Mal. (TL)</th>
+                                    <th class="text-end" style="background:#d1e7ff;">Kâr (TL)</th>
+                                    <th class="text-end" style="background:#d1e7ff;">Kâr (Has)</th>
+                                    <th class="text-end" style="background:#d1e7ff;">Kâr %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profitReportBody">
+                                <tr>
+                                    <td colspan="11" class="text-center text-muted py-5">
+                                        <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="profitReportFoot" style="display:none;">
+                                <tr class="fw-bold bg-light">
+                                    <td class="ps-3">GENEL TOPLAM</td>
+                                    <td class="text-center" id="foot_sale_count">-</td>
+                                    <td class="text-end" id="foot_sale_gram">-</td>
+                                    <td class="text-end" id="foot_sale_tl">-</td>
+                                    <td class="text-end" id="foot_sale_hs">-</td>
+                                    <td class="text-end">—</td>
+                                    <td class="text-end" id="foot_cost_tl">-</td>
+                                    <td class="text-end" id="foot_cost_hs">-</td>
+                                    <td class="text-end">—</td>
+                                    <td class="text-end" id="foot_profit_tl">-</td>
+                                    <td class="text-end" id="foot_kar_hs">-</td>
+                                    <td class="text-end" id="foot_kar_pct">-</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div class="text-muted small">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Rapor, işlem tablosunda uyguladığınız filtrelerle aynı kapsamı kullanır.
+                    </div>
+                    <div>
+                        <a href="#" class="btn btn-danger" id="btnProfitReportPdf" target="_blank">
+                            <i class="fa-solid fa-file-pdf me-1"></i>PDF İndir
+                        </a>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Kapat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/tr.js"></script>
+
+    <script>
+        const filtersPanel = (function () {
+            // ... Mevcut filtersPanel kodları ...
+            // (Değişiklik yok)
+            const st = {
+                process_kind: 'all',
+                tx_kind: 'all',
+                customer: 'all',
+                product_kind: 'all',
+                mileage: '',
+                scope: 'today',
+                date_from: '',
+                date_to: ''
+            };
+            const ddmmyyyy = function (d) {
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = d.getFullYear();
+                return dd + '/' + mm + '/' + yy;
+            };
+            const today = function () {
+                return new Date();
+            };
+            const addDays = function (d, n) {
+                const x = new Date(d);
+                x.setDate(x.getDate() + n);
+                return x;
+            };
+            const startOfWeek = function (d) {
+                const x = new Date(d);
+                const wd = (x.getDay() + 6) % 7;
+                x.setDate(x.getDate() - wd);
+                return x;
+            };
+            const startOfMonth = function (d) {
+                return new Date(d.getFullYear(), d.getMonth(), 1);
+            };
+
+            function setQuick(scope) {
+                st.scope = scope;
+                const now = today();
+                if (scope === 'today') {
+                    st.date_from = ddmmyyyy(now);
+                    st.date_to = ddmmyyyy(now);
+                } else if (scope === 'yesterday') {
+                    const y = addDays(now, -1);
+                    st.date_from = ddmmyyyy(y);
+                    st.date_to = ddmmyyyy(y);
+                } else if (scope === 'week') {
+                    const s = startOfWeek(now);
+                    st.date_from = ddmmyyyy(s);
+                    st.date_to = ddmmyyyy(now);
+                } else if (scope === 'month') {
+                    const s = startOfMonth(now);
+                    st.date_from = ddmmyyyy(s);
+                    st.date_to = ddmmyyyy(now);
+                } else if (scope === 'all') {
+                    st.date_from = '';
+                    st.date_to = '';
+                }
+            }
+
+            setQuick('today');
+
+            function toParams() {
+                return {
+                    process_kind: st.process_kind,
+                    transaction_type: st.tx_kind,
+                    customer_filter: st.customer,
+                    product_kind: st.product_kind,
+                    mileage: st.mileage,
+                    date_from: st.date_from || '',
+                    date_to: st.date_to || ''
+                };
+            }
+
+            function syncChips() {
+                const setAct = function (wrap, attr, val) {
+                    document.querySelectorAll(wrap + ' [' + attr + ']').forEach(function (el) {
+                        el.classList.toggle('active', el.getAttribute(attr) === val);
+                    });
+                };
+                setAct('#pf_process', 'data-val', st.process_kind);
+                setAct('#pf_tx', 'data-val', st.tx_kind);
+                setAct('#pf_customer', 'data-val', st.customer);
+                setAct('#pf_product', 'data-val', st.product_kind);
+                setAct('#pf_mileage', 'data-val', st.mileage);
+                setAct('#pf_dates', 'data-scope', st.scope);
+
+                document.getElementById('pf_range').style.display = (st.scope === 'range') ? 'flex' : 'none';
+                renderActiveChips();
+            }
+
+            function renderActiveChips() {
+                const wrap = document.getElementById('pf_active');
+                wrap.innerHTML = '';
+                const add = function (label, field) {
+                    const el = document.createElement('span');
+                    el.className = 'chip-mini';
+                    el.dataset.field = field;
+                    el.innerHTML = label + ' <span class="x">&times;</span>';
+                    wrap.appendChild(el);
+                };
+                if (st.process_kind !== 'all') {
+                    const map = {fast: 'Hızlı', retail: 'Perakende', wholesale: 'Toptan'};
+                    add('İşlem Türü: ' + map[st.process_kind], 'process_kind');
+                }
+                if (st.tx_kind !== 'all') {
+                    add('Yön: ' + (st.tx_kind === 'SALE' ? 'Satış' : 'Alış'), 'tx_kind');
+                }
+                if (st.customer !== 'all') {
+                    add('Müşteri: ' + (st.customer === 'with_customer' ? 'Müşterili' : 'Müşterisiz'), 'customer');
+                }
+                if (st.product_kind !== 'all') {
+                    const pmap = {barcoded: 'Barkodlu', gram: 'Gram Altın', bracelet: 'Bilezik', scrap: 'Hurda'};
+                    add('Ürün: ' + (pmap[st.product_kind] || st.product_kind), 'product_kind');
+                }
+                if (st.mileage) {
+                    const ayarMap = {'995': '24 Ayar', '916': '22 Ayar', '750': '18 Ayar', '585': '14 Ayar', '417': '10 Ayar', '333': '8 Ayar'};
+                    add('Ayar: ' + (ayarMap[st.mileage] || st.mileage), 'mileage');
+                }
+                if (st.scope === 'range' && st.date_from && st.date_to) {
+                    add('Tarih: ' + st.date_from + ' – ' + st.date_to, 'date');
+                } else if (!['today'].includes(st.scope)) {
+                    const map2 = {yesterday: 'Dün', week: 'Bu Hafta', month: 'Bu Ay', all: 'Tümü'};
+                    if (map2[st.scope]) add('Tarih: ' + map2[st.scope], 'date');
+                }
+                wrap.querySelectorAll('.chip-mini .x').forEach(function (x) {
+                    x.addEventListener('click', function (e) {
+                        const f = e.target.parentElement.dataset.field;
+                        if (f === 'process_kind') st.process_kind = 'all';
+                        if (f === 'tx_kind') st.tx_kind = 'all';
+                        if (f === 'customer') st.customer = 'all';
+                        if (f === 'product_kind') st.product_kind = 'all';
+                        if (f === 'mileage') st.mileage = '';
+                        if (f === 'date') setQuick('today');
+                        syncChips();
+                        _reload();
+                    });
+                });
+            }
+
+            let dtRef = null;
+            const _reload = function () {
+                if (dtRef) dtRef.ajax.reload();
+            };
+
+            function init(dt) {
+                dtRef = dt;
+                if (window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.tr) flatpickr.localize(flatpickr.l10ns.tr);
+                if (window.flatpickr) {
+                    flatpickr('#pf_from', {dateFormat: 'd/m/Y', locale: 'tr'});
+                    flatpickr('#pf_to', {dateFormat: 'd/m/Y', locale: 'tr'});
+                }
+                document.querySelectorAll('#pf_process .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.process_kind = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_tx .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.tx_kind = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_customer .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.customer = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_product .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.product_kind = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_mileage .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.mileage = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_dates .dq').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        const sc = b.dataset.scope;
+                        if (sc === 'range') {
+                            st.scope = 'range';
+                        } else {
+                            setQuick(sc);
+                        }
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.getElementById('pf_apply').addEventListener('click', function () {
+                    const s = (document.getElementById('pf_from').value || '').trim();
+                    const e = (document.getElementById('pf_to').value || '').trim();
+                    if (s && e) {
+                        st.scope = 'range';
+                        st.date_from = s;
+                        st.date_to = e;
+                        syncChips();
+                        _reload();
+                    }
+                });
+                document.getElementById('pf_clear').addEventListener('click', function () {
+                    // Tüm filtreleri sıfırla (temizle)
+                    st.process_kind = 'all';
+                    st.tx_kind = 'all';
+                    st.customer = 'all';
+                    st.product_kind = 'all';
+                    st.mileage = '';
+                    setQuick('today');
+                    syncChips();
+                    _reload();
+                });
+                syncChips();
+            }
+
+            return {init: init, toParams: toParams};
+        })();
+    </script>
+
+    <script>
+        function fmtTL(v) {
+            const n = Number(v) || 0;
+            const s = n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+            return s + '\u00A0₺';
+        }
+
+        function fmtHS(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 3}) + '\u00A0gr';
+        }
+
+        function fmtRate(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + '\u00A0₺/gr';
+        }
+
+        function badgeTx(t) {
+            switch (t) {
+                case 'SALE':
+                    return '<span class="tx-pill sale">Satış</span>';
+                case 'PURCHASE':
+                    return '<span class="tx-pill purchase">Alış</span>';
+                case 'RETURN':
+                    return '<span class="tx-pill return">İade</span>';
+                case 'STOCK_IN':
+                    return '<span class="tx-pill stock">Stok</span>';
+                case 'ORDER_IN':
+                    return '<span class="tx-pill order">Sipariş</span>';
+                default:
+                    return '<span class="tx-pill order">İşlem</span>';
+            }
+        }
+
+        function rowClass(t) {
+            if (t === 'SALE') return 'tx-sale';
+            if (t === 'PURCHASE') return 'tx-buy';
+            if (t === 'RETURN') return 'tx-return';
+            if (t === 'STOCK_IN') return 'tx-stock';
+            if (t === 'ORDER_IN') return 'tx-order';
+            return '';
+        }
+
+        let dt = $("#kt_datatable_example_1").DataTable({
+            dom: "<'top d-flex justify-content-end'f>rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+            info: false,
+            paging: true,
+            lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+            pageLength: 25,
+            searchDelay: 400,
+            processing: true,
+            serverSide: true,
+            order: [[8, 'desc']],
+            orderMulti: false,
+            autoWidth: false,
+            stateSave: false,
+            initComplete: function () {
+                $('#kt_datatable_example_1_filter').appendTo('#dataTableSearch').addClass('mb-0');
+            },
+            select: {style: 'multi', selector: "td:first-child input[type='checkbox']", className: 'row-selected'},
+            ajax: {
+                url: "/process/get-all",
+                type: "GET",
+                dataType: "json",
+                data: function (d) {
+                    Object.assign(d, filtersPanel.toParams());
+                }
+            },
+            columns: [
+                {
+                    data: null,
+                    orderable: false,
+                    className: "text-center",
+                    render: function (d, t, row) {
+                        return '<input class="form-check-input" type="checkbox" value="' + row.process_no + '">';
+                    }
+                },
+                {
+                    data: "process_no",
+                    className: "dt-nowrap",
+                    render: function (data, type, row) {
+                        // 1. DEĞİŞİKLİK: İşlem No linki artık /process/detail/ sayfasına gidiyor. (Bozuk HTML yapısı da düzeltildi)
+                        return `<a href="/process/detail/${data}/" style="text-decoration:none;"><span style="color:#1235e8;font-weight:600;cursor:pointer" class="open-process-modal" data-process-no="${data}">${data}</span></a>`;
+                    }
+                },
+                {
+                    data: "quantity_display",
+                    className: "dt-nowrap text-end",
+                    orderable: false
+                },
+                {
+                    data: "product_name",
+                    className: "dt-nowrap",
+                    orderable: false
+                },
+                {
+                    data: "transaction_type", className: "dt-nowrap", render: function (d) {
+                        return badgeTx(d);
+                    }
+                },
+                {data: "employee", className: "dt-nowrap"},
+                {data: "customer", className: "dt-nowrap"},
+                {
+                    data: "date",
+                    className: "dt-nowrap",
+                    render: function (d) {
+                        if (!d) return '-';
+                        const x = new Date(d);
+                        return x.toLocaleDateString('tr-TR') + ' ' + x.toLocaleTimeString('tr-TR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    className: "text-center",
+                    render: function (data, type, row) {
+                        const pn = encodeURIComponent(row.process_no);
+
+                        // 2. DEĞİŞİKLİK: Detay butonu artık process-detail adresine gidiyor (Linkler yer değiştirdi)
+                        const urlDetail = '/process/process-detail/' + pn;
+                        const urlReceipt80 = '/process/receipt/' + pn + '/?paper=80&print=1';
+
+                        const urlInvoiceCreate = "{% url 'invoices:create-from-process-group' %}?process_no=" + pn;
+
+                        let actionHtml = '<div class="d-flex justify-content-center gap-2">';
+
+                        // Detay Butonu
+                        actionHtml += '<a href="' + urlDetail + '" class="btn btn-sm btn-light-primary" title="İşlem Detayı"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>';
+
+                        // Fiş Butonu
+                        actionHtml += '<a href="' + urlReceipt80 + '" class="btn btn-sm btn-light-info" title="Termal Fiş (80mm)"><i class="fa-solid fa-receipt"></i></a>';
+
+                        // Fatura / Gider Pusulası Butonu Mantığı
+                        if (row.invoice_url && row.invoice_url.trim() !== '') {
+                            const isPurchase = (row.transaction_type === 'PURCHASE');
+
+                            let btnClass = 'btn-light-success';
+                            let iconClass = 'fa-file-invoice';
+                            let title = row.invoice_no ? ('Fatura No: ' + row.invoice_no) : 'Fatura Görüntüle';
+
+                            let targetUrl = row.invoice_url;
+
+                            if (isPurchase && targetUrl.indexOf('pavo') === -1) {
+                                if (row.invoice_id) {
+                                    targetUrl = "{% url 'invoices:expense-note-detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.invoice_id);
+                                    title = 'Gider Pusulası Görüntüle';
+                                    btnClass = 'btn-light-warning';
+                                    iconClass = 'fa-file-contract';
+                                }
+                            }
+
+                            actionHtml += '<a href="' + targetUrl + '" class="btn btn-sm ' + btnClass + '" target="_blank" title="' + title + '"><i class="fa-solid ' + iconClass + '"></i></a>';
+
+                        } else {
+                            actionHtml += '<a href="' + urlInvoiceCreate + '" class="btn btn-sm btn-light-warning" title="Fatura Oluştur"><i class="fa-solid fa-file-signature"></i></a>';
+                        }
+
+                        actionHtml += '</div>';
+                        return actionHtml;
+                    }
+                }
+            ],
+            language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+            createdRow: function (row, data) {
+                $(row).addClass(rowClass(data.transaction_type));
+            }
+        });
+        $('#checkAll').on('click', function () {
+            var isChecked = $(this).prop('checked');
+            var rows = dt.rows({page: 'current'}).nodes();
+
+            // Checkbox'ların görsel durumunu güncelle
+            $(rows).find('input[type="checkbox"]').prop('checked', isChecked);
+
+            // DataTables Select eklentisinin durumunu güncelle
+            if (isChecked) {
+                dt.rows({page: 'current'}).select();
+            } else {
+                dt.rows({page: 'current'}).deselect();
+            }
+        });
+        dt.on('deselect', function (e, dt, type, indexes) {
+            if (type === 'row') {
+                $('#checkAll').prop('checked', false);
+            }
+        });
+
+        $('#kt_datatable_example_1').on('xhr.dt', function () {
+            const json = dt.ajax.json();
+            if (!json || !json.data) return;
+            let sumBuy = 0, sumSale = 0, sumNet = 0, sumHas = 0;
+            json.data.forEach(function (r) {
+                sumBuy += Number(r.purchase_amount || 0);
+                sumSale += Number(r.sale_amount || 0);
+                sumNet += Number(r.total_amount || 0);
+                sumHas += Number(r.price_hs || 0);
+            });
+            $('#s_buy_tl').text(fmtTL(sumBuy));
+            $('#s_sale_tl').text(fmtTL(sumSale));
+            const netEl = $('#s_net_tl').text(fmtTL(sumNet)).closest('span');
+            netEl.toggleClass('text-success', sumNet > 0).toggleClass('text-danger', sumNet < 0);
+            $('#s_net_hs').text(fmtHS(sumHas));
+            $('#miniStats').show();
+        });
+
+        filtersPanel.init(dt);
+    </script>
+
+    <script>
+        /* ====== Sayfa fonksiyonları (temiz) ====== */
+
+        // Format yardımcıları
+
+
+        function fmtTL(v) {
+            const n = Number(v) || 0;
+            const s = n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+            return s + '\u00A0₺';
+        }
+
+        function fmtHS(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 3}) + '\u00A0gr';
+        }
+
+        function fmtRate(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + '\u00A0₺/gr';
+        }
+
+        function badgeTx(t) {
+            switch (t) {
+                case 'SALE':
+                    return '<span class="tx-pill sale">Satış</span>';
+                case 'PURCHASE':
+                    return '<span class="tx-pill purchase">Alış</span>';
+                case 'RETURN':
+                    return '<span class="tx-pill return">İade</span>';
+                case 'STOCK_IN':
+                    return '<span class="tx-pill stock">Stok</span>';
+                case 'ORDER_IN':
+                    return '<span class="tx-pill order">Sipariş</span>';
+                default:
+                    return '<span class="tx-pill order">İşlem</span>';
+            }
+        }
+
+        function rowClass(t) {
+            if (t === 'SALE') return 'tx-sale';
+            if (t === 'PURCHASE') return 'tx-buy';
+            if (t === 'RETURN') return 'tx-return';
+            if (t === 'STOCK_IN') return 'tx-stock';
+            if (t === 'ORDER_IN') return 'tx-order';
+            return '';
+        }
+
+
+        function deleteSelectedRows() {
+            // DataTables API üzerinden seçili satırların verisini alıyoruz
+            var selectedData = dt.rows({selected: true}).data().toArray();
+            var ids = [];
+
+            // ID'leri topluyoruz (sütun tanımında checkbox value="row.id" yapmıştık)
+            for (var i = 0; i < selectedData.length; i++) {
+                // Eğer data objesinde id varsa onu kullan, yoksa process_no kullan
+                // Backend 'id' bekliyor
+                if (selectedData[i].id) {
+                    ids.push(selectedData[i].id);
+                }
+            }
+
+            if (!ids.length) {
+                Swal.fire({
+                    title: 'Hata!',
+                    text: 'Lütfen en az bir kayıt seçin.',
+                    icon: 'error',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Seçili " + ids.length + " kaydı silmek üzeresiniz!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/process/delete", {
+                        ids: ids, // Dizi olarak gönderiyoruz
+                        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                    }, function (data) {
+                        if (data.result) {
+                            Swal.fire({
+                                title: 'Silindi',
+                                text: 'Seçili kayıtlar başarıyla silindi.',
+                                icon: 'success',
+                                timer: 1000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Tabloyu yenile ve seçimi temizle
+                                dt.ajax.reload(null, false);
+                                $('#checkAll').prop('checked', false);
+                            });
+                        } else {
+                            Swal.fire('Hata!', data.error_msg || 'Bir hata oluştu', 'error');
+                        }
+                    }).fail(function () {
+                        Swal.fire('Hata!', 'Sunucu hatası oluştu.', 'error');
+                    });
+                }
+            });
+        }
+
+        $('#deleteSelected').on('click', deleteSelectedRows);
+
+        // (Yer: Toplu durum değişikliği için placeholder)
+        $('#changeStatusSelected').on('click', function () {
+            var rows = dt.rows({selected: true}).data().toArray();
+            if (!rows.length) {
+                Swal.fire({
+                    title: 'Hata!',
+                    text: 'Lütfen en az bir kayıt seçin.',
+                    icon: 'error',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            // TODO: toplu durum değişikliği işlemini burada yapın
+        });
+
+        // Export/Print
+        function exportToExcel() {
+            let pno = $('#processDetailsModalLabel').text().split(': ')[1];
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let wb = XLSX.utils.table_to_book(document.getElementById("processDetailsTable"), {sheet: "İşlem Detayları"});
+            XLSX.writeFile(wb, `${pno}_${dateText}.xlsx`);
+        }
+
+        function exportToPDF() {
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let pno = $('#processDetailsModalLabel').text().split(': ')[1];
+            let filename = `${pno}_${dateText}.pdf`;
+            let printableElement = document.getElementById('printableArea');
+            let titleElement = document.querySelector('.title-fis');
+            let original = titleElement.style.fontSize;
+            titleElement.style.fontSize = '10px';
+            html2pdf().set({
+                margin: [1, 1, 1, 1], filename: filename,
+                image: {type: 'jpeg', quality: 0.98},
+                html2canvas: {scale: 2},
+                jsPDF: {unit: 'mm', format: [80, 100], orientation: 'portrait'}
+            }).from(printableElement).save().then(() => {
+                titleElement.style.fontSize = original;
+            });
+        }
+
+        function printDetails() {
+            let html = document.getElementById('printableArea').innerHTML;
+            let original = document.body.innerHTML;
+            document.body.innerHTML = html;
+            window.print();
+            document.body.innerHTML = original;
+            location.reload();
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // DETAYLI KÂRLILIK RAPORU (Kategori bazlı + TR formatlı)
+        // ══════════════════════════════════════════════════════════════
+        function fmtTR(val, decimals) {
+            if (decimals === undefined) decimals = 2;
+            var n = parseFloat(val);
+            if (isNaN(n)) n = 0;
+            return n.toLocaleString('tr-TR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        function loadProfitReport() {
+            var $body = $('#profitReportBody');
+            var $foot = $('#profitReportFoot');
+            $foot.hide();
+            $('#profitReportKpi').hide();
+            $body.html('<tr><td colspan="11" class="text-center text-muted py-5">' +
+                '<span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...</td></tr>');
+
+            var params = filtersPanel.toParams();
+
+            // Başlıkta dönem bilgisi
+            var periodText = '';
+            if (params.date_from || params.date_to) {
+                periodText = '(' + (params.date_from || '—') + ' / ' + (params.date_to || '—') + ')';
+            }
+            $('#profitReportPeriod').text(periodText);
+
+            // Filtre rozetleri
+            var badges = '';
+            var pk = {fast: 'Hızlı', retail: 'Perakende', wholesale: 'Toptan'};
+            var pr = {barcoded: 'Barkodlu', gram: 'Gram Altın', bracelet: 'Bilezik', scrap: 'Hurda'};
+            var ay = {'995': '24 Ayar', '916': '22 Ayar', '750': '18 Ayar', '585': '14 Ayar', '417': '10 Ayar', '333': '8 Ayar'};
+            function b(lbl) { return '<span class="badge badge-light-primary me-2 mb-1">' + lbl + '</span>'; }
+            if (params.process_kind && params.process_kind !== 'all') badges += b('İşlem: ' + (pk[params.process_kind] || params.process_kind));
+            if (params.product_kind && params.product_kind !== 'all') badges += b('Ürün: ' + (pr[params.product_kind] || params.product_kind));
+            if (params.mileage) badges += b('Ayar: ' + (ay[params.mileage] || params.mileage));
+            $('#profitReportFilters').html(badges);
+
+            // PDF linkini hazırla
+            var qs = $.param({
+                date_from: params.date_from || '',
+                date_to: params.date_to || '',
+                process_kind: params.process_kind || 'all',
+                product_kind: params.product_kind || 'all',
+                mileage: params.mileage || ''
+            });
+            $('#btnProfitReportPdf').attr('href', '/process/profit-report-pdf?' + qs);
+
+            $.get('/process/profit-report', params, function (resp) {
+                if (!resp || !resp.result || !resp.data || !resp.data.length) {
+                    $body.html('<tr><td colspan="11" class="text-center text-muted py-5">Belirtilen kriterlere uygun satış işlemi bulunamadı.</td></tr>');
+                    return;
+                }
+
+                var rows = '';
+                var tSaleCount = 0, tSaleGr = 0, tSaleTL = 0, tSaleHS = 0;
+                var tCostTL = 0, tCostHS = 0, tProfitTL = 0, tKarHS = 0;
+
+                $.each(resp.data, function (i, r) {
+                    var saleCount = parseInt(r.sale_count) || 0;
+                    var unitSaleTL = saleCount > 0 ? (r._raw_sale_amount_tl / saleCount) : 0;
+                    var unitCostTL = saleCount > 0 ? (r._raw_sale_cost_tl / saleCount) : 0;
+
+                    var karCls = r._raw_sale_profit_tl >= 0 ? 'text-success' : 'text-danger';
+                    var karHsCls = r._raw_kar_hs >= 0 ? 'text-success' : 'text-danger';
+
+                    rows += '<tr>' +
+                        '<td class="ps-3 fw-semibold">' + r.category + '</td>' +
+                        '<td class="text-center">' + saleCount + '</td>' +
+                        '<td class="text-end">' + r.sale_gram + '</td>' +
+                        '<td class="text-end fw-semibold text-success">' + r.sale_amount_tl + '</td>' +
+                        '<td class="text-end text-success">' + r.sale_hs + '</td>' +
+                        '<td class="text-end text-muted">' + fmtTR(unitSaleTL) + '</td>' +
+                        '<td class="text-end text-warning">' + r.sale_cost_tl + '</td>' +
+                        '<td class="text-end text-warning">' + r.sale_cost_hs + '</td>' +
+                        '<td class="text-end text-muted">' + fmtTR(unitCostTL) + '</td>' +
+                        '<td class="text-end fw-bold ' + karCls + '">' + r.sale_profit_tl + '</td>' +
+                        '<td class="text-end ' + karHsCls + '">' + r.kar_hs + '</td>' +
+                        '<td class="text-end fw-bold ' + karCls + '">%' + r.kar_pct + '</td>' +
+                        '</tr>';
+
+                    tSaleCount += saleCount;
+                    tSaleGr += parseFloat(r._raw_sale_gram) || 0;
+                    tSaleTL += parseFloat(r._raw_sale_amount_tl) || 0;
+                    tSaleHS += parseFloat(r._raw_sale_hs) || 0;
+                    tCostTL += parseFloat(r._raw_sale_cost_tl) || 0;
+                    tCostHS += parseFloat(r._raw_sale_cost_hs) || 0;
+                    tProfitTL += parseFloat(r._raw_sale_profit_tl) || 0;
+                    tKarHS += parseFloat(r._raw_kar_hs) || 0;
+                });
+
+                $body.html(rows);
+
+                // Tfoot
+                $('#foot_sale_count').text(tSaleCount);
+                $('#foot_sale_gram').text(fmtTR(tSaleGr, 2));
+                $('#foot_sale_tl').text(fmtTR(tSaleTL, 2));
+                $('#foot_sale_hs').text(fmtTR(tSaleHS, 3));
+                $('#foot_cost_tl').text(fmtTR(tCostTL, 2));
+                $('#foot_cost_hs').text(fmtTR(tCostHS, 3));
+                $('#foot_profit_tl').text(fmtTR(tProfitTL, 2));
+                $('#foot_kar_hs').text(fmtTR(tKarHS, 3));
+                var pct = tSaleTL > 0 ? (tProfitTL / tSaleTL * 100) : 0;
+                $('#foot_kar_pct').text('%' + fmtTR(pct, 2));
+                $foot.show();
+
+                // KPI
+                $('#kpi_sale_tl').text(fmtTR(tSaleTL, 2) + ' ₺');
+                $('#kpi_sale_count').text(tSaleCount);
+                $('#kpi_cost_tl').text(fmtTR(tCostTL, 2) + ' ₺');
+                $('#kpi_profit_tl').text(fmtTR(tProfitTL, 2) + ' ₺');
+                $('#kpi_kar_pct').text(fmtTR(pct, 2));
+                $('#kpi_kar_hs').text(fmtTR(tKarHS, 3));
+                $('#profitReportKpi').show();
+            }).fail(function () {
+                $body.html('<tr><td colspan="11" class="text-center text-danger py-5">Rapor yüklenirken hata oluştu.</td></tr>');
+            });
+        }
+
+        $('#profitReportModal').on('show.bs.modal', loadProfitReport);
+
+        // Rapor
+        function generateReport(period) {
+            $.ajax({
+                url: '/dashboard/generate-report',
+                method: 'GET',
+                data: {period: period},
+                xhrFields: {responseType: 'blob'},
+                success: function (data) {
+                    let url = window.URL.createObjectURL(new Blob([data], {type: 'application/pdf'}));
+                    window.open(url, '_blank');
+                },
+                error: function () {
+                    Swal.fire('Hata', 'Rapor oluşturulamadı.', 'error');
+                }
+            });
+        }
+    </script>
+{% endblock footer %}

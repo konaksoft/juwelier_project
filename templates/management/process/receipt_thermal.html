@@ -1,0 +1,368 @@
+{# templates/management/prints/receipt_thermal.html #}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>İşlem Fişi – {{ process_no }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.3;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .receipt-container {
+            width: {{ paper }}mm;
+            background: #fff;
+            padding: 4mm;
+            margin-top: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        .screen-nav {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 10px;
+            position: sticky;
+            top: 0;
+            z-index: 99;
+            background-color: #f4f6f8;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            color: #fff;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-back {
+            background-color: #6c757d;
+        }
+
+        .btn-print {
+            background-color: #009ef7;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .muted {
+            opacity: .85;
+        }
+
+        .tiny {
+            font-size: 10px;
+        }
+
+        .small {
+            font-size: 11px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: .3px;
+            margin-bottom: 2px;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px dashed #000;
+            margin: 6px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 2px 0;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .r {
+            text-align: right;
+        }
+
+        .totals tr td {
+            font-weight: 600;
+            padding-top: 4px;
+        }
+
+        .pill {
+            display: inline-block;
+            border: 1px solid #000;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+
+        .kline {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+
+        .kline .k {
+            color: #444;
+        }
+
+        .kline .v {
+            font-weight: 600;
+        }
+
+        .bar {
+            text-align: center;
+            font-weight: 700;
+            margin: 8px 0 4px 0;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+        }
+
+        @media print {
+            @page {
+                size: {{ paper }}mm auto;
+                margin: 0mm;
+            }
+
+            html, body {
+                width: {{ paper }}mm;
+                background-color: #fff;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: block;
+            }
+
+            .receipt-container {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 1mm !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                border: none !important;
+            }
+
+            .no-print, .screen-nav {
+                display: none !important;
+            }
+
+            hr {
+                border-color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="screen-nav no-print">
+    <button onclick="history.back()" class="btn btn-back">
+        <i class="fa-solid fa-chevron-left"></i> Geri
+    </button>
+    <button onclick="window.print()" class="btn btn-print">
+        <i class="fa-solid fa-print"></i> Yazdır
+    </button>
+</div>
+
+<div class="receipt-container">
+    <div class="center">
+        {% if store_meta.name %}
+            <div class="brand">{{ store_meta.name }}</div>
+        {% else %}
+            <div class="brand">İŞLEM FİŞİ</div>
+        {% endif %}
+        <div class="tiny muted">Kuyum Plus • Hızlı İşlem & Ödeme Bilgilendirme</div>
+    </div>
+
+    <hr/>
+
+    <div class="kline">
+        <div class="k">Fiş Türü</div>
+        <div class="v">İşlem / Ödeme</div>
+    </div>
+    <div class="kline">
+        <div class="k">İşlem No</div>
+        <div class="v mono">{{ process_no }}</div>
+    </div>
+
+    {% if store_meta.id or store_meta.code %}
+        <div class="kline">
+            <div class="k">Mağaza ID</div>
+            <div class="v">{{ store_meta.code|default:store_meta.id }}</div>
+        </div>
+    {% endif %}
+
+    <div class="kline">
+        <div class="k">Oluşturma</div>
+        <div class="v">{{ header.created }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Güncelleme</div>
+        <div class="v">{{ header.updated }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Personel</div>
+        <div class="v">{{ employee_name }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Müşteri</div>
+        <div class="v">{{ customer_name }}</div>
+    </div>
+    <div class="kline">
+        <div class="k">Telefon</div>
+        <div class="v">{{ customer_phone }}</div>
+    </div>
+
+    <hr/>
+
+    <div class="bar">İŞLEM KALEMLERİ</div>
+    <table>
+        <thead>
+        <tr>
+            <th>Ürün / İşlem</th>
+            <th class="r">Tutar</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for it in items %}
+            <tr>
+                <td>
+                    {{ it.name|default:"-" }}
+                    <div class="muted tiny">{{ it.type }}{% if it.qty %}, {{ it.qty }}{% endif %}</div>
+                </td>
+                <td class="r">{{ it.amount }} TL</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot class="totals">
+        <tr>
+            <td>Satış</td>
+            <td class="r">{{ totals.sale }} TL</td>
+        </tr>
+        <tr>
+            <td>Alış/İade</td>
+            <td class="r">-{{ totals.buy }} TL</td>
+        </tr>
+        <tr>
+            <td style="border-top:1px solid #000;">Net</td>
+            <td class="r" style="border-top:1px solid #000;">{{ totals.net }} TL</td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <hr/>
+
+    <div class="bar">ÖDEME ÖZETİ</div>
+    <table>
+        <tbody>
+        <tr>
+            <td>Ödenen (Net)</td>
+            <td class="r">{{ totals.paid_net }} TL</td>
+        </tr>
+
+        {% if pay_breakdown_in %}
+            <tr>
+                <td class="muted">Ödeme Kırılımı</td>
+                <td class="r tiny">{{ pay_breakdown_in }}</td>
+            </tr>
+        {% endif %}
+
+        {% if pay_breakdown_out %}
+            <tr>
+                <td class="muted">İade</td>
+                <td class="r tiny">{{ pay_breakdown_out }}</td>
+            </tr>
+        {% endif %}
+
+        {% if totals.balance_sign != 0 %}
+            {% if totals.balance_sign > 0 %}
+                <tr>
+                    <td>Kalan (Müşteri → Mağaza)</td>
+                    <td class="r">{{ totals.balance }} TL</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td>İade (Mağaza → Müşteri)</td>
+                    <td class="r">{{ totals.balance }} TL</td>
+                </tr>
+            {% endif %}
+        {% else %}
+            <tr>
+                <td>Durum</td>
+                <td class="r">Tamamlandı</td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+
+    <hr/>
+    {% if badge %}
+        <div class="center">
+            <span class="pill">{{ badge.kind }}: {{ badge.value }}</span>
+        </div>
+        <hr/>
+    {% endif %}
+
+    {% if store_meta.address or store_meta.phone %}
+        <div class="tiny muted center" style="margin-top:5px;">
+            {% if store_meta.address %}{{ store_meta.address }}<br>{% endif %}
+            {% if store_meta.phone %}Tel: {{ store_meta.phone }}{% endif %}
+        </div>
+    {% endif %}
+
+    <div class="center small muted" style="margin-top:10px">Teşekkür ederiz</div>
+    <div class="center tiny muted">Kuyum Plus</div>
+</div>
+
+{% if auto_print %}
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                window.print();
+            }, 500);
+        });
+    </script>
+{% endif %}
+</body>
+</html>

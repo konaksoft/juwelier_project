@@ -1,0 +1,439 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        .image-input-placeholder {
+            background-image: url('/static/management/media/svg/files/blank-image.svg') !important
+        }
+
+        /* Bracelet sayfasındaki özel stiller korundu */
+        .custom-toolbar-card {
+            width: 100% !important;
+            margin: 1rem 3.2rem 0 2.3rem;
+            border-radius: .5rem
+        }
+
+        .custom-toolbar-card .card-body {
+            padding: 1.5rem 2rem
+        }
+
+        .custom-toolbar-card .container-xxl {
+            max-width: 100% !important
+        }
+
+        #tableToolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0
+        }
+
+        #tableToolbar .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem
+        }
+
+        .toolbar-btn-size {
+            width: 6.5rem;
+            height: 2.7rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 991px) {
+            .custom-toolbar-card {
+                margin: 1rem 1rem 0 !important;
+            }
+
+            .toolbar-btn-size {
+                width: 5.5rem !important;
+                height: 2.5rem !important;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main"
+         style="border-style:groove;border-radius:10px;border-color:aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card custom-toolbar-card">
+                    <div class="card-body">
+                        <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                    Referanslar (Müşteri Yorumları)
+                                </h1>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                <div class="d-flex align-items-center gap-2 gap-lg-3 toolbar-buttons">
+                                    <a href="#"
+                                       class="btn btn-primary d-flex align-items-center justify-content-center toolbar-btn-size"
+                                       data-bs-toggle="modal" data-bs-target="#testimonialModal">
+                                        <i class="ki-duotone ki-plus fs-2"></i>
+                                        <span class="d-none d-lg-inline ms-1">Ekle</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content_container" class="app-container container-fluid ">
+                <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl"
+                     style="max-width:100%;">
+                    <div class="content flex-row-fluid" id="kt_content">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body">
+
+                                        <div class="table-responsive">
+                                            <div id="tableToolbar"
+                                                 class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                                <div class="d-flex toolbar-buttons my-margin1" style="gap:.6rem">
+                                                    <button type="button"
+                                                            class="btn btn-light-danger me-3 toolbar-btn-size"
+                                                            id="deleteSelected" data-bs-toggle="tooltip" title="Sil">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-light-success me-3 toolbar-btn-size"
+                                                            id="changeStatusSelected" data-bs-toggle="tooltip"
+                                                            title="Durum Değiştir">
+                                                        <i class="fa-solid fa-circle-check"></i>
+                                                    </button>
+                                                </div>
+                                                <div id="dataTableSearch"></div>
+                                            </div>
+
+                                            <table id="kt_datatable_testimonials"
+                                                   class="table align-middle table-row-dashed fs-6 gy-5">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th class="w-10px pe-2">
+                                                        <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                            <input id="selectAll" class="form-check-input"
+                                                                   type="checkbox" value="selectAll">
+                                                        </div>
+                                                    </th>
+                                                    <th>Logo</th>
+                                                    <th>Ad Soyad</th>
+                                                    <th>Firma Adı</th>
+                                                    <th>Sıralama</th>
+                                                    <th>Durum</th>
+                                                    <th class="text-center">İşlem</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                                            </table>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="testimonialModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-650px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalTitle">Referans Ekle</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="testimonialForm" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" id="testimonial_id" name="testimonial_id"/>
+
+                        <div class="row g-3">
+                            <div class="col-12 text-center mb-4">
+                                <div class="image-input image-input-empty image-input-outline image-input-placeholder mb-3"
+                                     data-kt-image-input="true">
+                                    <label class="fs-6 fw-semibold mb-2 d-block">Firma Logosu</label>
+                                    <div class="image-input-wrapper w-150px h-150px"></div>
+                                    <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                           data-kt-image-input-action="change" data-bs-toggle="tooltip"
+                                           title="Logo Değiştir">
+                                        <i class="ki-duotone ki-pencil fs-7"><span class="path1"></span><span
+                                                class="path2"></span></i>
+                                        <input type="file" name="logo" accept="image/*" id="logo_input">
+                                        <input type="hidden" name="avatar_remove">
+                                    </label>
+                                    <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                          data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="İptal">
+                                        <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span
+                                                class="path2"></span></i>
+                                    </span>
+                                    <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                          data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="Sil">
+                                        <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span
+                                                class="path2"></span></i>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="full_name" name="full_name" required>
+                                    <label for="full_name">Yetkili Ad Soyad</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="company_name" name="company_name"
+                                           required>
+                                    <label for="company_name">Kuyumcu / Firma Adı</label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control" id="order" name="order" value="0">
+                                    <label for="order">Sıralama (Küçükten Büyüğe)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="message" name="message" style="height: 100px"
+                                              required></textarea>
+                                    <label for="message">Müşteri Yorumu / Mesaj</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer d-flex justify-content-end flex-nowrap gap-2">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" id="btnSaveTestimonial" class="btn btn-primary">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        // Görsel önizleme (Standard KTImageInput kullanıldığı için ekstra JS'ye gerek yok ama manuel kontrol için)
+        // KTImageInput zaten attributes üzerinden çalışır.
+
+        function relocateFilter() {
+            $('#dataTableSearch .dataTables_filter').remove();
+            const $f = $('#kt_datatable_testimonials_wrapper .dataTables_filter').detach();
+            if ($f.length) {
+                $('#dataTableSearch').append($f);
+                $f.addClass('mb-0');
+            }
+        }
+
+        $(document).ready(function () {
+            let dt;
+
+            // --- DATATABLE INIT ---
+            dt = $("#kt_datatable_testimonials").DataTable({
+                destroy: true,
+                dom: "<'top d-flex justify-content-end'f>rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+                info: false,
+                paging: true,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Tümü']],
+                pageLength: 10,
+                searchDelay: 400,
+                processing: true,
+                serverSide: true,
+                orderMulti: false,
+                autoWidth: false,
+                stateSave: false, // Cache sorunu olmaması için
+                select: {
+                    style: 'multi',
+                    selector: 'td:first-child input[type=\"checkbox\"]',
+                    className: 'row-selected'
+                },
+                initComplete: relocateFilter,
+                ajax: {
+                    url: "{% url 'testimonials:get_all' %}",
+                    type: "GET",
+                    dataType: "json",
+                },
+                columns: [
+                    {
+                        data: "id", orderable: false, className: "text-center",
+                        render: (data, type, row) => `<input class="form-check-input row-checkbox" type="checkbox" value="${row.id}">`
+                    },
+                    {
+                        data: "image_url", orderable: false,
+                        render: (url) => {
+                            if (!url) return '<div class="symbol symbol-40px"><div class="symbol-label fs-5 fw-semibold text-gray-600">Yok</div></div>';
+                            return `<div class="symbol symbol-40px"><img src="${url}" alt="" style="object-fit:cover;"></div>`;
+                        }
+                    },
+                    {data: "full_name"},
+                    {data: "company_name"},
+                    {data: "order"},
+                    {
+                        data: "is_active",
+                        render: (v) => v
+                            ? '<span class="badge badge-light-success">Yayında</span>'
+                            : '<span class="badge badge-light-danger">Pasif</span>'
+                    },
+                    {
+                        data: null, orderable: false, className: "text-center",
+                        render: function (data, type, row) {
+                            // Edit fonksiyonuna tüm satır verisini string olarak geçmek zor olduğu için ID gönderip arrayden bulacağız
+                            return `
+                                <a href="#" onclick="edit_testimonial('${row.id}')" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px">
+                                    <i class="ki-duotone ki-pencil fs-2"><span class="path1"></span><span class="path2"></span></i>
+                                </a>`;
+                        }
+                    }
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+            });
+
+            // Select All Logic
+            $('#selectAll').on('change', function () {
+                const chk = $(this).is(':checked');
+                $("#kt_datatable_testimonials tbody .row-checkbox").prop('checked', chk);
+            });
+
+            // --- DELETE ---
+            $('#deleteSelected').on('click', function () {
+                const ids = $("#kt_datatable_testimonials tbody input.row-checkbox:checked").map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (!ids.length) return Swal.fire('Hata!', 'Lütfen seçim yapın.', 'error');
+
+                Swal.fire({
+                    title: 'Emin misiniz?', text: "Seçili kayıtlar silinecek!", icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Evet, Sil', cancelButtonText: 'İptal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post("{% url 'testimonials:delete' %}", {
+                            ids: ids,
+                            csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                        }, function (resp) {
+                            if (resp.result) {
+                                Swal.fire('Silindi', 'Kayıtlar silindi.', 'success').then(() => dt.ajax.reload());
+                                $('#selectAll').prop('checked', false);
+                            } else {
+                                Swal.fire('Hata', resp.error_msg, 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // --- CHANGE STATUS ---
+            $('#changeStatusSelected').on('click', function () {
+                const ids = $("#kt_datatable_testimonials tbody input.row-checkbox:checked").map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (!ids.length) return Swal.fire('Hata!', 'Lütfen seçim yapın.', 'error');
+
+                $.post("{% url 'testimonials:change-status' %}", {
+                    ids: ids,
+                    csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                }, function (resp) {
+                    if (resp.result) {
+                        Swal.fire({title: 'Güncellendi', icon: 'success', timer: 1000, showConfirmButton: false})
+                            .then(() => dt.ajax.reload(null, false));
+                        $('#selectAll').prop('checked', false);
+                    } else {
+                        Swal.fire('Hata', resp.error_msg, 'error');
+                    }
+                });
+            });
+
+            // --- SAVE ---
+            $('#btnSaveTestimonial').click(function () {
+                $('#testimonialForm').submit();
+            });
+
+            $('#testimonialForm').submit(function (e) {
+                e.preventDefault();
+                if (!this.checkValidity()) {
+                    $(this).addClass('was-validated');
+                    return false;
+                }
+
+                const btn = $('#btnSaveTestimonial');
+                btn.prop("disabled", true);
+
+                const fd = new FormData(this);
+
+                $.ajax({
+                    url: "{% url 'testimonials:add' %}",
+                    type: "POST", data: fd,
+                    cache: false, contentType: false, processData: false,
+                    success: function (resp) {
+                        if (resp.result) {
+                            Swal.fire({text: 'İşlem Başarılı', icon: 'success', timer: 1000, showConfirmButton: false})
+                                .then(() => {
+                                    $('#testimonialModal').modal('hide');
+                                    window.location.reload();
+                                });
+                        } else {
+                            Swal.fire('Hata', resp.error_msg || 'Bir hata oluştu', 'error');
+                        }
+                        btn.prop("disabled", false);
+                    },
+                    error: function () {
+                        Swal.fire('Hata', 'Sunucu hatası', 'error');
+                        btn.prop("disabled", false);
+                    }
+                });
+            });
+
+            // --- EDIT FUNC ---
+            window.edit_testimonial = function (id) {
+                const row = dt.rows().data().toArray().find(r => r.id == id);
+                if (!row) return;
+
+                $('#modalTitle').text('Referans Düzenle');
+                $('#testimonial_id').val(row.id);
+                $('#full_name').val(row.full_name);
+                $('#company_name').val(row.company_name);
+                $('#message').val(row.message);
+                $('#order').val(row.order);
+
+                // KTImageInput için görseli set et (Metronic/Keen tema özelliği)
+                const wrapper = $('.image-input-wrapper');
+                if (row.image_url) {
+                    wrapper.css('background-image', `url('${row.image_url}')`);
+                } else {
+                    wrapper.css('background-image', 'none');
+                }
+
+                $('#testimonialModal').modal('show');
+            };
+
+            // Modal kapanınca temizle
+            $('#testimonialModal').on('hidden.bs.modal', function () {
+                $('#testimonialForm')[0].reset();
+                $('#testimonialForm').removeClass('was-validated');
+                $('#testimonial_id').val('');
+                $('#modalTitle').text('Referans Ekle');
+                $('.image-input-wrapper').css('background-image', 'none');
+                // Remove avatar flag sıfırla
+                $('input[name="avatar_remove"]').val('0');
+            });
+        });
+    </script>
+{% endblock footer %}

@@ -1,0 +1,1268 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+
+        #custody_table_wrapper .top {
+            display: none;
+        }
+
+        #tableToolbar .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem;
+        }
+
+        @media (max-width: 576px) {
+
+            .my-margin1 {
+                margin-bottom: 0 !important;
+                margin-top: 1rem !important;
+            }
+
+            .toolbar-btn-size {
+                padding: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                box-sizing: border-box;
+                width: 5rem !important;
+                height: 2.5rem !important;
+            }
+        }
+
+        @media (min-width: 767px) and (max-width: 991.98px) {
+            .my-margin1 {
+                margin-bottom: 0 !important;
+            }
+
+            .toolbar-btn-size {
+                padding: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                box-sizing: border-box;
+                width: 5.5rem !important;
+                height: 2.5rem !important;
+            }
+        }
+
+        @media (min-width: 576px) and (max-width: 767px) {
+            .my-margin1 {
+                margin-bottom: 0 !important;
+                margin-top: 1rem !important;
+            }
+
+            .toolbar-btn-size {
+                padding: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                box-sizing: border-box;
+                width: 5rem !important;
+                height: 2.5rem !important;
+            }
+        }
+
+        .toolbar-btn-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 6.5rem;
+            height: 2.7rem;
+        }
+
+        .my-margin {
+            margin-top: 1rem;
+            margin-bottom: 0;
+            margin-right: 0.7rem;
+            margin-left: 0.7rem;
+        }
+
+        a.cust-link {
+            color: #FFCD02 !important;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        a.cust-link:hover {
+            text-decoration: underline;
+        }
+
+        .kpi-mini {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid #e9eef5;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(18, 38, 63, .05);
+            min-height: 64px;
+            transition: transform .18s, box-shadow .18s;
+        }
+
+        .kpi-mini:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 38, 63, .08);
+        }
+
+        .kpi-mini__icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .kpi-mini__body {
+            line-height: 1.1;
+        }
+
+        .kpi-mini__label {
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            opacity: .85;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+
+        .kpi-mini__value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .kpi-mini--violet .kpi-mini__icon {
+            background: rgba(111, 66, 193, .12);
+            color: #6f42c1;
+        }
+
+        .kpi-mini--violet .kpi-mini__label, .kpi-mini--violet .kpi-mini__value {
+            color: #6f42c1;
+        }
+
+        .kpi-mini--green .kpi-mini__icon {
+            background: rgba(40, 167, 69, .12);
+            color: #28a745;
+        }
+
+        .kpi-mini--green .kpi-mini__label, .kpi-mini--green .kpi-mini__value {
+            color: #1f8d3d;
+        }
+
+        .btn-emanet {
+            background-color: #6f42c1 !important;
+            color: #fff !important;
+            border-color: #6f42c1 !important;
+        }
+
+        .btn-emanet:hover,
+        .btn-emanet:focus {
+            filter: brightness(0.92);
+            color: #fff !important;
+        }
+
+        .btn-emanet .fa-solid {
+            color: #fff !important;
+        }
+
+        .btn-emanet-light {
+            background-color: rgba(111, 66, 193, .12);
+            color: #6f42c1 !important;
+            border: 1px solid transparent;
+            transition: filter .15s ease, box-shadow .15s ease, transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease;
+        }
+
+        .btn-emanet-light i {
+            color: inherit !important;
+        }
+
+        .btn-emanet-light:hover,
+        .btn-emanet-light:focus {
+            background-color: #5b38ad;
+            border-color: #5b38ad;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(18, 38, 63, .08);
+            transform: translateY(-1px);
+        }
+
+        .btn-emanet-light:active {
+            background-color: #4f3197;
+            border-color: #4f3197;
+            color: #fff !important;
+        }
+
+        .btn-light-success i {
+            color: inherit !important;
+        }
+
+        #custody_table .badge.bg-info,
+        #custody_table .badge.bg-success {
+            color: #fff !important;
+        }
+
+
+        @media (max-width: 991.98px) {
+            .card .card-body {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #custody_table {
+                width: 100% !important;
+                min-width: 900px;
+                table-layout: auto;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+
+            #kt_app_toolbar_container,
+            .card-header,
+            #tableToolbar {
+                flex-wrap: wrap;
+                row-gap: .5rem;
+            }
+
+            .kpi-mini {
+                gap: 8px;
+                padding: 10px 12px;
+            }
+
+            .kpi-mini__label {
+                font-size: .75rem;
+            }
+
+            .kpi-mini__value {
+                font-size: 1rem;
+            }
+
+            #custodyTabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+                gap: .25rem;
+            }
+
+            #custodyTabs .nav-link {
+                flex: 0 0 auto;
+            }
+
+            .toolbar-btn-size {
+                width: auto !important;
+                min-width: 2.4rem;
+                height: 2.4rem !important;
+                padding: 0 .5rem !important;
+            }
+
+            .toolbar-btn-size span {
+                display: none !important;
+            }
+
+            #dataTableSearch .dataTables_filter {
+                width: 100%;
+            }
+
+            #dataTableSearch .dataTables_filter input {
+                width: 100%;
+            }
+        }
+
+        #dataTableSearch .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0;
+        }
+
+        @media (max-width: 430px) {
+            #custody_table th:nth-child(4),
+            #custody_table td:nth-child(4),
+            #custody_table th:nth-child(6),
+            #custody_table td:nth-child(6),
+            #custody_table th:nth-child(7),
+            #custody_table td:nth-child(7),
+            #custody_table th:nth-child(8),
+            #custody_table td:nth-child(8),
+            #custody_table th:nth-child(9),
+            #custody_table td:nth-child(9) {
+                display: none;
+            }
+
+        }
+
+
+    </style>
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid " id="kt_app_main"
+         style="border-style: groove;border-radius: 10px;border-color: aliceblue;">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div class="card shadow-sm w-100 my-margin">
+                    <div class="card-body">
+                        <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                    Emanet Yönetimi</h1>
+                            </div>
+                            <!-- KPI: Emanettekiler / Teslim Edilenler -->
+                            <div class="d-flex align-items-center justify-content-center mx-3" style="gap:12px;">
+                                <div class="kpi-mini kpi-mini--violet">
+                                    <div class="kpi-mini__icon"><i class="fa-solid fa-box"></i></div>
+                                    <div class="kpi-mini__body">
+                                        <div class="kpi-mini__label">Emanettekiler</div>
+                                        <div class="kpi-mini__value" id="kpi_in_count">0</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-mini kpi-mini--green">
+                                    <div class="kpi-mini__icon"><i class="fa-solid fa-check"></i></div>
+                                    <div class="kpi-mini__body">
+                                        <div class="kpi-mini__label">Teslim Edilenler</div>
+                                        <div class="kpi-mini__value" id="kpi_out_count">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                <div id="kt_toolbar_container"
+                                     class="container-xxl d-flex flex-stack flex-wrap"
+                                     style="max-width: 100%;">
+                                    <div class="page-title d-flex flex-column me-3">
+                                        <div id="kt_datatable_example_buttons" class="d-none"></div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                        <button type="button" class="btn btn-light-primary toolbar-btn-size"
+                                                data-kt-menu-trigger="click"
+                                                data-kt-menu-placement="bottom-end">
+                                            <i class="fa-solid fa-download"></i>
+                                            <span class="d-none d-lg-inline ms-1">Rapor</span>
+                                        </button>
+                                        <div id="kt_datatable_example_export_menu"
+                                             class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                             data-kt-menu="true">
+                                            <div class="menu-item px-3">
+                                                <a href="#" class="menu-link px-3"
+                                                   data-kt-export="copy">
+                                                    Panoya Kopyala
+                                                </a>
+                                            </div>
+                                            <div class="menu-item px-3">
+                                                <a href="#" class="menu-link px-3"
+                                                   data-kt-export="excel">
+                                                    Dışa Aktar Excel
+                                                </a>
+                                            </div>
+                                            <div class="menu-item px-3">
+                                                <a href="#" class="menu-link px-3" data-kt-export="csv">
+                                                    Dışa Aktar CSV
+                                                </a>
+                                            </div>
+                                            <div class="menu-item px-3">
+                                                <a href="#" class="menu-link px-3" data-kt-export="pdf">
+                                                    Dışa Aktar PDF
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <a href="#"
+                                           class="btn btn-primary toolbar-btn-size"
+                                           data-bs-toggle="modal"
+                                           data-bs-target="#addCustodyModal">
+                                            <i class="ki-duotone ki-plus fs-2"></i>
+                                            <span class="d-none d-lg-inline ms-1">Ekle</span>
+                                        </a>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card ">
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <ul class="nav nav-tabs" id="custodyTabs" role="tablist">
+                                            <li class="nav-item">
+                                                <button class="nav-link active" data-tab="IN" type="button">Emanet
+                                                </button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link" data-tab="OUT" type="button">Teslim Edilenler
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div id="tableToolbar"
+                                         class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+
+
+                                        <div class="d-flex toolbar-buttons my-margin1" style="gap:.6rem">
+                                            <button type="button" class="btn btn-light-danger me-3 toolbar-btn-size"
+                                                    data-bs-toggle="tooltip" id="deleteSelected">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </div>
+
+
+                                        <div id="dataTableSearch"></div>
+                                    </div>
+
+                                    <table id="custody_table" class="table table-row-dashed align-middle gy-5 w-100">
+                                        <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase">
+                                            <th class="w-10px">
+                                                <div class="form-check form-check-sm form-check-custom">
+                                                    <input data-master="custody_table" class="form-check-input checkAll"
+                                                           type="checkbox">
+                                                </div>
+                                            </th>
+                                            <th>Müşteri</th>
+                                            <th>İşlem No</th>
+                                            <th>Personel</th>
+                                            <th>Ürün</th>
+                                            <th>Adet</th>
+                                            <th>Gram</th>
+                                            <th>HS</th>
+                                            <th>Tarih</th>
+                                            <th>Durum</th>
+                                            <th>İşlem</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="addCustodyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form id="custodyForm" method="post" class="modal-content">
+                    {% csrf_token %}
+                    <input type="hidden" name="custody_id" value="">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fa-solid fa-hand-holding-hand me-2"></i>Emanet Ekle</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Müşteri <span class="text-danger">*</span></label>
+                            <select name="customer_id" id="custody_customer_id" class="form-select"
+                                    data-control="select2" data-dropdown-parent="#addCustodyModal" required>
+                                <option value="">Seçiniz</option>
+                                {% for c in customers %}
+                                    <option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Emanet Türü <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="emanet_turu" id="tur_ziynet"
+                                           value="ziynet" checked>
+                                    <label class="form-check-label" for="tur_ziynet">Ziynet / Sarrafiye</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="emanet_turu" id="tur_hurda"
+                                           value="hurda">
+                                    <label class="form-check-label" for="tur_hurda">Hurda Altın</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="emanet_turu" id="tur_bilezik"
+                                           value="bilezik">
+                                    <label class="form-check-label" for="tur_bilezik">Bilezik</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="alan_ziynet" class="p-3 bg-light rounded mb-3 border">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ürün Seçiniz</label>
+                                <select name="product_id" id="custody_product_id" class="form-select"
+                                        data-control="select2" data-dropdown-parent="#addCustodyModal">
+                                    <option value="">(Örn: Çeyrek Altın, Yarım Altın vb.)</option>
+                                    {% for p in products %}
+                                        <option value="{{ p.id }}"
+                                                data-product-hs="{{ p.buy_price_hs|default:'0'|stringformat:'f' }}"
+                                                data-is-gram="{{ p.is_gram_bullion|yesno:'true,false' }}">
+                                            {{ p.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label fw-bold">Adet</label>
+                                <input type="number" class="form-control" id="custody_quantity_piece"
+                                       name="quantity_piece" value="0" min="0">
+                            </div>
+                        </div>
+
+                        <div id="alan_hurda_bilezik" class="p-3 bg-light rounded mb-3 border" style="display: none;">
+                            <div class="mb-3" id="div_bilezik_adi" style="display: none;">
+                                <label class="form-label fw-bold">Bilezik Adı / Modeli</label>
+                                <input type="text" class="form-control" name="bracelet_name"
+                                       placeholder="Örn: 22 Ayar Adana Burma">
+                            </div>
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label fw-bold">Ayar Seçiniz</label>
+                                    <select name="milyem" id="custody_milyem" class="form-select">
+                                        <option value="0">Seçiniz</option>
+                                        <option value="995">Has / 24 Ayar (995)</option>
+                                        <option value="916">22 Ayar (916)</option>
+                                        <option value="875">21 Ayar (875)</option>
+                                        <option value="750">18 Ayar (750)</option>
+                                        <option value="585">14 Ayar (585)</option>
+                                        <option value="333">8 Ayar (333)</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label fw-bold">Gram</label>
+                                    <input type="number" step="0.01" class="form-control" id="custody_quantity_gram"
+                                           name="quantity_gram" value="0" min="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">Müşteri Alacağı (Toplam Has)</label>
+                            <input type="number" step="0.001" class="form-control text-primary fw-bold fs-5"
+                                   style="background-color: #e9f2ff;" id="custody_amount_hs" name="amount_hs"
+                                   value="0.000" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Açıklama</label>
+                            <textarea class="form-control" name="description" rows="2"
+                                      placeholder="Emanet detayı, şartlar vb..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                        <button id="btnSaveCustody" type="submit" class="btn btn-primary"><i
+                                class="fa-solid fa-save me-1"></i> Emaneti Kaydet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal fade" id="processDetailsModal" tabindex="-1" aria-labelledby="processDetailsModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-sm modal-dialog-centered modal-fullscreen-md-down modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="processDetailsModalLabel">İşlem Detayları Bilgi Fişi</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Kapat"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="printableArea">
+                            <h3 class="title-fis" style="text-align:center;margin:5px 0;">İşlem Detayları Bilgi
+                                Fişi</h3>
+                            <div style="text-align:left;">
+                                <p style="margin:2px 0;"><strong>Satış Yapan Personel:</strong> <span
+                                        id="employeeName"></span></p>
+                                <p style="margin:2px 0;"><strong>Müşteri:</strong> <span id="customerName"></span></p>
+                                <p style="margin:2px 0;"><strong>Telefon Numarası:</strong> <span
+                                        id="customerPhone"></span></p>
+                                <p style="margin:2px 0;"><strong>Toplam Satış Tutarı:</strong> <span
+                                        id="totalAmountSale" style="color:green;"></span></p>
+                                <p style="margin:2px 0;"><strong>Toplam Alış/İade Tutarı:</strong> <span
+                                        id="totalAmountPurchaseReturn" style="color:red;"></span></p>
+                                <p style="margin:2px 0;"><strong>Net Toplam Tutar:</strong> <span id="totalAmount"
+                                                                                                  style="color:blue;"></span>
+                                </p>
+                            </div>
+
+                            <hr style="border:none;border-top:1px solid #000;margin:5px 0;"/>
+
+                            <table id="processDetailsTable" style="width:100%;border-collapse:collapse;">
+                                <thead>
+                                <tr>
+                                    <th style="border:1px solid #000;padding:3px;text-align:left;">Ürün</th>
+                                    <th style="border:1px solid #000;padding:3px;text-align:left;">Satış Has</th>
+                                    <th style="border:1px solid #000;padding:3px;text-align:left;">Tutar</th>
+                                    <th style="border:1px solid #000;padding:3px;text-align:left;">Tarih</th>
+                                </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-print-none">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                        <button type="button" class="btn btn-success" onclick="exportToExcel()">Excel İndir</button>
+                        <button type="button" class="btn btn-danger" onclick="exportToPDF()">PDF İndir</button>
+                        <button type="button" class="btn btn-primary" onclick="printDetails()">Yazdır</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        $(function () {
+
+            let activeTab = 'IN';
+            let tbl;
+
+            function loadCustodyKpis() {
+                $.ajax({
+                    url: "{% url 'custody:get_all' %}",
+                    data: {
+                        draw: 1,
+                        start: 0,
+                        length: 1,
+                        custody_type: 'IN',
+                        is_returned: 'false'
+                    },
+                    kpSkipLoader: true,
+                    success: function (res) {
+                        $('#kpi_in_count').text((res && res.recordsFiltered) ?? 0);
+                    }
+                });
+
+                $.ajax({
+                    url: "{% url 'custody:get_all' %}",
+                    data: {
+                        draw: 1,
+                        start: 0,
+                        length: 1,
+                        custody_type: 'OUT',
+                        is_returned: 'true'
+                    },
+                    kpSkipLoader: true,
+                    success: function (res) {
+                        $('#kpi_out_count').text((res && res.recordsFiltered) ?? 0);
+                    }
+                });
+            }
+
+            const initDatatable = (tabType, skipLoader = false) => {
+
+                $('#dataTableSearch').empty();
+
+                tbl = $("#custody_table").DataTable({
+                    destroy: true,
+                    dom: '<\'top d-flex justify-content-end\'f>' +
+                        'rt' +
+                        '<\'bottom d-flex justify-content-between align-items-center mb-4\'l p>' +
+                        '<\'clear\'>',
+                    info: false,
+                    paging: true,
+                    lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+                    pageLength: -1,
+                    searchDelay: 400,
+                    processing: true,
+                    serverSide: true,
+                    orderMulti: false,
+                    autoWidth: false,
+                    stateSave: true,
+                    select: {
+                        style: 'multi',
+                        selector: 'td:first-child input[type="checkbox"]',
+                        className: 'row-selected'
+                    },
+                    initComplete: function () {
+                        $('#custody_table_filter')
+                            .appendTo('#dataTableSearch')
+                            .addClass('mb-0');
+
+                        loadCustodyKpis();
+                        initExportButtons();
+                    },
+                    language: {url: '/static/management/plugins/custom/datatables/TR.json'},
+                    ajax: {
+                        url: "{% url 'custody:get_all' %}",
+                        kpSkipLoader: skipLoader,
+                        data: d => {
+                            if (tabType === 'IN') {
+                                d.custody_type = 'IN';
+                                d.is_returned = 'false';
+                            } else {
+                                d.custody_type = 'OUT';
+                                d.is_returned = 'true';
+                            }
+                        }
+                    },
+                    order: [[8, 'desc']],
+                    columns: [
+                        {
+                            data: 'id', orderable: false, className: 'text-center',
+                            render: d => `<input class="form-check-input row-check" type="checkbox" value="${d}">`
+                        },
+
+                        {
+                            data: 'customer_full',
+                            render: function (data, type, row) {
+                                if (type !== 'display') return data;
+                                const id = row.customer_id;
+                                const name = data || '-';
+                                if (!id) return name;
+                                return `<a href="/customers/detail/${id}" class="cust-link">${name}</a>`;
+                            }
+                        },
+
+                        {
+                            data: 'process_no',
+                            render: pno => {
+                                if (!pno || pno === '-') return '<span class="text-muted">-</span>';
+                                return `
+                                      <span class="open-process-modal text-primary fw-bold"
+                                            style="cursor:pointer"
+                                            data-process-no="${pno}">
+                                        ${pno}
+                                      </span>`;
+                            }
+                        },
+
+                        {
+                            data: null,
+                            render: function (_data, type, row) {
+                                if (type !== 'display') {
+                                    if (row.is_returned) {
+                                        return `${row.staff_received || ''} ${row.staff_delivered || ''}`.trim();
+                                    }
+                                    return row.staff_received || '';
+                                }
+                                if (row.is_returned) {
+                                    const a = row.staff_received || '-';
+                                    const b = row.staff_delivered || '-';
+                                    return `<span class="text-muted">${a}</span> <span class="mx-1">→</span> <span class="fw-semibold">${b}</span>`;
+                                }
+                                return row.staff_received || '-';
+                            }
+                        },
+
+                        {data: 'product'},
+                        {data: 'quantity_piece', className: 'text-end'},
+                        {data: 'quantity_gram', className: 'text-end'},
+                        {data: 'amount_hs', className: 'text-end'},
+                        {data: 'created_on'},
+                        {
+                            data: 'is_returned', className: 'text-center',
+                            render: d => d
+                                ? "<span class='badge bg-success'>Teslim Edildi</span>"
+                                : "<span class='badge bg-info'>Emanette</span>"
+                        },
+                        {
+                            data: "id",
+                            orderable: false,
+                            className: "text-end",
+                            render: function (data, type, row) {
+                                const isReturned = !!row.is_returned;
+                                const btnText = isReturned ? 'Emanete Al' : 'Teslim Et';
+                                const btnTitle = isReturned ? 'Teslim Edileni Geri Al (Emanete Al)' : 'Emaneti Teslim Et';
+                                const btnClass = isReturned ? 'btn-emanet-light' : 'btn-light-success';
+
+                                return `
+                                      <button type="button"
+                                              class="btn ${btnClass} btn-sm"
+                                              title="${btnTitle}"
+                                              onclick="toggle_custody_status('${row.id}')">
+                                        <i class="fa-solid fa-circle-check me-1"></i>${btnText}
+                                      </button>`;
+                            }
+                        }
+                    ]
+                });
+            };
+
+            if ($('#custodyTabs').length) {
+                $('#custodyTabs').on('click', 'button', function () {
+                    $('#custodyTabs button').removeClass('active');
+                    $(this).addClass('active');
+                    activeTab = $(this).data('tab'); // 'IN' | 'OUT'
+
+                    initDatatable(activeTab, true);
+                });
+            }
+
+            initDatatable('IN', false);
+
+
+            function initExportButtons() {
+                $('#hiddenExportContainer').remove();
+                const $hiddenExportBtns = $('<div id="hiddenExportContainer" style="display:none"></div>').appendTo('body');
+
+                const exportBtns = new $.fn.dataTable.Buttons(tbl, {
+                    buttons: [
+                        {extend: 'copyHtml5', title: 'Emanet_Raporu', exportOptions: {columns: ':not(:first-child)'}},
+                        {extend: 'excelHtml5', title: 'Emanet_Raporu', exportOptions: {columns: ':not(:first-child)'}},
+                        {extend: 'csvHtml5', title: 'Emanet_Raporu', exportOptions: {columns: ':not(:first-child)'}},
+                        {extend: 'pdfHtml5', title: 'Emanet_Raporu', exportOptions: {columns: ':not(:first-child)'}}
+                    ]
+                }).container().appendTo($hiddenExportBtns);
+
+                $('#kt_datatable_example_export_menu [data-kt-export]').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    const type = $(this).data('kt-export');
+                    $hiddenExportBtns.find('.buttons-' + type).click();
+                });
+            }
+
+            $('.checkAll').on('change', function () {
+                $('#custody_table .row-check').prop('checked', this.checked);
+            });
+
+            $('#custody_table').on('draw.dt', function () {
+                $('.checkAll').prop('checked', false);
+            });
+
+            function deleteSelectedItems() {
+                const ids = $('.row-check:checked').map((_, el) => $(el).val()).get();
+                if (!ids.length) {
+                    Swal.fire('Hata', 'Lütfen en az bir kayıt seçin.', 'error');
+                    return;
+                }
+                $.post("{% url 'custody:delete' %}", {
+                    ids,
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                }, res => {
+                    if (res.result) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Silindi',
+                            text: 'Seçili Kayıtlar başarıyla silindi.',
+                            timer: 1200,
+                            showConfirmButton: false
+                        });
+                        tbl.ajax.reload(null, false);
+                        loadCustodyKpis();
+                    } else {
+                        Swal.fire('Hata', res.error_msg || 'Silinemedi.', 'error');
+                    }
+                });
+            }
+
+            function changeStatusSelectedItems() {
+                const ids = $('.row-check:checked').map((_, el) => $(el).val()).get();
+                if (!ids.length) {
+                    Swal.fire('Hata', 'Lütfen en az bir kayıt seçin.', 'error');
+                    return;
+                }
+                $.post("{% url 'custody:change_status' %}", {
+                    ids,
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                }, res => {
+                    if (res.result) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: 'Kayıtlar başarıyla güncellendi.',
+                            timer: 1200,
+                            showConfirmButton: false
+                        });
+                        tbl.ajax.reload(null, false);
+                        loadCustodyKpis();
+                    } else {
+                        Swal.fire('Hata', res.error_msg || 'İşlem yapılamadı.', 'error');
+                    }
+                });
+            }
+
+            $('#deleteSelected').click(deleteSelectedItems);
+            $('#custodyForm').on('submit', function (e) {
+                e.preventDefault();
+                const fd = new FormData(this);
+                const isUpdate = $('[name="custody_id"]').val() ? true : false;
+
+                $.ajax({
+                    url: "{% url 'custody:add' %}",
+                    method: "POST",
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    success: res => {
+                        if (res.result) {
+                            // 1. Modalı gizle
+                            $('#addCustodyModal').modal('hide');
+
+                            // 2. Arka planı temizle ve SCROLL kilidini kesin olarak aç
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open');
+                            $('html, body').css({
+                                'overflow': 'auto',
+                                'padding-right': '0'
+                            });
+
+                            // 3. Tablo ve KPI güncelle
+                            tbl.ajax.reload(null, false);
+                            loadCustodyKpis();
+
+                            // 4. SweetAlert'i çağır ve scroll ile oynamasını yasakla
+                            setTimeout(() => {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Başarılı',
+                                    text: isUpdate ? 'Kayıt başarıyla güncellendi.' : 'Kayıt başarıyla eklendi.',
+                                    timer: 1200,
+                                    showConfirmButton: false,
+                                    scrollbarPadding: false // ÖNEMLİ: SweetAlert'in scrollbar'ı kilitlemesini engeller
+                                }).then(() => {
+                                    // Ekstra Güvenlik: SweetAlert kapandıktan sonra scroll'un açık olduğundan emin ol
+                                    $('html, body').css('overflow', 'auto');
+                                });
+                            }, 300); // Çakışmayı sıfıra indirmek için süreyi biraz uzattık
+
+                        } else {
+                            Swal.fire('Hata', res.error_msg || 'Kaydedilemedi.', 'error');
+                        }
+                    },
+                    error: xhr => Swal.fire('Hata', xhr.responseText, 'error')
+                });
+            });
+
+            // Tür seçimine göre alanları göster/gizle
+            $('input[name="emanet_turu"]').on('change', function () {
+                var tur = $(this).val();
+
+                // Alanları sıfırla
+                $('#custody_product_id').val('').trigger('change');
+                $('#custody_quantity_piece').val('0');
+                $('#custody_quantity_gram').val('0');
+                $('#custody_milyem').val('0');
+                $('#custody_amount_hs').val('0.000');
+
+                if (tur === 'ziynet') {
+                    $('#alan_ziynet').show();
+                    $('#alan_hurda_bilezik').hide();
+                    $('#div_bilezik_adi').hide();
+                } else if (tur === 'hurda') {
+                    $('#alan_ziynet').hide();
+                    $('#alan_hurda_bilezik').show();
+                    $('#div_bilezik_adi').hide();
+                } else if (tur === 'bilezik') {
+                    $('#alan_ziynet').hide();
+                    $('#alan_hurda_bilezik').show();
+                    $('#div_bilezik_adi').show();
+                }
+            });
+
+            // Has Hesaplama Fonksiyonu
+            function calculateCustodyHas() {
+                var tur = $('input[name="emanet_turu"]:checked').val();
+                var totalHas = 0;
+
+                if (tur === 'ziynet') {
+                    var selectedOption = $('#custody_product_id').find('option:selected');
+
+                    var productHsStr = String(selectedOption.data('product-hs') || '0').replace(',', '.');
+                    var productHs = parseFloat(productHsStr) || 0;
+
+                    // Input id'si quantity_piece ama artık gram için de bu alanı kullanıyoruz
+                    var amountStr = String($('#custody_quantity_piece').val() || '0').replace(',', '.');
+                    var amount = parseFloat(amountStr) || 0;
+
+                    totalHas = amount * productHs;
+                } else {
+                    // Hurda veya Bilezik
+                    var milyem = parseFloat($('#custody_milyem').val()) || 0;
+                    var gramStr = String($('#custody_quantity_gram').val() || '0').replace(',', '.');
+                    var gram = parseFloat(gramStr) || 0;
+                    totalHas = gram * (milyem / 1000);
+                }
+
+                $('#custody_amount_hs').val(totalHas.toFixed(3));
+            }
+
+            // Yeni: Ürün seçildiğinde Gram / Adet ayrımını yap
+            $('#custody_product_id').on('change', function () {
+                var selectedOption = $(this).find('option:selected');
+                var isGram = selectedOption.data('is-gram') === true;
+
+                var $label = $('#custody_quantity_piece').siblings('label');
+                var $input = $('#custody_quantity_piece');
+
+                if (isGram) {
+                    $label.text('Gram');
+                    $input.attr('step', '0.01'); // Ondalıklı gram değerlerine izin ver
+                } else {
+                    $label.text('Adet');
+                    $input.attr('step', '1');    // Adet tam sayı olmalı
+                }
+
+                calculateCustodyHas();
+            });
+
+            // Değerler değiştikçe hesabı tetikle
+            $('#custody_product_id, #custody_quantity_piece, #custody_quantity_gram, #custody_milyem').on('input change', function () {
+                calculateCustodyHas();
+            });
+
+            // Modal Kapanınca Sıfırla
+            $('#addCustodyModal').on('hidden.bs.modal', function () {
+                $('#custodyForm')[0].reset();
+                $('#custodyForm').removeClass('was-validated');
+                $('[name="custody_id"]').val('');
+                $('#custody_customer_id').val('').trigger('change');
+                $('#custody_product_id').val('').trigger('change');
+
+                // Varsayılan duruma dön (Ziynet açık)
+                $('#tur_ziynet').prop('checked', true).trigger('change');
+                $('#addCustodyModal .modal-title').html('<i class="fa-solid fa-hand-holding-hand me-2"></i>Emanet Ekle');
+            });
+
+
+            // ==========================================
+            // YENİ: DİNAMİK GÜNCELLEME (GLOBAL YAPILDI)
+            // ==========================================
+            window.edit_custody = function (id) {
+                const dt = $('#custody_table').DataTable();
+                const rowData = dt.rows().data().toArray().find(row => row.id == id);
+
+                if (!rowData) {
+                    Swal.fire('Hata!', 'Kayıt bulunamadı.', 'error');
+                    return;
+                }
+
+                $('#addCustodyModal .modal-title').html('<i class="fa-solid fa-pen-to-square me-2"></i>Emanet Güncelle');
+                $('[name="custody_id"]').val(rowData.id);
+
+                // Select2'leri tetikle
+                $('#custody_customer_id').val(rowData.customer_id).trigger('change');
+
+                // Güncelleme mantığında Tür seçimini ayarlamak karmaşıktır çünkü ürün detayını bilmemiz gerekir.
+                // Şimdilik ürün varsa ziynet gibi davranıp ürünü seçiyoruz.
+                // Detaylı editleme yapılacaksa arka plandan ürünün hurda/bilezik mi olduğu da getirilmelidir.
+                if (rowData.product_id) {
+                    $('#tur_ziynet').prop('checked', true).trigger('change');
+                    $('#custody_product_id').val(rowData.product_id).trigger('change');
+                }
+
+                $('#custody_quantity_piece').val(rowData.quantity_piece);
+                $('#custody_quantity_gram').val(rowData.quantity_gram);
+
+                // Açıklamayı doldur
+                $('[name="description"]').val(rowData.description);
+
+                // Otomatik hası ekrana manuel bas
+                $('#custody_amount_hs').val(parseFloat(rowData.amount_hs).toFixed(3));
+
+                $('#addCustodyModal').modal('show');
+            }
+
+        });
+
+        function toggle_custody_status(id) {
+            const dt = $('#custody_table').DataTable();
+            const rowData = dt.rows().data().toArray().find(r => r.id == id) || {};
+
+            const isReturned = !!rowData.is_returned;
+            const actionButton = isReturned ? 'Emanete Al' : 'Teslim Et';
+            const actionTitle = isReturned ? 'Geri Alınacak Miktar' : 'Teslim Edilecek Miktar';
+
+
+            let valGram = parseFloat(rowData.quantity_gram) || 0;
+            let valPiece = parseInt(rowData.quantity_piece) || 0;
+
+            let isGram = valGram > 0;
+            let maxVal = isGram ? valGram : valPiece;
+            let unitLabel = isGram ? "Gram" : "Adet";
+            let stepVal = isGram ? "0.001" : "1";
+            let defaultVal = maxVal;
+
+            Swal.fire({
+                title: actionTitle,
+                html: `
+                    <div class="mb-3 text-start">
+                        Toplam Mevcut: <strong>${maxVal} ${unitLabel}</strong>
+                        <br>
+                        <small class="text-muted">Ürün: ${rowData.product || '-'}</small>
+                    </div>
+                    <label class="form-label fw-bold">${unitLabel} Giriniz:</label>
+                `,
+                input: 'number',
+                inputValue: defaultVal,
+                inputAttributes: {
+                    min: 0,
+                    max: maxVal,
+                    step: stepVal
+                },
+                showCancelButton: true,
+                confirmButtonText: `Onayla ve ${actionButton}`,
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: isReturned ? '#6f42c1' : '#28a745',
+                showLoaderOnConfirm: true,
+                preConfirm: (amount) => {
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Lütfen geçerli bir miktar girin');
+                        return false;
+                    }
+                    if (parseFloat(amount) > parseFloat(maxVal)) {
+                        Swal.showValidationMessage(`Miktar ${maxVal} ${unitLabel} değerinden büyük olamaz.`);
+                        return false;
+                    }
+
+                    return $.post("{% url 'custody:change_status' %}", {
+                        id: id,
+                        transfer_amount: amount,
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                    }).then(response => {
+                        if (!response.result) {
+                            throw new Error(response.error_msg || "İşlem başarısız");
+                        }
+                        return response;
+                    }).catch(error => {
+                        let errMsg = error.message || error.statusText || "Sunucu ile iletişim kurarken bir hata oluştu.";
+                        Swal.showValidationMessage(
+                            `${errMsg}`
+                        )
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#custody_table').DataTable().ajax.reload(null, false);
+                    if (typeof loadCustodyKpis === 'function') loadCustodyKpis();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'İşlem Başarılı',
+                        text: 'Miktar başarıyla transfer edildi.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        }
+    </script>
+
+    <script>
+        $('#custody_table').on('click', '.open-process-modal', function () {
+            var processNo = $(this).data('process-no');
+            if (!processNo) return;
+
+            $.ajax({
+                url: '/process/get-process-details',
+                type: 'GET',
+                kpSkipLoader: true,
+                data: {process_no: processNo},
+                success: function (response) {
+                    if (!response || !response.result) {
+                        Swal.fire('Hata!', (response && response.error_msg) || 'Detay alınamadı.', 'error');
+                        return;
+                    }
+
+                    var processes = response.processes || [];
+                    var firstProcess = processes[0] || {};
+
+                    // Modal başlık
+                    $('#processDetailsModalLabel').text('İşlem Detayları - İşlem No: ' + processNo);
+
+                    // Üst bilgiler
+                    $('#employeeName').text(
+                        (firstProcess.employee__first_name || '-') + ' ' + (firstProcess.employee__last_name || '')
+                    );
+                    $('#customerName').text(
+                        (firstProcess.customer__first_name || '-') + ' ' + (firstProcess.customer__last_name || '')
+                    );
+                    $('#customerPhone').text(firstProcess.customer__phone || '-');
+
+                    var $tbody = $('#processDetailsTable tbody');
+                    $tbody.empty();
+                    processes.forEach(function (p) {
+                        var tr = `
+                                <tr>
+                                  <td>${p.product__name || ''}</td>
+                                  <td>${p.price_hs || ''}</td>
+                                  <td>${p.amount || ''}</td>
+                                  <td>${new Date(p.date).toLocaleDateString('tr-TR')}</td>
+                                </tr>`;
+                        $tbody.append(tr);
+                    });
+
+                    $('#totalAmountSale').text(response.total_amount_sale || '');
+                    $('#totalAmountPurchaseReturn').text(response.total_amount_purchase_return || '');
+                    var totalAmount = Number((response.total_amount || '0').toString().replace('.', '').replace(',', '.'));
+                    $('#totalAmount')
+                        .text(response.total_amount || '')
+                        .css('color', (totalAmount < 0) ? 'red' : '#32cd32');
+
+                    $('#processDetailsModal').modal('show');
+                },
+                error: function () {
+                    Swal.fire('Hata!', 'Sunucu hatası oluştu.', 'error');
+                }
+            });
+        });
+
+        function exportToExcel() {
+            let processNo = $('#processDetailsModalLabel').text().split(': ')[1];
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let table = document.getElementById('processDetailsTable');
+            let wb = XLSX.utils.table_to_book(table, {sheet: 'İşlem Detayları'});
+            XLSX.writeFile(wb, `${processNo}_${dateText}.xlsx`);
+        }
+
+        function exportToPDF() {
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let processNo = $('#processDetailsModalLabel').text().split(': ')[1];
+            let filename = `${processNo}_${dateText}.pdf`;
+            let printableElement = document.getElementById('printableArea');
+            let titleElement = document.querySelector('.title-fis');
+            let originalFontSizeTitle = titleElement.style.fontSize;
+
+            titleElement.style.fontSize = '10px';
+            html2pdf().set({
+                margin: [1, 1, 1, 1],
+                filename: filename,
+                image: {type: 'jpeg', quality: 0.98},
+                html2canvas: {scale: 2},
+                jsPDF: {unit: 'mm', format: [80, 100], orientation: 'portrait'}
+            })
+                .from(printableElement).save()
+                .then(() => {
+                    titleElement.style.fontSize = originalFontSizeTitle;
+                });
+        }
+
+        function printDetails() {
+            let printContents = document.getElementById('printableArea').innerHTML;
+            let originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            location.reload();
+        }
+    </script>
+{% endblock footer %}

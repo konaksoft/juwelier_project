@@ -1,0 +1,143 @@
+<div class="modal-content">
+    <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title"><i class="bi bi-qr-code"></i> MASAK Formu — QR Kod</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+    </div>
+    <div class="modal-body text-center">
+        <p class="text-muted small mb-3">
+            Müşterinize bu QR kodu okutarak MASAK müşteri tanı formunu
+            kendi telefonundan doldurmasını sağlayabilirsiniz.
+        </p>
+
+        <!-- QR kod %100 client-side üretilir. 3. parti API, yönlendirme veya süreli
+             servis KULLANILMAZ. Canvas, davidshimjs/qrcodejs ile offline çizilir. -->
+        <div id="masakQrCanvas" class="d-inline-block p-3 bg-white border rounded"
+             data-public-url="{{ public_url }}"></div>
+
+        <div class="mt-3">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="masakPublicUrl" value="{{ public_url }}" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="masakCopyBtn">
+                    <i class="bi bi-clipboard"></i> Kopyala
+                </button>
+            </div>
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-shield-lock"></i> {{ store.title }} için benzersiz, süresiz ve limitsiz public link
+            </small>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-success btn-sm" id="masakQrDownloadBtn">
+            <i class="bi bi-download"></i> QR Kodu İndir (PNG)
+        </button>
+        <a href="{{ public_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-box-arrow-up-right"></i> Yeni Sekmede Aç
+        </a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>
+    </div>
+</div>
+
+<!-- Saf, offline client-side QR kütüphanesi. Hiçbir dinamik QR servisine çağrı YAPMAZ. -->
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@04f46c6/qrcode.min.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var qrContainer = document.getElementById("masakQrCanvas");
+    var copyBtn = document.getElementById("masakCopyBtn");
+    var downloadBtn = document.getElementById("masakQrDownloadBtn");
+    var urlInput = document.getElementById("masakPublicUrl");
+
+    if (!qrContainer) { return; }
+
+    // Django template'inden gelen ham public URL. Araya hiçbir kısaltıcı/yönlendirici
+    // sokulmaz. escapejs ile sadece JS string safety uygulanır.
+    var publicUrl = "{{ public_url|escapejs }}";
+
+    // Kütüphane yüklenememişse sessiz fallback — yine de 3. parti API'ye gitmeyiz.
+    if (typeof QRCode === "undefined") {
+        qrContainer.innerHTML =
+            '<div class="alert alert-danger mb-0">QR kütüphanesi yüklenemedi. ' +
+            'Lütfen sayfayı yenileyin.</div>';
+        return;
+    }
+
+    // Container temizle ve QR'ı client-side çiz.
+    qrContainer.innerHTML = "";
+    var qr = new QRCode(qrContainer, {
+        text: publicUrl,
+        width: 240,
+        height: 240,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Kopyala butonu
+    if (copyBtn && urlInput) {
+        copyBtn.addEventListener("click", function () {
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999);
+            var done = function () {
+                copyBtn.innerHTML = '<i class="bi bi-check"></i> Kopyalandı';
+                setTimeout(function () {
+                    copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> Kopyala';
+                }, 1500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(urlInput.value).then(done, function () {
+                    try { document.execCommand("copy"); done(); } catch (e) {}
+                });
+            } else {
+                try { document.execCommand("copy"); done(); } catch (e) {}
+            }
+        });
+    }
+
+    // İndir butonu — PNG olarak kaydet.
+    // qrcodejs modern tarayıcılarda <canvas>, desteklemiyorsa <img> üretir.
+    // Her iki durumu da destekliyoruz.
+    if (downloadBtn) {
+        downloadBtn.addEventListener("click", function () {
+            // Kısa bir gecikme ile container dolmuş olsun
+            setTimeout(function () {
+                var dataUrl = null;
+                var canvas = qrContainer.querySelector("canvas");
+                var img = qrContainer.querySelector("img");
+
+                if (canvas && canvas.toDataURL) {
+                    try {
+                        dataUrl = canvas.toDataURL("image/png");
+                    } catch (e) { dataUrl = null; }
+                }
+
+                if (!dataUrl && img && img.src) {
+                    // <img> fallback — zaten data:image/png;base64 formatında olur.
+                    dataUrl = img.src;
+                }
+
+                if (!dataUrl) {
+                    alert("QR kodu henüz hazır değil, lütfen tekrar deneyin.");
+                    return;
+                }
+
+                // Dosya adı: mağaza + tarih
+                var ts = new Date();
+                var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+                var fname =
+                    "masak-qr-" +
+                    ts.getFullYear() + pad(ts.getMonth() + 1) + pad(ts.getDate()) +
+                    "-" + pad(ts.getHours()) + pad(ts.getMinutes()) +
+                    ".png";
+
+                var a = document.createElement("a");
+                a.href = dataUrl;
+                a.download = fname;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }, 50);
+        });
+    }
+})();
+</script>

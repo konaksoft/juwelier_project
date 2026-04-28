@@ -1,0 +1,340 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <title>Kuyum Plus by Konasoft | Kuyumcu Yönetim Programı & ERP Çözümleri</title>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
+
+
+    <meta name="description"
+          content="Konasoft’un geliştirdiği Kuyum Plus ile envanter, perakende, toptan, cari, barkodlama ve RFID sayım süreçlerinizi tek panelde yönetin; yapay zekâ destekli raporlarla kârlılığınızı artırın.">
+    <meta name="keywords"
+          content="Kuyum Plus, kuyumcu programı, konasoft, kuyumcu ERP, altın stok takibi, cari yönetimi, RFID sayım, kuyumculuk yazılımı">
+
+    <meta property="og:title" content="Kuyum Plus Kuyumcu Yönetim Programı | Konasoft"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="https://www.konasoft.com/kuyumplus/"/>
+    <meta property="og:description"
+          content="Kuyum Plus ile stoktan satışa, cari mutabakattan detaylı raporlamaya kadar tüm kuyumcu işlemleriniz dijitalleşsin."/>
+    <meta property="og:image" content="https://www.konasoft.com/static/theme/img/new_logo/1.png"/>
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Kuyum Plus | Konasoft Kuyumcu Yönetim Programı">
+    <meta name="twitter:description"
+          content="RFID hızlı sayım, barkod & QR entegrasyonu ve günlük otomatik raporlarla kuyumculukta tam kontrol.">
+    <meta name="twitter:image" content="https://www.konasoft.com/static/theme/img/new_logo/1.png">
+
+    <link rel="canonical" href="https://www.konasoft.com/kuyumplus/"/>
+    <link rel="shortcut icon" href="{% static 'theme/img/new_logo/1.png' %}"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/>
+    <link href="{% static 'management/plugins/global/plugins.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static 'management/css/style.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <style>
+        /* ——— Global modal ölçüleri ——— */
+        .modal-content {
+            width: 67vw;
+        }
+
+        .modal-dialog {
+            margin: auto;
+            max-width: 67vw;
+        }
+
+        /* ——— Logo (form üstü) ——— */
+        .logo-mobile {
+            margin-bottom: 25px;
+        }
+
+        .logo-mobile-image {
+            height: 130px;
+            object-fit: contain;
+        }
+
+
+        @media (max-width: 991.98px) {
+
+            .mobile-image {
+                min-height: 450px !important;
+            }
+
+            .contact-area .contact-inner-1 .col-lg-4 {
+                order: 2;
+                margin-top: 32px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .contact-area .single-input-inner input,
+            .contact-area .single-input-inner textarea,
+            .contact-area .btn {
+                width: 100% !important;
+            }
+        }
+
+         @media (max-width: 767.98px) {
+            .logo-mobile {
+                margin-bottom: 30px;
+            }
+
+            .logo-mobile-image {
+                height: 90px;
+                width: 350px;
+            }
+
+            .mobile-container {
+                width: 35rem;
+            }
+
+            .mobile-image {
+                min-height: 220px !important;
+            }
+        }
+
+    </style>
+</head>
+
+<body id="kt_body" class="app-blank">
+
+<script>
+    var defaultThemeMode = "light";
+    var themeMode;
+    if (document.documentElement) {
+        if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
+            themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
+        } else {
+            if (localStorage.getItem("data-bs-theme") !== null) {
+                themeMode = localStorage.getItem("data-bs-theme");
+            } else {
+                themeMode = defaultThemeMode;
+            }
+        }
+        if (themeMode === "system") {
+            themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-bs-theme", themeMode);
+    }
+</script>
+
+<div class="d-flex flex-column flex-root" id="kt_app_root">
+    <div class="d-flex flex-column flex-lg-row flex-column-fluid">
+        <div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1"
+             style="padding: 1em!important; ">
+            <div class="d-flex flex-center flex-column flex-lg-row-fluid">
+                <div class="w-lg-500px p-10 mobile-container">
+                    {% if not token %}
+                        <form id="login_form" method="post" class="form w-100" method="post" novalidate="novalidate"
+                              id="kt_sign_in_form">
+                            {% csrf_token %}
+                            <div class="text-center logo-mobile">
+                                <a href="{% url 'accounts:login' %}">
+                                    <img alt="Logo" width="450x" class="logo-mobile-image"
+                                         src="{% static 'theme/img/new_logo/1.png' %}"/>
+                                </a>
+                            </div>
+                            <div class="separator separator-content " style="margin-bottom:60px !important;">
+                                <span class="w-125px text-gray-500 fw-semibold fs-2">Hoşgeldiniz</span>
+                            </div>
+                            {% if messages %}
+
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }}  mb-4" role="alert">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+
+                            {% endif %}
+                            <div class="fv-row mb-8">
+                                <input type="text" placeholder="Kullanıcı Adı veya E-posta"
+                                       name="username" autocomplete="off"
+                                       class="form-control bg-transparent" required>
+                            </div>
+
+                            <div class="fv-row mb-3">
+                                <input type="password" placeholder="Şifre"
+                                       name="password" autocomplete="off"
+                                       class="form-control bg-transparent" required>
+                            </div>
+                            <div class="col text-right" style="margin-top: 20px;margin-bottom: 20px;">
+                                <a href="{% url 'accounts:reset-password' %}"
+                                   class="input-fp">Şifremi Unuttum</a>
+                            </div>
+
+                            <div class="d-grid mb-10">
+                                <button type="submit" id="kt_sign_in_submit" class="btn btn-primary">
+                                    <span class="indicator-label">Giriş Yap</span>
+                                    <span class="indicator-progress">Lütfen Bekleyiniz...
+										<span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <form class="form w-100 mb-13" novalidate="novalidate" id="kt_sing_in_two_factor_form"
+                              method="post">
+                            {% csrf_token %}
+                            <div class="text-center mb-10">
+                                <img alt="Logo" class="mh-125px"
+                                     src="{% static 'management/media/svg/misc/smartphone-2.svg' %}"/>
+                            </div>
+                            <div class="text-center mb-10">
+                                <h1 class="text-gray-900 mb-3">
+                                    İki Faktörlü Doğrulama
+                                </h1>
+
+                                <div class="text-muted fw-semibold fs-5 mb-5">Doğrulama Kodunu Girin
+                                </div>
+                            </div>
+
+                            <div class="mb-10">
+                                <div class="fw-bold text-start text-gray-900 fs-6 mb-1 ms-1">Güvenlik Kodunu Yaz
+                                </div>
+                                <div class="form-group m-t-40">
+                                    <div class="col-xs-12">
+                                        <i class="ti-time"></i>Kalan Süre
+                                        <span id="duration">90</span>
+                                        saniye
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-wrap flex-stack">
+                                    <input type="text" name="code_1" data-inputmask="'mask': '9', 'placeholder': ''"
+                                           maxlength="1"
+                                           class="form-control bg-transparent h-60px w-60px fs-2qx text-center mx-1 my-2"
+                                           value=""/>
+                                    <input type="text" name="code_2" data-inputmask="'mask': '9', 'placeholder': ''"
+                                           maxlength="1"
+                                           class="form-control bg-transparent h-60px w-60px fs-2qx text-center mx-1 my-2"
+                                           value=""/>
+                                    <input type="text" name="code_3" data-inputmask="'mask': '9', 'placeholder': ''"
+                                           maxlength="1"
+                                           class="form-control bg-transparent h-60px w-60px fs-2qx text-center mx-1 my-2"
+                                           value=""/>
+                                    <input type="text" name="code_4" data-inputmask="'mask': '9', 'placeholder': ''"
+                                           maxlength="1"
+                                           class="form-control bg-transparent h-60px w-60px fs-2qx text-center mx-1 my-2"
+                                           value=""/>
+                                    <input type="text" name="code_5" data-inputmask="'mask': '9', 'placeholder': ''"
+                                           maxlength="1"
+                                           class="form-control bg-transparent h-60px w-60px fs-2qx text-center mx-1 my-2"
+                                           value=""/>
+                                    <input type="text" name="code_6" data-inputmask="'mask': '9', 'placeholder': ''"
+                                           maxlength="1"
+                                           class="form-control bg-transparent h-60px w-60px fs-2qx text-center mx-1 my-2"
+                                           value=""/>
+                                </div>
+                                <input type="hidden" name="code" id="full_code" value=""/>
+                            </div>
+
+                            <div class="d-flex flex-center">
+                                <button type="submit" id="kt_sing_in_two_factor_submit"
+                                        class="btn btn-lg btn-primary fw-bold">
+                                <span class="indicator-label">
+                                   Gönder
+                                </span>
+                                    <span class="indicator-progress">
+                                    Lütfen Bekleyiniz... <span
+                                            class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                </span>
+                                </button>
+                            </div>
+                            <input name="token" id="token" type="hidden" value="{{ token }}">
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2 mobile-image"
+             style="background-image: url(/static/management/img/login_background.webp); min-height: 200px;">
+            <div class="loginlink2 fixed-bottom text-right p-3">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'management/plugins/global/plugins.bundle.js' %}"></script>
+<script src="{% static 'management/js/scripts.bundle.js' %}"></script>
+<script src="{% static 'management/js/custom/authentication/sign-in/two-factor.js' %}"></script>
+<script>
+    $(function () {
+        $(".preloader").fadeOut();
+    });
+
+    var sec = $("#duration").text();
+    setInterval(function () {
+        sec = parseInt(sec) - 1;
+        if (sec === 0) {
+            $("#token").val("");
+            window.location.href = "/";
+        }
+        $("#duration").text(sec);
+    }, 1000)
+
+    $('#to-recover').on("click", function () {
+        $("#login_form").slideUp();
+        $("#recoverform").fadeIn();
+    });
+    "use strict";
+    var KTSigninTwoFactor = function () {
+        var t, e;
+        return {
+            init: function () {
+                var allInputs = document.querySelectorAll('input[maxlength="1"]');
+                var form = document.querySelector("#kt_sing_in_two_factor_form");
+                var submitButton = document.querySelector("#kt_sing_in_two_factor_submit");
+
+                // Yapıştırma olayını dinle
+                allInputs.forEach(function (input, index) {
+                    input.addEventListener("input", function () {
+                        if (this.value.length === 1 && index + 1 < allInputs.length) {
+                            allInputs[index + 1].focus();
+                        } else if (index === allInputs.length - 1) {
+                            checkFullCodeAndSubmit();
+                        }
+                    });
+
+                    input.addEventListener("paste", function (e) {
+                        e.preventDefault();
+                        var pasteData = (e.clipboardData || window.clipboardData).getData('text');
+
+                        // Yapıştırılan veriyi sadece 6 karakter ile sınırla
+                        pasteData = pasteData.slice(0, allInputs.length);
+
+                        // Input alanlarına karakterleri sırayla yerleştir
+                        allInputs.forEach(function (inputField, idx) {
+                            inputField.value = pasteData[idx] || '';  // Yapıştırılan veriyi yerleştir
+                        });
+
+                        checkFullCodeAndSubmit();  // Kodun tamamı yapıştırıldığında otomatik kontrol
+                    });
+                });
+
+                function checkFullCodeAndSubmit() {
+                    var fullCode = "";
+                    allInputs.forEach(function (inputField) {
+                        fullCode += inputField.value;
+                    });
+
+                    if (fullCode.length === allInputs.length) {
+                        document.getElementById('full_code').value = fullCode;
+                        submitButton.setAttribute("data-kt-indicator", "on");
+                        submitButton.disabled = true;
+                        form.submit();
+                    }
+                }
+            }
+        }
+    }();
+
+
+    KTUtil.onDOMContentLoaded((function () {
+        KTSigninTwoFactor.init();
+    }));
+
+</script>
+</body>
+</html>

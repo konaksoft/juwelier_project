@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Çantacı Ekstre Raporu</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+
+        .color-gold { color: #d4af37; }
+        .bg-gold { background-color: #d4af37; color: #fff; }
+        .bg-dark { background-color: #0F1B2B; color: #fff; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        .header-table td { padding: 5px 0; vertical-align: top; }
+
+        .kpi-table td {
+            padding: 8px 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        .kpi-table .kpi-label { font-weight: bold; color: #666; font-size: 8pt; }
+        .kpi-table .kpi-value { font-size: 14pt; font-weight: bold; color: #0F1B2B; }
+
+        .data-table { margin-top: 15px; }
+        .data-table th {
+            background-color: #0F1B2B;
+            color: #d4af37;
+            padding: 8px 6px;
+            font-size: 8pt;
+            text-transform: uppercase;
+            text-align: left;
+        }
+        .data-table td {
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+            font-size: 9pt;
+        }
+        .data-table tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .fw-bold { font-weight: bold; }
+
+        .footer { margin-top: 20px; font-size: 8pt; color: #999; text-align: center; }
+
+        .badge-hurda { background: #ffe0e0; color: #c0392b; padding: 2px 8px; border-radius: 4px; font-size: 8pt; }
+        .badge-urun { background: #e0ffe0; color: #27ae60; padding: 2px 8px; border-radius: 4px; font-size: 8pt; }
+        .badge-odeme { background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 4px; font-size: 8pt; }
+        .badge-tahsilat { background: #d1ecf1; color: #0c5460; padding: 2px 8px; border-radius: 4px; font-size: 8pt; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <table class="header-table">
+        <tr>
+            <td style="width: 60%;">
+                <h2 style="margin: 0; color: #0F1B2B;">Çantacı Ekstre Raporu</h2>
+                <p style="margin: 3px 0; font-size: 9pt; color: #666;">{{ record.company_name }}</p>
+                {% if record.phone %}<p style="margin: 2px 0; font-size: 8pt; color: #999;">Tel: {{ record.phone }}</p>{% endif %}
+            </td>
+            <td style="width: 40%; text-align: right;">
+                <p style="margin: 2px 0; font-size: 9pt;"><strong>Tarih:</strong> {{ report_date }}</p>
+                <p style="margin: 2px 0; font-size: 9pt;"><strong>Düzenleyen:</strong> {{ authorized }}</p>
+            </td>
+        </tr>
+    </table>
+
+    <hr style="border: 1px solid #d4af37; margin: 10px 0;">
+
+    <!-- KPI ÖZET -->
+    <table class="kpi-table">
+        <tr>
+            <td>
+                <div class="kpi-label">Toplam Hurda Verildi</div>
+                <div class="kpi-value">{{ toplam_hurda_has|floatformat:3 }} HAS</div>
+                <div style="font-size: 8pt; color: #999;">{{ toplam_hurda_gram|floatformat:3 }} Gr</div>
+            </td>
+            <td>
+                <div class="kpi-label">Toplam Ürün Alındı</div>
+                <div class="kpi-value">{{ toplam_urun_has|floatformat:3 }} HAS</div>
+                <div style="font-size: 8pt; color: #999;">{{ toplam_urun_gram|floatformat:3 }} Gr</div>
+            </td>
+            <td>
+                <div class="kpi-label">Net Bakiye</div>
+                <div class="kpi-value" style="color: {% if net_bakiye_has >= 0 %}#27ae60{% else %}#c0392b{% endif %};">
+                    {{ net_bakiye_has|floatformat:3 }} HAS
+                </div>
+                <div style="font-size: 8pt; color: #999;">
+                    {% if net_bakiye_has > 0 %}Çantacı Borçlu{% elif net_bakiye_has < 0 %}Biz Borçluyuz{% else %}Dengede{% endif %}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- HAREKETLER TABLOSU -->
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Tarih</th>
+            <th>İşlem Tipi</th>
+            <th>Açıklama</th>
+            <th class="text-right">Gram</th>
+            <th class="text-right">HAS Değeri</th>
+            <th class="text-right">TL Tutar</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for h in hareketler %}
+            <tr>
+                <td>{{ h.created_on|date:"d.m.Y H:i" }}</td>
+                <td>
+                    {% if h.cantaci_tx_type == 'HURDA_VERILDI' %}
+                        <span class="badge-hurda">Hurda Verildi</span>
+                    {% elif h.cantaci_tx_type == 'URUN_ALINDI' %}
+                        <span class="badge-urun">Ürün Alındı</span>
+                    {% elif h.cantaci_tx_type == 'ODEME' %}
+                        <span class="badge-odeme">Ödeme</span>
+                    {% elif h.cantaci_tx_type == 'TAHSILAT' %}
+                        <span class="badge-tahsilat">Tahsilat</span>
+                    {% else %}
+                        {{ h.cantaci_tx_type|default:"-" }}
+                    {% endif %}
+                </td>
+                <td>{{ h.description|default:"-" }}</td>
+                <td class="text-right">{% if h.quantity_gram %}{{ h.quantity_gram|floatformat:3 }}{% else %}-{% endif %}</td>
+                <td class="text-right">{% if h.currency == 'HS' %}{{ h.amount_value|floatformat:3 }}{% else %}-{% endif %}</td>
+                <td class="text-right">{% if h.currency == 'TRY' %}{{ h.amount_value|floatformat:2 }}{% else %}-{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center" style="padding: 20px; color: #999;">Henüz işlem kaydı bulunmamaktadır.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Bu rapor Kuyum Plus sistemi tarafından otomatik olarak oluşturulmuştur.</p>
+    </div>
+
+</body>
+</html>

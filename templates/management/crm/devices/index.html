@@ -1,0 +1,256 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="app-toolbar py-3 py-lg-6">
+                <div class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            Cihazlar
+                        </h1>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#deviceModal">
+                            <i class="ki-duotone ki-plus fs-2"></i> Yeni Cihaz
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-container container-xxl">
+                <div class="card card-flush">
+                    <div class="card-body pt-0">
+                        <div class="table-responsive">
+                            <div id="tableToolbar" class="d-flex justify-content-end mb-3 mt-5">
+                                <div id="dataTableSearch"></div>
+                            </div>
+                            <table id="kt_datatable_devices" class="table align-middle table-row-dashed fs-6 gy-5">
+                                <thead>
+                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                    <th>Resim</th>
+                                    <th>Kod</th>
+                                    <th>Cihaz Adı</th>
+                                    <th>Fiyat</th>
+                                    <th>Durum</th>
+                                    <th class="text-end">İşlemler</th>
+                                </tr>
+                                </thead>
+                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deviceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="fw-bold" id="modalTitle">Yeni Cihaz Ekle</h2>
+                    <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+                <div class="modal-body py-10 px-lg-17">
+                    <form id="deviceForm" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="device_id" id="device_id">
+
+                        <div class="mb-5 text-center">
+                            <div class="image-input image-input-outline image-input-placeholder"
+                                 data-kt-image-input="true">
+                                <div class="image-input-wrapper w-125px h-125px" id="previewImg"
+                                     style="background-image: url({% static 'management/media/svg/files/blank-image.svg' %});"></div>
+                                <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                       data-kt-image-input-action="change" data-bs-toggle="tooltip"
+                                       title="Resim Değiştir">
+                                    <i class="ki-duotone ki-pencil fs-7"><span class="path1"></span><span
+                                            class="path2"></span></i>
+                                    <input type="file" name="image" accept=".png, .jpg, .jpeg"/>
+                                </label>
+                                <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                      data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="İptal">
+                                <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span
+                                        class="path2"></span></i>
+                            </span>
+                            </div>
+                        </div>
+
+                        <div class="fv-row mb-5">
+                            <label class="required fs-6 fw-semibold mb-2">Stok Kodu</label>
+                            <input type="text" class="form-control" name="code" id="device_code" required/>
+                        </div>
+                        <div class="fv-row mb-5">
+                            <label class="required fs-6 fw-semibold mb-2">Cihaz Adı</label>
+                            <input type="text" class="form-control" name="name" id="device_name" required/>
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-md-8">
+                                <label class="required fs-6 fw-semibold mb-2">Fiyat</label>
+                                <input type="number" class="form-control" name="price" id="device_price" step="0.01"
+                                       required/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="required fs-6 fw-semibold mb-2">Para Birimi</label>
+                                <select class="form-select" name="currency" id="device_currency">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="TRY">TRY</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="fv-row mb-5">
+                            <label class="fs-6 fw-semibold mb-2">Açıklama</label>
+                            <textarea class="form-control" name="description" id="device_desc" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer flex-center">
+                    <button type="reset" class="btn btn-light me-3" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" id="btnSaveDevice" class="btn btn-primary">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            // DataTable
+            const dt = $("#kt_datatable_devices").DataTable({
+                destroy: true,
+                dom: "<'d-flex justify-content-between'f>rt<'bottom'p>",
+                serverSide: true,
+                processing: true,
+                ajax: "{% url 'devices:get_all' %}",
+                columns: [
+                    {
+                        data: "image", orderable: false,
+                        render: function (data) {
+                            const img = data ? data : "{% static 'management/media/svg/files/blank-image.svg' %}";
+                            return `<div class="symbol symbol-50px"><img src="${img}" alt="" style="object-fit:cover"/></div>`;
+                        }
+                    },
+                    {data: "code", className: "fw-bold"},
+                    {data: "name"},
+                    {data: "price_formatted", className: "text-primary fw-bold"},
+                    {
+                        data: "is_active",
+                        render: function (data) {
+                            return data ? '<span class="badge badge-light-success">Aktif</span>' : '<span class="badge badge-light-danger">Pasif</span>';
+                        }
+                    },
+                    {
+                        data: null, className: "text-end", orderable: false,
+                        render: function (data, type, row) {
+                            // Data attribute'larına tüm satır verisini gömüyoruz
+                            return `
+                            <button class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 btn-edit"
+                                data-id="${row.id}"
+                                data-name="${row.name}"
+                                data-code="${row.code}"
+                                data-price="${row.price}"
+                                data-currency="${row.currency}"
+                                data-desc="${row.description}"
+                                data-img="${row.image || ''}">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm btn-delete" data-id="${row.id}">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        `;
+                        }
+                    }
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+
+            // Ekleme / Kaydetme
+            $('#btnSaveDevice').click(function () {
+                const form = $('#deviceForm')[0];
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const fd = new FormData(form);
+                $.ajax({
+                    url: "{% url 'devices:add' %}", type: "POST", data: fd,
+                    processData: false, contentType: false,
+                    success: function (resp) {
+                        if (resp.result) {
+                            Swal.fire({
+                                title: 'Başarılı',
+                                text: "Kayıt işlemi tamamlandı",
+                                icon: 'success',
+                                timer: 1000,
+                                showConfirmButton: false
+                            })
+                                .then(() => {
+                                    window.location.reload();
+                                });
+                        } else {
+                            Swal.fire('Hata', resp.error_msg, 'error');
+                        }
+                    }
+                });
+            });
+
+            // Düzenleme Butonu Tıklanınca
+            $(document).on('click', '.btn-edit', function () {
+                const btn = $(this);
+                $('#modalTitle').text('Cihaz Düzenle');
+                $('#device_id').val(btn.data('id'));
+                $('#device_code').val(btn.data('code'));
+                $('#device_name').val(btn.data('name'));
+                $('#device_price').val(btn.data('price'));
+                $('#device_currency').val(btn.data('currency'));
+                $('#device_desc').val(btn.data('desc'));
+
+                // Resim önizleme
+                const imgUrl = btn.data('img');
+                if (imgUrl) {
+                    $('#previewImg').css('background-image', 'url(' + imgUrl + ')');
+                } else {
+                    $('#previewImg').css('background-image', 'none');
+                }
+
+                $('#deviceModal').modal('show');
+            });
+
+            // Modal Kapanınca Temizle
+            $('#deviceModal').on('hidden.bs.modal', function () {
+                $('#deviceForm')[0].reset();
+                $('#device_id').val('');
+                $('#modalTitle').text('Yeni Cihaz Ekle');
+                $('#previewImg').css('background-image', "url({% static 'management/media/svg/files/blank-image.svg' %})");
+            });
+
+            // Silme
+            $(document).on('click', '.btn-delete', function () {
+                const id = $(this).data('id');
+                Swal.fire({
+                    title: 'Silinsin mi?', text: "Bu işlem geri alınamaz!", icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Evet, Sil'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post("{% url 'devices:delete' %}", {
+                            ids: [id], csrfmiddlewaretoken: '{{ csrf_token }}'
+                        }, function (resp) {
+                            if (resp.result) {
+                                Swal.fire('Silindi', '', 'success');
+                                dt.ajax.reload();
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

@@ -1,0 +1,519 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Hizmet Sözleşmesi - {{ company.title }}</title>
+    <style>
+        /* --- FONTLAR --- */
+        /* HTML dosyanızın <style> etiketi içi */
+        /* --- STİLLER --- */
+        .brand-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+
+        /* pdf_template.html içindeki <style> tagına ekleyin */
+
+        p {
+            margin-bottom: 10px; /* Paragraflar arası boşluk */
+            margin-top: 0;
+            line-height: 1.5; /* Satır yüksekliği */
+        }
+
+        /* Eğer Quill editör kullanıyorsanız içerik <p> yerine <div> içinde de gelebilir */
+        .contract-content p,
+        .contract-content div {
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .brand-accent {
+            color: #d97706;
+        }
+
+        @font-face {
+            font-family: 'DejaVuSans';
+            /* static etiketi ile tam yolu veriyoruz, link_callback bunu yakalayacak */
+            src: url('{% static "fonts/DejaVuSans.ttf" %}');
+        }
+
+        @font-face {
+            font-family: 'DejaVuSans-Bold';
+            src: url('{% static "fonts/DejaVuSans-Bold.ttf" %}');
+        }
+
+        /* --- GENEL AYARLAR --- */
+        body {
+            font-family: 'DejaVuSans', 'Helvetica', sans-serif;
+            font-size: 10pt;
+            color: #333;
+            line-height: 1.4; /* Satır aralığı biraz sıkılaştırıldı */
+        }
+
+        /* --- SAYFA DÜZENİ --- */
+        @page {
+            size: A4;
+            /* Footer alanı büyüdüğü için alt boşluğu (margin-bottom) artırdık */
+            margin: 2cm 1.5cm 3cm 1.5cm; /* Üst, Sağ, Alt, Sol */
+            @frame header_frame {
+            -pdf-frame-content: headerContent;
+            top: 0.5cm;
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
+            height: 2cm; /* Logo için biraz daha alan */
+        }
+
+            @frame footer_frame {
+            -pdf-frame-content: footerContent;
+            bottom: 0cm;
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
+            height: 2.5cm; /* Footer yüksekliği şirket bilgileri için artırıldı */
+        }
+
+            /* HER SAYFA İÇİN İMZA ALANI (Sayfanın en alt sağ köşesi - Footer üstü) */
+            @frame signature_watermark {
+            -pdf-frame-content: pageSignature;
+            bottom: 3cm; /* Footer yükseldiği için bunu da yukarı aldık */
+            right: 1.5cm;
+            width: 5cm;
+            height: 2cm;
+        }
+        }
+
+        /* --- STİLLER --- */
+        /* Logo stili */
+        .header-logo {
+            max-height: 50px; /* Logo yüksekliğini buradan sınırlayabilirsiniz */
+            width: auto;
+        }
+
+        .section-title {
+            background-color: #f1f5f9;
+            color: #1e3a8a;
+            font-size: 12pt;
+            font-weight: bold;
+            padding: 8px;
+            border-left: 5px solid #1e3a8a;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        th {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 6px;
+            font-size: 9pt;
+            border: 1px solid #1e3a8a;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 6px;
+            border: 1px solid #e2e8f0;
+            font-size: 9pt;
+        }
+
+        .row-even {
+            background-color: #f8fafc;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .contract-article {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .contract-article-title {
+            font-weight: bold;
+            color: #1e3a8a;
+            text-decoration: underline;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .mini-signature {
+            text-align: center;
+            opacity: 0.8;
+            border: 1px dashed #ccc;
+            padding: 2px;
+            background: #fff;
+        }
+
+        .mini-signature img {
+            height: 35px;
+            width: auto; /* Oranı korumak için */
+        }
+
+        .mini-signature-text {
+            font-size: 6pt;
+            color: #666;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="headerContent">
+    <table style="border: none; margin-bottom: 0;">
+        <tr>
+            <td style="border: none; width: 60%;">
+                <span class="brand-title">KUYUM<span class="brand-accent">PLUS</span></span>
+            </td>
+            </td>
+            <td style="border: none; text-align: right; font-size: 8pt; color: #64748b; vertical-align: bottom;">
+                Sözleşme Tarihi: {{ process.signed_at|date:"d.m.Y" }}<br>
+                Ref No: {{ process.contract.id|stringformat:".8s" }}
+            </td>
+        </tr>
+    </table>
+    <div style="border-bottom: 2px solid #d97706; margin-top: 5px;"></div>
+</div>
+
+<div id="footerContent">
+    <div style="border-top: 1px solid #cbd5e1; padding-top: 5px;">
+        <table style="width: 100%; border: none; margin: 0;">
+            <tr>
+                <td style="border: none; width: 75%; vertical-align: top; padding: 0;">
+                    <div style="font-size: 8pt; font-weight: bold; color: #334155;">
+                        KONASOFT YAZILIM ANONİM ŞİRKETİ
+                    </div>
+                    <div style="font-size: 6pt; color: #64748b; line-height: 1.2; margin-top: 2px;">
+                        Yenişehir Mah. Sümbül Sk. No: 6-1/79 Pendik / İSTANBUL<br>
+                        Tel: 216 606 88 00 | E-Posta: info@konasoft.com.tr | Web: www.konasoft.com.tr<br>
+                        Mersis No: 0576118362800001 | Pendik V.D. : 5761183628
+                    </div>
+                    <div style="font-size: 6pt; color: #94a3b8; margin-top: 3px;">
+                        Bu belge 5070 sayılı Elektronik İmza Kanunu uyarınca güvenli elektronik imza ile imzalanmıştır.
+                    </div>
+                </td>
+
+                <td style="border: none; width: 25%; vertical-align: top; text-align: right; padding: 0;">
+                    <div class="footer-signature">
+                        {% if process.signature_image %}
+                            <img src=".{{ process.signature_image.url }}"/>
+                            <div class="footer-signature-text">Müşteri Tarafından İmzalanmıştır</div>
+                        {% else %}
+                            <div style="padding: 5px; font-size: 7pt; color: #666; font-weight: bold;">SMS ONAYLI İMZA
+                            </div>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+
+<div style="text-align: center; margin-top: 50px; margin-bottom: 40px;">
+    <h1 style="color: #1e3a8a; font-size: 24pt; margin-bottom: 10px;">HİZMET ALIM SÖZLEŞMESİ</h1>
+    <h3 style="color: #64748b; font-weight: normal;">VE EKLERİ</h3>
+</div>
+
+<table style="margin-top: 20px; border: 1px solid #ccc;">
+    <tr>
+        <td style="width: 50%; vertical-align: top; padding: 15px;">
+            <div style="font-size: 9pt; font-weight: bold; color: #64748b; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
+                HİZMET SAĞLAYICI / SATICI
+            </div>
+            <div style="font-size: 11pt; font-weight: bold; color: #333; margin-bottom: 5px;">KONASOFT YAZILIM A.Ş.
+            </div>
+            <div style="font-size: 9pt; color: #555; line-height: 1.6;">
+                Yenişehir Mah. Sümbül Sk. No: 6-1/79<br>
+                Pendik / İstanbul<br><br>
+                <strong>Vergi Dairesi:</strong> Pendik VD<br>
+                <strong>Vergi No:</strong> 5761183628<br>
+                <strong>Mersis No:</strong> 0576118362800001
+            </div>
+        </td>
+
+        <td style="width: 50%; vertical-align: top; background-color: #f8fafc; padding: 15px;">
+            <div style="font-size: 9pt; font-weight: bold; color: #64748b; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
+                MÜŞTERİ / ALICI
+            </div>
+            <div style="font-size: 11pt; font-weight: bold; color: #333; margin-bottom: 5px;">{{ company.title }}</div>
+            <div style="font-size: 9pt; color: #555; line-height: 1.6;">
+                {{ company.address }}<br>
+                {{ company.district }} / {{ company.city }}<br><br>
+                <strong>VKN/TCKN:</strong> {{ company.tax_number }}<br>
+                <strong>Telefon:</strong> {{ company.phone }}<br>
+                <strong>E-Posta:</strong> {{ company.email }}
+            </div>
+        </td>
+    </tr>
+</table>
+<div class="dynamic-content">
+    {# linebreaks filtresini kaldırdık #}
+    {{ contract_html|safe }}
+</div>
+
+<div style="margin-top: 40px; text-align: justify; font-size: 10pt;">
+    Yukarıda bilgileri yer alan taraflar arasında, aşağıda belirtilen hükümler ve ekler çerçevesinde bir "Yazılım
+    Lisansı Kullanım ve Hizmet Sözleşmesi" akdedilmiştir.
+</div>
+
+<div style="margin-top: 40px; text-align: center; font-size: 9pt; color: #64748b; border: 1px solid #e2e8f0; padding: 15px; border-radius: 5px; background-color: #fcfcfc;">
+    <p>Bu sözleşme ve ekleri, <strong>{{ process.signed_at|date:"d.m.Y H:i:s" }}</strong> tarihinde elektronik ortamda
+        onaylanmış ve imzalanmıştır.</p>
+    <p><strong>İmzalayan IP:</strong> {{ process.signer_ip }} &nbsp;|&nbsp; <strong>SMS Onay
+        Kodu:</strong> {{ process.verification_code }}</p>
+</div>
+
+<pdf:nextpage/>
+
+{% if process.proposal %}
+
+    <div class="section-title">EK-1: FİNANSAL TEKLİF DETAYLARI</div>
+
+    <table style="border: none; margin-bottom: 15px;">
+        <tr>
+            <td style="border: none; width: 50%;"><strong>Teklif No:</strong> {{ process.proposal.proposal_no }}</td>
+            <td style="border: none; width: 50%; text-align: right;">
+                <strong>Geçerlilik:</strong> {{ process.proposal.valid_until|date:"d.m.Y" }}</td>
+        </tr>
+    </table>
+
+    <table>
+        <thead>
+        <tr>
+            <th style="width: 45%;">Hizmet / Ürün Açıklaması</th>
+            <th class="text-center" style="width: 10%;">Adet</th>
+            <th class="text-right" style="width: 20%;">Birim Fiyat</th>
+            <th class="text-right" style="width: 25%;">Tutar</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in process.proposal.items.all %}
+            <tr class="{% cycle 'row-even' 'row-odd' %}">
+                <td>
+                    <span class="text-bold">{{ item.description }}</span>
+                    {% if item.store_name %}
+                        <br>
+                        <span style="font-size: 8pt; color: #666; font-style: italic;">({{ item.store_name }})</span>
+                    {% endif %}
+                    {% if item.package and item.package.maintenance_percent > 0 %}
+                        <br>
+                        <span style="font-size: 8pt; color: #d97706;">(Yıllık Bakım: %{{ item.package.maintenance_percent|floatformat:0 }})</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-right">{{ item.unit_price|floatformat:2 }} {{ process.proposal.currency }}</td>
+                <td class="text-right text-bold">{{ item.total_price|floatformat:2 }} {{ process.proposal.currency }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="width: 50%; margin-left: auto; margin-top: 10px;">
+        <table style="border: none;">
+            <tr>
+                <td class="text-right" style="border:none; color: #64748b;">Ara Toplam:</td>
+                <td class="text-right"
+                    style="border:none;">{{ process.proposal.subtotal|floatformat:2 }} {{ process.proposal.currency }}</td>
+            </tr>
+            {% if process.proposal.discount_amount > 0 %}
+                <tr>
+                    <td class="text-right" style="border:none; color: #dc2626;">İskonto:</td>
+                    <td class="text-right" style="border:none; color: #dc2626;">
+                        -{{ process.proposal.discount_amount|floatformat:2 }} {{ process.proposal.currency }}</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <td class="text-right" style="border:none; color: #64748b;">KDV
+                    (%{{ process.proposal.tax_rate|floatformat:0 }}):
+                </td>
+                <td class="text-right"
+                    style="border:none;">{{ process.proposal.tax_amount|floatformat:2 }} {{ process.proposal.currency }}</td>
+            </tr>
+            <tr>
+                <td class="text-right"
+                    style="border-top: 2px solid #d97706; font-weight: bold; color: #1e3a8a; padding-top:5px;">GENEL
+                    TOPLAM:
+                </td>
+                <td class="text-right"
+                    style="border-top: 2px solid #d97706; font-weight: bold; color: #1e3a8a; padding-top:5px;">{{ process.proposal.grand_total|floatformat:2 }} {{ process.proposal.currency }}</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if process.proposal.notes %}
+        <div style="margin-top: 25px; border: 1px solid #f59e0b; background-color: #fffbeb; padding: 10px; border-radius: 4px;">
+            <div style="font-weight: bold; color: #92400e; font-size: 10pt; margin-bottom: 5px; border-bottom: 1px solid #fcd34d; padding-bottom: 3px;">
+                ÖZEL ŞARTLAR VE NOTLAR:
+            </div>
+            <div style="font-size: 9pt; color: #333; line-height: 1.4;">
+                {{ process.proposal.notes|linebreaksbr }}
+            </div>
+        </div>
+    {% endif %}
+
+    <pdf:nextpage/>
+
+    {% if display_mode == 'package' %}
+        <div class="section-title">EK-2: TEKNİK PAKET KAPSAMI</div>
+    {% else %}
+        <div class="section-title">EK-2: TEKNİK MODÜL KAPSAMI</div>
+    {% endif %}
+
+    {% if module_rows %}
+
+        {% if display_mode == 'package' %}
+        {# ═══════ PAKET MODU: Karşılaştırma Tablosu ═══════ #}
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 40%;">Modül / Özellik</th>
+                {% for pkg in packages %}
+                    <th class="text-center">
+                        {{ pkg.name }}
+                        {% if process.package and pkg.id == process.package.id %}
+                            <br>
+                            <span style="font-size: 7pt; color: #fff; background-color: #059669; padding: 1px 3px;">SEÇİLEN</span>
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for group in module_rows %}
+                <tr style="background-color: #f0f9ff;">
+                    <td colspan="{{ packages|length|add:'1' }}" style="font-weight: bold; color: #1e3a8a; padding: 6px 8px; font-size: 9pt; border-bottom: 1px solid #bfdbfe;">
+                        {{ group.module.name }}
+                    </td>
+                </tr>
+                {% for row in group.rows %}
+                    <tr class="{% cycle 'row-even' 'row-odd' %}">
+                        <td style="padding-left: 20px;">{{ row.permission.name }}</td>
+                        {% for cell in row.cells %}
+                            <td class="text-center">
+                                {% if cell.available %}
+                                    <span style="color: #059669; font-weight: bold;">✔</span>
+                                {% else %}
+                                    <span style="color: #ccc;">-</span>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="font-size: 8pt; color: #64748b; font-style: italic; margin-top: 5px;">
+            * Tabloda (✔) ile işaretli özellikler ilgili pakete dahildir.
+        </div>
+
+        {% else %}
+        {# ═══════ MODÜL MODU: Satın Alınan Modüller Tablosu ═══════ #}
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 70%;">Modül / Özellik</th>
+                <th class="text-center" style="width: 30%;">Dahil</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for group in module_rows %}
+                <tr style="background-color: #f0f9ff;">
+                    <td colspan="2" style="font-weight: bold; color: #1e3a8a; padding: 6px 8px; font-size: 9pt; border-bottom: 1px solid #bfdbfe;">
+                        {{ group.module.name }}
+                        {% if group.is_core %}
+                            <span style="font-size: 7pt; color: #64748b; font-weight: normal;">(Çekirdek)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% for row in group.rows %}
+                    <tr class="{% cycle 'row-even' 'row-odd' %}">
+                        <td style="padding-left: 20px;">{{ row.permission.name }}</td>
+                        <td class="text-center">
+                            <span style="color: #059669; font-weight: bold;">✔</span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="font-size: 8pt; color: #64748b; font-style: italic; margin-top: 5px;">
+            * Tabloda (✔) ile işaretli özellikler satın aldığınız modüllere dahildir.
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div style="font-size: 9pt; color: #64748b; font-style: italic; padding: 10px;">
+            Modül kapsam bilgisi mevcut değildir.
+        </div>
+    {% endif %}
+
+{% endif %}
+
+
+<pdf:nextpage/>
+
+<div class="section-title">İMZA VE ONAY BEYANI</div>
+
+<div class="signature-box">
+    <p style="font-weight: bold; color: #1e3a8a; font-size: 11pt; margin-bottom: 10px;">MÜŞTERİ BEYANI:</p>
+    <p>Yukarıda yer alan Hizmet Sözleşmesi şartlarını, (varsa) Ek-1 Finansal Teklif detaylarını ve Ek-2 Teknik
+        {% if display_mode == 'package' %}Paket{% else %}Modül{% endif %}
+        kapsamını okudum, anladım ve içeriğini gayrikabili rücu kabul ediyorum.</p>
+
+    <table style="border: none; margin-top: 30px;">
+        <tr>
+            <td style="border: none; width: 60%; vertical-align: top;">
+                <div style="margin-bottom: 10px;">
+                    <strong>Firma / Müşteri:</strong> {{ company.title }}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Yetkili Telefonu:</strong> {{ process.signer_phone }}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>İmza Tarihi:</strong> {{ process.signed_at|date:"d.m.Y H:i:s" }}
+                </div>
+            </td>
+            <td style="border: none; width: 40%; text-align: center; vertical-align: middle;">
+                <div style="border: 1px solid #ccc; background-color: white; padding: 10px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                    {% if process.signature_image %}
+                        <img src=".{{ process.signature_image.url }}"
+                             style="max-height: 80px; width: auto; max-width: 100%; object-fit: contain;"/>
+                    {% else %}
+                        <div style="margin-top: 30px; font-style: italic; color: #666; font-size: 9pt;">
+                            SMS (OTP) İle Doğrulanmıştır<br>
+                            (Dijital İmza)
+                        </div>
+                    {% endif %}
+                </div>
+                <div style="font-size: 8pt; color: #666; margin-top: 5px;">Müşteri İmzası</div>
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 20px; border-top: 1px solid #cbd5e1; padding-top: 10px; font-size: 8pt; color: #64748b;">
+        <strong>ELEKTRONİK DELİL KAYDI:</strong><br>
+        SMS Job ID: {{ process.sms_uuid|default:"-" }}<br>
+        IP Adresi: {{ process.signer_ip }}<br>
+        Tarayıcı/Cihaz: {{ process.signer_user_agent|truncatechars:60 }}
+    </div>
+</div>
+
+</body>
+</html>

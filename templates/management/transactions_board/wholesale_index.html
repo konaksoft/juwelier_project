@@ -1,0 +1,4303 @@
+{% extends 'management/transactions_board/base.html' %}
+{% load static %}
+{% block header %}
+
+    <style>
+        .perakende-container,
+        .toptan-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
+            position: relative;
+        }
+
+        .toptan-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 300px;
+            background: radial-gradient(ellipse at top, rgba(255, 215, 0, .05), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .retail-card {
+            border-radius: 16px;
+            padding: .9rem .85rem 1rem;
+            margin-bottom: .6rem;
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow-lg);
+            color: var(--text-primary);
+        }
+
+        .table-responsive {
+            overflow-x: unset !important;
+        }
+
+        .supplier-div {
+            margin-top: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .retail-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, .03), transparent);
+            transition: left .6s ease;
+        }
+
+        .retail-card:hover::before {
+            left: 100%;
+        }
+
+        .retail-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+            border-color: rgba(255, 215, 0, .2);
+        }
+
+        .retail-h5 {
+            font-size: .95rem;
+            margin-bottom: .6rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            font-weight: 600;
+        }
+
+        .retail-h5 i {
+            font-size: 1em;
+            line-height: 1;
+        }
+
+        .height-table-left {
+            flex: 0 0 auto;
+            min-height: auto;
+            max-height: none !important; /* DOĞRU: Yükseklik sınırını kaldırır */
+            height: auto !important;
+        }
+
+        .height-table-left > .col-md-12.col-6 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        .height-table-left > .col-md-12.col-12 + .col-md-12.col-12 {
+            margin-top: .75rem;
+        }
+
+
+        /* ─── ANLIK FİŞ YAZDIR ─── */
+        @media print {
+            body * { visibility: hidden !important; }
+            #fisPrintArea, #fisPrintArea * { visibility: visible !important; }
+            #fisPrintArea {
+                position: absolute; left: 0; top: 0;
+                width: 100%; padding: 15px;
+                background: #fff !important; color: #000 !important;
+            }
+            #fisPrintArea .fis-header { border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
+            #fisPrintArea .fis-balance-row { border: 1px solid #333; }
+            #fisPrintArea table th { background: #eee !important; color: #000 !important; }
+            .modal-footer, .btn-close { display: none !important; }
+        }
+
+        /* Fiş modal stiller */
+        .fis-header { margin-bottom: 1rem; }
+        .fis-header h4 { font-size: 1.1rem; }
+        .fis-balance-grid { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
+        .fis-balance-card {
+            flex: 1 1 120px; text-align: center;
+            background: rgba(15, 27, 43, 0.6);
+            border: 1px solid rgba(255, 215, 0, .15);
+            border-radius: 10px; padding: .6rem .5rem;
+        }
+        .fis-balance-card .cur { color: #FFD700; font-weight: 800; font-size: .95rem; }
+        .fis-balance-card .val { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+        .fis-balance-card .lbl { font-size: .7rem; font-weight: 600; opacity: .8; margin-top: 2px; }
+        .fis-move-table th {
+            color: #FFD700; text-transform: uppercase; font-size: .75rem;
+            border-bottom: 1px solid rgba(255, 215, 0, .15); padding: .5rem .3rem;
+        }
+        .fis-move-table td {
+            color: #fff; padding: .45rem .3rem; font-size: .82rem;
+            border-bottom: 1px solid rgba(255, 255, 255, .05);
+        }
+
+        /* FAZ 23: Disabled label for currency product sale restriction */
+        .disabled-label {
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+        }
+
+        .operation-buttons {
+            display: flex;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+
+        .operation-buttons button {
+            flex: 1;
+            background: linear-gradient(135deg, rgba(34, 49, 74, .6) 0%, rgba(46, 60, 84, .6) 100%);
+            border: 1px solid rgba(255, 215, 0, .15);
+            color: var(--text-primary);
+            padding: .65rem 1rem;
+            font-size: .95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .operation-buttons button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, .2);
+            transform: translate(-50%, -50%);
+            transition: width .4s ease, height .4s ease;
+        }
+
+        .operation-buttons button:hover::after {
+            width: 100%;
+            height: 100%;
+        }
+
+        .operation-buttons button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, .3);
+            border-color: rgba(255, 215, 0, .3);
+        }
+
+        .operation-buttons button.active {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            border-color: transparent;
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            font-weight: 700;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            }
+            50% {
+                box-shadow: 0 6px 35px rgba(255, 215, 0, .6);
+            }
+        }
+
+        .category-item,
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(34, 49, 74, .7) 0%, rgba(46, 60, 84, .7) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, .1);
+            border-radius: 12px;
+            padding: .35rem .9rem;
+            margin-bottom: .25rem;
+            cursor: pointer;
+            transition: all .3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+            color: var(--text-primary);
+        }
+
+        .category-item {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .category-item:hover,
+        .product-item:hover {
+            background: linear-gradient(135deg, rgba(255, 215, 0, .1) 0%, rgba(255, 215, 0, .05) 100%);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, .2);
+            border-color: rgba(255, 215, 0, .3);
+        }
+
+        .category-item.selected {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            font-weight: 700;
+            border-color: transparent;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, .4);
+        }
+
+        .product-name {
+            flex-grow: 1;
+            text-align: left;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .stock-info {
+            text-align: right;
+            color: var(--text-muted);
+            font-size: .8rem;
+            font-weight: 600;
+            background: rgba(255, 215, 0, .1);
+            padding: .15rem .6rem;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 215, 0, .2);
+        }
+
+        .productList,
+        #categoryToptanList {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .form-control,
+        .form-select {
+            background: rgba(15, 27, 43, .6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, .1);
+            color: var(--text-primary);
+            border-radius: 12px;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: .65rem 1rem;
+            font-size: .95rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: rgba(34, 49, 74, .8);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 4px rgba(255, 215, 0, .1), 0 0 20px rgba(255, 215, 0, .2);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: rgba(169, 182, 200, .6);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: .5rem;
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .quantity {
+            margin-bottom: 1rem;
+        }
+
+        .quantity .btn {
+            background: linear-gradient(135deg, rgba(34, 49, 74, .8) 0%, rgba(46, 60, 84, .8) 100%);
+            border: 1px solid rgba(255, 215, 0, .2);
+            color: var(--accent-gold);
+            font-weight: bold;
+            transition: all .3s ease;
+            border-radius: 8px;
+            padding: .5rem .75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+        }
+
+        .quantity .btn:hover {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, .4);
+        }
+
+        .quantity .btn.minus {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .quantity .btn.plus {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .quantity .input-box {
+            text-align: center !important;
+            font-size: 1rem;
+            width: 6em;
+            background: rgba(15, 27, 43, .8);
+            border: 1px solid rgba(255, 215, 0, .2);
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95) 0%, rgba(34, 49, 74, .95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, .15);
+            color: var(--text-primary);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 215, 0, .1), transparent);
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .summary p {
+            font-size: 1rem;
+            margin: 0.3rem 0;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .summary p span {
+            color: var(--accent-gold);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, .3);
+        }
+
+        .custom-button {
+            background: linear-gradient(135deg, rgba(34, 49, 74, .8) 0%, rgba(46, 60, 84, .8) 100%);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 215, 0, .2);
+            border-radius: 12px;
+            padding: .65rem 1rem;
+            font-size: .85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .custom-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 215, 0, .3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width .4s ease, height .4s ease;
+        }
+
+        .custom-button:hover::before {
+            width: 150%;
+            height: 150%;
+        }
+
+        .custom-button:hover {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            border-color: transparent;
+        }
+
+        .custom-button i {
+            margin-right: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .hidden-checkbox {
+            display: none;
+        }
+
+        .hidden-checkbox:checked + .custom-button {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            border-color: transparent;
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            animation: pulse 2s infinite;
+        }
+
+        .footer-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            gap: .5rem;
+        }
+
+        .footer-buttons button,
+        .btn-footer {
+            background: linear-gradient(135deg, rgba(34, 49, 74, .8) 0%, rgba(46, 60, 84, .8) 100%);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 215, 0, .2);
+            border-radius: 12px;
+            padding: .75rem 1.25rem;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 1;
+            margin: 0 0.1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .footer-buttons button::before,
+        .btn-footer::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: linear-gradient(135deg, rgba(255, 215, 0, .3), rgba(255, 180, 0, .3));
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width .4s ease, height .4s ease;
+        }
+
+        .footer-buttons button:hover::before,
+        .btn-footer:hover::before {
+            width: 150%;
+            height: 150%;
+        }
+
+        .footer-buttons button:hover,
+        .btn-footer:hover {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            border-color: transparent;
+        }
+
+        .footer-buttons button i,
+        .btn-footer i {
+            margin-right: 0.5rem;
+        }
+
+        .footer-buttons button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+        }
+
+        .footer-buttons button i {
+            margin-right: 0 !important;
+            font-size: 1.05rem;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            border: none;
+            cursor: pointer;
+            border-radius: 12px;
+            font-size: 1rem;
+            height: 40px;
+            font-weight: 600;
+            color: #0F1B2B;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+        }
+
+        .total_amount {
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, rgba(255, 215, 0, .2), rgba(255, 215, 0, .1));
+            padding: .75rem;
+            border: 2px solid rgba(255, 215, 0, .3);
+            border-radius: 12px;
+            color: var(--accent-gold);
+            text-align: center;
+            display: block;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, .2);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, .3);
+        }
+
+        .table.ops-table {
+            --bs-table-bg: transparent;
+            --bs-table-hover-bg: rgba(255, 215, 0, .05);
+            margin-top: 1rem;
+        }
+
+        .ops-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95) 0%, rgba(34, 49, 74, .95) 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        .ops-table thead th {
+            border-bottom: 2px solid rgba(255, 215, 0, .2);
+            color: var(--accent-gold);
+            font-weight: 700;
+            padding: 1rem .75rem;
+            text-transform: uppercase;
+            font-size: .8rem;
+            letter-spacing: 1px;
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .ops-table thead th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-gold);
+            transition: width .3s ease;
+        }
+
+        .ops-table thead th:hover::after {
+            width: 100%;
+        }
+
+        .ops-table tbody tr {
+            transition: all .2s ease;
+            border-bottom: 1px solid rgba(255, 215, 0, .05);
+        }
+
+        .ops-table tbody tr:hover {
+            background: rgba(255, 215, 0, .03) !important;
+            transform: scale(1.01);
+        }
+
+        .ops-table tbody td {
+            padding: .75rem;
+            vertical-align: middle;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .height-response-table {
+            min-height: 38vh !important;
+            max-height: 38vh !important;
+        }
+
+        .height-table-right {
+            min-height: 64vh !important;
+        }
+
+        .height-total-right {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-max {
+            max-height: 20vh !important;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+            font-size: .75rem;
+        }
+
+        .rounded-pill {
+            font-size: 0.7rem;
+        }
+
+        .fs-5 {
+            font-size: 1rem !important;
+        }
+
+        .toptan-container::-webkit-scrollbar,
+        .productList::-webkit-scrollbar,
+        #categoryToptanList::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .toptan-container::-webkit-scrollbar-track,
+        .productList::-webkit-scrollbar-track,
+        #categoryToptanList::-webkit-scrollbar-track {
+            background: rgba(15, 27, 43, .5);
+            border-radius: 10px;
+        }
+
+        .toptan-container::-webkit-scrollbar-thumb,
+        .productList::-webkit-scrollbar-thumb,
+        #categoryToptanList::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, rgba(255, 215, 0, .3), rgba(255, 215, 0, .5));
+            border-radius: 10px;
+            border: 2px solid rgba(15, 27, 43, .5);
+        }
+
+        .toptan-container::-webkit-scrollbar-thumb:hover,
+        .productList::-webkit-scrollbar-thumb:hover,
+        #categoryToptanList::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
+        }
+
+        .dataTables_wrapper .dataTables_paginate {
+            margin: .5rem 0 !important;
+            padding: .25rem 0 !important;
+        }
+
+        .dataTables_wrapper .pagination {
+            margin: 0;
+            justify-content: center;
+        }
+
+        .dataTables_wrapper .page-link {
+            background: rgba(34, 49, 74, .6);
+            border: 1px solid rgba(255, 215, 0, .1);
+            color: var(--text-primary);
+            padding: .25rem .5rem;
+            font-size: .75rem;
+            margin: 0 .2rem;
+            border-radius: 8px;
+            transition: all .3s ease;
+        }
+
+        .dataTables_wrapper .page-link:hover {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+
+        .dataTables_wrapper .paginate_button.current .page-link,
+        .dataTables_wrapper .paginate_button.active .page-link {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            font-weight: 700;
+            border-color: transparent;
+        }
+
+        @media (max-width: 1224px) {
+            .gap-2 {
+                gap: .1rem !important;
+            }
+
+            .text-muted {
+                font-size: .55rem;
+            }
+
+            .rounded-pill {
+                font-size: 0.5rem;
+            }
+
+            .product-max {
+                max-height: 28vh !important;
+            }
+
+            .custom-button {
+                padding: 0.5rem 0.9rem !important;
+                font-size: 10px !important;
+            }
+
+            h5,
+            .retail-h5 {
+                font-size: 1em;
+            }
+
+            .height-table-right {
+                min-height: 60vh !important;
+            }
+
+            .height-response-table {
+                min-height: 28vh !important;
+                max-height: 28vh !important;
+            }
+
+            .form-control,
+            .form-select {
+                padding: .6rem 0.6rem !important;
+                font-size: 1rem !important;
+                line-height: 1 !important;
+            }
+
+            .form-label {
+                font-size: 0.9rem !important;
+                font-weight: 600 !important;
+            }
+
+            .summary {
+                padding: 0.5rem !important;
+                margin-top: 0.5rem !important;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .height-table-right {
+                min-height: 53vh !important;
+                max-height: 53vh !important;
+            }
+
+            .height-response-table {
+                min-height: 40vh !important;
+                max-height: 40vh !important;
+            }
+
+            h5,
+            .retail-h5 {
+                font-size: 1rem !important;
+            }
+
+            .custom-button {
+                padding: 0.5rem 0.8rem !important;
+                font-size: 0.7rem !important;
+            }
+
+            .form-control,
+            .form-select {
+                padding: .6rem 0.6rem !important;
+                font-size: 1rem !important;
+                line-height: 1 !important;
+            }
+
+            .form-label {
+                font-size: 1rem !important;
+                font-weight: 600 !important;
+            }
+
+            .btn-footer {
+                padding: 0.5rem 0.5rem;
+                font-size: 1rem !important;
+            }
+
+            .product-max {
+                max-height: 28vh !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 1rem !important;
+            }
+
+            .footer-buttons button {
+                padding: 0.6rem 1rem;
+                margin-top: -0.5rem !important;
+                font-size: 1rem !important;
+            }
+
+            h5,
+            .retail-h5 {
+                font-size: 1rem !important;
+            }
+
+            .custom-button {
+                padding: 0.4rem 0.4rem !important;
+                font-size: 1rem !important;
+            }
+
+            .form-control,
+            .form-select {
+                padding: .4rem 0.4rem !important;
+                font-size: 1rem !important;
+                line-height: 0.7 !important;
+            }
+
+            .form-label {
+                font-size: 1rem !important;
+                font-weight: 600 !important;
+            }
+
+            .product-max {
+                max-height: 42vh !important;
+            }
+
+            .toptan-container > .row {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .toptan-container > .row > .col-md-6,
+            .toptan-container > .row > .col-lg-6 {
+                display: contents;
+            }
+
+            .height-response-table {
+                min-height: auto !important;
+                max-height: none !important;
+            }
+
+            .height-table-right {
+                min-height: auto !important;
+                max-height: none !important;
+            }
+
+            .height-total-right {
+                margin-top: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .dataTables_wrapper .page-link {
+                padding: .12rem .35rem;
+                font-size: 0.8rem !important;
+            }
+
+            .dataTables_wrapper .paginate_button {
+                font-size: 1rem !important;
+                padding: .12rem .35rem;
+            }
+
+            .table-mobile th,
+            .table-mobile td {
+                font-size: .70rem;
+                padding: .25rem .35rem;
+            }
+
+            .mt-xs-3 {
+                margin-top: 1rem !important;
+            }
+
+            #toptan_title {
+                font-size: 0.85rem !important; /* Başlığı hafif küçülttük */
+            }
+
+            #action-buttons-wrapper {
+                gap: 0.15rem !important; /* Buton aralıklarını iyice daralttık */
+            }
+
+            #action-buttons-wrapper .action-btn {
+                white-space: nowrap !important;
+                padding: 0.35rem 0.2rem !important; /* İç boşlukları daralttık */
+                font-size: 0.65rem !important; /* Yazı fontunu sığması için küçülttük */
+                flex: 1 1 auto;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                letter-spacing: -0.3px; /* Karakterleri çok hafif birbirine yaklaştırdık */
+            }
+
+            #action-buttons-wrapper .action-btn i {
+                margin-right: 0.15rem !important;
+                font-size: 0.65rem !important;
+            }
+
+            #action-buttons-wrapper .action-btn-link {
+                padding: 0.2rem 0.4rem !important; /* Link (zincir) butonu için boyut ayarı */
+                flex: 0 0 auto !important;
+            }
+
+            #action-buttons-wrapper .action-btn-link i {
+                font-size: 1.1rem !important;
+                margin: 0 !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            h5,
+            .retail-h5 {
+                font-size: 0.8rem !important;
+            }
+
+            .product-max {
+                max-height: 42vh !important;
+            }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(26, 37, 58, .98) 0%, rgba(34, 49, 74, .98) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, .2);
+            border-radius: 16px;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, rgba(34, 49, 74, .6) 0%, rgba(46, 60, 84, .6) 100%);
+            border-bottom: 2px solid rgba(255, 215, 0, .2);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-title {
+            color: var(--accent-gold);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-footer {
+            background: linear-gradient(135deg, rgba(34, 49, 74, .3) 0%, rgba(46, 60, 84, .3) 100%);
+            border-top: 1px solid rgba(255, 215, 0, .1);
+            border-radius: 0 0 16px 16px;
+        }
+
+        .btn-close {
+            color: var(--text-primary);
+            opacity: .8;
+        }
+
+        .btn-close:hover {
+            color: var(--accent-gold);
+            opacity: 1;
+        }
+
+        #balancePlaceholder {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: .5rem;
+        }
+
+        .balance-card {
+            flex: 1 1 180px;
+            min-width: 160px;
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95), rgba(34, 49, 74, .95));
+            border-radius: 16px;
+            color: var(--text-primary);
+            padding: .6rem;
+            border: 1px solid rgba(255, 215, 0, .2);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+        }
+
+        .balance-card h6 {
+            margin: 0 0 .3rem;
+            font-size: .9em;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-align: center;
+        }
+
+        .balance-values {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid #0F1B2B;
+            padding-top: .4rem;
+            font-size: .8em;
+        }
+
+        .balance-values span {
+            text-align: center;
+        }
+
+        .balance-net {
+            margin-top: .3rem;
+            text-align: center;
+            font-weight: 700;
+            font-size: .9em;
+        }
+
+        .positive {
+            color: #4caf50;
+        }
+
+        .negative {
+            color: #ff4d4f;
+        }
+
+        #balanceCards .col-md-4,
+        #balanceCards .col-4 {
+            flex: 0 0 33.3333%;
+            max-width: 33.3333%;
+        }
+
+        @media (max-width: 576px) {
+
+            .balance-values {
+                padding-top: .3rem !important;
+                font-size: .7em !important;
+            }
+
+            .balance-card {
+                min-width: 110px !important;
+                padding: .3rem !important;
+            }
+        }
+
+        #purchase_process_table,
+        #sale_process_table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        #purchase_process_table thead th:nth-child(1),
+        #sale_process_table thead th:nth-child(1) {
+            width: 34%;
+        }
+
+        #purchase_process_table thead th:nth-child(2),
+        #sale_process_table thead th:nth-child(2) {
+            width: 18%;
+        }
+
+        #purchase_process_table thead th:nth-child(3),
+        #sale_process_table thead th:nth-child(3) {
+            width: 18%;
+        }
+
+        #purchase_process_table thead th:nth-child(4),
+        #sale_process_table thead th:nth-child(4) {
+            width: 22%;
+        }
+
+        #purchase_process_table thead th:nth-child(5),
+        #sale_process_table thead th:nth-child(5) {
+            width: 8%;
+        }
+
+        #purchase_process_table thead th,
+        #sale_process_table thead th {
+            padding: .6rem .35rem;
+            font-size: .8rem;
+            text-align: center !important;
+        }
+
+        #purchase_process_table tbody td,
+        #sale_process_table tbody td {
+            text-align: center !important;
+        }
+
+
+        /* YENİ kartı – modal ile aynı mantıkta, input içinde altın label */
+        .process-form .form-floating {
+            position: relative !important;
+        }
+
+        /* Input'un tepesinde label'a yer aç */
+        .process-form .form-floating > .form-control {
+            height: auto !important;
+            min-height: 2.6rem;
+            padding: 1.05rem .9rem .4rem !important; /* üst padding arttı */
+            color: var(--text-primary);
+        }
+
+        /* Başlangıçta label input'un İÇİNDE dursun */
+        .process-form .form-floating > label {
+            position: absolute;
+            top: 50%;
+            left: .9rem;
+            transform: translateY(-50%);
+            margin: 0;
+            padding: 0;
+            height: auto;
+            line-height: 1.2;
+
+            font-size: .8rem;
+            color: var(--accent-gold); /* altın renk */
+            opacity: .9;
+
+            pointer-events: none;
+            background: transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+        }
+
+        /* Focus veya değer girilince label yukarı KAYAR (modal davranışı gibi) */
+        .process-form .form-floating > .form-control:focus ~ label,
+        .process-form .form-floating > .form-control:not(:placeholder-shown) ~ label {
+            top: .2rem;
+            transform: none;
+            font-size: .7rem;
+            opacity: 1;
+            color: var(--accent-gold);
+        }
+
+
+        .process-form .form-floating > .form-control {
+            color: var(--text-primary);
+        }
+
+        #openBindModal .modal-body h6 {
+            color: var(--accent-gold);
+        }
+
+        #addSupplierModal .modal-footer .btn.btn-secondary {
+            background-color: rgba(220, 53, 69, 0.12) !important;
+            border-color: rgba(220, 53, 69, 0.8) !important;
+            color: #f8d7da !important;
+            font-weight: 600;
+            border-radius: 12px;
+            box-shadow: none !important;
+        }
+
+        #addSupplierModal .modal-footer .btn.btn-secondary:hover {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+            color: #fff !important;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.35) !important;
+        }
+
+        #addSupplierModal .form-floating > .form-control {
+            background: rgba(15, 27, 43, 0.95) !important;
+            border: 1px solid rgba(255, 215, 0, 0.2) !important;
+            border-radius: 12px;
+            color: var(--text-primary) !important;
+        }
+
+        #addSupplierModal .form-floating > .form-control:focus {
+            background: rgba(34, 49, 74, 0.98) !important;
+            border-color: var(--accent-gold) !important;
+            box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.2) !important;
+        }
+
+        #addSupplierModal .form-floating > label {
+            position: absolute;
+            top: .35rem !important;
+            left: .9rem !important;
+            padding: 0 !important;
+            height: auto !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            color: var(--text-primary) !important;
+            opacity: .9;
+        }
+
+        #addSupplierModal .form-floating > .form-control:focus ~ label,
+        #addSupplierModal .form-floating > .form-control:not(:placeholder-shown) ~ label {
+            color: var(--accent-gold) !important;
+            opacity: 1;
+            background: transparent !important;
+        }
+
+        #addSupplierModal .form-floating {
+            position: relative;
+        }
+
+        #addSupplierModal .form-floating > .form-control {
+            background: rgba(15, 27, 43, 0.95) !important;
+            border: 1px solid rgba(255, 215, 0, 0.2) !important;
+            border-radius: 12px;
+            color: var(--text-primary) !important;
+            padding: .7rem .9rem !important;
+        }
+
+        #addSupplierModal .form-floating > label {
+            position: absolute;
+            top: -0.55rem;
+            left: 0.9rem;
+            font-size: 0.75rem;
+            padding: 0 .25rem;
+            margin: 0;
+            height: auto;
+            line-height: 1.2;
+            color: var(--text-primary) !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            transform: none !important;
+            pointer-events: none;
+        }
+
+        #addSupplierModal .form-floating > .form-control:focus ~ label,
+        #addSupplierModal .form-floating > .form-control:not(:placeholder-shown) ~ label {
+            color: var(--accent-gold) !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            transform: none !important;
+        }
+
+        #purchase_process_table thead th,
+        #sale_process_table thead th {
+            padding: .45rem .35rem;
+            font-size: .90rem;
+        }
+
+        #purchase_process_table tbody tr,
+        #sale_process_table tbody tr {
+            height: 20px;
+        }
+
+        #purchase_process_table tbody td,
+        #sale_process_table tbody td {
+            padding: .25rem .35rem;
+            font-size: .85rem;
+        }
+
+        #purchase_process_table .fa-trash,
+        #sale_process_table .fa-trash {
+            font-size: .99rem !important;
+            opacity: .85;
+            transition: .15s ease;
+        }
+
+        #purchase_process_table .fa-trash:hover,
+        #sale_process_table .fa-trash:hover {
+            opacity: 1;
+            transform: scale(1.08);
+        }
+
+        #purchase_process_table .btn-icon,
+        #sale_process_table .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: var(--text-primary);
+            transition: background .15s ease, color .15s ease, transform .15s ease;
+        }
+
+        #purchase_process_table .btn-icon:hover,
+        #sale_process_table .btn-icon:hover {
+            background: rgba(220, 53, 69, 0.18);
+            color: var(--danger-red) !important;
+            transform: scale(1.08);
+        }
+
+        #purchase_process_table .btn-icon:hover .fa-trash,
+        #sale_process_table .btn-icon:hover .fa-trash {
+            color: var(--danger-red) !important;
+        }
+
+        .supplier-summary .btn-footer i {
+            margin-right: 0;
+        }
+
+        #convertModal .modal-body h6 {
+            color: var(--accent-gold);
+        }
+
+        .wholesale-modal-footer {
+            padding: 1.25rem 2rem 1.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            justify-content: flex-end;
+            gap: .75rem;
+        }
+
+        .wholesale-modal-footer .btn {
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: .9rem;
+            padding: .55rem 1.4rem;
+            border-width: 1px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            transition: background .15s ease, color .15s ease, transform .15s ease, box-shadow .15s ease;
+        }
+
+        .btn-modal-cancel {
+            background: var(--danger-red);
+            color: #050816;
+            border-color: transparent;
+        }
+
+        .btn-modal-cancel:hover {
+            background: var(--danger-red);
+            color: #ffffff;
+            transform: translateY(-1px);
+            filter: brightness(1.06);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, .55);
+        }
+
+        .btn-modal-save {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #050816;
+            border-color: transparent;
+        }
+
+        .btn-modal-save:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.06);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, .55);
+        }
+
+        #btnOpenBind {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: .50rem .70rem !important; /* buton daha küçük */
+            flex: 0 0 auto;
+            width: auto;
+            border-radius: 10px;
+        }
+
+        #btnOpenBind i {
+            margin-right: 0 !important;
+            font-size: 1.3rem; /* ikon da küçüldü */
+        }
+
+
+        @media (max-width: 768px) {
+            .toptan-container #productToptanList.product-max {
+                max-height: 13.5rem !important;
+                overflow-y: auto;
+            }
+
+            .height-table-right > .col-lg-12.col-md-6.col-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .toptan-container .retail-card .row.mb-2 > .col-md-6.col-6:first-child {
+                flex: 0 0 65% !important;
+                max-width: 65% !important;
+            }
+
+            .toptan-container .retail-card .row.mb-2 > .col-md-6.col-6:last-child {
+                flex: 0 0 35% !important;
+                max-width: 35% !important;
+            }
+
+            #productToptanSearch.form-control {
+                padding: .4rem .5rem !important;
+                font-size: .8rem !important;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 992px) {
+            .height-table-right {
+                min-height: auto !important;
+                max-height: none !important;
+            }
+
+            .height-response-table {
+                min-height: auto !important;
+                max-height: none !important;
+            }
+
+            .height-total-right {
+                margin-top: 0.75rem !important;
+            }
+
+            .height-table-right > .col-lg-12.col-md-6.col-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .height-table-right > .col-lg-12.col-md-6.col-6:first-child .retail-card {
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .toptan-container {
+                padding-top: 1rem;
+                padding-bottom: .75rem;
+            }
+
+            .toptan-container > .row {
+                align-items: flex-start;
+                min-height: auto;
+            }
+
+            .toptan-container > .row > .col-lg-6.col-md-12.col-12 {
+                display: block;
+                flex-direction: initial;
+            }
+
+            .toptan-container > .row > .col-lg-6:first-child {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .height-response-table {
+                min-height: 30vh !important;
+                max-height: 30vh !important;
+                flex: 0 0 auto;
+            }
+
+            .height-response-table > .col-md-6,
+            .height-response-table > .col-6 {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .height-response-table > .col-md-6 > .retail-card,
+            .height-response-table > .col-6 > .retail-card {
+                flex: 1 1 auto;
+            }
+
+            .height-table-right {
+                min-height: auto !important;
+                max-height: none !important;
+            }
+
+            .height-table-right > [class*="col-"] .retail-card {
+                margin-bottom: 0.3rem;
+            }
+
+            .height-total-right {
+                margin-top: 0rem;
+                margin-bottom: 0;
+                flex: 0 0 auto;
+            }
+
+            .height-total-right .summary {
+                margin-top: 0;
+            }
+
+            .toptan-container > .row > .col-lg-6:first-child .supplier-div {
+                margin-top: 1rem;
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        @media (min-width: 992px) and (max-width: 1224px) {
+
+            .toptan-container > .row > .col-lg-6:first-child {
+                display: block;
+            }
+
+            .toptan-container > .row > .col-lg-6:first-child .height-response-table {
+                min-height: auto !important;
+                max-height: none !important;
+            }
+
+            .toptan-container > .row > .col-lg-6:first-child .supplier-div {
+                margin-top: 1rem !important;
+                position: static;
+                z-index: auto;
+            }
+        }
+
+        @media (min-width: 992px) and (max-width: 1224px) {
+
+            #balanceCards .col-md-4,
+            #balanceCards .col-4 {
+                padding-left: .15rem;
+                padding-right: .15rem;
+            }
+
+            .supplier-summary .balance-card {
+                flex: 1 1 auto;
+                min-width: 0 !important;
+                padding: .4rem .45rem !important;
+            }
+
+            .supplier-summary .balance-card h6 {
+                font-size: .8em;
+            }
+
+            .supplier-summary .balance-values {
+                font-size: .75em;
+            }
+
+            .supplier-summary .balance-net {
+                font-size: .8em;
+                margin-top: .2rem;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 992px) {
+            .toptan-container #categoryToptanList.product-max,
+            .toptan-container #productToptanList.product-max {
+                max-height: 28vh !important;
+            }
+        }
+
+        @media (max-width: 1224px) {
+            .toptan-container > .row > .col-lg-6:first-child {
+                margin-bottom: 2rem !important;
+            }
+
+            .height-table-left,
+            .height-response-table,
+            .retail-card {
+                max-height: none !important;
+                height: auto !important;
+            }
+        }
+
+    </style>
+    <style>
+        /* --- Toptan Sayfasından Alınan Balance Card Stilleri --- */
+        .balance-card {
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95), rgba(34, 49, 74, .95));
+            border-radius: 16px;
+            color: var(--text-primary);
+            padding: .8rem;
+            border: 1px solid rgba(255, 215, 0, .2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+            height: 100%;
+            transition: transform 0.2s ease;
+        }
+
+        .balance-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, .15);
+        }
+
+        .balance-card h6 {
+            margin: 0 0 .5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .balance-values {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: .5rem;
+            font-size: .95rem;
+            margin-bottom: .5rem;
+        }
+
+        .balance-values > div {
+            text-align: center;
+            flex: 1;
+        }
+
+        .balance-values span.label {
+            display: block;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+
+        .balance-net {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: .4rem;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.05rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Pozitif ve Negatif durumlar için renkler */
+        .text-success {
+            color: #4caf50 !important;
+        }
+
+        .text-danger {
+            color: #ff4d4f !important;
+        }
+
+        @media (max-width: 576px) {
+            .balance-card {
+                padding: .5rem;
+            }
+
+            .balance-card h6 {
+                font-size: .9rem;
+            }
+
+            .balance-values {
+                font-size: .85rem;
+            }
+
+            .balance-net {
+                font-size: .95rem;
+            }
+        }
+    </style>
+
+{% endblock header %}
+
+{% block body %}
+    <nav class="quick-nav">
+        <a href="{% url 'accounts:profile' %}">Anasayfa</a>
+        <a href="{% url 'transactions-board:fast-index' %}">Hızlı İşlem</a>
+        <a href="{% url 'transactions-board:retail-index' %}">Perakende İşlem</a>
+        <a href="{% url 'transactions-board:wholesale-index' %}" class="active">Toptan İşlem</a>
+        <a href="{% url 'transactions-board:operations-index' %}">İşlemler</a>
+    </nav>
+
+    <div class="toptan-container">
+        <div class="row">
+            <div class="col-lg-6 col-md-12 col-12">
+                <div class="row height-response-table">
+                    <div class="col-md-6 col-6">
+                        <div class="retail-card">
+                            <h5 class="retail-h5"><i class="bi bi-list"></i> Kategoriler</h5>
+                            <ul id="categoryToptanList" class="product-max"></ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-6">
+                        <div class="retail-card h-100">
+                            <div class="row mb-2">
+                                <div class="col-md-7 col-7">
+                                    <h5 class="retail-h5"><i class="bi bi-gem"></i> Ürünler</h5>
+                                </div>
+                                <div class="col-md-5 col-5">
+                                    <input type="text" id="productToptanSearch"
+                                           placeholder="Ara"
+                                           class="form-control">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <ul id="productToptanList" class="productList product-max"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row height-table-left ">
+                    <div class="col-12 mb-3">
+                        <div class="retail-card">
+                            <h5 class="retail-h5"><i class="bi bi-arrow-down-square-fill"></i> Girişler</h5>
+                            <div class="table-responsive table-mobile">
+                                <table id="purchase_process_table" class="table ops-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Gram</th>
+                                        <th>Adet</th>
+                                        <th>Toplam</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="retail-card">
+                            <h5 class="retail-h5"><i class="bi bi-cash-coin"></i> Çıkışlar</h5>
+                            <div class="table-responsive table-mobile">
+                                <table id="sale_process_table" class="table ops-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Gram</th>
+                                        <th>Adet</th>
+                                        <th>Toplam</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 col-md-12 col-12">
+                <div class="row height-table-right">
+                    <div class="retail-card summary process-form" style="margin-top: 0;">
+                        <form id="add-form" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" id="product_id" name="product_id">
+                            <input type="hidden" id="toptan_price_hs" name="toptan_price_hs">
+                            <input type="hidden" id="buy_price_hs" name="buy_price_hs">
+                            <input type="hidden" id="rate" name="rate">
+                            <input type="hidden" id="total_tl" name="total_tl">
+                            <!-- FAZ 23: Kasa kalemi gizli alanları -->
+                            <input type="hidden" id="bank_account_id" value="">
+                            <input type="hidden" id="payment_currency" value="">
+
+
+                            <div class="d-flex align-items-center mb-3 mobile-title-row w-100">
+                                <!-- Başlık (Sabit kalır, küçülmez) -->
+                                <div class="flex-shrink-0 me-2">
+                                    <h5 class="retail-h5 mb-0" id="toptan_title">
+                                        <i class="bi bi-box-seam"></i> Yeni
+                                    </h5>
+                                </div>
+                                <!-- Butonlar (Kalan alanı doldurur ve yan yana dizilir) -->
+                                <div class="d-flex flex-nowrap justify-content-end align-items-center flex-grow-1"
+                                     id="action-buttons-wrapper" style="gap: 0.4rem; overflow-x: auto;">
+                                    <input type="hidden" id="cash_status">
+
+                                    <button type="button" id="btnOpenScrapModal" class="custom-button action-btn">
+                                        <i class="fas fa-recycle"></i> Hurda/Mal Giriş
+                                    </button>
+                                    <button type="button" id="btnOpenScrapMultiModal" class="custom-button action-btn">
+                                        <i class="fas fa-layer-group"></i> Çoklu Hurda
+                                    </button>
+                                    <button type="button" id="btnOpenBraceletModal" class="custom-button action-btn">
+                                        <i class="fas fa-ring"></i> Bilezik Giriş
+                                    </button>
+                                    <input type="radio" id="cash_in_btn" name="cash_select"
+                                           class="hidden-checkbox"
+                                           value="1" checked>
+                                    <label for="cash_in_btn" class="custom-button action-btn">Giriş</label>
+
+                                    <input type="radio" id="cash_out_btn" name="cash_select"
+                                           class="hidden-checkbox"
+                                           value="0">
+                                    <label for="cash_out_btn" class="custom-button action-btn">Çıkış</label>
+
+                                    <button type="button" id="btnOpenBind"
+                                            class="btn-footer action-btn-link"
+                                            style="flex:0 0 auto;width:auto;">
+                                        <i class="bi bi-link-45deg"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="row" id="wholesaleInputs">
+                                <div class="col-4 col-md-3 mb-3" id="grpQty">
+                                    <div class="form-floating">
+                                        <input id="qty" name="qty" class="form-control" placeholder=" ">
+                                        <label>Adet</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-4 col-md-3 mb-3 d-none" id="grpWeight">
+                                    <div class="form-floating">
+                                        <input id="weight" name="weight" class="form-control" placeholder=" ">
+                                        <label>Gram</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-4 col-md-3 mb-3 d-none" id="grpMileage">
+                                    <div class="form-floating">
+                                        <input id="product_mileage" name="product_mileage" class="form-control"
+                                               placeholder=" ">
+                                        <label>Milyem</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-4 col-md-3 mb-3" id="grpUnitHas">
+                                    <div class="form-floating">
+                                        <input id="price_hs" name="price_hs" class="form-control" placeholder=" ">
+                                        <label>Birim Has</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-4 col-md-3 mb-3" id="grpTotalHas">
+                                    <div class="form-floating">
+                                        <input id="total_has" class="form-control" placeholder=" ">
+                                        <label>Toplam Has</label>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="footer-buttons mt-4">
+                                <button id="btnComplete" type="button" class="btn-footer">
+                                    <i class="bi bi-plus-circle"></i> Ekle
+                                </button>
+                                <button id="btnPayment" type="button" class="btn-submit">
+                                    <i class="bi bi-check-circle"></i> Bitir
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="row height-total-right">
+                    <div class="col-md-12 col-12">
+                        <div class="retail-card summary mb-2"
+                             style="background: transparent; border: none; box-shadow: none; padding: 0;">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="balance-card">
+                                        <h6><i class="bi bi-currency-lira"></i> TL DURUMU</h6>
+                                        <div class="balance-values">
+                                            <div style="border-right: 1px solid rgba(255,255,255,0.1)">
+                                                <span class="label">GİRİŞ</span>
+                                                <span id="sesPurchaseTl" class="text-danger fw-bold">0.00 ₺</span>
+                                            </div>
+                                            <div>
+                                                <span class="label">ÇIKIŞ</span>
+                                                <span id="sesSaleTl" class="text-success fw-bold">0.00 ₺</span>
+                                            </div>
+                                        </div>
+                                        <div class="balance-net">
+                                            <span class="label d-inline me-1">NET:</span>
+                                            <span id="sesNetTl">0.00 ₺</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <div class="balance-card">
+                                        <h6><i class="bi bi-gem"></i> HAS DURUMU</h6>
+                                        <div class="balance-values">
+                                            <div style="border-right: 1px solid rgba(255,255,255,0.1)">
+                                                <span class="label">GİRİŞ</span>
+                                                <span id="sesPurchaseHs" class="text-danger fw-bold">0.00</span>
+                                            </div>
+                                            <div>
+                                                <span class="label">ÇIKIŞ</span>
+                                                <span id="sesSaleHs" class="text-success fw-bold">0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="balance-net">
+                                            <span class="label d-inline me-1">NET:</span>
+                                            <span id="sesNetHs">0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row height-total-right">
+                    <div class="col-md-12 col-12">
+                        <div class="retail-card summary supplier-summary">
+                            <div class="row align-items-center gy-2 mobile-mt-3">
+                                <div class="col-12 col-sm-auto">
+                                    <h5 class="retail-h5 mb-0">
+                                        <i class="bi bi-people-fill me-1"></i>Tedarikçi
+                                    </h5>
+                                </div>
+                                <div class="col-9 col-sm">
+                                    <select id="balance_supplier_select"
+                                            class="form-select w-100"
+                                            data-control="select2" required>
+                                    </select>
+                                </div>
+                                <div class="col-3 col-sm-auto d-flex gap-1">
+                                    <button class="btn-footer d-flex align-items-center justify-content-center"
+                                            type="button" id="btnSupplierFis"
+                                            title="Anlık İşlem Fişi">
+                                        <i class="bi bi-receipt fs-5 m-0"></i>
+                                    </button>
+                                    <button class="btn-footer d-flex align-items-center justify-content-center"
+                                            type="button" id="btnSupplierDetail"
+                                            title="Tedarikçi Detayına Git">
+                                        <i class="bi bi-box-arrow-up-right fs-5 m-0"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="balanceCards"
+                                 class="row row-cols-3 row-cols-sm-auto g-2 justify-content-center mt-3"></div>
+                            <p id="balancePlaceholder" class="text-center text-muted mt-2">
+                                Önce bir tedarikçi seçin.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── ANLIK TEDARİKÇİ İŞLEM FİŞİ MODALI ─── -->
+    <div class="modal fade" id="fisModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content" style="background: #1A253A; border: 1px solid rgba(255,215,0,.2); color: #fff;">
+                <div class="modal-header bg-dark text-warning py-2 border-bottom border-secondary border-opacity-25">
+                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Tedarikçi İşlem Fişi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0" id="fisPrintArea">
+
+                    <!-- Fiş İçeriği (AJAX ile doldurulur) -->
+                    <div id="fisContent" style="display:none;">
+
+                        <!-- Üst: Firma Bilgisi -->
+                        <div class="fis-header p-3 pb-2" style="border-bottom: 1px dashed rgba(255,215,0,.2);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h4 class="text-warning fw-bold mb-1" id="fisCompanyName"></h4>
+                                    <div class="text-muted small" id="fisContactInfo"></div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="badge bg-dark border border-secondary fs-8 mb-1" id="fisFisNo"></div>
+                                    <div class="text-muted small" id="fisTarih"></div>
+                                    <span class="badge mt-1" id="fisAccountBadge"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ════════════════════════════════════════════════ -->
+                        <!-- FAZ 11 / SYNC-01 + SYNC-02 — Taslak Sepet Özeti -->
+                        <!-- ════════════════════════════════════════════════ -->
+                        <div class="px-3 py-2" id="fisPendingSection" style="display:none;">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-hourglass-split text-warning me-2"></i>
+                                <span class="fw-bold text-warning small text-uppercase">
+                                    Onay Bekleyen Sepet
+                                    <span class="badge bg-warning text-dark ms-2" id="fisPendingBadge">TASLAK</span>
+                                </span>
+                            </div>
+                            <div class="alert bg-dark border border-warning border-opacity-25 py-2 px-3 mb-2"
+                                 style="border-radius: 6px;">
+                                <div class="text-muted fs-9">
+                                    Aşağıdaki tutarlar sepetinizde duruyor; onaylanırsa cariye yansıyacak.
+                                    <strong class="text-white">Tedarikçi carisi henüz değişmedi.</strong>
+                                </div>
+                            </div>
+                            <div id="fisPendingTotals" class="fis-balance-grid"></div>
+                        </div>
+
+                        <!-- Orta: Bakiye Kartları -->
+                        <div class="px-3 py-2">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-wallet2 text-warning me-2"></i>
+                                <span class="fw-bold text-white small text-uppercase">Güncel Bakiye</span>
+                                <span class="badge bg-success ms-2 fs-9" id="fisStatusBadge"
+                                      style="display:none;">TAMAMLANMIŞ</span>
+                            </div>
+                            <div class="fis-balance-grid" id="fisBalances"></div>
+                            <div class="text-center text-muted small py-2" id="fisNoBalance" style="display:none;">
+                                Bakiye kaydı bulunmuyor.
+                            </div>
+                        </div>
+
+                        <!-- Alt: Son Hareketler -->
+                        <div class="px-3 pb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-clock-history text-warning me-2"></i>
+                                <span class="fw-bold text-white small text-uppercase">Son Hareketler</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm fis-move-table mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>İşlem</th>
+                                        <th class="text-end">Miktar</th>
+                                        <th class="text-end">Tutar</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="fisMovements"></tbody>
+                                </table>
+                            </div>
+                            <div class="text-center text-muted small py-2" id="fisNoMovements" style="display:none;">
+                                Henüz hareket kaydı yok.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Yükleniyor Spinner -->
+                    <div id="fisLoading" class="text-center py-5">
+                        <div class="spinner-border text-warning" role="status"></div>
+                        <div class="text-muted mt-2 small">Fiş verisi yükleniyor...</div>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-25 py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" id="btnFisDetay">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Detay Sayfası
+                    </button>
+                    <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" id="btnFisPrint">
+                        <i class="bi bi-printer me-1"></i> Yazdır
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── FAZ 23: FX DÖVIZ SEÇİM MODALI ─── -->
+    <div id="fxSelectModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-warning py-2">
+                    <h5 class="modal-title"><i class="bi bi-currency-exchange me-1"></i> Döviz Seçin</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div id="fxCurrencyList" class="d-flex flex-column gap-2">
+                        <span class="text-muted small">Yükleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="convertModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-warning py-2">
+                    <h5 class="modal-title">Borç / Alacak Çevir</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <input type="hidden" id="conv_rate">
+                    <div class="row g-4">
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-center fw-bold mb-2">Mevcut</h6>
+                            <div class="mb-2"><label class="form-label">Para Birimi</label><input id="conv_from_cur"
+                                                                                                  class="form-control"
+                                                                                                  readonly></div>
+                            <div class="mb-2"><label class="form-label">Miktar</label><input id="conv_from_amt"
+                                                                                             class="form-control"></div>
+                            <div class="mb-2"><label class="form-label">Birim TL</label><input id="conv_from_rate"
+                                                                                               class="form-control"
+                            ></div>
+
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-center fw-bold mb-2">Yeni</h6>
+                            <div class="mb-2"><label class="form-label">Para Birimi</label><select id="conv_to_cur"
+                                                                                                   class="form-select"></select>
+                            </div>
+                            <div class="mb-2"><label class="form-label">Birim TL</label><input id="conv_to_rate"
+                                                                                               class="form-control"
+                            ></div>
+                            <div class="mb-2"><label class="form-label">Miktar</label><input id="conv_to_amt"
+                                                                                             class="form-control"
+                                                                                             readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button id="btnConvert" class="btn btn-submit w-100">Çevir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="openBindModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <form id="openBindForm" class="modal-content">
+                {% csrf_token %}
+                <input type="hidden" id="from_product_id" name="from_product_id">
+                <input type="hidden" id="to_product_id" name="to_product_id">
+                <div class="modal-header bg-dark text-warning py-2">
+                    <h5 class="modal-title">Açıktan Bağla</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="row g-4">
+                        <div class="col-md-6 border-end">
+                            <h6 class="mb-3 text-center fw-bold">Giriş</h6>
+                            <select id="ob_from_cur" name="ob_from_cur" class="form-select mb-2"></select>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <label class="form-label">Miktar</label>
+                                    <input id="ob_from_amount" name="ob_from_amount" class="form-control">
+                                </div>
+                                <input type="hidden" id="ob_from_rate" name="from_rate">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3 text-center fw-bold">Çıkış</h6>
+                            <select id="ob_to_cur" name="ob_to_cur" class="form-select mb-2"></select>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Birim Fiyat</label>
+                                    <input id="ob_to_rate" name="to_rate" class="form-control">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Tutar</label>
+                                    <input id="ob_to_amount" name="ob_to_amount" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea id="ob_description" name="description"
+                                  rows="4" style="min-height:110px"
+                                  class="form-control"
+                                  placeholder="İsteğe bağlı not"></textarea>
+                    </div>
+                    <div id="ob_diff" class="text-center fw-semibold mt-4"></div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button id="btnSaveOpenBind" class="btn btn-submit w-100">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade" id="scrapModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-warning py-2">
+                    <h5 class="modal-title"><i class="fas fa-recycle me-2"></i>Hurda/Mal Giriş</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="scrapWholesaleForm">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="ws_scrap_name" class="form-label">Altın Ayarı</label>
+                                    <select class="form-select" id="ws_scrap_name" name="scrap_name" required>
+                                        <option value="" selected disabled>Seçiniz</option>
+                                        <option value="Has" data-mil="995">Has / 995</option>
+                                        <option value="22 Ayar" data-mil="916">22 Ayar</option>
+                                        <option value="21 Ayar" data-mil="875">21 Ayar</option>
+                                        <option value="18 Ayar" data-mil="750">18 Ayar</option>
+                                        <option value="14 Ayar" data-mil="585">14 Ayar</option>
+                                        <option value="8 Ayar" data-mil="333">8 Ayar</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="ws_scrap_mileage" class="form-label">Milyem</label>
+                                    <input type="number" class="form-control" id="ws_scrap_mileage"
+                                           name="product_mileage" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="ws_scrap_gram" class="form-label">Gram</label>
+                                    <input type="number" step="0.01" class="form-control" id="ws_scrap_gram" name="gram"
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-0"
+                             style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
+                            <span class="small font-weight-bold">Hesaplanan Has:</span>
+                            <strong class="text-warning fs-5" id="ws_scrap_calc_has">0.00</strong>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnSaveWholesaleScrap" class="btn btn-submit">Listeye Ekle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ÇOKLU HURDA MODAL -->
+    <div class="modal fade" id="scrapMultiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-warning py-2">
+                    <h5 class="modal-title"><i class="fas fa-layer-group me-2"></i>Çoklu Hurda/Mal Giriş</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="scrapMultiForm">
+                        {% csrf_token %}
+                        <table class="table table-sm table-borderless" id="scrapMultiTable">
+                            <thead>
+                            <tr class="text-warning" style="font-size: .85rem;">
+                                <th style="width: 30%;">Altın Ayarı</th>
+                                <th style="width: 20%;">Milyem</th>
+                                <th style="width: 20%;">Gram</th>
+                                <th style="width: 20%;">HAS</th>
+                                <th style="width: 10%;"></th>
+                            </tr>
+                            </thead>
+                            <tbody id="scrapMultiRows">
+                            <tr class="scrap-multi-row">
+                                <td>
+                                    <select class="form-select form-select-sm sm-ayar" required>
+                                        <option value="" disabled selected>Seçiniz</option>
+                                        <option value="995" data-mil="995">Has / 995</option>
+                                        <option value="916" data-mil="916">22 Ayar</option>
+                                        <option value="875" data-mil="875">21 Ayar</option>
+                                        <option value="750" data-mil="750">18 Ayar</option>
+                                        <option value="585" data-mil="585">14 Ayar</option>
+                                        <option value="333" data-mil="333">8 Ayar</option>
+                                    </select>
+                                </td>
+                                <td><input type="number" class="form-control form-control-sm sm-milyem" required></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm sm-gram" required></td>
+                                <td><span class="sm-has text-warning fw-bold">0.000</span></td>
+                                <td></td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <button type="button" id="btnAddScrapRow" class="btn btn-sm btn-outline-warning mt-2">
+                            <i class="fas fa-plus me-1"></i> Satır Ekle
+                        </button>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 mt-3"
+                             style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
+                            <span class="small fw-bold">Toplam Gram:</span>
+                            <strong class="text-white fs-5" id="sm_total_gram">0.00</strong>
+                            <span class="small fw-bold ms-3">Toplam HAS:</span>
+                            <strong class="text-warning fs-5" id="sm_total_has">0.000</strong>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnSaveScrapMulti" class="btn btn-submit">Tümünü Listeye Ekle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="braceletModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-warning py-2">
+                    <h5 class="modal-title"><i class="fas fa-ring me-2"></i>Bilezik Giriş</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="braceletWholesaleForm">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="ws_bracelet_name" class="form-label">Ürün Adı (Örn: Adana Burma)</label>
+                                    <input type="text" class="form-control" id="ws_bracelet_name" name="bracelet_name"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="ws_bracelet_rate" class="form-label">Ayar</label>
+                                    <select class="form-select" id="ws_bracelet_rate" required>
+                                        <option value="" selected disabled>Ayar Seçiniz</option>
+                                        <option value="995">24 Ayar / Has</option>
+                                        <option value="916">22 Ayar</option>
+                                        <option value="585">14 Ayar</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="ws_bracelet_mileage" class="form-label">Milyem</label>
+                                    <input type="number" class="form-control" id="ws_bracelet_mileage"
+                                           name="product_mileage" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="ws_bracelet_gram" class="form-label">Gram</label>
+                                    <input type="number" step="0.01" class="form-control" id="ws_bracelet_gram"
+                                           name="gram" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-0"
+                             style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
+                            <span class="small font-weight-bold">Hesaplanan Has:</span>
+                            <strong class="text-warning fs-5" id="ws_bracelet_calc_has">0.00</strong>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnSaveWholesaleBracelet" class="btn btn-submit">Listeye Ekle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="wholesale_process_no" value="{{ wholesale_process_no }}"/>
+    <input type="hidden" id="buy_hs_tl" value="{{ buy_hs_tl }}"/>
+    <input type="hidden" id="sale_hs_tl" value="{{ sale_hs_tl }}"/>
+
+{% endblock body %}
+
+{% block footer %}
+
+    <script>
+        let PARITY = {};
+        let _parityLoaded = false;
+        let _parityRetryCount = 0;
+        let currentProduct = null;
+
+        // ⚠️ HOTFIX: PARITY fetch'i hata toleranslı + retry'lı.
+        // Eski kod .catch() içermiyordu; fetch başarısız olursa PARITY = {} kalıyor
+        // ve kasa kartına her tıklamada "Kurlar yüklenemedi" uyarısı tetikleniyordu.
+        function loadParity(allowRetry = true) {
+            return fetch('/process/get-parities')
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(j => {
+                    PARITY = j || {};
+                    _parityLoaded = true;
+                    _parityRetryCount = 0;
+                })
+                .catch(err => {
+                    console.warn('PARITY yükleme hatası:', err);
+                    _parityLoaded = false;
+                    if (allowRetry && _parityRetryCount < 3) {
+                        _parityRetryCount += 1;
+                        // Üstel geri çekilme: 1.5s, 3s, 4.5s
+                        setTimeout(() => loadParity(true), 1500 * _parityRetryCount);
+                    }
+                });
+        }
+        loadParity();
+
+        // Sayı Formatlama (TR)
+        function fmt(val, frac = 2) {
+            return new Intl.NumberFormat('tr-TR', {
+                minimumFractionDigits: frac,
+                maximumFractionDigits: frac
+            }).format(+val || 0);
+        }
+
+        // Guvenli bolme yardimcisi: IEEE 754 float hatasiyla
+        // sonucun yanlis yuvarlanmasini onler.
+        // Ornek: 3 * 1.1 = 3.3000000000000003 → safeDiv ile 3.300
+        function safeMul(a, b, precision) {
+            const factor = Math.pow(10, precision || 6);
+            return Math.round(a * b * factor) / factor;
+        }
+
+        // String -> Number Dönüşümü (Virgül/Nokta temizliği)
+        function toNum(input) {
+            const s = String(input || '').trim().replace(/\s| | /g, '');
+            if (!s) return 0;
+
+            const hasComma = s.includes(',');
+            const hasDot = s.includes('.');
+
+            if (hasComma && hasDot) {
+                return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+            }
+
+            if (hasComma) {
+                return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+            }
+
+            if (hasDot) {
+                const parts = s.split('.');
+                if (parts.length > 2) return parseFloat(s.replace(/\./g, '')) || 0;
+
+                const frac = parts[1] || '';
+                if (/^\d{3}$/.test(frac)) return parseFloat(parts.join('')) || 0;
+
+                return parseFloat(s) || 0;
+            }
+
+            return parseFloat(s) || 0;
+        }
+
+        // Kategori listesini yenile
+        function refreshProductStocks() {
+            const selIdx = $('#categoryToptanList li.selected').index();
+            const wasKasalar = $('#categoryToptanList li.selected').data('kasalar');
+
+            fetch('/categories/get-categories-wholesale')
+                .then(r => r.json())
+                .then(d => {
+                    const list = $('#categoryToptanList').empty();
+                    const idx = selIdx >= 0 ? selIdx : 0;
+
+                    d.data.forEach((c, i) => {
+                        const sel = (!wasKasalar && i === idx) ? ' selected' : '';
+                        list.append(`<li class="category-item${sel}">${c.name}</li>`);
+                    });
+
+                    // FAZ 23: Kasalar sanal kategorisini yeniden ekle
+                    _KASALAR_INDEX = d.data.length;
+                    const kasaSel = wasKasalar ? ' selected' : '';
+                    list.append(`<li class="category-item${kasaSel}" data-kasalar="1">Kasalar</li>`);
+                    if (wasKasalar) {
+                        renderBankAccounts();
+                    } else if (d.data.length > 0 && d.data[idx]) {
+                        renderProducts(d.data[idx].products);
+                    }
+
+                    _attachCategoryHandlers(d.data);
+                });
+        }
+
+        // Tüm arayüzü yenile
+        function refreshWholesaleUI() {
+            refreshHs();
+            loadTable();
+
+            const sup = $('#balance_supplier_select').val();
+            if (sup) {
+                fetch(`/suppliers/get-balances?supplier_id=${sup}`)
+                    .then(r => r.json())
+                    .then(d => renderBalances(d.data));
+            }
+
+            refreshProductStocks();
+        }
+
+        // DataTable ayarları
+        $.extend(true, $.fn.dataTable.defaults, {
+            language: {
+                emptyTable: "Veri yok",
+                zeroRecords: "Kayıt bulunamadı"
+            }
+        });
+
+    </script>
+    <script>
+        const num = toNum;
+
+        // Birim Fiyat Hesaplama
+        function getUnitPrice(a, b) {
+            if (a === b) return 1;
+
+            const buyHsTl = num(document.getElementById('buy_hs_tl').value);
+            const saleHsTl = num(document.getElementById('sale_hs_tl').value);
+
+            if (a === 'HS' && b === 'TRY') return buyHsTl;
+            if (a === 'TRY' && b === 'HS') return saleHsTl;
+
+            if (!PARITY || !Object.keys(PARITY).length) return 0;
+
+            if (a === 'HS' && b === 'USD') return num(PARITY.USDKG?.gold_buy);
+            if (a === 'USD' && b === 'HS') return num(PARITY.USDKG?.gold_sale);
+
+            if (a === 'HS' && b === 'EUR') return num(PARITY.EURKG?.gold_buy);
+            if (a === 'EUR' && b === 'HS') return num(PARITY.EURKG?.gold_sale);
+
+            if (a === 'EUR' && b === 'USD') return num(PARITY.EURUSD?.cross_buy);
+            if (a === 'USD' && b === 'EUR') return num(PARITY.EURUSD?.cross_sale);
+
+            if (b === 'TRY') return num(PARITY[a]?.tl_buy);
+            if (a === 'TRY') return num(PARITY[b]?.tl_sale);
+
+            return 0;
+        }
+
+        const CUR = ['HS', 'USD', 'EUR', 'TRY', 'QAR', 'SAR'];
+        const LAST_SUPP_KEY = 'lastSupplierId'
+
+        function fillCurrency() {
+            CUR.forEach(c => {
+                $('#conv_from_cur').append(`<option>${c}</option>`);
+                $('#conv_to_cur').append(`<option>${c}</option>`);
+            });
+        }
+
+        fillCurrency();
+
+        $(document).ready(function () {
+            loadSuppliers();
+            loadCategories();
+            loadTable();
+            refreshHs();
+            setInterval(refreshHs, 6e4)
+        })
+
+        function loadSuppliers() {
+            fetch('/suppliers/get-suppliers').then(r => r.json()).then(l => {
+                const s = $('#balance_supplier_select').empty().append('<option value="">Seçiniz</option>');
+                l.forEach(o => s.append(`<option value="${o.id}">${o.company_name}</option>`));
+                const sv = localStorage.getItem(LAST_SUPP_KEY);
+                if (sv) s.val(sv).trigger('change')
+            })
+        }
+
+        // Tedarikçi Bakiye Listeleme
+        var _KASALAR_INDEX = -1; // FAZ 23: Kasalar kategorisinin index'i
+
+        function loadCategories() {
+            fetch('/categories/get-categories-wholesale').then(r => r.json()).then(d => {
+                wholesaleCats = d.data;
+                const cl = $('#categoryToptanList').empty();
+                if (!d.data || d.data.length === 0) return;
+
+                d.data.forEach((c, i) => {
+                    cl.append(`<li class="category-item${i ? '' : ' selected'}">${c.name}</li>`);
+                    if (!i) renderProducts(c.products);
+                });
+
+                // FAZ 23: "Kasalar" sanal kategorisini ekle
+                _KASALAR_INDEX = d.data.length;
+                cl.append('<li class="category-item" data-kasalar="1">Kasalar</li>');
+                _attachCategoryHandlers(d.data);
+            });
+        }
+
+        function _attachCategoryHandlers(cats) {
+            $('#categoryToptanList li').off('click').on('click', function () {
+                const $this = $(this);
+                $('#categoryToptanList li').removeClass('selected');
+                $this.addClass('selected');
+                $('#productToptanSearch').val('');
+
+                if ($this.data('kasalar')) {
+                    renderBankAccounts();
+                } else {
+                    const i = $this.index();
+                    if (cats[i]) renderProducts(cats[i].products);
+                }
+            });
+        }
+
+        function renderProducts(arr) {
+            const ul = $('#productToptanList').empty();
+            if (!arr) return;
+            arr.forEach(p => {
+                // Döviz ürünleri için stok miktarı yerine alış fiyatını göster
+                var cur = String(p.currency || '').toUpperCase();
+                var isDoviz = (cur === 'USD' || cur === 'EUR' || cur === 'GBP' || cur === 'QAR' || cur === 'SAR');
+                var stok;
+                if (isDoviz) {
+                    // Döviz ürünlerinde "adet" anlamsız, alış kurunu göster
+                    var buyTl = parseFloat(p.buy_price_tl) || 0;
+                    stok = buyTl > 0 ? ('₺' + buyTl.toLocaleString('tr-TR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 4
+                    })) : '';
+                    stok = stok + "(Alış Kur)"
+                } else if (p.is_gram_bullion) {
+                    // TOPTAN: Stok küsuratıyla birlikte TAM ve NET gösterilir.
+                    // Perakendedeki "100+ gr" maskelemesi burada UYGULANMAZ — personelin
+                    // gerçek stoğu görmesi gereken toptancı/yönetici ekranıdır.
+                    stok = `${fmt(p.stock_gram, 3)} gr`;
+                } else {
+                    // Toptan tarafında adet bazlı ürünlerde de maskeleme yok — tam sayı.
+                    stok = `${p.stock_pieces} adet`;
+                }
+                ul.append(`<li class="product-item" data-id="${p.id}"><span class="product-name">${p.name || p.barcode}</span><span class="stock-info">${stok}</span></li>`)
+            });
+            $('.product-item').click(function () {
+                const p = arr.find(x => x.id == $(this).data('id'));
+                openProduct(p);
+            })
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // FAZ 23: KASA LİSTELEME VE SEÇİM
+        // ════════════════════════════════════════════════════════════
+        var currentBankAccount = null; // Seçili kasa (ürün yerine)
+
+        var _CUR_SYMBOLS = {
+            'TRY': '₺', 'USD': '$', 'EUR': '€', 'GBP': '£',
+            'QAR': 'QAR', 'SAR': 'SAR', 'FX': '💱', 'HS': 'HS'
+        };
+
+        function _fmtBal(val, cur) {
+            var n = parseFloat(val) || 0;
+            var s = _CUR_SYMBOLS[cur] || cur;
+            var f = n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            return (cur === 'USD' || cur === 'EUR' || cur === 'GBP') ? s + f : f + ' ' + s;
+        }
+
+        function renderBankAccounts() {
+            var ul = $('#productToptanList').empty();
+            ul.append('<li class="text-muted small p-2">Kasalar yükleniyor...</li>');
+
+            fetch('/banking/bank-accounts?active_only=1&include_balance=true')
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    ul.empty();
+                    var accounts = data.data || [];
+                    if (accounts.length === 0) {
+                        ul.append('<li class="text-muted small p-2">Aktif kasa bulunamadı.</li>');
+                        return;
+                    }
+
+                    var typeLabels = {'CASH': 'Nakit', 'POS': 'POS', 'BANK': 'Banka'};
+
+                    accounts.forEach(function (acc) {
+                        var bal = _fmtBal(acc.balance, acc.currency);
+                        var typeLabel = typeLabels[acc.account_type] || acc.account_type;
+                        ul.append(
+                            '<li class="product-item bank-account-item" ' +
+                            'data-bank-id="' + acc.id + '" ' +
+                            'data-currency="' + acc.currency + '" ' +
+                            'data-balance="' + (acc.balance || 0) + '" ' +
+                            'data-name="' + (acc.name || '') + '" ' +
+                            'data-acc-type="' + (acc.account_type || '') + '">' +
+                            '<span class="product-name">' +
+                            '<i class="bi bi-cash-coin me-1 text-warning"></i>' +
+                            acc.name + ' <small class="text-muted">(' + typeLabel + ')</small>' +
+                            '</span>' +
+                            '<span class="stock-info fw-bold">' + bal + '</span>' +
+                            '</li>'
+                        );
+                    });
+
+                    // Click handler'ları bağla
+                    $('.bank-account-item').off('click').on('click', function () {
+                        var acc = {
+                            id: $(this).data('bank-id'),
+                            currency: $(this).data('currency'),
+                            balance: parseFloat($(this).data('balance')) || 0,
+                            name: $(this).data('name'),
+                            account_type: $(this).data('acc-type')
+                        };
+
+                        if (acc.currency === 'FX') {
+                            openFxSelector(acc);
+                        } else {
+                            openBankAccount(acc, acc.currency, acc.balance);
+                        }
+                    });
+                })
+                .catch(function () {
+                    ul.empty();
+                    ul.append('<li class="text-muted small p-2 text-danger">Kasalar yüklenemedi.</li>');
+                });
+        }
+
+        function openBankAccount(acc, currency, balance) {
+            // Mevcut ürün seçimini temizle, kasa seçimini aktifle
+            currentProduct = null;
+            currentBankAccount = {
+                id: acc.id,
+                name: acc.name,
+                currency: currency,
+                balance: balance,
+                account_type: acc.account_type
+            };
+
+            // Form sıfırla
+            $('#add-form')[0].reset();
+            $('#product_id').val('');
+            $('#bank_account_id').val(acc.id);
+            $('#payment_currency').val(currency);
+
+            // Başlık
+            var sym = _CUR_SYMBOLS[currency] || currency;
+            $('#toptan_title').html(
+                '<i class="bi bi-cash-coin text-warning"></i> ' + acc.name +
+                ' <small class="text-muted">(' + sym + ')</small>'
+            );
+
+            // Kasa seçildiğinde Giriş/Çıkış butonları aktif — kullanıcı seçer
+            // Varsayılan olarak "Giriş" seçili bırak (tedarikçiden alış daha yaygın)
+            $('#cash_in_btn').prop('checked', true).trigger('change');
+
+            // Giriş/Çıkış butonlarını aktif et (döviz ürünü disable etmişse geri aç)
+            $('#cash_out_btn').prop('disabled', false);
+            $('label[for="cash_out_btn"]').removeClass('disabled-label');
+
+            // Alanları ayarla: sadece Adet (Tutar) göster
+            $('#grpQty').removeClass('d-none');
+            // Label'i "Tutar" yap
+            $('#grpQty label').text('Tutar (' + sym + ')');
+            $('#qty').val('').prop('readOnly', false);
+
+            // Diğer alanları gizle
+            $('#grpWeight').addClass('d-none');
+            $('#grpMileage').addClass('d-none');
+            $('#grpUnitHas').addClass('d-none');
+            $('#grpTotalHas').addClass('d-none');
+
+            // Bakiye bilgisi göster
+            $('#qty').attr('placeholder', ' '); // Form-floating bozulmasın diye boşluk bırakıyoruz
+
+            if ($('#kasaBalanceHelper').length === 0) {
+                $('#grpQty').append('<div id="kasaBalanceHelper" class="text-warning mt-1" style="font-size: 0.75rem; font-weight: 600; padding-left: 0.5rem;"></div>');
+            }
+            $('#kasaBalanceHelper').text('Bakiye: ' + _fmtBal(balance, currency)).removeClass('d-none');
+
+            // Bakiye validasyonu — input'a yazıldıkça kontrol
+            // SADECE Çıkış (SALE) yönünde uyarı göster
+            $('#qty').off('input.kasaVal').on('input.kasaVal', function () {
+                if (!currentBankAccount) return;
+                var isSale = ($('input[name="cash_select"]:checked').val() === '0');
+                var val = parseFloat($(this).val()) || 0;
+                if (isSale && val > currentBankAccount.balance) {
+                    $(this).addClass('is-invalid');
+                    if (!$('#kasaBalanceWarn').length) {
+                        $(this).after('<div id="kasaBalanceWarn" class="invalid-feedback">Yetersiz bakiye!</div>');
+                    }
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $('#kasaBalanceWarn').remove();
+                }
+            });
+        }
+
+        function openFxSelector(acc) {
+            var listEl = document.getElementById('fxCurrencyList');
+            listEl.innerHTML = '<span class="text-muted small">Yükleniyor...</span>';
+
+            var modal = new bootstrap.Modal(document.getElementById('fxSelectModal'));
+            modal.show();
+
+            fetch('/banking/fx-breakdown?account_id=' + acc.id)
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    listEl.innerHTML = '';
+                    var items = data.data || [];
+
+                    if (items.length === 0) {
+                        listEl.innerHTML = '<span class="text-muted small">Bu kasada bakiye bulunamadı.</span>';
+                        return;
+                    }
+
+                    items.forEach(function (item) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn btn-warning text-dark fw-semibold w-100 text-start d-flex justify-content-between align-items-center mb-1';
+                        btn.innerHTML =
+                            '<span><i class="bi bi-cash me-2"></i>' + item.currency + '</span>' +
+                            '<strong>' + _fmtBal(item.balance, item.currency) + '</strong>';
+
+                        btn.addEventListener('click', function () {
+                            modal.hide();
+                            openBankAccount(acc, item.currency, item.balance);
+                        });
+
+                        listEl.appendChild(btn);
+                    });
+                })
+                .catch(function () {
+                    listEl.innerHTML = '<span class="text-muted small text-danger">Yüklenemedi.</span>';
+                });
+        }
+
+        function refreshHs() {
+            fetch('/products/get-has-gold-prices').then(r => r.json()).then(d => {
+                $('#buy_hs_tl').val(d.buy_hs_tl);
+                $('#sale_hs_tl').val(d.sale_hs_tl);
+                $('#buy_hs').text(fmt(d.buy_hs_tl));
+                $('#sale_hs').text(fmt(d.sale_hs_tl));
+            })
+        }
+
+        const fixTableOpts = {
+            paging: true,
+            pageLength: 5,
+            ordering: false,
+            searching: false,
+            info: false,
+            lengthChange: false,
+            autoWidth: false,
+            destroy: true
+        };
+
+        const purchaseDT = $('#purchase_process_table').DataTable(fixTableOpts);
+        const saleDT = $('#sale_process_table').DataTable(fixTableOpts);
+
+
+        function loadTable() {
+            $.getJSON('/process/get-sales-wholesale', ({data}) => {
+                purchaseDT.clear();
+                saleDT.clear();
+
+                const nos = new Set();
+                let totalEntryTl = 0;
+                let totalExitTl = 0;
+                let totalEntryHs = 0;
+                let totalExitHs = 0;
+
+                if (data && data.length > 0) {
+                    data.forEach(r => {
+                        nos.add(r.process_no);
+
+                        const amountTl = parseFloat(r.amount) || 0;
+                        const amountHs = parseFloat(r.price_hs) || 0;
+                        const gram = parseFloat(r.gram) || 0;
+                        const piece = parseInt(r.piece) || 0;
+
+                        // FAZ 23: Kasa kalemi mi ürün kalemi mi?
+                        const isCashItem = !r.product__name && r.bank_account__name;
+                        const displayName = isCashItem
+                            ? '<i class="bi bi-cash-coin text-warning me-1"></i>' + r.bank_account__name
+                            : (r.product__name || '-');
+                        const cur = isCashItem
+                            ? String(r.payment_currency || r.bank_account__currency || 'TRY').toUpperCase()
+                            : String(r.product__currency || 'HS').toUpperCase();
+
+                        const qtyDisplay = gram > 0 ? gram : piece;
+
+                        let totalTxt;
+                        if (isCashItem) {
+                            totalTxt = _fmtBal(amountTl, cur);
+                        } else if (cur !== 'HS' && cur !== 'TRY') {
+                            totalTxt = fmt(qtyDisplay, 2) + ' ' + cur;
+                        } else if (cur === 'HS') {
+                            totalTxt = fmt(amountHs, 2) + ' HS';
+                        } else {
+                            totalTxt = fmt(amountTl, 2) + ' TRY';
+                        }
+
+                        const row = [
+                            displayName,
+                            isCashItem ? '-' : fmt(gram, 2),
+                            isCashItem ? '-' : (piece || '-'),
+                            totalTxt,
+                            `<a href="#" class="btn-icon" onclick="del('${r.id}')"><i class="fa-solid fa-trash"></i></a>`
+                        ];
+
+                        // FAZ 23 FIX: Döviz kasa kalemlerinde TL karşılığını kur ile çarp
+                        let tlEquiv = amountTl;
+                        if (isCashItem && cur !== 'TRY' && cur !== 'HS') {
+                            var parityRate = rateTL(cur);
+                            if (parityRate > 0) tlEquiv = amountTl * parityRate;
+                        }
+
+                        if (r.transaction_type === 'SALE') {
+                            saleDT.row.add(row);
+                            totalExitTl += tlEquiv;
+                            if (!isCashItem) totalExitHs += amountHs;
+                        } else {
+                            purchaseDT.row.add(row);
+                            totalEntryTl += tlEquiv;
+                            if (!isCashItem) totalEntryHs += amountHs;
+                        }
+                    });
+                }
+
+                purchaseDT.draw();
+                saleDT.draw();
+
+                let hiddenVal = '';
+                if (nos.size === 1) hiddenVal = Array.from(nos)[0];
+                else if (nos.size > 1) hiddenVal = 'ALL';
+                $('#wholesale_process_no').val(hiddenVal);
+
+                const f2 = (n) => (n || 0).toLocaleString('tr-TR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+
+                $('#sesPurchaseTl').text(f2(totalEntryTl) + ' ₺');
+                $('#sesSaleTl').text(f2(totalExitTl) + ' ₺');
+                $('#sesPurchaseHs').text(f2(totalEntryHs));
+                $('#sesSaleHs').text(f2(totalExitHs));
+
+                const netTl = totalEntryTl - totalExitTl;
+                const elNetTl = $('#sesNetTl');
+                elNetTl.text(f2(Math.abs(netTl)) + ' ₺');
+                elNetTl.removeClass('text-success text-danger');
+                if (netTl > 0) elNetTl.addClass('text-success');
+                else if (netTl < 0) elNetTl.addClass('text-danger');
+
+                const netHs = totalEntryHs - totalExitHs;
+                const elNetHs = $('#sesNetHs');
+                elNetHs.text(f2(Math.abs(netHs)));
+                elNetHs.removeClass('text-success text-danger');
+                if (netHs > 0) elNetHs.addClass('text-success');
+                else if (netHs < 0) elNetHs.addClass('text-danger');
+            });
+        }
+
+        function renderBalances(rows) {
+            const w = $('#balanceCards').empty();
+            const by = {};
+            if (rows) rows.forEach(r => by[r.currency] = r);
+
+            CUR.forEach(c => {
+                const r = by[c] || {receivable: 0, payable: 0, net: 0};
+                const net = +r.net;
+                const cls = net < 0 ? 'negative' : net > 0 ? 'positive' : '';
+                w.append(`
+                        <div class="col-md-4 col-4">
+                          <div class="balance-card ${cls}" data-cur="${c}" data-amt="${Math.abs(net)}">
+                            <h6>${c}</h6>
+                            <div class="balance-values">
+                              <span>Alacak<br>${fmt(r.receivable, 2)}</span>
+                              <span>Borç<br>${fmt(r.payable, 2)}</span>
+                            </div>
+                            <div class="balance-net ${cls}">Net&nbsp;${fmt(net, 2)}</div>
+                          </div>
+                        </div>
+                      `);
+            });
+        }
+    </script>
+
+    <script>
+        // --- BORÇ ÇEVİRME SCRİPTLERİ ---
+        const $fromCur = $('#conv_from_cur'),
+            $fromAmt = $('#conv_from_amt'),
+            $fromRt = $('#conv_from_rate'),
+            $toCur = $('#conv_to_cur'),
+            $toRt = $('#conv_to_rate'),
+            $toAmt = $('#conv_to_amt'),
+            $rateFld = $('#conv_rate');
+
+        function rateTL(c) {
+            c = String(c || '').toUpperCase();
+            if (c === 'TRY') return 1;
+            if (!PARITY || !Object.keys(PARITY).length) return 0;
+            if (c === 'HS') return +PARITY.HS?.tl_buy || +$('#buy_hs_tl').val() || 0;
+            return +PARITY[c]?.tl_buy || 0;
+        }
+
+        function refreshCalc() {
+            const rf = toNum($fromRt.val());
+            const rt = toNum($toRt.val());
+            const qty = toNum($fromAmt.val());
+            $rateFld.val(rt ? (rf / rt).toFixed(6) : '');
+            // safeMul ile ara basamakta float hatasi minimize edilir,
+            // sonuc 4 ondalige yuvarlanarak backend'e string olarak gider.
+            $toAmt.val(qty && rf && rt ? safeMul(qty, rf / rt, 4).toFixed(4) : '');
+        }
+
+        $toCur.on('change', function () {
+            const targetCur = this.value;
+            const r = rateTL(targetCur);
+            if (!r) {
+                $toRt.val('');
+                $rateFld.val('');
+                // HOTFIX: PARITY henüz yüklenmediyse uyarı göstermeden retry tetikle.
+                // Eski kod async race condition'da kullanıcıya gereksiz uyarı yağdırıyordu.
+                if (!_parityLoaded) {
+                    loadParity(false).then(() => {
+                        const r2 = rateTL($toCur.val());
+                        if (r2) {
+                            $toRt.val(r2.toFixed(2));
+                            refreshCalc();
+                        }
+                    });
+                    return;
+                }
+                // PARITY yüklendi ama bu kur için veri yok — spesifik mesaj.
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Kur Bilgisi Eksik',
+                    text: targetCur + ' kuru sistemde tanımlı değil. Lütfen yöneticinizle iletişime geçin.',
+                    position: 'center'
+                });
+                return;
+            }
+            $toRt.val(r.toFixed(2));
+            refreshCalc();
+        });
+
+        CUR.forEach(c => $toCur.append(`<option>${c}</option>`));
+
+        $('#conv_from_amt,#conv_from_rate').on('input', refreshCalc);
+        $('#conv_to_rate').on('input', refreshCalc);
+
+
+        $(document).off('click', '#balanceCards .balance-card').on('click', '#balanceCards .balance-card', function () {
+            const cur = this.dataset.cur;
+            if (!cur) return;
+            const amt = parseFloat(this.dataset.amt) || 0;
+            const isDebt = $(this).hasClass('negative');
+
+            window.convTxType = isDebt ? 'ENTRY' : 'EXIT';
+            $fromCur.val(cur);
+            $fromAmt.val(amt.toFixed(2));
+            $fromRt.val(rateTL(cur).toFixed(2));
+
+            const next = CUR.find(x => x !== cur) || 'TRY';
+            $toCur.val(next).trigger('change');
+            $('#convertModal').modal('show');
+            refreshCalc();
+        });
+
+        $('#btnConvert').click(function () {
+            if (!$rateFld.val()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Eksik Bilgi',
+                    text: 'Kur bilgisi alınamadı.',
+                    position: 'center'
+                });
+                return;
+            }
+
+            // Ekranda görünen HEDEF Miktarı alıyoruz
+            const targetAmount = $('#conv_to_amt').val();
+
+            $.ajax({
+                url: '/process/convert-debt',
+                type: 'POST',
+                data: {
+                    supplier_id: $('#balance_supplier_select').val(),
+                    from_currency: $fromCur.val(),
+                    to_currency: $toCur.val(),
+                    amount: $fromAmt.val(),
+                    rate: $rateFld.val(),
+                    to_amount: targetAmount, // <--- BU SATIR EKLENDİ (Hesap hatasını önler)
+                    transaction_type: window.convTxType,
+                    csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                }
+            }).done(r => {
+                if (r.result) {
+                    $('#convertModal').modal('hide');
+                    $('#balance_supplier_select').trigger('change');
+                    Swal.fire({
+                        toast: true, icon: 'success', title: 'Çeviri tamam',
+                        position: 'top-end', timer: 1500, showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        html: r.error_msg || 'İşlem başarısız',
+                        position: 'center'
+                    });
+                }
+            }).fail(xhr => {
+                let msg = 'Sunucu hatası';
+                if (xhr.responseJSON && xhr.responseJSON.error_msg) msg = xhr.responseJSON.error_msg;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata',
+                    html: msg,
+                    position: 'center'
+                });
+            });
+        });
+    </script>
+    <script>
+
+        const STORE_USE_MANUEL_HAS = "{{ store_config.use_manual_has_calculation|yesno:'true,false' }}" === "true";
+        const STORE_HAS_PRICING_CHAMBER = "{{ store_config.active_pricing_chamber_id|default:'' }}" !== "None" && "{{ store_config.active_pricing_chamber_id|default:'' }}" !== "";
+
+        // --- ÜRÜN SEÇİMİ VE HESAPLAMA ---
+        function isForeignCurrency(cur) {
+            cur = (cur || '').toUpperCase();
+            return cur && cur !== 'HS' && cur !== 'TRY';
+        }
+
+        function openProduct(p) {
+            // 1. Kısıtlı Mod Kontrolü (Dernek var mı veya Manuel Has Açık mı?)
+            const isRestrictedMode = (typeof STORE_USE_MANUEL_HAS !== 'undefined' && STORE_USE_MANUEL_HAS) ||
+                (typeof STORE_HAS_PRICING_CHAMBER !== 'undefined' && STORE_HAS_PRICING_CHAMBER);
+            // 2. Kategori Kontrolü
+            const isRestrictedCategory = (p.category_name === "Altın" || p.category_name === "Ziynet");
+            // 3. Özel Fiyat Zorunluluğu Kararı
+            const enforceCustomPrice = isRestrictedMode && isRestrictedCategory;
+
+            // ⚠️ HOTFIX (TOPTAN): String/Number normalize — backend get-categories-wholesale
+            // Coalesce default'u "0.000" string döndürüyor; salt truthy kontrolü
+            // ("0.000" → truthy ama gerçekte sıfır) yanlış sonuç veriyordu.
+            // Perakende openPopup (Revizyon 2) ile birebir simetri.
+            const _customBuyHsNum = Number(p.custom_buy_price_hs) || 0;
+            const _customSaleHsNum = Number(p.custom_sale_price_hs) || 0;
+            const _weightedBuyHsNum = Number(p.weighted_buy_price_hs) || 0;
+            const _globalBuyHsNum = Number(p.buy_price_hs) || 0;
+            const _globalSaleHsNum = Number(p.sale_price_hs) || 0;
+            const _mileagePerThousand = Number(p.product_mileage || 0) / 1000;
+
+            if (enforceCustomPrice && (!_customBuyHsNum || !_customSaleHsNum)) {
+                // HOTFIX: Sert RETURN yerine fallback uygula — popup yine açılır.
+                // Eski davranış kullanıcıyı tamamen kilitliyor ve "Birim Has gelmiyor"
+                // şikayetine sebep oluyordu. Fallback zinciri: WAC → global has → milyem/1000.
+                if (window && window.console) {
+                    console.warn('[openProduct] Custom fiyat eksik:', {
+                        productId: p.id, productName: p.name, category: p.category_name,
+                        custom_buy_price_hs: p.custom_buy_price_hs,
+                        custom_sale_price_hs: p.custom_sale_price_hs,
+                        weighted_buy_price_hs: p.weighted_buy_price_hs
+                    });
+                }
+                if (!_customBuyHsNum) {
+                    p.custom_buy_price_hs = _weightedBuyHsNum || _globalBuyHsNum || _mileagePerThousand || 0;
+                }
+                if (!_customSaleHsNum) {
+                    p.custom_sale_price_hs = _weightedBuyHsNum || _globalSaleHsNum || _mileagePerThousand || 0;
+                }
+                if (!Number(p.custom_buy_price_hs) && !Number(p.custom_sale_price_hs)) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            toast: true,
+                            position: 'top-end',
+                            timer: 3500,
+                            showConfirmButton: false,
+                            title: 'Bu ürün için fiyat tanımlı değil — manuel girmeniz gerekecek.'
+                        });
+                    }
+                }
+            }
+
+            const cur = (p.currency || 'HS').toUpperCase();
+            const isCurrency = isForeignCurrency(cur);
+            const isGram = p.is_gram_bullion;
+
+            // Kasa seçimini temizle (ürün seçildi)
+            currentBankAccount = null;
+            $('#bank_account_id').val('');
+            $('#payment_currency').val('');
+            $('#qty').removeClass('is-invalid').off('input.kasaVal').attr('placeholder', ' ');
+            $('#kasaBalanceWarn').remove();
+            $('#kasaBalanceHelper').addClass('d-none'); // Bakiye metnini gizle
+
+            currentProduct = {
+                id: p.id,
+                name: p.name || p.barcode,
+                isGram,
+                isCurrency,
+                currency: cur,
+                mileage: +p.product_mileage || 0,
+                category_name: p.category_name
+            };
+
+            $('#add-form')[0].reset();
+            $('#product_id').val(p.id);
+            $('#toptan_title').text(currentProduct.name);
+
+            // ══ FAZ 23 FIX: Döviz ürünlerinde Çıkış butonu disable ══
+            // Döviz ürünlerinde (USD, EUR vb.) çıkış sadece kasa üzerinden yapılmalı,
+            // ürün listesinden çıkış yapılmamalı (çift stok oluşmasını engeller).
+            if (isCurrency) {
+                $('#cash_in_btn').prop('checked', true).trigger('change');
+                $('#cash_out_btn').prop('disabled', true).prop('checked', false);
+                $('label[for="cash_out_btn"]').addClass('disabled-label');
+            } else {
+                $('#cash_out_btn').prop('disabled', false);
+                $('label[for="cash_out_btn"]').removeClass('disabled-label');
+            }
+
+            // Fiyatları kısıtlama durumuna göre çekiyoruz
+            let rawSale = p.sale_price_hs ?? '';
+            let rawBuy = p.buy_price_hs ?? '';
+
+            if (enforceCustomPrice) {
+                rawSale = p.custom_sale_price_hs ?? '';
+                rawBuy = p.custom_buy_price_hs ?? '';
+            }
+
+            let status = $("#cash_status").val();
+
+            if (isCurrency && cur !== 'TRY') {
+                let parityKey = cur + 'KG'; // 'USDKG', 'EURKG' vb.
+                if (PARITY && PARITY[parityKey]) {
+                    // Nakit durumuna göre Alış veya Satış kurunu al (1: Giriş, 0: Çıkış)
+                    let kgPrice = Number(status) === 1 ? num(PARITY[parityKey].gold_buy) : num(PARITY[parityKey].gold_sale);
+
+                    if (kgPrice > 0) {
+                        let unitHas = 1000 / kgPrice;
+                        rawBuy = unitHas;
+                        rawSale = unitHas;
+                    }
+                }
+            }
+
+            let precision = (isCurrency && cur !== 'TRY') ? 6 : 2;
+            $('#price_hs').val(Number(status) === 1 ? (rawBuy ? fmt(rawBuy, precision) : '') : (rawSale ? fmt(rawSale, precision) : ''));
+            $('#toptan_price_hs').val(Number(status) === 1 ? (rawBuy ? fmt(rawBuy, precision) : '') : (rawSale ? fmt(rawSale, precision) : ''));
+            $('#buy_price_hs').val(rawBuy ? fmt(rawBuy, precision) : '');
+
+            $('#rate').val(
+                cur === 'TRY' ? 1 :
+                    isCurrency ? (p.sale_price_tl ?? '') : ''
+            );
+            $('#total_tl').val('');
+
+            $('#grpQty').toggleClass('d-none', isGram);
+            $('#grpWeight').toggleClass('d-none', !isGram);
+            $('#grpMileage').toggleClass('d-none', !isGram);
+
+            // FAZ 21: Döviz ürünlerinde (USD, EUR vb.) Has alanları GİZLENİR.
+            // Has hesaplaması yalnızca altın/ziynet ürünleri (currency=HS veya boş) için geçerlidir.
+            var isFX = isForeignCurrency(cur);
+            $('#grpUnitHas').toggleClass('d-none', cur === 'TRY' || isGram || isFX);
+            $('#grpTotalHas').toggleClass('d-none', cur === 'TRY' || isFX);
+
+            $('#qty').prop('readOnly', isGram);
+            $('#weight').prop('readOnly', !isGram);
+            $('#product_mileage').prop('readOnly', !isGram);
+
+            $('#price_hs').prop('readOnly', isGram || cur === 'TRY');
+
+            // Adet label'ını geri yükle (kasa "Tutar" yapmış olabilir)
+            $('#grpQty label').text('Adet');
+
+            computeTotals();
+        }
+
+        function computeTotals() {
+            if (!currentProduct) return;
+
+            const qty = toNum($('#qty').val());
+            const wgt = toNum($('#weight').val());
+            const mly = toNum($('#product_mileage').val());
+            const unitH = toNum($('#price_hs').val());
+            const unitT = toNum($('#rate').val());
+
+            let qtyVal = currentProduct.isGram ? wgt : qty;
+
+            if (isForeignCurrency(currentProduct.currency) || currentProduct.currency === 'TRY') {
+                const totTl = qtyVal && unitT ? qtyVal * unitT : 0;
+                $('#total_tl').val(totTl ? fmt(totTl, 2) : '');
+
+                if (currentProduct.currency === 'TRY') return;
+            }
+
+            if (currentProduct.isGram) {
+                const totHas = wgt && mly ? (wgt * mly) / 1000 : 0;
+                $('#total_has').val(totHas ? fmt(totHas, 3) : '');
+                return;
+            }
+
+            const totHas = qty && unitH ? qty * unitH : 0;
+            $('#total_has').val(totHas ? fmt(totHas, 3) : '');
+        }
+
+        function backFromTotal() {
+            if (!currentProduct || currentProduct.isGram === undefined) return;
+            if (isForeignCurrency(currentProduct.currency) || currentProduct.currency === 'TRY') return;
+
+            const tot = toNum($('#total_has').val());
+            if (!tot) return;
+
+            if (currentProduct.isGram) {
+                const mly = toNum($('#product_mileage').val());
+                if (mly) $('#weight').val(fmt((tot * 1000) / mly, 3));
+            } else {
+                const qty = toNum($('#qty').val());
+                if (qty) $('#price_hs').val(fmt(tot / qty, 3));
+            }
+            computeTotals();
+        }
+
+        $('#qty, #price_hs, #rate').on('input', computeTotals);
+        $('#weight, #product_mileage').on('input', computeTotals);
+        $('#total_has').on('input', backFromTotal);
+    </script>
+    <script>
+        // --- NAKİT BUTONU ---
+        document.addEventListener("DOMContentLoaded", function () {
+            const cashInRadio = document.getElementById("cash_in_btn");
+            const cashOutRadio = document.getElementById("cash_out_btn");
+            const cashStatusInput = document.getElementById("cash_status");
+
+            function updateCashStatus() {
+                if (cashInRadio.checked) cashStatusInput.value = 1;
+                else if (cashOutRadio.checked) cashStatusInput.value = 0;
+                else cashStatusInput.value = "";
+            }
+
+            cashInRadio.addEventListener("change", updateCashStatus);
+            cashOutRadio.addEventListener("change", updateCashStatus);
+            updateCashStatus();
+        });
+
+        $('#balance_supplier_select').on('change', function () {
+            const id = this.value;
+            $('#balancePlaceholder').toggle(!id);
+            if (!id) {
+                $('#balanceCards').empty();
+                return
+            }
+            localStorage.setItem(LAST_SUPP_KEY, id);
+            fetch('/suppliers/get-balances?supplier_id=' + id).then(r => r.json()).then(d => renderBalances(d.data))
+        })
+
+        // --- SİLME İŞLEMİ ---
+        function del(id) {
+            if (!id) return;
+
+            $.post('/process/delete', {
+                ids: [id],
+                csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+            }).done(d => {
+                if (d.result) {
+                    loadTable();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Silindi',
+                        showConfirmButton: false,
+                        timer: 2000
+                    })
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        html: d.error_msg || 'Silinemedi',
+                        position: 'center'
+                    });
+                }
+            }).fail(() => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata',
+                    text: 'Silme işlemi sırasında hata oluştu.',
+                    position: 'center'
+                });
+            })
+
+        }
+    </script>
+    <script>
+        $('#btnSupplierDetail').off('click').on('click', function () {
+            const id = $('#balance_supplier_select').val();
+
+            if (id) {
+                var url = "{% url 'suppliers:detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', id);
+                window.location.href = url;
+            } else {
+                Swal.fire({
+                    toast: true, icon: 'warning', title: 'Tedarikçi seçin',
+                    position: 'top-end', timer: 1500, showConfirmButton: false
+                });
+            }
+        });
+
+        // ─── ANLIK TEDARİKÇİ FİŞİ ───
+        $('#btnSupplierFis').on('click', function () {
+            const id = $('#balance_supplier_select').val();
+            if (!id) {
+                Swal.fire({toast: true, icon: 'warning', title: 'Önce tedarikçi seçin', position: 'top-end', timer: 1500, showConfirmButton: false});
+                return;
+            }
+
+            // Spinner göster, içerik gizle
+            $('#fisLoading').show();
+            $('#fisContent').hide();
+            $('#fisModal').modal('show');
+
+            // FAZ 11 / SYNC-01 + SYNC-02: wholesale_process_no parametresi ile
+            // sepetteki taslak işlemler de fetch edilir.
+            const _wholesaleNo = ($('#wholesale_process_no').val() || '').trim();
+            const _fisUrl = '/suppliers/fis-data?supplier_id=' + encodeURIComponent(id) +
+                (_wholesaleNo ? '&wholesale_process_no=' + encodeURIComponent(_wholesaleNo) : '');
+
+            fetch(_fisUrl)
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.result) {
+                        Swal.fire('Hata', d.error_msg || 'Veri alınamadı', 'error');
+                        $('#fisModal').modal('hide');
+                        return;
+                    }
+
+                    // ── Firma Bilgisi ──
+                    $('#fisCompanyName').text(d.supplier.company_name);
+                    let contact = d.supplier.phone;
+                    if (d.supplier.person_name) contact = d.supplier.person_name + ' ' + d.supplier.person_surname + ' — ' + contact;
+                    $('#fisContactInfo').text(contact);
+                    $('#fisFisNo').text(d.fis_no);
+                    $('#fisTarih').text(d.fis_tarih);
+
+                    if (d.is_cantaci) {
+                        $('#fisAccountBadge').text('Çantacı').attr('class', 'badge mt-1 bg-info');
+                    } else {
+                        $('#fisAccountBadge').text('Tedarikçi').attr('class', 'badge mt-1 bg-secondary');
+                    }
+
+                    // ── FAZ 11 / SYNC-01 + SYNC-02: Taslak Sepet Özeti ──
+                    const $pendingSec = $('#fisPendingSection');
+                    const $pendingTotals = $('#fisPendingTotals').empty();
+                    const $statusBadge = $('#fisStatusBadge');
+                    const pb = d.pending_basket || {};
+                    if (pb.has_pending && pb.totals && pb.totals.length) {
+                        pb.totals.forEach(t => {
+                            let color = t.net > 0 ? '#ffd54f' : (t.net < 0 ? '#ff8a80' : '#a1a5b7');
+                            let dirLabel = t.net > 0 ? 'BORÇ' : (t.net < 0 ? 'ALACAK' : 'DENGEDE');
+                            $pendingTotals.append(`
+                                <div class="fis-balance-card" style="border: 1px dashed rgba(255,193,7,.4);">
+                                    <div class="cur">${t.currency}</div>
+                                    <div class="val" style="color:${color}">${Math.abs(t.net).toFixed(2)}</div>
+                                    <div class="lbl" style="color:${color}">SEPETTE — ${dirLabel}</div>
+                                </div>
+                            `);
+                        });
+                        $('#fisPendingBadge').text('TASLAK (' + pb.rows_count + ' kalem)');
+                        $pendingSec.show();
+                        $statusBadge.text('TASLAK FİŞ AÇIK').removeClass('bg-success').addClass('bg-warning text-dark').show();
+                    } else {
+                        $pendingSec.hide();
+                        $statusBadge.text('TAMAMLANMIŞ').removeClass('bg-warning text-dark').addClass('bg-success').show();
+                    }
+
+                    // ── Bakiye Kartları ──
+                    const balCont = $('#fisBalances').empty();
+                    if (d.balances.length === 0) {
+                        $('#fisNoBalance').show();
+                    } else {
+                        $('#fisNoBalance').hide();
+                        d.balances.forEach(b => {
+                            let color = b.net > 0 ? '#28c76f' : (b.net < 0 ? '#ff4d4f' : '#a1a5b7');
+                            let lbl = b.net > 0 ? 'ALACAKLIYIZ' : (b.net < 0 ? 'BORÇLUYUZ' : 'DENGEDE');
+                            balCont.append(`
+                                <div class="fis-balance-card">
+                                    <div class="cur">${b.currency}</div>
+                                    <div class="val" style="color:${color}">${Math.abs(b.net).toFixed(2)}</div>
+                                    <div class="lbl" style="color:${color}">${lbl}</div>
+                                </div>
+                            `);
+                        });
+                    }
+
+                    // ── Son Hareketler ──
+                    const movCont = $('#fisMovements').empty();
+                    if (d.movements.length === 0) {
+                        $('#fisNoMovements').show();
+                    } else {
+                        $('#fisNoMovements').hide();
+                        d.movements.forEach(m => {
+                            let icon = m.yon === 'ENTRY' ? '<i class="bi bi-arrow-down-short text-danger"></i>' : '<i class="bi bi-arrow-up-short text-success"></i>';
+                            movCont.append(`
+                                <tr>
+                                    <td class="text-nowrap">${m.tarih}</td>
+                                    <td>${icon} ${m.tip}</td>
+                                    <td class="text-end text-nowrap">${m.miktar}</td>
+                                    <td class="text-end text-nowrap fw-bold">${m.tutar}</td>
+                                </tr>
+                            `);
+                        });
+                    }
+
+                    // Spinner gizle, içerik göster
+                    $('#fisLoading').hide();
+                    $('#fisContent').show();
+
+                    // Detay butonu URL'sini ayarla
+                    const detailUrl = d.is_cantaci
+                        ? '/suppliers/cantaci/' + d.supplier.id
+                        : "{% url 'suppliers:detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', d.supplier.id);
+                    $('#btnFisDetay').off('click').on('click', function () { window.open(detailUrl, '_blank'); });
+                })
+                .catch(() => {
+                    Swal.fire('Hata', 'Fiş verisi alınamadı', 'error');
+                    $('#fisModal').modal('hide');
+                });
+        });
+
+        // Fiş Yazdır
+        $('#btnFisPrint').on('click', function () { window.print(); });
+
+        // --- İŞLEM EKLEME VE BİTİRME ---
+        function formDataObj() {
+            return {
+                wholesale_process_no: $('#wholesale_process_no').val(),
+                product_id: $('#product_id').val(),
+                cash_select: $('input[name="cash_select"]:checked').val(),
+                weight: $('#weight').val(),
+                qty: $('#qty').val(),
+                product_mileage: $('#product_mileage').val(),
+                total_tl: $('#total_tl').val(),
+                csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+            }
+        }
+
+        function resetAddForm() {
+            $('#add-form')[0].reset();
+            $('#price_hs').val('');
+            $('#product_id').val('');
+            $('#toptan_title').text('Yeni');
+            currentProduct = null;
+            // FAZ 23: Kasa alanlarını sıfırla
+            currentBankAccount = null;
+            $('#bank_account_id').val('');
+            $('#payment_currency').val('');
+            $('#qty').removeClass('is-invalid').off('input.kasaVal').attr('placeholder', ' ');
+            $('#kasaBalanceWarn').remove();
+            $('#kasaBalanceHelper').addClass('d-none');
+            // Adet label'ını geri yükle
+            $('#grpQty label').text('Adet');
+            // Çıkış butonunu yeniden aktif et (döviz ürünü disable etmişse)
+            $('#cash_out_btn').prop('disabled', false);
+            $('label[for="cash_out_btn"]').removeClass('disabled-label');
+        }
+
+        $('#btnComplete').off('click').on('click', function () {
+
+            // ═══ FAZ 23: KASA KALEMİ Mİ? ═══
+            if (currentBankAccount) {
+                var amount = toNum($('#qty').val());
+                if (!amount || amount <= 0) {
+                    return Swal.fire({
+                        icon: 'warning',
+                        title: 'Eksik Tutar',
+                        text: 'Lütfen geçerli bir tutar giriniz.'
+                    });
+                }
+
+                // Bakiye kontrolü SADECE Çıkış (SALE) işlemlerinde yapılır
+                // Giriş (PURCHASE) → Tedarikçi kasaya para getiriyor, bakiye kısıtlaması yok
+                var cashSelectVal = $('input[name="cash_select"]:checked').val() || '0';
+                var isSaleDirection = (cashSelectVal === '0');
+
+                if (isSaleDirection && amount > currentBankAccount.balance) {
+                    return Swal.fire({
+                        icon: 'error', title: 'Yetersiz Bakiye',
+                        text: 'Kasada yeterli bakiye yok. Bakiye: ' + _fmtBal(currentBankAccount.balance, currentBankAccount.currency)
+                    });
+                }
+
+                $.ajax({
+                    url: '/process/add-wholesale-cash-item',
+                    type: 'POST',
+                    data: {
+                        wholesale_process_no: $('#wholesale_process_no').val(),
+                        bank_account_id: currentBankAccount.id,
+                        amount: amount,
+                        currency: currentBankAccount.currency,
+                        cash_select: cashSelectVal,
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                    },
+                    success: function (res) {
+                        if (res.result) {
+                            $('#wholesale_process_no').val(res.wholesale_process_no);
+                            loadTable();
+                            resetAddForm();
+                            // Kasalar listesini de yenile (bakiye değişti)
+                            var $kasaLi = $('#categoryToptanList li[data-kasalar]');
+                            if ($kasaLi.hasClass('selected')) renderBankAccounts();
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: 'Kasa ödemesi eklendi', showConfirmButton: false, timer: 1500
+                            });
+                        } else {
+                            Swal.fire({icon: 'error', title: 'Hata', html: res.error_msg || 'Eklenemedi.'});
+                        }
+                    },
+                    error: function (xhr) {
+                        var msg = 'Sunucu hatası.';
+                        if (xhr.responseJSON && xhr.responseJSON.error_msg) msg = xhr.responseJSON.error_msg;
+                        Swal.fire({icon: 'error', title: 'Hata', html: msg});
+                    }
+                });
+                return;
+            }
+
+            // ═══ ÜRÜN KALEMİ (mevcut akış) ═══
+            const fd = formDataObj();
+            if (!fd.product_id || !fd.cash_select) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Eksik Bilgi',
+                    text: 'Lütfen bir ürün seçiniz.',
+                    position: 'center'
+                });
+            }
+            const qtyVal = (currentProduct && currentProduct.isGram)
+                ? toNum($('#weight').val())
+                : toNum($('#qty').val());
+
+            if (!qtyVal || qtyVal <= 0) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Eksik Miktar',
+                    text: 'Lütfen geçerli bir Adet veya Gram giriniz.',
+                    position: 'center'
+                });
+            }
+
+            const form = document.getElementById('add-form');
+            const fd2 = new FormData(form);
+
+            $.ajax({
+                url: '/process/add-wholesale-process',
+                type: 'POST',
+                data: fd2,
+                processData: false,
+                contentType: false,
+                success: (res) => {
+                    if (res.result) {
+                        $('#wholesale_process_no').val(res.wholesale_process_no);
+                        loadTable();
+                        resetAddForm();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Listeye Eklendi',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata',
+                            html: res.error_msg || 'Eklenemedi.',
+                            position: 'center'
+                        });
+                    }
+                },
+                error: (xhr) => {
+                    let msg = 'İşlem eklenirken sistemsel bir hata oluştu.';
+                    if (xhr.responseJSON && xhr.responseJSON.error_msg) {
+                        msg = xhr.responseJSON.error_msg;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        html: msg,
+                        position: 'center'
+                    });
+                }
+            });
+        });
+
+        $('#btnPayment').off('click').on('click', function () {
+
+            const procNo = $('#wholesale_process_no').val();
+            const supplierId = $('#balance_supplier_select').val();
+
+            /* 1) Ön-kontrol */
+            if (!procNo) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Liste Boş',
+                    text: 'Lütfen önce en az bir ürün ekleyin.',
+                    position: 'center'
+                });
+            }
+            if (!supplierId) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Tedarikçi Seçilmedi',
+                    text: 'Lütfen işlemi bağlamak için bir tedarikçi seçin.',
+                    position: 'center'
+                });
+            }
+
+            $.ajax({
+                url: '/process/complete-process-wholesale',
+                type: 'POST',
+                data: {
+                    wholesale_process_no: procNo,
+                    supplier_id: supplierId,
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: res => {
+                    if (res.result) {
+                        Swal.fire({
+                            toast: true, icon: 'success',
+                            title: 'İşlem Başarıyla Tamamlandı',
+                            position: 'top-end', timer: 1500, showConfirmButton: false
+                        });
+                        refreshWholesaleUI();
+                        $('#wholesale_process_no').val('');
+                        loadTable();
+                    } else {
+                        // Backend 'Result: False' dönerse
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata',
+                            html: res.error_msg || 'Tamamlanamadı',
+                            position: 'center' // ORTADA GÖSTER
+                        });
+                    }
+                },
+                error: xhr => {
+                    // Backend 500 veya 400 dönerse
+                    let msg = 'Sunucu ile iletişim hatası oluştu.';
+                    if (xhr.responseJSON && xhr.responseJSON.error_msg) {
+                        msg = xhr.responseJSON.error_msg;
+                    } else if (xhr.responseText && xhr.responseText.length < 500) {
+                        // Kısa bir text hatası varsa (HTML değilse)
+                        msg = xhr.responseText;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        html: msg, // HTML render (br tagleri için)
+                        position: 'center', // ORTADA GÖSTER
+                        showConfirmButton: true,
+                        confirmButtonText: 'Tamam'
+                    });
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // --- AÇIKTAN BAĞLAMA ---
+        $('#btnOpenBind').off().on('click', async function () {
+            if (!$('#balance_supplier_select').val()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Seçim Yapın',
+                    text: 'Lütfen önce bir tedarikçi seçiniz.',
+                    position: 'center'
+                })
+                return
+            }
+            $('#openBindForm')[0].reset()
+            $('#openBindModal').modal('show')
+        })
+        document.addEventListener('DOMContentLoaded', function () {
+            const fromSel = document.getElementById('ob_from_cur')
+            const toSel = document.getElementById('ob_to_cur')
+            const fromAmt = document.getElementById('ob_from_amount')
+            const toRateInp = document.getElementById('ob_to_rate')
+
+            const toAmtInp = document.getElementById('ob_to_amount')
+            const fromRateH = document.getElementById('ob_from_rate')
+            const fromPid = document.getElementById('from_product_id')
+            const toPid = document.getElementById('to_product_id')
+            const store = {}, hide = {EURUSD: 1, USDKG: 1, EURKG: 1}
+            let manualRate = false;
+            fetch('/process/get-parities').then(r => r.json()).then(d => {
+                Object.assign(store, d)
+                Object.entries(d).forEach(([c, row]) => {
+                    if (hide[c]) return
+                    const o = document.createElement('option')
+                    o.value = c
+                    o.dataset.pid = row.prod_id
+                    o.textContent = c
+                    const o2 = o.cloneNode(true)
+                    fromSel.appendChild(o)
+                    toSel.appendChild(o2)
+                })
+                fromSel.value = 'HS'
+                toSel.value = 'USD'
+                sync()
+                calc()
+                fromSel.addEventListener('change', () => {
+                    sync();
+                    calc()
+                })
+                toSel.addEventListener('change', () => {
+                    sync();
+                    calc()
+                })
+                fromAmt.addEventListener('input', calc);
+                toRateInp.addEventListener('input', () => {
+                    manualRate = true;
+                    calc();
+                });
+                toAmtInp.addEventListener('input', () => {
+                    manualRate = false;
+                    const q = toNum(fromAmt.value);
+                    const tot = toNum(toAmtInp.value);
+                    const div = needDivision(fromSel.value, toSel.value);
+                    if (q && tot) {
+                        toRateInp.value = fmt((div ? q / tot : tot / q), 4);
+                    }
+                });
+            })
+
+            function sync() {
+                fromPid.value = fromSel.selectedOptions[0].dataset.pid;
+                toPid.value = toSel.selectedOptions[0].dataset.pid;
+
+                fromRateH.value = fmt(tlBuy(fromSel.value), 2);
+
+                const auto = getUnitPrice(fromSel.value, toSel.value);
+                toRateInp.value = fmt(auto, 2);
+
+                manualRate = false;
+            }
+
+            function tlBuy(c) {
+                if (c === 'TRY') return 1;
+                if (c === 'HS') return +store.HS.tl_buy;
+                return +store[c].tl_buy;
+            }
+
+            function cross(f, t) {
+                if (f === 'EUR' && t === 'USD') return +store.EURUSD.cross_sale;
+                if (f === 'USD' && t === 'EUR') return 1 / +store.EURUSD.cross_sale;
+
+                if (f === 'HS' && t === 'USD') return +store.USDKG.gold_sale;
+                if (f === 'USD' && t === 'HS') return +store.USDKG.gold_sale;
+
+                if (f === 'HS' && t === 'EUR') return +store.EURKG.gold_sale;
+                if (f === 'EUR' && t === 'HS') return +store.EURKG.gold_sale;
+
+                if (t === 'TRY') return +store[f].tl_sale;
+                if (f === 'TRY') return 1 / +store[t].tl_sale;
+                return 0;
+            }
+
+
+            const VALUE_ORDER = [
+                'TRY',
+                'JPY',
+                'QAR', 'SAR', 'AED',
+                'CAD', 'AUD',
+                'USD',
+                'EUR',
+                'CHF', 'GBP',
+                'HS'
+            ];
+
+            const RANK = Object.fromEntries(
+                VALUE_ORDER.map((cur, i) => [cur, i])
+            );
+
+
+            function needDivision(fromCur, toCur) {
+                if (!(fromCur in RANK) || !(toCur in RANK)) return false;
+                return RANK[fromCur] < RANK[toCur];
+            }
+
+            function calc() {
+                const f = fromSel.value,
+                    t = toSel.value,
+                    qty = toNum(fromAmt.value) || 0,
+                    kgr = 1000;
+                const unit = manualRate ? toNum(toRateInp.value)
+                    : getUnitPrice(f, t);
+                if (!manualRate) toRateInp.value = fmt(unit, 2);
+
+                let total = 0;
+
+                const usdEur = c => c === 'USD' || c === 'EUR';
+                if (f === 'HS' && usdEur(t)) total = (qty / kgr) * unit;
+                else if (t === 'HS' && usdEur(f)) total = (qty * kgr) / unit;
+                else if (needDivision(f, t)) total = qty / unit; else total = qty * unit;
+
+                toAmtInp.value = total ? fmt(total, 2) : '';
+            }
+
+            ['#ob_from_amount', '#ob_to_rate', '#ob_to_amount'].forEach(sel => {
+                $(document).on('blur', sel, function () {
+                    const v = toNum(this.value);
+                    if (!v) {
+                        this.value = '';
+                        return;
+                    }
+                    const frac = (this.id === 'ob_to_rate') ? 4 : 2;
+                    this.value = fmt(v, frac);
+                });
+            });
+
+            (function () {
+                const kgr = 1000, usdEur = c => c === 'USD' || c === 'EUR';
+                // FAZ TOPTAN 0.995: 995 milyem fire çarpanı BACKEND tarafında
+                // (open_binding) uygulanır. JS burada HAM (adjust edilmemiş)
+                // miktarı gösterir; böylece USD/EUR tarafı piyasa kuruna göre
+                // net hesaplanır (ör. 100 HS × 150.220 USD/kg = 15.022 USD).
+                // Cari ledger yazımında backend HS tarafına 0.995 uygular
+                // (ör. HS Alacak 99.5) — çift uygulama olmaz.
+
+                const $fAmt = $('#ob_from_amount'),
+                    $fCur = $('#ob_from_cur'),
+                    $tAmt = $('#ob_to_amount'),
+                    $tCur = $('#ob_to_cur'),
+                    $tRate = $('#ob_to_rate'),
+                    $fRate = $('#ob_from_rate');
+
+
+                function calcForward() {
+                    const qty = toNum($fAmt.val());
+                    const rate = toNum($tRate.val());
+
+                    if (!qty || !rate) {
+                        $tAmt.val('');
+                        return;
+                    }
+
+                    const f = $fCur.val(), t = $tCur.val();
+                    let total;
+
+                    if (f === 'HS' && usdEur(t)) {
+                        total = (qty / kgr) * rate;
+                    } else if (t === 'HS' && usdEur(f)) {
+                        total = (qty * kgr) / rate;
+                    } else if (needDivision(f, t)) {
+                        total = qty / rate;
+                    } else {
+                        total = qty * rate;
+                    }
+                    $tAmt.val(fmt(total, 2));
+                }
+
+
+                function calcBackward() {
+                    const total = toNum($tAmt.val());
+                    const qty = toNum($fAmt.val());
+                    if (!total || !qty) {
+                        $tRate.val('');
+                        return;
+                    }
+
+                    const f = $fCur.val(), t = $tCur.val();
+                    let rate;
+
+                    if (f === 'HS' && usdEur(t)) {
+                        rate = (total * kgr) / qty;
+                    } else if (t === 'HS' && usdEur(f)) {
+                        rate = (qty * kgr) / total;
+                    } else if (needDivision(f, t)) {
+                        rate = qty / total;
+                    } else {
+                        rate = total / qty;
+                    }
+                    $tRate.val(fmt(rate, 2));
+                }
+
+                $fAmt.on('input', calcForward);
+                $tRate.on('input', calcForward);
+                $tAmt.on('input', calcBackward);
+
+                $fCur.add($tCur).on('change', function () {
+                    const auto = getUnitPrice($fCur.val(), $tCur.val());
+                    $tRate.val(fmt(auto, 4));
+                    calc();
+                });
+            })();
+
+            $('#openBindForm').off().on('submit', function (e) {
+                e.preventDefault()
+                const supplier = $('#balance_supplier_select').val()
+                if (!supplier) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tedarikçi Seçilmedi',
+                        text: 'Lütfen işlem için bir tedarikçi seçiniz.',
+                        position: 'center'
+                    })
+                    return
+                }
+                const fd = new FormData(this)
+                fd.append('supplier_id', supplier)
+                fetch('/process/open-binding', {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+                    body: fd
+                }).then(r => r.json()).then(j => {
+                    if (j.result) {
+                        $('#openBindModal').modal('hide')
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Kaydedildi',
+                            timer: 1200,
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false
+                        })
+                        refreshWholesaleUI();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata',
+                            html: j.error_msg || 'Hata',
+                            position: 'center'
+                        })
+                    }
+                }).catch(() => Swal.fire({
+                    icon: 'error',
+                    title: 'Bağlantı Hatası',
+                    text: 'Sunucuya ulaşılamadı.',
+                    position: 'center'
+                }))
+            })
+        })
+    </script>
+    <script>
+        $(function () {
+            $('#balance_supplier_select').on('change', function () {
+                refreshWholesaleUI();
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#productToptanSearch').on('input', function () {
+                const term = $(this).val().toLowerCase().trim();
+
+                $('#productToptanList .product-item').each(function () {
+                    const name = $(this).find('.product-name').text().toLowerCase();
+
+                    if (!term || name.includes(term)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+        });
+    </script>
+    <script>
+        // --- MODAL AÇMA ---
+        $('#btnOpenScrapModal').click(function () {
+            $('#scrapWholesaleForm')[0].reset();
+            $('#ws_scrap_calc_has').text('0.00');
+            $('#scrapModal').modal('show');
+        });
+
+        $('#btnOpenBraceletModal').click(function () {
+            $('#braceletWholesaleForm')[0].reset();
+            $('#ws_bracelet_calc_has').text('0.00');
+            $('#braceletModal').modal('show');
+        });
+
+        // --- HURDA HESAPLAMA & SELECT ---
+        $('#ws_scrap_name').change(function () {
+            const mil = $(this).find(':selected').data('mil');
+            if (mil) $('#ws_scrap_mileage').val(mil);
+            calcScrapHas();
+        });
+
+        $('#ws_scrap_mileage, #ws_scrap_gram').on('input', function () {
+            calcScrapHas();
+        });
+
+        function calcScrapHas() {
+            const g = parseFloat($('#ws_scrap_gram').val()) || 0;
+            const m = parseFloat($('#ws_scrap_mileage').val()) || 0;
+
+            // Toplam Has
+            const res = (g * m) / 1000;
+            $('#ws_scrap_calc_has').text(res.toFixed(3));
+        }
+
+        // --- BİLEZİK HESAPLAMA ---
+        $('#ws_bracelet_rate').change(function () {
+            $('#ws_bracelet_mileage').val($(this).val());
+            calcBraceletHas();
+        });
+
+        $('#ws_bracelet_mileage, #ws_bracelet_gram').on('input', function () {
+            calcBraceletHas();
+        });
+
+        function calcBraceletHas() {
+            const g = parseFloat($('#ws_bracelet_gram').val()) || 0;
+            const m = parseFloat($('#ws_bracelet_mileage').val()) || 0;
+
+            // Toplam Has
+            const res = (g * m) / 1000;
+            $('#ws_bracelet_calc_has').text(res.toFixed(3));
+        }
+
+        // --- AJAX: HURDA KAYDET ---
+        $('#btnSaveWholesaleScrap').click(function () {
+            const $btn = $(this);
+            const gram = $('#ws_scrap_gram').val();
+
+            if (!gram || gram <= 0) {
+                Swal.fire('Hata', 'Lütfen geçerli bir gram giriniz.', 'warning');
+                return;
+            }
+
+            const fd = new FormData($('#scrapWholesaleForm')[0]);
+            // Mevcut işlem numarasını ekle (eğer varsa)
+            fd.append('wholesale_process_no', $('#wholesale_process_no').val());
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '/process/add-scrap-to-wholesale',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    $btn.prop('disabled', false);
+                    if (res.result) {
+                        $('#scrapModal').modal('hide');
+                        // İşlem numarasını güncelle
+                        $('#wholesale_process_no').val(res.wholesale_process_no);
+                        // Tabloyu yenile (Mevcut fonksiyonun)
+                        loadTable();
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: 'Hurda Eklendi', showConfirmButton: false, timer: 1500
+                        });
+                    } else {
+                        Swal.fire('Hata', res.error_msg, 'error');
+                    }
+                },
+                error: function (err) {
+                    $btn.prop('disabled', false);
+                    Swal.fire('Hata', 'Sunucu hatası', 'error');
+                }
+            });
+        });
+
+        // --- AJAX: BİLEZİK KAYDET ---
+        $('#btnSaveWholesaleBracelet').click(function () {
+            const $btn = $(this);
+            const name = $('#ws_bracelet_name').val();
+            const gram = $('#ws_bracelet_gram').val();
+
+            if (!name || !gram) {
+                Swal.fire('Hata', 'İsim ve Gram alanları zorunludur.', 'warning');
+                return;
+            }
+
+            const fd = new FormData($('#braceletWholesaleForm')[0]);
+            fd.append('wholesale_process_no', $('#wholesale_process_no').val());
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '/process/add-bracelet-to-wholesale',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    $btn.prop('disabled', false);
+                    if (res.result) {
+                        $('#braceletModal').modal('hide');
+                        $('#wholesale_process_no').val(res.wholesale_process_no);
+                        loadTable(); // Tabloyu yenile
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: 'Bilezik Eklendi', showConfirmButton: false, timer: 1500
+                        });
+                    } else {
+                        Swal.fire('Hata', res.error_msg, 'error');
+                    }
+                },
+                error: function (err) {
+                    $btn.prop('disabled', false);
+                    Swal.fire('Hata', 'Sunucu hatası', 'error');
+                }
+            });
+        });
+
+        // Modallar kapandığında sadece formu ve has alanını sıfırlıyoruz. (Fiyatlar çıkarıldı)
+        $('#scrapModal').on('hidden.bs.modal', function () {
+            $('#scrapWholesaleForm')[0].reset();
+            $('#ws_scrap_calc_has').text('0.00');
+        });
+
+        $('#braceletModal').on('hidden.bs.modal', function () {
+            $('#braceletWholesaleForm')[0].reset();
+            $('#ws_bracelet_calc_has').text('0.00');
+        });
+
+        // ============================================================
+        // ÇOKLU HURDA MODAL JS
+        // ============================================================
+
+        // Modal Aç
+        $('#btnOpenScrapMultiModal').click(function () {
+            // Tabloyu sıfırla, tek satır bırak
+            $('#scrapMultiRows').html($('#scrapMultiRows tr:first').clone().wrap('<div>').parent().html());
+            resetMultiRow($('#scrapMultiRows tr:first'));
+            recalcMultiTotals();
+            $('#scrapMultiModal').modal('show');
+        });
+
+        function resetMultiRow($row) {
+            $row.find('.sm-ayar').val('');
+            $row.find('.sm-milyem').val('');
+            $row.find('.sm-gram').val('');
+            $row.find('.sm-has').text('0.000');
+        }
+
+        // Satır Ekle
+        $('#btnAddScrapRow').click(function () {
+            const $first = $('#scrapMultiRows tr:first');
+            const $clone = $first.clone();
+            resetMultiRow($clone);
+            // Sil butonu ekle (ilk satırda yok)
+            $clone.find('td:last').html(
+                '<button type="button" class="btn btn-icon btn-sm btn-light-danger btn-remove-scrap-row">' +
+                '<i class="fas fa-times"></i></button>'
+            );
+            $('#scrapMultiRows').append($clone);
+            bindMultiRowEvents($clone);
+        });
+
+        // Satır Sil
+        $(document).on('click', '.btn-remove-scrap-row', function () {
+            $(this).closest('tr').remove();
+            recalcMultiTotals();
+        });
+
+        // Ayar seçilince milyem otomatik doldur
+        function bindMultiRowEvents($row) {
+            // Zaten document event delegation kullanacağız
+        }
+
+        $(document).on('change', '.sm-ayar', function () {
+            const mil = $(this).find(':selected').data('mil');
+            const $row = $(this).closest('tr');
+            if (mil) $row.find('.sm-milyem').val(mil);
+            calcMultiRowHas($row);
+        });
+
+        $(document).on('input', '.sm-milyem, .sm-gram', function () {
+            calcMultiRowHas($(this).closest('tr'));
+        });
+
+        function calcMultiRowHas($row) {
+            const g = parseFloat($row.find('.sm-gram').val()) || 0;
+            const m = parseFloat($row.find('.sm-milyem').val()) || 0;
+            const has = (g * m) / 1000;
+            $row.find('.sm-has').text(has.toFixed(3));
+            recalcMultiTotals();
+        }
+
+        function recalcMultiTotals() {
+            let totalGram = 0, totalHas = 0;
+            $('#scrapMultiRows tr').each(function () {
+                totalGram += parseFloat($(this).find('.sm-gram').val()) || 0;
+                const m = parseFloat($(this).find('.sm-milyem').val()) || 0;
+                const g = parseFloat($(this).find('.sm-gram').val()) || 0;
+                totalHas += (g * m) / 1000;
+            });
+            $('#sm_total_gram').text(totalGram.toFixed(2));
+            $('#sm_total_has').text(totalHas.toFixed(3));
+        }
+
+        // Kaydet (AJAX)
+        $('#btnSaveScrapMulti').click(function () {
+            const $btn = $(this);
+            const rows = [];
+
+            let valid = true;
+            $('#scrapMultiRows tr').each(function () {
+                const milyem = $(this).find('.sm-milyem').val();
+                const gram = $(this).find('.sm-gram').val();
+                const name = $(this).find('.sm-ayar option:selected').text();
+
+                if (!milyem || !gram || parseFloat(gram) <= 0) {
+                    valid = false;
+                    return false; // break
+                }
+                rows.push({
+                    product_mileage: milyem,
+                    gram: gram,
+                    scrap_name: name !== 'Seçiniz' ? name : ''
+                });
+            });
+
+            if (!valid || rows.length === 0) {
+                Swal.fire('Hata', 'Tüm satırlarda geçerli milyem ve gram girilmelidir.', 'warning');
+                return;
+            }
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '/process/add-scrap-multi-to-wholesale',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                data: JSON.stringify({
+                    wholesale_process_no: $('#wholesale_process_no').val(),
+                    rows: rows
+                }),
+                success: function (res) {
+                    $btn.prop('disabled', false);
+                    if (res.result) {
+                        $('#scrapMultiModal').modal('hide');
+                        $('#wholesale_process_no').val(res.wholesale_process_no);
+                        loadTable();
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: res.rows_count + ' hurda satırı eklendi',
+                            showConfirmButton: false, timer: 2000
+                        });
+                    } else {
+                        Swal.fire('Hata', res.error_msg, 'error');
+                    }
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    Swal.fire('Hata', 'Sunucu hatası', 'error');
+                }
+            });
+        });
+
+        // Modal kapanınca sıfırla
+        $('#scrapMultiModal').on('hidden.bs.modal', function () {
+            $('#scrapMultiRows').find('tr:gt(0)').remove();
+            resetMultiRow($('#scrapMultiRows tr:first'));
+            recalcMultiTotals();
+        });
+    </script>
+{% endblock footer %}

@@ -1,0 +1,213 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{% block page_title %}Teknik Destek | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus Teknik Destek modülü ile 7/24 uzaktan bağlantı, yerinde servis ve kapsamlı
+    kullanıcı eğitimi sayesinde kesintisiz çalışma garantisi.{% endblock page_description %}
+{% block page_keywords %}teknik destek,kuyumcu destek,uzaktan bağlantı,yerinde servis,kullanıcı eğitimi,kuyum plus
+    destek{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/teknik-destek/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus Teknik Destek{% endblock og_title %}
+{% block og_description %}Uzaktan bağlantı, hızlı ticket sistemi ve eğitim videoları ile her an
+    yanınızdayız.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/education1.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/teknik-destek/{% endblock og_url %}
+{% block twitter_title %}Teknik Destek | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}7/24 destek, yerinde servis ve kapsamlı eğitim
+    materyalleri.{% endblock twitter_description %}
+{% block header %}
+    <style>
+        .my-padding1 {
+            padding-top: 3rem !important;
+            padding-bottom: 1rem !important;
+        }
+
+        @media (max-width: 575.98px) {
+
+            .col-3 {
+                flex: 0 0 25% !important;
+                max-width: 25% !important;
+            }
+
+
+            .my-space {
+                margin-top: 1rem !important;
+            }
+
+            .bg-gray {
+                padding: 1rem !important;
+            }
+
+            .my-padding {
+                padding-top: 3rem !important;
+                padding-bottom: 3rem !important;
+            }
+
+            .my-padding1 {
+                padding-top: 3rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .banner-inner h2.title {
+                font-size: 1.6rem !important;
+                line-height: 1.3;
+                text-align: center !important;
+            }
+
+            .banner-inner h6.subtitle {
+                font-size: 0.7rem !important;
+                text-align: center !important;
+            }
+
+            .img-right {
+                max-width: 100%;
+                height: auto;
+                margin-bottom: 1rem;
+            }
+
+            .banner-inner {
+                text-align: center !important;
+            }
+
+            .banner-area .col-lg-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .my-image {
+                width: 100% !important;
+                height: 20rem !important;
+            }
+        }
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="banner-area bg-relative banner-area-3">
+        <div class="container custom-container">
+            <div class="bg-gray">
+                <img class="img-right" src="{% static 'theme/media/urunTamiri.webp' %}"
+                     alt="Teknik Destek Kuyum Plus">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-6 align-self-center">
+                            <div class="banner-inner" style="z-index:4;">
+                                <h6 class="subtitle wow animated fadeInLeft" data-wow-duration="1.5s"
+                                    data-wow-delay="0.3s">ÜRÜN TAMİR MODÜLÜ</h6>
+                                <h2 class="title wow animated fadeInLeft" data-wow-duration="1.5s"
+                                    data-wow-delay="0.4s">Anlık Takip • <span>WhatsApp Bildirimi</span> • Atölye
+                                    Yönetimi</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="about-area pd-top-60 pd-bottom-60 my-padding">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-5 wow fadeInLeft" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <img class="w-100 border-radius-5 my-image" src="{% static 'theme/media/education2.webp' %}"
+                         alt="Destek Paneli">
+                </div>
+                <div class="col-lg-7 wow fadeInRight" data-wow-duration="1.5s" data-wow-delay="0.3s">
+                    <div class="section-title mt-4 mt-lg-0">
+                        <h6 class="sub-title">Her An Yanınızda</h6>
+                        <h2 class="title">7/24 Takip Edilebilir <span>Ürün Tamiri</span></h2>
+                        <p class="content">Ürün Tamiri Modülü ile müşteriden teslim alınan ürünler, atölyelere
+                            yönlendirilir ve tüm süreç anlık olarak takip edilir. Müşteriler, ürünün her aşamasında
+                            WhatsApp veya SMS bildirimiyle bilgilendirilir. Böylece hem şeffaf hem de güvenilir bir
+                            tamir süreci sunulur.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="service-area bg-cover pd-top-60 pd-bottom-60 my-padding1"
+         style="background-image:url('/static/theme/img/bg/3.png');">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.1s">
+                    <img src="{% static 'theme/media/workshop.webp' %}" width="65" class="mb-3"
+                         alt="Uzaktan Bağlantı">
+                    <h6>Atölye Takibi</h6>
+                </div>
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.2s">
+                    <img src="{% static 'theme/media/update.webp' %}" width="65" class="mb-3"
+                         alt="Ticket Sistemi">
+                    <h6>Durum Güncellemeleri</h6>
+                </div>
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.3s">
+                    <img src="{% static 'theme/media/notification.webp' %}" width="65" class="mb-3"
+                         alt="Eğitim Videoları">
+                    <h6>Müşteri Bildirimleri</h6>
+                </div>
+                <div class="col-3 mb-4 wow fadeInUp" data-wow-delay="0.4s">
+                    <img src="{% static 'theme/media/infographic.webp' %}" width="65" class="mb-3"
+                         alt="Yerinde Servis">
+                    <h6>Raporlama</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="faq-area pd-top-90 pd-bottom-0 my-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 order-lg-last"><img class="w-100 border-radius-5 my-image"
+                                                         src="{% static 'theme/media/education3.webp' %}"
+                                                         alt="Destek SSS"></div>
+                <div class="col-lg-6 order-lg-first">
+                    <div class="section-title mb-4"><h6 class="sub-title my-space">SSS</h6>
+                        <h2 class="title">Ürün Tamiri <span>Soruları</span></h2></div>
+                    <div class="accordion accordion-inner style-2 accordion-icon-left" id="supFAQ">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="qTime">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#cTime" aria-expanded="true" aria-controls="cTime">Müşterilerim
+                                    tamir sürecini nasıl takip edebilir?
+                                </button>
+                            </h2>
+                            <div id="cTime" class="accordion-collapse collapse show" aria-labelledby="qTime"
+                                 data-bs-parent="#supFAQ">
+                                <div class="accordion-body">Müşteriler, ürünlerinin hangi atölyede olduğunu ve sürecin
+                                    hangi aşamada olduğunu anlık olarak sistem üzerinden veya WhatsApp bildirimiyle
+                                    öğrenebilir.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="qSLA">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#cSLA" aria-expanded="false" aria-controls="cSLA">Tamir süresi
+                                    ortalama ne kadar?
+                                </button>
+                            </h2>
+                            <div id="cSLA" class="accordion-collapse collapse" aria-labelledby="qSLA"
+                                 data-bs-parent="#supFAQ">
+                                <div class="accordion-body">Ürün türüne göre değişiklik göstermekle birlikte, sistemdeki
+                                    atölye takibi sayesinde tahmini teslim tarihi müşteriye otomatik bildirilir.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="qTrain">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#cTrain" aria-expanded="false" aria-controls="cTrain">Müşteriye
+                                    hangi kanallardan bilgilendirme yapılır?
+                                </button>
+                            </h2>
+                            <div id="cTrain" class="accordion-collapse collapse" aria-labelledby="qTrain"
+                                 data-bs-parent="#supFAQ">
+                                <div class="accordion-body">Müşterilere WhatsApp veya e-posta üzerinden anında
+                                    bilgilendirme gönderilir.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

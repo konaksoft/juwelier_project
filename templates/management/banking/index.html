@@ -1,0 +1,1747 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
+    <style>
+        /* --- GENEL AYARLAR --- */
+        .toolbar-btn-size {
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- TABLOLAR --- */
+        table.dataTable td, table.dataTable th {
+            vertical-align: middle !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dataTables_wrapper .top {
+            display: none !important;
+        }
+
+        /* Gelen hareket: sol kenarlık yeşil */
+        tr.type-incoming td:first-child {
+            border-left: 4px solid #50cd89 !important;
+        }
+
+        /* Giden hareket: sol kenarlık kırmızı */
+        tr.type-outgoing td:first-child {
+            border-left: 4px solid #f1416c !important;
+        }
+
+        /* --- SEKMELER (TABS) --- */
+        .nav-line-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 5px;
+        }
+
+        .nav-line-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-line-tabs .nav-item .nav-link {
+            color: #7e8299;
+            border-bottom: 2px solid transparent;
+            font-size: 1rem;
+            padding-bottom: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .nav-line-tabs .nav-item .nav-link.active {
+            color: #009ef7;
+            border-bottom: 2px solid #009ef7;
+        }
+
+        /* --- FİLTRE BUTONLARI --- */
+        .filter-btn-group {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-btn-group::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-btn-group .btn {
+            border-radius: 6px;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-btn-group .btn.active {
+            background-color: #009ef7;
+            color: white;
+            border-color: #009ef7;
+        }
+
+        /* --- MATCH SKOR BAR --- */
+        .match-score-bar {
+            display: inline-block;
+            width: 50px;
+            height: 8px;
+            background: #e4e6ef;
+            border-radius: 4px;
+            overflow: hidden;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        .match-score-bar .fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width .3s ease;
+        }
+
+        /* --- DETAY PANELİ --- */
+        .detail-panel {
+            background: #f9fafb;
+            border: 1px solid #e4e6ef;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .detail-panel .label {
+            font-weight: 600;
+            color: #7e8299;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .detail-panel .value {
+            font-weight: 500;
+            color: #181c32;
+        }
+
+        /* --- MOBİL UYUMLULUK --- */
+        @media (max-width: 768px) {
+            .page-heading {
+                font-size: 1.25rem !important;
+                margin-bottom: 5px !important;
+            }
+
+            .card-body {
+                padding: 1rem !important;
+            }
+
+            /* 1. Başlıktaki Güncelle ve Otomatik Tanı Butonları (Kare İkonlar) */
+            .mobile-square-btn {
+                width: 38px !important;
+                height: 38px !important;
+                padding: 0 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .mobile-square-btn i {
+                margin: 0 !important;
+                font-size: 1.15rem;
+            }
+        }
+
+        /* Komisyon raporu ozet kartlari */
+        .recon-summary-card {
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .recon-summary-card .count {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .recon-summary-card .label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                    <div class="card shadow-sm w-100 mt-3">
+                        <div class="card-body p-3 p-md-5">
+
+                            <!-- =============== BAŞLIK + AKSYON BUTONLARI =============== -->
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+                                <div>
+                                    <h1 class="page-heading text-dark fw-bold fs-3 my-0">Banka Hareketleri</h1>
+                                    <div class="text-muted fs-7 fw-semibold d-none d-md-block">
+                                        Acik Bankacilik Entegrasyonu — Otomatik guncelleme aktif
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button id="btnSync" class="btn btn-sm btn-light-primary fw-bold mobile-square-btn"
+                                            title="Banka hareketlerini guncelle">
+                                        <i class="fa-solid fa-rotate me-md-1"></i>
+                                        <span class="d-none d-md-inline">Guncelle</span>
+                                    </button>
+
+                                    <button id="btnAutoMatch"
+                                            class="btn btn-sm btn-light-success fw-bold mobile-square-btn"
+                                            title="Bekleyen gelen hareketler icin otomatik musteri tanima yapar">
+                                        <i class="fa-solid fa-wand-magic-sparkles me-md-1"></i>
+                                        <span class="d-none d-md-inline">Otomatik Tani</span>
+                                    </button>
+
+                                    <!-- Toplu Fatura (Varsayılan Ayarlarla) — 2026-04 -->
+                                    <button id="btnBulkInvoiceDefaults"
+                                            class="btn btn-sm btn-light-warning fw-bold mobile-square-btn"
+                                            title="Seçili gelen hareketlerden varsayılan ayarlarla e-fatura oluşturur (OZELMATRAH)">
+                                        <i class="fa-solid fa-file-invoice-dollar me-md-1"></i>
+                                        <span class="d-none d-md-inline">Toplu Fatura Oluştur</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- =============== TARİH FİLTRE + ARAMA =============== -->
+                            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-5">
+                                <div class="d-flex flex-nowrap gap-1 w-100 w-lg-auto" id="dateFilterBtns">
+                                    <button type="button"
+                                            class="btn btn-sm btn-light btn-active-primary active w-100 px-1 px-md-3 text-nowrap"
+                                            style="font-size: 0.85rem;" data-filter="all">
+                                        Tumu
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-light btn-active-primary w-100 px-1 px-md-3 text-nowrap"
+                                            style="font-size: 0.85rem;" data-filter="today">
+                                        Bugun
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-light btn-active-primary w-100 px-1 px-md-3 text-nowrap"
+                                            style="font-size: 0.85rem;" data-filter="week">
+                                        Bu Hf.
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-light btn-active-primary w-100 px-1 px-md-3 text-nowrap"
+                                            style="font-size: 0.85rem;" data-filter="month">
+                                        Bu Ay
+                                    </button>
+                                </div>
+
+                                <div class="d-flex gap-2 align-items-center w-100 w-lg-auto">
+                                    <input type="text" id="syncDateFrom"
+                                           class="form-control form-control-sm w-100 w-md-150px"
+                                           placeholder="Baslangic">
+                                    <span class="text-gray-400">-</span>
+                                    <input type="text" id="syncDateTo"
+                                           class="form-control form-control-sm w-100 w-md-150px" placeholder="Bitis">
+                                </div>
+                            </div>
+
+                            <!-- =============== SEKMELER (TABS) =============== -->
+                            <ul class="nav nav-line-tabs mb-5 fs-6 overflow-auto flex-nowrap">
+                                <li class="nav-item">
+                                    <a class="nav-link active text-nowrap" data-bs-toggle="tab" href="#tab_all">
+                                        <i class="fa-solid fa-list me-2"></i> Tum Hareketler
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-nowrap" data-bs-toggle="tab" href="#tab_unmatched">
+                                        <i class="fa-solid fa-clock me-2"></i> Islem Bekleyenler
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-nowrap" data-bs-toggle="tab" href="#tab_matched">
+                                        <i class="fa-solid fa-user-check me-2"></i> Musterisi Taninanlar
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-nowrap" data-bs-toggle="tab" href="#tab_commission_report">
+                                        <i class="fa-solid fa-percent me-2"></i> Komisyon Raporu
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <!-- =============== TAB İÇERİKLERİ =============== -->
+                            <div class="tab-content" id="bankingTabs">
+
+                                <!-- TAB: Tüm Hareketler -->
+                                <div class="tab-pane fade show active" id="tab_all" role="tabpanel">
+                                    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-3 gap-3">
+
+                                        <div class="d-flex flex-column flex-md-row gap-2 w-100 w-xl-auto">
+
+                                            <div class="btn-group btn-group-sm w-100" id="typeFilterBtns" role="group">
+                                                <button type="button" class="btn btn-light-dark active w-100 px-1"
+                                                        data-type="ALL">Tumu
+                                                </button>
+                                                <button type="button" class="btn btn-light-success w-100 px-1"
+                                                        data-type="INCOMING">
+                                                    <i class="fa-solid fa-arrow-down d-none d-md-inline me-1"></i>
+                                                    <span class="d-none d-md-inline">Girisler (Gelen)</span>
+                                                    <span class="d-inline d-md-none" style="font-size: 0.75rem;">Girisler</span>
+                                                </button>
+                                                <button type="button" class="btn btn-light-danger w-100 px-1"
+                                                        data-type="OUTGOING">
+                                                    <i class="fa-solid fa-arrow-up d-none d-md-inline me-1"></i>
+                                                    <span class="d-none d-md-inline">Cikislar (Giden)</span>
+                                                    <span class="d-inline d-md-none" style="font-size: 0.75rem;">Cikislar</span>
+                                                </button>
+                                            </div>
+
+                                            <div class="btn-group btn-group-sm w-100" id="invoiceFilterBtns"
+                                                 role="group">
+                                                <button type="button" class="btn btn-light-dark active w-100 px-1"
+                                                        data-inv-filter="ALL">
+                                                    <span class="d-none d-md-inline">Tum Faturalar</span>
+                                                    <span class="d-inline d-md-none" style="font-size: 0.75rem;">Faturalar</span>
+                                                </button>
+                                                <button type="button" class="btn btn-light-info w-100 px-1"
+                                                        data-inv-filter="INVOICED">
+                                                    <i class="fa-solid fa-file-invoice d-none d-md-inline me-1"></i>
+                                                    <span class="d-none d-md-inline">Faturalanmis</span>
+                                                    <span class="d-inline d-md-none" style="font-size: 0.75rem;">Faturalı</span>
+                                                </button>
+                                                <button type="button" class="btn btn-light-warning w-100 px-1"
+                                                        data-inv-filter="NOT_INVOICED">
+                                                    <i class="fa-solid fa-file-circle-exclamation d-none d-md-inline me-1"></i>
+                                                    <span class="d-none d-md-inline">Faturasiz</span>
+                                                    <span class="d-inline d-md-none" style="font-size: 0.75rem;">Faturasız</span>
+                                                </button>
+                                            </div>
+
+                                        </div>
+
+                                        <div class="position-relative w-100 w-xl-250px">
+                                            <i class="fa-solid fa-magnifying-glass fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500"></i>
+                                            <input type="text" id="searchAll"
+                                                   class="form-control form-control-solid ps-12" placeholder="Ara..."/>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="tableAll"
+                                               class="table align-middle table-row-dashed fs-6 gy-3"
+                                               style="width:100%">
+                                            <thead>
+                                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-10px pe-2">
+                                                    <input class="form-check-input check-all" type="checkbox"
+                                                           data-target="#tableAll">
+                                                </th>
+                                                <th>Durum</th>
+                                                <th>Tarih</th>
+                                                <th>Banka</th>
+                                                <th>Karsi Taraf</th>
+                                                <th>Aciklama</th>
+                                                <th class="text-end">Tutar</th>
+                                                <th class="text-center w-100px">Islemler</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- TAB: Eşleştirilmemiş -->
+                                <div class="tab-pane fade" id="tab_unmatched" role="tabpanel">
+                                    <div class="d-flex justify-content-end mb-3">
+                                        <div class="position-relative w-100 w-md-250px">
+                                            <i class="fa-solid fa-magnifying-glass fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500"></i>
+                                            <input type="text" id="searchUnmatched"
+                                                   class="form-control form-control-solid ps-12"
+                                                   placeholder="Ara..."/>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="tableUnmatched"
+                                               class="table align-middle table-row-dashed fs-6 gy-3"
+                                               style="width:100%">
+                                            <thead>
+                                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-10px pe-2">
+                                                    <input class="form-check-input check-all" type="checkbox"
+                                                           data-target="#tableUnmatched">
+                                                </th>
+                                                <th>Tarih</th>
+                                                <th>Banka</th>
+                                                <th>Karsi Taraf</th>
+                                                <th>VKN/TCKN</th>
+                                                <th>Aciklama</th>
+                                                <th class="text-end">Tutar</th>
+                                                <th class="text-center w-100px">Islemler</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- TAB: Eşleşmiş -->
+                                <div class="tab-pane fade" id="tab_matched" role="tabpanel">
+                                    <div class="d-flex justify-content-end mb-3">
+                                        <div class="position-relative w-100 w-md-250px">
+                                            <i class="fa-solid fa-magnifying-glass fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500"></i>
+                                            <input type="text" id="searchMatched"
+                                                   class="form-control form-control-solid ps-12"
+                                                   placeholder="Ara..."/>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="tableMatched"
+                                               class="table align-middle table-row-dashed fs-6 gy-3"
+                                               style="width:100%">
+                                            <thead>
+                                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-10px pe-2">
+                                                    <input class="form-check-input check-all" type="checkbox"
+                                                           data-target="#tableMatched">
+                                                </th>
+                                                <th>Tarih</th>
+                                                <th>Banka</th>
+                                                <th>Karsi Taraf</th>
+                                                <th>Eslesen Cari</th>
+                                                <th>Fatura</th>
+                                                <th class="text-end">Tutar</th>
+                                                <th class="text-center w-100px">Islemler</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- MUTABAKAT SEKMESI UYKU MODUNDA (Faz 6 karari) -->
+
+                                <!-- =========== TAB 4: KOMİSYON RAPORU (FAZ 4) =========== -->
+                                <div class="tab-pane fade" id="tab_commission_report" role="tabpanel">
+
+                                    <!-- Ozet Kartlari -->
+                                    <div class="row g-3 mb-4" id="commReportSummary">
+                                        <div class="col-md-3">
+                                            <div class="recon-summary-card bg-light-danger rounded p-3 text-center">
+                                                <div class="text-muted small">Toplam Komisyon</div>
+                                                <div class="fs-4 fw-bold text-danger" id="crTotalComm">0,00 ₺</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="recon-summary-card bg-light-info rounded p-3 text-center">
+                                                <div class="text-muted small">Ort. Oran</div>
+                                                <div class="fs-4 fw-bold text-info" id="crAvgRate">%0.00</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="recon-summary-card bg-light-primary rounded p-3 text-center">
+                                                <div class="text-muted small">Islem Sayisi</div>
+                                                <div class="fs-4 fw-bold text-primary" id="crTotalCount">0</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="recon-summary-card bg-light-warning rounded p-3 text-center">
+                                                <div class="text-muted small">Bekleyen Vade</div>
+                                                <div class="fs-4 fw-bold text-warning" id="crPendingMaturity">0,00 ₺
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filtreler -->
+                                    <div class="d-flex gap-2 mb-3 align-items-end mobile-scroll-x">
+                                        <div>
+                                            <label class="form-label small mb-1">Baslangic</label>
+                                            <input type="text" id="crDateFrom"
+                                                   class="form-control form-control-sm form-control-solid"
+                                                   placeholder="Tarih" style="width:140px">
+                                        </div>
+                                        <div>
+                                            <label class="form-label small mb-1">Bitis</label>
+                                            <input type="text" id="crDateTo"
+                                                   class="form-control form-control-sm form-control-solid"
+                                                   placeholder="Tarih" style="width:140px">
+                                        </div>
+                                        <div>
+                                            <label class="form-label small mb-1">POS Hesabi</label>
+                                            <select id="crBankAccountFilter"
+                                                    class="form-select form-select-sm form-select-solid"
+                                                    style="min-width:180px">
+                                                <option value="">Tumunu Goster</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary flex-shrink-0" id="btnCrFilter">
+                                            <i class="fa-solid fa-filter me-1"></i> Filtrele
+                                        </button>
+                                    </div>
+
+                                    <!-- DataTable -->
+                                    <div class="table-responsive">
+                                        <table id="tableCommReport"
+                                               class="table table-row-dashed table-row-gray-300 gy-4 gs-4 align-middle">
+                                            <thead>
+                                            <tr class="fw-bold text-gray-500 fs-7 text-uppercase">
+                                                <th>Tarih</th>
+                                                <th>Islem No</th>
+                                                <th>POS Hesabi</th>
+                                                <th class="text-end">Brut Tutar</th>
+                                                <th class="text-end">Oran (%)</th>
+                                                <th class="text-end">Komisyon</th>
+                                                <th class="text-end">Net Tutar</th>
+                                                <th>Taksit</th>
+                                                <th>Vade</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <!-- /tab-content -->
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Manuel Eşleştirme                                          -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalMatch" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-700px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">Musteri Tani / Eslestir</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-8">
+
+                    <input type="hidden" id="matchTxnId">
+
+                    <!-- İşlem Özeti -->
+                    <div class="detail-panel mb-5">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="label">Karsi Taraf</div>
+                                <div class="value" id="matchOtherName">-</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="label">Tutar</div>
+                                <div class="value" id="matchAmount">-</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="label">VKN/TCKN</div>
+                                <div class="value" id="matchVkn">-</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="label">Tarih</div>
+                                <div class="value" id="matchDate">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cari Önerisi -->
+                    <div id="matchSuggestion" class="alert alert-light-primary d-none mb-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-primary fs-3"></i>
+                            <div>
+                                <strong>Oneri:</strong> <span id="matchSuggestName"></span>
+                                <span class="badge badge-light-primary ms-2" id="matchSuggestScore"></span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary ms-auto" id="btnUseSuggestion">
+                                Kullan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cari Seçimi -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Cari Musteri</label>
+                        <select id="matchCustomerSelect" class="form-select form-select-solid">
+                            <option value="">-- Cari Secin --</option>
+                        </select>
+                    </div>
+
+                    <!-- Fatura Seçimi (opsiyonel) -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Fatura (Opsiyonel)</label>
+                        <select id="matchInvoiceSelect" class="form-select form-select-solid">
+                            <option value="">-- Fatura Secin --</option>
+                        </select>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgec</button>
+                    <button type="button" class="btn btn-primary" id="btnMatchSave">
+                        <i class="fa-solid fa-user-check me-1"></i> Musteriyi Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: Fatura Oluştur                                              -->
+    <!-- ================================================================== -->
+    <div class="modal fade" id="modalInvoice" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-600px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fw-bold">Tek Tikla e-Fatura</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-8">
+
+                    <input type="hidden" id="invTxnId">
+
+                    <div class="detail-panel mb-5">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="label">Musteri</div>
+                                <div class="value" id="invCustomer">-</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="label">Tutar (KDV Dahil)</div>
+                                <div class="value" id="invAmount">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">KDV Orani (%)</label>
+                        <select id="invVatRate" class="form-select form-select-solid">
+                            <option value="20" selected>%20 (Varsayilan)</option>
+                            <option value="10">%10</option>
+                            <option value="1">%1</option>
+                            <option value="0">%0 (KDV'siz)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Kalem Aciklamasi</label>
+                        <input type="text" id="invItemDesc" class="form-control form-control-solid"
+                               value="Havale/EFT Tahsilati" placeholder="Fatura kalem aciklamasi">
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="invAutoSend" checked>
+                        <label class="form-check-label" for="invAutoSend">
+                            Faturayi otomatik GIB'e gonder
+                        </label>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgec</button>
+                    <button type="button" class="btn btn-danger" id="btnInvoiceCreate">
+                        <i class="fa-solid fa-file-invoice me-1"></i> Fatura Olustur
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Banka Hesaplari modali /banks/ sayfasina tasindi (Faz 5) -->
+
+    <!-- KALDIRILDI: modalBankAccounts -->
+    <!-- Banka hesap yonetimi icin /banks/ sayfasini kullanin -->
+
+    <!-- MODAL: Manuel Mutabakat — UYKU MODUNDA (Faz 6) -->
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script>
+        "use strict";
+
+        // =====================================================================
+        // CSRF + URL SABİTLERİ
+        // =====================================================================
+
+        var CSRF = document.querySelector("input[name='csrfmiddlewaretoken']").value;
+        var URLS = {
+            getAll: "{% url 'banking:get_all' %}",
+            sync: "{% url 'banking:sync' %}",
+            autoMatch: "{% url 'banking:auto_match' %}",
+            match: "{% url 'banking:match' %}",
+            unmatch: "{% url 'banking:unmatch' %}",
+            markRead: "{% url 'banking:mark_read' %}",
+            createInvoice: "{% url 'banking:create_invoice' %}",
+            suggestCustomer: "{% url 'banking:suggest_customer' %}",
+            getCustomers: "{% url 'customers:get-customers' %}",
+            bankAccounts: "{% url 'banking:bank_accounts' %}",
+            commissionCalculate: "{% url 'banking:commission_calculate' %}",
+            commissionReport: "{% url 'banking:commission_report' %}",
+            bulkInvoiceDefaults: "{% url 'banking:bulk_invoice_with_defaults' %}",
+            bankingSettings: "{% url 'banking:settings' %}",
+        };
+
+        // =====================================================================
+        // DATATABLES AYARLARI
+        // =====================================================================
+
+        var dtConfig = {
+            dom: "rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+            info: false,
+            paging: true,
+            pageLength: 25,
+            processing: true,
+            serverSide: true,
+            orderMulti: false,
+            autoWidth: false,
+            stateSave: false,
+            language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+            responsive: false
+        };
+
+        var activeFilters = {
+            date_filter: 'all',
+            start_date: '',
+            end_date: '',
+            type_filter: 'ALL',
+            match_status: '',
+            invoice_filter: 'ALL'
+        };
+
+        // ─── Yardımcılar ───
+        function formatAmount(amt, plusMinus, currency) {
+            var num = parseFloat(amt) || 0;
+            var sign = plusMinus === 1 ? '+' : '-';
+            var cls = plusMinus === 1 ? 'text-success' : 'text-danger';
+            return '<span class="fw-bold ' + cls + '">' + sign +
+                num.toLocaleString('tr-TR', {minimumFractionDigits: 2}) +
+                ' ' + (currency || 'TRY') + '</span>';
+        }
+
+        function matchBadge(status, score) {
+            if (status === 'UNMATCHED') return '<span class="badge badge-light-warning">Islem Bekliyor</span>';
+            var label = status === 'AUTO' ? 'Otomatik' : 'Manuel';
+            var bar = '<div class="match-score-bar"><div class="fill bg-success" style="width:' + score + '%"></div></div>';
+            return '<span class="badge badge-light-success">' + label + '</span> ' + bar;
+        }
+
+        function payBadge(status) {
+            var map = {
+                'UNPAID': '<span class="badge badge-light-danger">Odenmedi</span>',
+                'PARTIAL': '<span class="badge badge-light-warning">Kismi</span>',
+                'PAID': '<span class="badge badge-light-success">Odendi</span>',
+                'OVERPAID': '<span class="badge badge-light-info">Fazla</span>'
+            };
+            return map[status] || '';
+        }
+
+        // Serbest Fatura URL'si
+        var CREATE_FREE_URL = "{% url 'invoices:create-free' %}";
+
+        function actionButtons(row, showInvoice) {
+            var html = '<div class="d-flex justify-content-center gap-1">';
+
+            // Müşteri Tanı / Tanımayı Kaldır
+            if (row.match_status === 'UNMATCHED') {
+                html += '<button class="btn btn-icon btn-sm btn-light-primary toolbar-btn-size" ' +
+                    'onclick="openMatchModal(\'' + row.id + '\')" title="Musteri Tani">' +
+                    '<i class="fa-solid fa-user-plus fs-5"></i></button>';
+            } else {
+                html += '<button class="btn btn-icon btn-sm btn-light-danger toolbar-btn-size" ' +
+                    'onclick="doUnmatch(\'' + row.id + '\')" title="Tanima Kaldir">' +
+                    '<i class="fa-solid fa-user-minus fs-5"></i></button>';
+            }
+
+            // Fatura Kes — Gelen (pozitif) + faturası yok → Serbest Fatura ekranına yönlendir
+            if (showInvoice && row.plus_minus === 1 && !row.invoice) {
+                var amt = parseFloat(row.amount) || 0;
+                var url = CREATE_FREE_URL + '?bank_txn_id=' + row.id + '&amount=' + amt.toFixed(2);
+                html += '<a href="' + url + '" class="btn btn-icon btn-sm btn-light-success toolbar-btn-size" ' +
+                    'title="Fatura Kes">' +
+                    '<i class="fa-solid fa-file-invoice fs-5"></i></a>';
+            }
+
+            // Zaten faturalanmış → fatura badge'i
+            if (row.invoice) {
+                html += '<span class="badge badge-light-info ms-1" title="Fatura: ' + (row.invoice.invoice_no || '') + '">' +
+                    '<i class="fa-solid fa-check-circle"></i></span>';
+            }
+
+            return html + '</div>';
+        }
+
+        // ─── Tablo: Tüm Hareketler ───
+        var dtAll = $("#tableAll").DataTable($.extend({}, dtConfig, {
+            ajax: {
+                url: URLS.getAll,
+                type: "GET",
+                data: function (d) {
+                    d.date_filter = activeFilters.date_filter;
+                    d.type_filter = activeFilters.type_filter;
+                    d.match_status = activeFilters.match_status;
+                    d.invoice_filter = activeFilters.invoice_filter;
+                    d.start_date = $('#syncDateFrom').val();
+                    d.end_date = $('#syncDateTo').val();
+                }
+            },
+            order: [[2, 'desc']],
+            columns: [
+                {
+                    data: 'id', orderable: false, className: 'pe-2',
+                    render: function (data) {
+                        return '<input class="form-check-input row-check" type="checkbox" value="' + data + '">';
+                    }
+                },
+                {
+                    data: null, orderable: false,
+                    render: function (data) {
+                        return matchBadge(data.match_status, data.match_score);
+                    }
+                },
+                {data: 'doc_date'},
+                {data: 'bank_name'},
+                {data: 'other_name'},
+                {
+                    data: 'note',
+                    render: function (data) {
+                        if (!data || data === '-') return '-';
+                        return data.length > 50 ? data.substring(0, 50) + '...' : data;
+                    }
+                },
+                {
+                    data: null, className: 'text-end',
+                    render: function (data) {
+                        return formatAmount(data.amount, data.plus_minus, data.currency_code);
+                    }
+                },
+                {
+                    data: null, orderable: false, className: 'text-center',
+                    render: function (data) {
+                        return actionButtons(data, true);
+                    }
+                }
+            ],
+            createdRow: function (row, data) {
+                $(row).addClass(data.plus_minus === 1 ? 'type-incoming' : 'type-outgoing');
+            }
+        }));
+
+        // ─── Tablo: Eşleştirilmemiş ───
+        var dtUnmatched = $("#tableUnmatched").DataTable($.extend({}, dtConfig, {
+            ajax: {
+                url: URLS.getAll,
+                type: "GET",
+                data: function (d) {
+                    d.date_filter = activeFilters.date_filter;
+                    d.type_filter = 'INCOMING';
+                    d.match_status = 'UNMATCHED';
+                    d.start_date = $('#syncDateFrom').val();
+                    d.end_date = $('#syncDateTo').val();
+                }
+            },
+            order: [[1, 'desc']],
+            columns: [
+                {
+                    data: 'id', orderable: false, className: 'pe-2',
+                    render: function (data) {
+                        return '<input class="form-check-input row-check" type="checkbox" value="' + data + '">';
+                    }
+                },
+                {data: 'doc_date'},
+                {data: 'bank_name'},
+                {data: 'other_name'},
+                {data: 'other_vkn_tckn'},
+                {
+                    data: 'note',
+                    render: function (data) {
+                        if (!data || data === '-') return '-';
+                        return data.length > 40 ? data.substring(0, 40) + '...' : data;
+                    }
+                },
+                {
+                    data: null, className: 'text-end',
+                    render: function (data) {
+                        return formatAmount(data.amount, data.plus_minus, data.currency_code);
+                    }
+                },
+                {
+                    data: null, orderable: false, className: 'text-center',
+                    render: function (data) {
+                        return '<button class="btn btn-icon btn-sm btn-light-primary toolbar-btn-size" ' +
+                            'onclick="openMatchModal(\'' + data.id + '\')" title="Eslesme">' +
+                            '<i class="fa-solid fa-link fs-5"></i></button>';
+                    }
+                }
+            ],
+            createdRow: function (row) {
+                $(row).addClass('type-incoming');
+            }
+        }));
+
+        // ─── Tablo: Eşleşmiş ───
+        var dtMatched = $("#tableMatched").DataTable($.extend({}, dtConfig, {
+            ajax: {
+                url: URLS.getAll,
+                type: "GET",
+                data: function (d) {
+                    d.date_filter = activeFilters.date_filter;
+                    d.type_filter = 'ALL';
+                    d.match_status = 'AUTO,MANUAL';
+                    d.start_date = $('#syncDateFrom').val();
+                    d.end_date = $('#syncDateTo').val();
+                }
+            },
+            order: [[1, 'desc']],
+            columns: [
+                {
+                    data: 'id', orderable: false, className: 'pe-2',
+                    render: function (data) {
+                        return '<input class="form-check-input row-check" type="checkbox" value="' + data + '">';
+                    }
+                },
+                {data: 'doc_date'},
+                {data: 'bank_name'},
+                {data: 'other_name'},
+                {
+                    data: 'customer',
+                    render: function (data) {
+                        return data ? data.name : '-';
+                    }
+                },
+                {
+                    data: 'invoice',
+                    render: function (data) {
+                        if (!data) return '-';
+                        return '<span class="text-primary">' + data.invoice_no + '</span>';
+                    }
+                },
+                {
+                    data: null, className: 'text-end',
+                    render: function (data) {
+                        return formatAmount(data.amount, data.plus_minus, data.currency_code);
+                    }
+                },
+                {
+                    data: null, orderable: false, className: 'text-center',
+                    render: function (data) {
+                        return actionButtons(data, true);
+                    }
+                }
+            ]
+        }));
+
+        function reloadAllTables() {
+            dtAll.ajax.reload(null, false);
+            dtUnmatched.ajax.reload(null, false);
+            dtMatched.ajax.reload(null, false);
+            if (typeof dtCommReport !== 'undefined') {
+                dtCommReport.ajax.reload(null, false);
+            }
+        }
+
+        // =====================================================================
+        // ARAMA + FİLTRE
+        // =====================================================================
+
+        $('#searchAll').on('keyup', function () {
+            dtAll.search(this.value).draw();
+        });
+        $('#searchUnmatched').on('keyup', function () {
+            dtUnmatched.search(this.value).draw();
+        });
+        $('#searchMatched').on('keyup', function () {
+            dtMatched.search(this.value).draw();
+        });
+
+        // Tarih filtre butonları
+        $('#dateFilterBtns .btn').on('click', function () {
+            $('#dateFilterBtns .btn').removeClass('active');
+            $(this).addClass('active');
+            activeFilters.date_filter = $(this).data('filter');
+            reloadAllTables();
+        });
+
+        // Tip filtre butonları (Girişler / Çıkışlar)
+        $('#typeFilterBtns .btn').on('click', function () {
+            $('#typeFilterBtns .btn').removeClass('active');
+            $(this).addClass('active');
+            activeFilters.type_filter = $(this).data('type');
+            dtAll.ajax.reload();
+        });
+
+        // Fatura durumu filtre butonları (Tümü / Faturalanmış / Faturasız)
+        $('#invoiceFilterBtns .btn').on('click', function () {
+            $('#invoiceFilterBtns .btn').removeClass('active');
+            $(this).addClass('active');
+            activeFilters.invoice_filter = $(this).data('inv-filter');
+            dtAll.ajax.reload();
+        });
+
+        // Toplu seçim
+        $(document).on('change', '.check-all', function () {
+            var target = $(this).data('target');
+            $(target).find('.row-check').prop('checked', this.checked);
+        });
+
+        function getSelectedIds(tableSelector) {
+            var ids = [];
+            $(tableSelector || '.tab-pane.active table').find('.row-check:checked').each(function () {
+                ids.push($(this).val());
+            });
+            return ids;
+        }
+
+        // =====================================================================
+        // MYSOFT'TAN HAREKETLERİ ÇEK (SYNC)
+        // =====================================================================
+
+        $('#btnSync').on('click', function () {
+            var startDate = $('#syncDateFrom').val();
+            var endDate = $('#syncDateTo').val();
+
+            if (!startDate || !endDate) {
+                var now = new Date();
+                var y = now.getFullYear();
+                var m = String(now.getMonth() + 1).padStart(2, '0');
+                var d = String(now.getDate()).padStart(2, '0');
+                if (!endDate) endDate = y + '-' + m + '-' + d;
+                if (!startDate) {
+                    var past = new Date(now.getTime() - 30 * 86400000);
+                    startDate = past.getFullYear() + '-' + String(past.getMonth() + 1).padStart(2, '0') + '-' + String(past.getDate()).padStart(2, '0');
+                }
+            }
+
+            Swal.fire({
+                title: 'Guncelleniyor...',
+                html: 'Banka hareketleri e-Surec\'ten aliniyor.',
+                allowOutsideClick: false,
+                didOpen: function () {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: URLS.sync,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    start_date: startDate,
+                    end_date: endDate,
+                    iban: '',
+                    only_new: false
+                }),
+                headers: {'X-CSRFToken': CSRF},
+                success: function (res) {
+                    Swal.close();
+                    if (res.result) {
+                        var syncCount = res.sync_count || 0;
+                        var autoMatched = res.auto_matched || 0;
+                        var errorType = res.error_type || '';
+
+                        if (syncCount === 0 && errorType === 'no_data') {
+                            // Başarılı sorgu, veri yok → bilgilendirme (info)
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'info',
+                                title: 'Secilen tarih araliginda yeni banka hareketi bulunamadi.',
+                                showConfirmButton: false, timer: 5000
+                            });
+                        } else {
+                            // Başarılı sorgu, veri var
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: syncCount + ' hareket guncellendi, ' +
+                                    autoMatched + ' musteri otomatik tanindi.',
+                                showConfirmButton: false, timer: 4000
+                            });
+                        }
+                    } else {
+                        var errorType = res.error_type || '';
+
+                        if (errorType === 'integration_inactive') {
+                            // Entegrasyon / yetki / paket hatası → özel uyarı
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Acik Bankacilik Entegrasyonu',
+                                html: '<p>Mysoft tarafinda <strong>Acik Bankacilik entegrasyonunuz aktif degil</strong> veya banka bilgileriniz eksik.</p>' +
+                                    '<p class="text-muted mt-2" style="font-size:0.9em;">Lutfen Mysoft panelinizden Acik Bankacilik paketinizin aktif oldugunu ve banka hesap bilgilerinizin dogru tanimlandigini kontrol edin.</p>',
+                                confirmButtonText: 'Tamam'
+                            });
+                        } else if (errorType === 'connection_error') {
+                            // Bağlantı / sunucu hatası → tekrar dene
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Baglanti Hatasi',
+                                text: res.msg || 'e-Surec banka servisi ile baglanti kurulamadi. Lutfen daha sonra tekrar deneyin.',
+                                confirmButtonText: 'Tamam'
+                            });
+                        } else {
+                            // Diğer hatalar
+                            Swal.fire('Hata', res.msg || 'Banka hareketleri alinamadi.', 'error');
+                        }
+                    }
+                    reloadAllTables();
+                },
+                error: function (xhr) {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Baglanti Hatasi',
+                        text: 'Sunucu ile iletisim kurulamadi. Lutfen internet baglantinizi kontrol edip tekrar deneyin.',
+                        confirmButtonText: 'Tamam'
+                    });
+                }
+            });
+        });
+
+        // =====================================================================
+        // OTOMATİK EŞLEŞTİRME
+        // =====================================================================
+
+        $('#btnAutoMatch').on('click', function () {
+            Swal.fire({
+                title: 'Otomatik Musteri Tanima',
+                text: 'Bekleyen tum gelen hareketler icin musteri tanima yapilacak.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Baslat',
+                cancelButtonText: 'Vazgec'
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'Musteriler taniniyor...', allowOutsideClick: false,
+                    didOpen: function () {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: URLS.autoMatch, type: 'POST',
+                    headers: {'X-CSRFToken': CSRF},
+                    success: function (res) {
+                        Swal.close();
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg || 'Tamamlandi.',
+                                showConfirmButton: false, timer: 3000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.msg, 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function () {
+                        Swal.close();
+                        Swal.fire('Hata', 'Sunucu hatasi.', 'error');
+                    }
+                });
+            });
+        });
+
+        // =====================================================================
+        // OKUNDU İŞARETLE
+        // =====================================================================
+
+        $('#btnMarkRead').on('click', function () {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyari', 'Lutfen islem yapilacak kayitlari secin.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Okundu Isaretle',
+                html: '<b>' + ids.length + '</b> kayit Mysoft\'ta okundu olarak isaretlenecek.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Isaretle',
+                cancelButtonText: 'Vazgec'
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+
+                $.ajax({
+                    url: URLS.markRead, type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({transaction_ids: ids}),
+                    headers: {'X-CSRFToken': CSRF},
+                    success: function (res) {
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg, showConfirmButton: false, timer: 3000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.msg, 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function () {
+                        Swal.fire('Hata', 'Sunucu hatasi.', 'error');
+                    }
+                });
+            });
+        });
+
+        // =====================================================================
+        // TOPLU FATURA OLUŞTURMA (Varsayılan Ayarlarla — 2026-04)
+        // Açık Bankacılık → Mağaza Varsayılanları → OZELMATRAH Fatura
+        // =====================================================================
+
+        $('#btnBulkInvoiceDefaults').on('click', function () {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+                Swal.fire(
+                    'Uyarı',
+                    'Lütfen faturalandırılacak banka hareketlerini seçin. ' +
+                    'Sadece "Gelen" yönlü ve daha önce faturalandırılmamış hareketler işlenir.',
+                    'warning'
+                );
+                return;
+            }
+
+            // Onay dialog'u — "otomatik GİB'e gönder" checkbox'ı varsayılan işaretli
+            Swal.fire({
+                title: 'Toplu Fatura Oluştur',
+                html:
+                    '<div class="text-start">' +
+                    '<p class="mb-2"><b>' + ids.length + '</b> banka hareketi için ' +
+                    'mağaza ayarlarındaki <b>varsayılan değerler</b> ' +
+                    '(Ürün Adı, Ayar, İşçilik) ile e-fatura oluşturulacak.</p>' +
+                    '<p class="text-muted fs-7 mb-4">' +
+                    '<i class="fa-solid fa-circle-info me-1"></i> ' +
+                    'Havale tutarı otomatik olarak <b>Metal (KDV %0)</b> ve ' +
+                    '<b>İşçilik (KDV %20, Özel Matrah)</b> kalemlerine ayrıştırılır. ' +
+                    'Gram hesabı anlık has satış kuruna göre yapılır.</p>' +
+                    '<div class="form-check form-switch mb-1">' +
+                    '  <input class="form-check-input" type="checkbox" ' +
+                    '         id="swAutoSendGib" checked>' +
+                    '  <label class="form-check-label fw-bold" for="swAutoSendGib">' +
+                    '    Onaylandıktan sonra faturaları otomatik olarak GİB\'e gönder' +
+                    '  </label>' +
+                    '</div>' +
+                    '<p class="text-muted fs-8 mt-2 mb-0">' +
+                    'Tiki kaldırırsanız yalnızca <b>Taslak</b> oluşturulur, ' +
+                    'sonradan elle GİB\'e gönderebilirsiniz.</p>' +
+                    '</div>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Onayla ve Oluştur',
+                cancelButtonText: 'Vazgeç',
+                customClass: {
+                    confirmButton: 'btn btn-warning fw-bold',
+                    cancelButton: 'btn btn-light'
+                },
+                preConfirm: function () {
+                    return {
+                        sendToGib: $('#swAutoSendGib').is(':checked')
+                    };
+                }
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+
+                var sendToGib = r.value && r.value.sendToGib;
+
+                // İşlem uyarı penceresi
+                Swal.fire({
+                    title: 'İşleniyor...',
+                    html: 'Banka hareketleri faturalandırılıyor, lütfen bekleyin.',
+                    allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: URLS.bulkInvoiceDefaults,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        transaction_ids: ids,
+                        send_to_gib: !!sendToGib
+                    }),
+                    headers: { 'X-CSRFToken': CSRF },
+                    success: function (res) {
+                        Swal.close();
+
+                        if (res.result) {
+                            var detailsHtml = '';
+                            if (res.created && res.created.length) {
+                                detailsHtml += '<div class="text-start mt-3">';
+                                detailsHtml += '<div class="fw-bold text-success mb-2">' +
+                                    '<i class="fa-solid fa-check-circle me-1"></i> ' +
+                                    'Oluşturulan Faturalar (' + res.created.length + '):</div>';
+                                detailsHtml += '<ul class="fs-7 ps-3 mb-0" ' +
+                                    'style="max-height:200px;overflow-y:auto;">';
+                                res.created.slice(0, 20).forEach(function (c) {
+                                    detailsHtml += '<li>' +
+                                        '<b>' + (c.invoice_no || '-') + '</b> — ' +
+                                        (c.customer_name || '-') + ' — ' +
+                                        (c.amount || '0') + ' TL' +
+                                    '</li>';
+                                });
+                                detailsHtml += '</ul></div>';
+                            }
+
+                            if (res.skipped && res.skipped.length) {
+                                detailsHtml += '<div class="text-start mt-3">';
+                                detailsHtml += '<div class="fw-bold text-warning mb-2">' +
+                                    '<i class="fa-solid fa-forward me-1"></i> ' +
+                                    'Atlanan Hareketler (' + res.skipped.length + '):</div>';
+                                detailsHtml += '<ul class="fs-8 ps-3 mb-0 text-muted" ' +
+                                    'style="max-height:120px;overflow-y:auto;">';
+                                res.skipped.slice(0, 10).forEach(function (s) {
+                                    detailsHtml += '<li>' + (s.reason || '-') + '</li>';
+                                });
+                                detailsHtml += '</ul></div>';
+                            }
+
+                            if (res.failed && res.failed.length) {
+                                detailsHtml += '<div class="text-start mt-3">';
+                                detailsHtml += '<div class="fw-bold text-danger mb-2">' +
+                                    '<i class="fa-solid fa-triangle-exclamation me-1"></i> ' +
+                                    'Hata Alan (' + res.failed.length + '):</div>';
+                                detailsHtml += '<ul class="fs-8 ps-3 mb-0 text-danger" ' +
+                                    'style="max-height:120px;overflow-y:auto;">';
+                                res.failed.slice(0, 10).forEach(function (f) {
+                                    detailsHtml += '<li>' + (f.error || '-') + '</li>';
+                                });
+                                detailsHtml += '</ul></div>';
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'İşlem Tamamlandı',
+                                html: '<div>' + (res.msg || 'Tamamlandı.') + '</div>' + detailsHtml,
+                                confirmButtonText: 'Tamam',
+                                width: 600
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Hata',
+                                html: (res.msg || 'İşlem başarısız.') +
+                                      (res.msg && res.msg.indexOf('ayar') !== -1 ?
+                                          '<hr><a href="' + URLS.bankingSettings + '" ' +
+                                          'class="btn btn-sm btn-light-primary">' +
+                                          '<i class="fa-solid fa-cog me-1"></i> Ayarlara Git</a>' : '')
+                            });
+                        }
+
+                        reloadAllTables();
+                    },
+                    error: function (xhr) {
+                        Swal.close();
+                        var msg = 'Sunucu hatası (HTTP ' + xhr.status + ')';
+                        try {
+                            var j = JSON.parse(xhr.responseText || '{}');
+                            if (j.msg) msg = j.msg;
+                        } catch (e) {}
+                        Swal.fire('Hata', msg, 'error');
+                    }
+                });
+            });
+        });
+
+        // =====================================================================
+        // MANUEL EŞLEŞTİRME MODAL
+        // =====================================================================
+
+        var _currentMatchTxn = null;
+
+        function openMatchModal(txnId) {
+            _currentMatchTxn = null;
+            $('#matchTxnId').val(txnId);
+            $('#matchCustomerSelect').html('<option value="">-- Cari Secin --</option>');
+            $('#matchInvoiceSelect').html('<option value="">-- Fatura Secin --</option>');
+            $('#matchSuggestion').addClass('d-none');
+
+            // İşlem verisini tablodan bul
+            var allData = dtAll.rows().data().toArray();
+            var txn = allData.find(function (r) {
+                return r.id === txnId;
+            });
+            if (!txn) {
+                txn = dtUnmatched.rows().data().toArray().find(function (r) {
+                    return r.id === txnId;
+                });
+            }
+
+            if (txn) {
+                _currentMatchTxn = txn;
+                $('#matchOtherName').text(txn.other_name || '-');
+                $('#matchAmount').html(formatAmount(txn.amount, txn.plus_minus, txn.currency_code));
+                $('#matchVkn').text(txn.other_vkn_tckn || '-');
+                $('#matchDate').text(txn.doc_date || '-');
+            }
+
+            // Cari listesini yükle (get-customers: direkt array döner)
+            $.get(URLS.getCustomers, function (data) {
+                var opts = '<option value="">-- Cari Secin --</option>';
+                if (Array.isArray(data)) {
+                    data.forEach(function (c) {
+                        var fullName = (c.first_name || '') + ' ' + (c.last_name || '');
+                        opts += '<option value="' + c.id + '">' + fullName.trim() + ' (' + (c.identification_number || '-') + ')</option>';
+                    });
+                }
+                $('#matchCustomerSelect').html(opts);
+            });
+
+            // Cari önerisi al
+            $.get(URLS.suggestCustomer, {transaction_id: txnId}, function (res) {
+                if (res.result && res.has_suggestion && res.customer) {
+                    $('#matchSuggestion').removeClass('d-none');
+                    $('#matchSuggestName').text(res.customer.name);
+                    $('#matchSuggestScore').text('Skor: ' + res.score);
+                    $('#btnUseSuggestion').data('customer-id', res.customer.id);
+                }
+            });
+
+            var modal = new bootstrap.Modal(document.getElementById('modalMatch'));
+            modal.show();
+        }
+
+        // Öneriyi kullan
+        $('#btnUseSuggestion').on('click', function () {
+            var cid = $(this).data('customer-id');
+            if (cid) {
+                $('#matchCustomerSelect').val(cid);
+            }
+        });
+
+        // Cari seçilince fatura listesini müşteri adına göre search ile yükle
+        $('#matchCustomerSelect').on('change', function () {
+            var cid = $(this).val();
+            $('#matchInvoiceSelect').html('<option value="">-- Fatura Secin --</option>');
+            if (!cid) return;
+
+            // Seçilen müşterinin adını option'dan parse et
+            var custText = $(this).find('option:selected').text().split('(')[0].trim();
+
+            $.ajax({
+                url: "{% url 'invoices:get-all' %}",
+                type: 'GET',
+                data: {
+                    draw: 1, start: 0, length: 50,
+                    'search[value]': custText,
+                    'order[0][column]': 0,
+                    'order[0][dir]': 'desc',
+                    'columns[0][data]': 'id',
+                    invoice_type: 'SALE',
+                    status: 'ISSUED,APPROVED,SENT'
+                },
+                success: function (res) {
+                    var opts = '<option value="">-- Fatura Secin (opsiyonel) --</option>';
+                    if (res.data && res.data.length) {
+                        res.data.forEach(function (inv) {
+                            opts += '<option value="' + inv.id + '">' +
+                                (inv.invoice_no || '-') + ' | ' +
+                                parseFloat(inv.grand_total || 0).toFixed(2) + ' TL | ' +
+                                (inv.customer || '-') +
+                                '</option>';
+                        });
+                    }
+                    $('#matchInvoiceSelect').html(opts);
+                }
+            });
+        });
+
+        // Eşleşmeyi kaydet
+        $('#btnMatchSave').on('click', function () {
+            var txnId = $('#matchTxnId').val();
+            var customerId = $('#matchCustomerSelect').val();
+            var invoiceId = $('#matchInvoiceSelect').val();
+
+            if (!customerId && !invoiceId) {
+                Swal.fire('Uyari', 'Musteri veya fatura secmelisiniz.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: URLS.match, type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    transaction_id: txnId,
+                    customer_id: customerId || null,
+                    invoice_id: invoiceId || null
+                }),
+                headers: {'X-CSRFToken': CSRF},
+                success: function (res) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalMatch')).hide();
+                    if (res.result) {
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: res.msg, showConfirmButton: false, timer: 3000
+                        });
+                    } else {
+                        Swal.fire('Hata', res.msg, 'error');
+                    }
+                    reloadAllTables();
+                },
+                error: function () {
+                    Swal.fire('Hata', 'Sunucu hatasi.', 'error');
+                }
+            });
+        });
+
+        // =====================================================================
+        // EŞLEŞMEYİ KALDIR
+        // =====================================================================
+
+        function doUnmatch(txnId) {
+            Swal.fire({
+                title: 'Musteri Tanimayi Kaldir',
+                text: 'Bu hareketin musteri ve fatura iliskisi kaldirilacak.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Kaldir',
+                cancelButtonText: 'Vazgec'
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+
+                $.ajax({
+                    url: URLS.unmatch, type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({transaction_id: txnId}),
+                    headers: {'X-CSRFToken': CSRF},
+                    success: function (res) {
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg, showConfirmButton: false, timer: 3000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.msg, 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function () {
+                        Swal.fire('Hata', 'Sunucu hatasi.', 'error');
+                    }
+                });
+            });
+        }
+
+        // =====================================================================
+        // TEK TIKLA FATURA OLUŞTUR MODAL
+        // =====================================================================
+
+        function openInvoiceModal(txnId) {
+            $('#invTxnId').val(txnId);
+            $('#invVatRate').val('20');
+            $('#invItemDesc').val('Havale/EFT Tahsilati');
+            $('#invAutoSend').prop('checked', true);
+
+            // İşlem verisini tablodan bul
+            var allData = dtAll.rows().data().toArray()
+                .concat(dtMatched.rows().data().toArray());
+            var txn = allData.find(function (r) {
+                return r.id === txnId;
+            });
+
+            if (txn) {
+                var custName = txn.customer ? txn.customer.name : '-';
+                $('#invCustomer').text(custName);
+                $('#invAmount').html(formatAmount(txn.amount, txn.plus_minus, txn.currency_code));
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('modalInvoice'));
+            modal.show();
+        }
+
+        $('#btnInvoiceCreate').on('click', function () {
+            var txnId = $('#invTxnId').val();
+            var vatRate = parseInt($('#invVatRate').val()) || 20;
+            var itemDesc = $('#invItemDesc').val().trim() || 'Havale/EFT Tahsilati';
+            var autoSend = $('#invAutoSend').is(':checked');
+
+            Swal.fire({
+                title: 'Fatura Olusturuluyor...',
+                html: autoSend ? 'Fatura olusturulup GIB\'e gonderilecek.' : 'Fatura taslagi olusturuluyor.',
+                allowOutsideClick: false,
+                didOpen: function () {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: URLS.createInvoice, type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    transaction_id: txnId,
+                    vat_rate: vatRate,
+                    item_description: itemDesc,
+                    auto_send_to_gib: autoSend
+                }),
+                headers: {'X-CSRFToken': CSRF},
+                success: function (res) {
+                    Swal.close();
+                    bootstrap.Modal.getInstance(document.getElementById('modalInvoice')).hide();
+
+                    if (res.result) {
+                        var msg = res.msg || 'Fatura olusturuldu.';
+                        if (res.invoice_no) msg += ' (' + res.invoice_no + ')';
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: msg, showConfirmButton: false, timer: 4000
+                        });
+                    } else {
+                        Swal.fire('Hata', res.msg || 'Fatura olusturulamadi.', 'error');
+                    }
+                    reloadAllTables();
+                },
+                error: function (xhr) {
+                    Swal.close();
+                    var msg = 'Sunucu hatasi.';
+                    try {
+                        msg = JSON.parse(xhr.responseText).msg || msg;
+                    } catch (e) {
+                    }
+                    Swal.fire('Hata', msg, 'error');
+                }
+            });
+        });
+
+        // MUTABAKAT JS — UYKU MODUNDA (Faz 6 karari)
+
+        // =====================================================================
+        // KOMİSYON RAPORU DATATABLE + ÖZET (FAZ 4)
+        // =====================================================================
+
+        var dtCommReport = $('#tableCommReport').DataTable($.extend({}, dtConfig, {
+            ajax: {
+                url: URLS.commissionReport,
+                data: function (d) {
+                    d.date_from = $('#crDateFrom').val() || '';
+                    d.date_to = $('#crDateTo').val() || '';
+                    d.bank_account_id = $('#crBankAccountFilter').val() || '';
+                },
+                dataSrc: function (json) {
+                    // Ozet kartlarini guncelle
+                    if (json.summary) {
+                        var tc = parseFloat(json.summary.total_commission) || 0;
+                        var ar = parseFloat(json.summary.avg_rate) || 0;
+                        $('#crTotalComm').text(tc.toFixed(2).replace('.', ',') + ' ₺');
+                        $('#crAvgRate').text('%' + ar.toFixed(2));
+                        $('#crTotalCount').text(json.summary.total_count || 0);
+                    }
+                    return json.data;
+                }
+            },
+            columns: [
+                {data: 'date'},
+                {data: 'process_no'},
+                {
+                    data: null, render: function (d) {
+                        return (d.bank_account || '-') + (d.bank_name ? '<br><small class="text-muted">' + d.bank_name + '</small>' : '');
+                    }
+                },
+                {
+                    data: 'amount', className: 'text-end', render: function (d) {
+                        return parseFloat(d).toFixed(2).replace('.', ',') + ' ₺';
+                    }
+                },
+                {
+                    data: 'commission_rate', className: 'text-end', render: function (d) {
+                        return d !== '-' ? '%' + parseFloat(d).toFixed(2) : '-';
+                    }
+                },
+                {
+                    data: 'commission_amount', className: 'text-end fw-bold text-danger', render: function (d) {
+                        return d !== '-' ? parseFloat(d).toFixed(2).replace('.', ',') + ' ₺' : '-';
+                    }
+                },
+                {
+                    data: 'net_amount', className: 'text-end text-success', render: function (d) {
+                        return d !== '-' ? parseFloat(d).toFixed(2).replace('.', ',') + ' ₺' : '-';
+                    }
+                },
+                {
+                    data: 'installment', render: function (d) {
+                        return d > 1 ? d + ' Taksit' : 'Tek Cekim';
+                    }
+                },
+                {data: 'maturity_date'}
+            ],
+            order: [[0, 'desc']],
+            pageLength: 25
+        }));
+
+        // Filtre butonu
+        $('#btnCrFilter').on('click', function () {
+            dtCommReport.ajax.reload();
+        });
+
+        // POS hesaplarini filtre dropdown'ina yukle
+        function loadPOSAccountsForFilter() {
+            $.get(URLS.bankAccounts + '?account_type=POS&active_only=1', function (res) {
+                if (res.result && res.data) {
+                    var sel = $('#crBankAccountFilter');
+                    sel.find('option:gt(0)').remove();
+                    res.data.forEach(function (a) {
+                        sel.append('<option value="' + a.id + '">' + a.name + ' (' + (a.bank_name || '') + ')</option>');
+                    });
+                }
+            });
+        }
+
+        // Tab activation: Komisyon raporu sekmesi acildiginda
+        $('a[href="#tab_commission_report"]').on('shown.bs.tab', function () {
+            dtCommReport.ajax.reload();
+            loadPOSAccountsForFilter();
+        });
+
+        $(document).ready(function () {
+            // Ana Sayfa Filtreleri
+            $("#syncDateFrom").flatpickr({
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                locale: "tr",
+                onChange: function (selectedDates, dateStr) {
+                    var toPicker = document.getElementById("syncDateTo")._flatpickr;
+                    if (toPicker) toPicker.set("minDate", dateStr);
+                    reloadAllTables();
+                }
+            });
+
+            $("#syncDateTo").flatpickr({
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                locale: "tr",
+                onChange: function () {
+                    reloadAllTables();
+                }
+            });
+
+            // Komisyon Raporu Filtreleri
+            $("#crDateFrom").flatpickr({
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                locale: "tr",
+                onChange: function (selectedDates, dateStr, instance) {
+                    var toPicker = document.getElementById("crDateTo")._flatpickr;
+                    if (toPicker) toPicker.set("minDate", dateStr);
+                }
+            });
+
+            $("#crDateTo").flatpickr({
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                locale: "tr"
+            });
+        });
+
+    </script>
+{% endblock footer %}

@@ -1,0 +1,1219 @@
+{% extends 'management/transactions_board/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .ops-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
+            position: relative;
+        }
+
+        .ops-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 300px;
+            background: radial-gradient(ellipse at top, rgba(255, 215, 0, .05), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ops-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 0.95rem;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 215, 0, .1);
+            margin-bottom: 1.5rem;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ops-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, .03), transparent);
+            transition: left .6s ease;
+        }
+
+        .ops-card:hover::before {
+            left: 100%;
+        }
+
+        .ops-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+            border-color: rgba(255, 215, 0, .2);
+        }
+
+        .ops-toolbar {
+            position: relative;
+            z-index: 30;
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95) 0%, rgba(34, 49, 74, .95) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 215, 0, .15);
+        }
+
+        .ops-toolbar .form-control,
+        .ops-toolbar .form-select {
+            background: rgba(15, 27, 43, .6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, .1);
+            color: var(--text-primary);
+            border-radius: 10px;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: .5rem .8rem;
+            font-size: .85rem;
+        }
+
+        .ops-toolbar .form-control:focus,
+        .ops-toolbar .form-select:focus {
+            background: rgba(34, 49, 74, .8);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 4px rgba(255, 215, 0, .1), 0 0 20px rgba(255, 215, 0, .2);
+            outline: none;
+        }
+
+        .ops-toolbar .form-control::placeholder {
+            color: rgba(169, 182, 200, .6);
+        }
+
+        .ops-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            border: 1px solid rgba(255, 215, 0, .15);
+            border-radius: 50px;
+            padding: .45rem .95rem;
+            background: linear-gradient(135deg, rgba(34, 49, 74, .6) 0%, rgba(46, 60, 84, .6) 100%);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: .8rem;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .ops-chip i {
+            font-size: .95rem; /* shrink icons inside chips */
+        }
+
+        .ops-chip::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, .2);
+            transform: translate(-50%, -50%);
+            transition: width .4s ease, height .4s ease;
+        }
+
+        .ops-chip:hover::after {
+            width: 100%;
+            height: 100%;
+        }
+
+        .ops-chip:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, .3);
+            border-color: rgba(255, 215, 0, .3);
+        }
+
+        .ops-chip.active {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            border-color: transparent;
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            font-weight: 700;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+            }
+            50% {
+                box-shadow: 0 6px 35px rgba(255, 215, 0, .6);
+            }
+        }
+
+        .mini-stat {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            background: linear-gradient(135deg, rgba(34, 49, 74, .7) 0%, rgba(46, 60, 84, .7) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, .1);
+            border-radius: 12px;
+            padding: .55rem .75rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+            transition: all .3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mini-stat::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 215, 0, .1), transparent);
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .mini-stat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+            border-color: rgba(255, 215, 0, .2);
+        }
+
+        .mini-stat i {
+            font-size: 1.15rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .3));
+        }
+
+        .mini-stat .label {
+            display: block;
+            color: rgba(227, 234, 242, .7);
+            font-size: .7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: .2rem;
+        }
+
+        .mini-stat .value {
+            display: block;
+            font-weight: 800;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #fff, var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .table.ops-table {
+            --bs-table-bg: transparent;
+            --bs-table-hover-bg: rgba(255, 215, 0, .05);
+            margin-top: 1rem;
+        }
+
+        .ops-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95) 0%, rgba(34, 49, 74, .95) 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        .ops-table thead th {
+            border-bottom: 2px solid rgba(255, 215, 0, .2);
+            color: var(--accent-gold);
+            font-weight: 700;
+            padding: .55rem .6rem;
+            text-transform: uppercase;
+            font-size: .8rem;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .ops-table thead th i {
+            font-size: 1rem;
+        }
+
+
+        .ops-table thead th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-gold);
+            transition: width .3s ease;
+        }
+
+        .ops-table thead th:hover::after {
+            width: 100%;
+        }
+
+        .ops-table tbody tr {
+            transition: all .2s ease;
+            border-bottom: 1px solid rgba(255, 215, 0, .05);
+        }
+
+        .ops-table tbody tr:hover {
+            background: rgba(255, 215, 0, .03) !important;
+            transform: scale(1.01);
+        }
+
+        .ops-table tbody td {
+            padding: .15rem .2rem;
+            vertical-align: middle;
+            color: var(--text-primary);
+        }
+
+        .btn-ops-group-cancel,
+        .btn-ops-list {
+            background: linear-gradient(135deg, rgba(34, 49, 74, .8) 0%, rgba(46, 60, 84, .8) 100%);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 215, 0, .2);
+            border-radius: 10px;
+            padding: .45rem .8rem;
+            font-size: .85rem;
+            font-weight: 600;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+        }
+
+        .btn-ops-group-cancel i,
+        .btn-ops-list i {
+            font-size: .95rem; /* smaller icons in these buttons */
+        }
+
+        .btn-ops-group-cancel:hover {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border-color: transparent;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(220, 53, 69, .4);
+        }
+
+        .btn-ops-list {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            border-color: transparent;
+        }
+
+        .btn-ops-list:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, .4);
+        }
+
+        .row-count-badge {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+            color: #0F1B2B;
+            padding: .25rem .7rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: .75rem;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, .3);
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .row-count-badge i {
+            font-size: .99rem;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .badge-ob {
+            display: inline-block;
+            padding: .2rem .6rem;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #FFD700, #FFB400);
+            color: #0F1B2B;
+            font-weight: 800;
+            font-size: .65rem;
+            margin-left: .5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .ops-daterange {
+            display: none;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(15, 27, 43, .5);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 215, 0, .1);
+        }
+
+        .ops-h5 {
+            margin: 0 0 .6rem;
+            font-weight: 700;
+            font-size: .95rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            background: linear-gradient(135deg, #fff, var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .ops-h5 i {
+
+            color: var(--accent-gold);
+            -webkit-text-fill-color: var(--accent-gold);
+            font-size: 1.4rem;
+        }
+
+        .btn-danger.btn-sm {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border: none;
+            border-radius: 6px;
+            line-height: 1.1;
+            padding: .18rem .45rem;
+            font-size: .7rem;
+            font-weight: 600;
+            transition: all .3s ease;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, .3);
+        }
+
+        .btn-danger.btn-sm i {
+            font-size: .8rem;
+            margin-right: .25rem;
+        }
+
+        .btn-danger.btn-sm:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, .5);
+        }
+
+        .btn-danger.btn-sm:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        #workingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 27, 43, .9);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .working-box {
+            background: linear-gradient(135deg, rgba(26, 37, 58, .95) 0%, rgba(34, 49, 74, .95) 100%);
+            border: 1px solid rgba(255, 215, 0, .2);
+            border-radius: 20px;
+            padding: 2rem 3rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 215, 0, .2);
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .ops-wrap {
+                padding: 1rem;
+            }
+
+            .ops-toolbar {
+                padding: 1rem;
+                border-radius: 16px;
+            }
+
+            .ops-card {
+                padding: 1.25rem;
+                border-radius: 16px;
+            }
+
+            .mini-stat {
+                padding: .6rem .8rem;
+            }
+
+            .mini-stat i {
+                font-size: 1.2rem;
+            }
+
+            .mini-stat .value {
+                font-size: .95rem;
+            }
+
+            .ops-chip {
+                padding: .5rem .9rem;
+                font-size: .85rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .ops-daterange {
+                flex-direction: column;
+            }
+
+            .mini-stat-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .mini-stat {
+                width: 100%;
+            }
+        }
+
+        .ops-wrap::-webkit-scrollbar,
+        .table-responsive::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .ops-wrap::-webkit-scrollbar-track,
+        .table-responsive::-webkit-scrollbar-track {
+            background: rgba(15, 27, 43, .5);
+            border-radius: 10px;
+        }
+
+        .ops-wrap::-webkit-scrollbar-thumb,
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, rgba(255, 215, 0, .3), rgba(255, 215, 0, .5));
+            border-radius: 10px;
+            border: 2px solid rgba(15, 27, 43, .5);
+        }
+
+        .ops-wrap::-webkit-scrollbar-thumb:hover,
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
+        }
+
+        .ops-muted {
+            color: var(--text-muted);
+            font-size: .95rem;
+            opacity: .8;
+        }
+
+        .ops-muted td {
+            padding: 3rem 1rem !important;
+            text-align: center;
+        }
+
+        .ops-muted i {
+            font-size: 1.2rem;
+            opacity: .6;
+        }
+
+        .ops-toolbar .row.g-3 > .ops-action-col {
+            align-self: flex-start;
+            margin-top: 1.25rem !important;
+        }
+
+        @media (min-width: 992px) {
+            .ops-toolbar .row.g-3 > .ops-action-col {
+                margin-top: -5rem !important;
+            }
+
+            .ops-toolbar .row.g-3 > .ops-action-col .row.mt-1 {
+                margin-top: 0 !important;
+            }
+        }
+
+        @media (min-width: 992px) and (max-width: 1280px) {
+            .ops-toolbar .row.g-3 > .ops-action-col {
+                margin-top: 1.25rem !important;
+            }
+
+            #dateRangeWrap {
+                flex-direction: column;
+            }
+        }
+
+        .ops-split-input {
+            flex: 0 0 auto;
+            width: 50%;
+        }
+
+        @media (min-width: 1280px) {
+            .ops-toolbar .row.g-3 > .ops-action-col {
+                margin-top: -5rem !important;
+            }
+
+            .ops-toolbar .row.g-3 > .ops-action-col .row.mt-1 {
+                margin-top: 0 !important;
+            }
+        }
+
+        .badge-canceled {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .18rem .55rem;
+            border-radius: 999px;
+            background: rgba(220, 53, 69, .12);
+            border: 1px solid rgba(220, 53, 69, .5);
+            color: #f8d7da;
+            font-size: .7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+
+        .badge-canceled i {
+            font-size: .8rem;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <nav class="quick-nav">
+        <a href="{% url 'accounts:profile' %}">Anasayfa</a>
+        <a href="{% url 'transactions-board:fast-index' %}">Hızlı İşlem</a>
+        <a href="{% url 'transactions-board:retail-index' %}">Perakende İşlem</a>
+        <a href="{% url 'transactions-board:wholesale-index' %}">Toptan İşlem</a>
+        <a href="{% url 'transactions-board:operations-index' %}" class="active">İşlemler</a>
+    </nav>
+
+    <div class="container-fluid ops-wrap">
+        <div class="ops-toolbar">
+            <div class="row g-3">
+                <!-- Stats Row -->
+                <div class="col-12">
+                    <div class="d-flex flex-wrap align-items-center gap-3 mini-stat-row">
+                        <span class="mini-stat">
+                            <i class="bi bi-cart-plus text-success"></i>
+                            <span>
+                                <span class="label">Toplam Alış Has</span>
+                                <span class="value"><span id="stat_purchase_has">0.000</span> <small class="text-muted">Gram</small></span>
+                            </span>
+                        </span>
+                        <span class="mini-stat">
+                            <i class="bi bi-cart-dash text-warning"></i>
+                            <span>
+                                <span class="label">Toplam Satış Has</span>
+                                <span class="value"><span id="stat_sale_has">0.000</span> <small
+                                        class="text-muted">Gram</small></span>
+                            </span>
+                        </span>
+                        <span class="mini-stat">
+                            <i class="bi bi-cash-coin text-info"></i>
+                            <span>
+                                <span class="label">Nakit Giriş</span>
+                                <span class="value"><span id="stat_cash_in">0.00</span> <small
+                                        class="text-muted">TRY</small></span>
+                            </span>
+                        </span>
+                        <span class="mini-stat">
+                            <i class="bi bi-cash-stack text-danger"></i>
+                            <span>
+                                <span class="label">Nakit Çıkış</span>
+                                <span class="value"><span id="stat_cash_out">0.00</span> <small
+                                        class="text-muted">TRY</small></span>
+                            </span>
+                        </span>
+                        <span class="mini-stat">
+                            <i class="bi bi-graph-up-arrow text-primary"
+                               style="color: var(--accent-gold) !important;"></i>
+                            <span>
+                                <span class="label">Günlük Kar/Zarar</span>
+                                <span class="value" style="color: #28a745;"><span id="stat_profit">+0.00</span> <small
+                                        class="text-muted">TRY</small></span>
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Transaction Type Filter -->
+                <div class="col-12 col-xl-6 col-lg-12">
+                    <div class="d-flex flex-wrap gap-2 mt-3" role="tablist" aria-label="İşlem Tipi">
+                        <button type="button" class="ops-chip active" data-kind="ALL">
+                            <i class="bi bi-list-ul"></i> Tümü
+                        </button>
+                        <button type="button" class="ops-chip" data-kind="FAST">
+                            <i class="bi bi-lightning-fill"></i> Hızlı
+                        </button>
+                        <button type="button" class="ops-chip" data-kind="RETAIL">
+                            <i class="bi bi-shop"></i> Perakende
+                        </button>
+                        <button type="button" class="ops-chip" data-kind="WHOLESALE">
+                            <i class="bi bi-box-seam"></i> Toptan
+                        </button>
+                        <button type="button" class="ops-chip" data-kind="OB">
+                            <i class="bi bi-link-45deg"></i> Açıktan Bağlama
+                        </button>
+                        <button type="button" class="ops-chip" data-kind="CONV">
+                            <i class="bi bi-arrow-repeat"></i> Borç Çeviri
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-3 col-lg-6">
+                    <div class="d-flex flex-wrap gap-2 mt-3" role="tablist" aria-label="Tarih">
+                        <button type="button" class="ops-chip active" data-scope="TODAY">
+                            <i class="bi bi-calendar-day"></i> Bugün
+                        </button>
+                        <button type="button" class="ops-chip" data-scope="RANGE">
+                            <i class="bi bi-calendar-range"></i> Aralık
+                        </button>
+                        <button type="button" class="ops-chip" data-scope="ALL">
+                            <i class="bi bi-infinity"></i> Tümü
+                        </button>
+                    </div>
+                    <div id="dateRangeWrap" class="ops-daterange">
+                        <div class="flex-fill position-relative">
+                            <label for="f_date_from" class="form-label"
+                                   style="font-size: 0.8rem; color: var(--accent-gold);">Başlangıç</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"
+                                      style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, .1); border-right: none; color: var(--accent-gold);"><i
+                                        class="bi bi-calendar3"></i></span>
+                                <input type="text" id="f_date_from" class="form-control" placeholder="Tarih seçin"
+                                       style="border-left: none; padding-left: 0;">
+                            </div>
+                        </div>
+                        <div class="flex-fill position-relative">
+                            <label for="f_date_to" class="form-label"
+                                   style="font-size: 0.8rem; color: var(--accent-gold);">Bitiş</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"
+                                      style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, .1); border-right: none; color: var(--accent-gold);"><i
+                                        class="bi bi-calendar3"></i></span>
+                                <input type="text" id="f_date_to" class="form-control" placeholder="Tarih seçin"
+                                       style="border-left: none; padding-left: 0;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-3 col-lg-6 ops-action-col">
+                    <div class="row g-2 mt-1">
+                        <div class="col-12 ops-split-input"><input type="text" id="f_process_no" class="form-control"
+                                                                   placeholder="İşlem No ile ara...">
+                        </div>
+                        <div class="col-12 ops-split-input"><input type="text" id="f_supplier_id" class="form-control"
+                                                                   placeholder="Tedarikçi ID (Bağlama için)">
+                        </div>
+                        <div class="col-6">
+                            <button type="button" id="btnGroupCancel" class="btn btn-ops-group-cancel w-100"
+                                    title="İşlem No girildiğinde tüm satırları iptal eder">
+                                <i class="bi bi-x-octagon"></i> Toplu İptal
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" id="btnList" class="btn btn-ops-list w-100">
+                                <i class="bi bi-search"></i> Listele
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Table -->
+        <div class="ops-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="ops-h5">
+                    <i class="bi bi-list-check"></i> İşlem Satırları
+                </h5>
+                <span class="row-count-badge">
+                    <i class="bi bi-file-text"></i>
+                    <span id="procCount">0</span> satır
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle text-nowrap w-100 ops-table mb-0">
+                    <thead>
+                    <tr>
+                        <th><i class="bi bi-calendar-event me-1"></i>Tarih</th>
+                        <th><i class="bi bi-tag me-1"></i>Tür</th>
+                        <th><i class="bi bi-arrow-left-right me-1"></i>İşlem</th>
+                        <th class="text-start"><i class="bi bi-box me-1"></i>Ürün</th>
+                        <th><i class="bi bi-123 me-1"></i>Miktar</th>
+                        <th class="text-end"><i class="bi bi-currency-exchange me-1"></i>Tutar</th>
+                        <th><i class="bi bi-cash me-1"></i>PB</th>
+                        <th><i class="bi bi-hash me-1"></i>İşlem No</th>
+                        <th style="width:120px"><i class="bi bi-gear me-1"></i>İşlem</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tblProcBody">
+                    <tr class="ops-muted">
+                        <td colspan="10" class="text-center py-4">
+                            <i class="bi bi-hourglass-split me-2"></i>Bugüne ait kayıtlar yükleniyor…
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bind Table -->
+        <div class="ops-card" id="bindCard" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h5 class="ops-h5">
+                    <i class="bi bi-link-45deg"></i> Bağlama / Çeviri
+                </h5>
+                <span class="row-count-badge">
+                    <i class="bi bi-diagram-3"></i>
+                    <span id="bindCount">0</span> satır
+                </span>
+            </div>
+            <div class="ops-muted mb-3" style="font-size:.85rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>OB</strong> (Açıktan Bağlama) işlemleri tek satırda <em>Takas</em> olarak gösterilir.
+                İptalde iki taraf birlikte geriye alınır.
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle text-nowrap w-100 ops-table mb-0">
+                    <thead>
+                    <tr>
+                        <th><i class="bi bi-calendar-event me-1"></i>Tarih</th>
+                        <th class="text-start"><i class="bi bi-person-badge me-1"></i>Tedarikçi</th>
+                        <th><i class="bi bi-arrow-left-right me-1"></i>Tür</th>
+                        <th><i class="bi bi-123 me-1"></i>Miktar</th>
+                        <th class="text-end"><i class="bi bi-currency-exchange me-1"></i>Tutar</th>
+                        <th><i class="bi bi-cash me-1"></i>PB</th>
+                        <th><i class="bi bi-hash me-1"></i>İşlem No</th>
+                        <th style="width:120px"><i class="bi bi-gear me-1"></i>İşlem</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tblBindBody">
+                    <tr class="ops-muted">
+                        <td colspan="8" class="text-center py-4">
+                            <i class="bi bi-info-circle me-2"></i>Tedarikçi filtresi ile listeleyebilirsiniz.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Working Overlay -->
+        <div id="workingOverlay">
+            <div class="working-box">
+                <div class="spinner"></div>
+                <span style="font-weight:600;font-size:1.05rem;color:var(--text-primary);">İşleniyor…</span>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        const URL_DETAIL = "{% url 'process:ops_detail' %}";
+        const URL_CANCEL_ROW = "{% url 'process:cancel_row' %}";
+        const URL_CANCEL_GROUP = "{% url 'process:cancel_group' %}";
+
+        function getCookie(n) {
+            const m = document.cookie.match(new RegExp('(^| )' + n + '=([^;]+)'));
+            return m ? decodeURIComponent(m[2]) : ''
+        }
+
+        const CSRF_TOKEN = getCookie('csrftoken');
+        const $overlay = document.getElementById('workingOverlay');
+        const showBusy = (on) => {
+            $overlay.style.display = on ? 'flex' : 'none'
+        };
+
+        function toastOK(t = 'İşlem başarılı') {
+            if (window.Swal) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: t,
+                    showConfirmButton: false,
+                    timer: 1500,
+                    timerProgressBar: true,
+                    customClass: {popup: 'toast-offset'}
+                })
+            } else alert(t)
+        }
+
+        function toastErr(m = 'Bir hata oluştu') {
+            if (window.Swal) {
+                Swal.fire({icon: 'error', title: 'Hata', text: m, confirmButtonColor: '#FFD700'})
+            } else alert(m)
+        }
+
+        function todayStr() {
+            const d = new Date();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${m}-${day}`
+        }
+
+        const kindButtons = [...document.querySelectorAll('[data-kind]')];
+        const scopeButtons = [...document.querySelectorAll('[data-scope]')];
+        const dateRangeWrap = document.getElementById('dateRangeWrap');
+        const f_date_from = document.getElementById('f_date_from');
+        const f_date_to = document.getElementById('f_date_to');
+        const f_process_no = document.getElementById('f_process_no');
+        const f_supplier_id = document.getElementById('f_supplier_id');
+        const btnList = document.getElementById('btnList');
+        const btnGroupCancel = document.getElementById('btnGroupCancel');
+        const tblProcBody = document.getElementById('tblProcBody');
+        const tblBindBody = document.getElementById('tblBindBody');
+        const procCountEl = document.getElementById('procCount');
+        const bindCountEl = document.getElementById('bindCount');
+        const bindCard = document.getElementById('bindCard');
+
+        const stat_purchase_has = document.getElementById('stat_purchase_has');
+        const stat_sale_has = document.getElementById('stat_sale_has');
+        const stat_cash_in = document.getElementById('stat_cash_in');
+        const stat_cash_out = document.getElementById('stat_cash_out');
+        const stat_profit = document.getElementById('stat_profit');
+
+        function setKind(k) {
+            kindButtons.forEach(b => b.classList.toggle('active', b.dataset.kind === k));
+            bindCard.style.display = (['ALL', 'WHOLESALE', 'OB', 'CONV'].includes(k)) ? '' : 'none';
+
+            // Eğer OB veya CONV seçildiyse ürün tablosunu (ops-card) tamamen gizle
+            const procCard = document.querySelector('.ops-card:nth-of-type(1)');
+            if (procCard) {
+                procCard.style.display = (k === 'OB' || k === 'CONV') ? 'none' : '';
+            }
+        }
+
+        function setScope(s) {
+            scopeButtons.forEach(b => b.classList.toggle('active', b.dataset.scope === s));
+            dateRangeWrap.style.display = (s === 'RANGE') ? 'flex' : 'none';
+            if (s === 'TODAY') {
+                const t = todayStr();
+                f_date_from.value = t;
+                f_date_to.value = t
+            }
+        }
+
+        kindButtons.forEach(b => b.addEventListener('click', () => {
+            setKind(b.dataset.kind);
+            btnList.click()
+        }));
+        scopeButtons.forEach(b => b.addEventListener('click', () => {
+            setScope(b.dataset.scope);
+            btnList.click()
+        }));
+
+        function fmtNum(x, dec) {
+            const n = Number(x) || 0;
+            return n.toFixed(dec)
+        }
+
+        function updateStats(s) {
+            stat_purchase_has.textContent = fmtNum((s || {}).purchase_has, 3);
+            stat_sale_has.textContent = fmtNum((s || {}).sale_has, 3);
+            stat_cash_in.textContent = fmtNum((s || {}).cash_in, 2);
+            stat_cash_out.textContent = fmtNum((s || {}).cash_out, 2);
+
+            const cashIn = Number((s || {}).cash_in) || 0;
+            const cashOut = Number((s || {}).cash_out) || 0;
+            const profit = cashIn - cashOut;
+
+            if (stat_profit) {
+                stat_profit.textContent = (profit >= 0 ? '+' : '') + fmtNum(profit, 2);
+                stat_profit.style.color = profit >= 0 ? '#28a745' : '#dc3545';
+            }
+        }
+
+        function renderProc(rows) {
+            procCountEl.textContent = rows.length;
+            if (!rows.length) {
+                tblProcBody.innerHTML = '<tr class="ops-muted"><td colspan="10" class="text-center py-4"><i class="bi bi-clipboard2-x me-2"></i>Kayıt bulunamadı.</td></tr>';
+                return;
+            }
+
+            const html = rows.map(r => {
+                const qty = r.qty || '-';
+                const amt = (typeof r.amount === 'number')
+                    ? Number(r.amount).toFixed(2).replace(/\.?0+$/, '')
+                    : r.amount;
+
+                const amtTl = (typeof r.amount_tl === 'number')
+                    ? Number(r.amount_tl).toFixed(2).replace(/\.?0+$/, '')
+                    : (r.amount_tl || '0');
+
+                const isCanceled = (r.is_status || r.status || '').toString().toUpperCase() === 'CANCELED';
+
+                let actionHtml;
+
+                if (isCanceled) {
+                    actionHtml = `<span class="badge-canceled">
+                        <i class="bi bi-x-octagon"></i></span>`;
+
+                } else {
+                    const dis = r.can_cancel ? '' : 'disabled';
+                    const tip = r.can_cancel ? 'Satırı iptal et' : (r.disable_reason || 'İptal edilemez.');
+                    actionHtml = `<button class="btn btn-danger btn-sm ${dis}" data-action="cancel-proc" data-id="${r.row_id}" title="${tip}">
+                            <i class="bi bi-x-octagon me-1"></i>İptal
+                          </button>`;
+                }
+
+                // Sütunlara amtTl değerini de ekledik
+                return `<tr>
+                        <td>${r.date || '-'}</td>
+                        <td>${r.process_type || '-'}</td>
+                        <td>${tTx(r.tx)}</td>
+                        <td class="text-start">${r.name || '-'}</td>
+                        <td>${qty}</td>
+                        <td class="text-end">${amt || '0'}</td>
+                        <td class="text-end fw-bold text-success">${amtTl} ₺</td> <td>${r.currency || '-'}</td>
+                        <td>${r.process_no || '-'}</td>
+                        <td>${actionHtml}</td>
+                    </tr>`;
+            }).join('');
+
+            tblProcBody.innerHTML = html;
+        }
+
+
+        function renderBind(rows) {
+            bindCountEl.textContent = rows.length;
+            if (!rows.length) {
+                tblBindBody.innerHTML = '<tr class="ops-muted"><td colspan="8" class="text-center py-4"><i class="bi bi-info-circle me-2"></i>Tedarikçi filtresi ile listeleyebilirsiniz.</td></tr>';
+                return
+            }
+            const html = rows.map(r => {
+                const amt = (typeof r.amount === 'number') ? Number(r.amount).toFixed(3).replace(/\.?0+$/, '') : r.amount;
+                const dis = r.can_cancel ? '' : 'disabled';
+                const tip = r.can_cancel ? 'Satırı iptal et' : (r.tooltip || 'İptal edilemez.');
+                const kindKey = (r.kind || '').toString().toUpperCase();
+                const kindTxt = tBindKind(kindKey);
+                const kindHtml = kindKey === 'SWAP' ? `${kindTxt} <span class="badge-ob">OB</span>` : kindTxt;
+                return `<tr>
+                    <td>${r.date || '-'}</td>
+                    <td class="text-start">${r.supplier || '-'}</td>
+                    <td>${kindHtml}</td>
+                    <td>${r.qty || '-'}</td>
+                    <td class="text-end">${amt || '0'}</td>
+                    <td>${r.currency || '-'}</td>
+                    <td>${r.process_no || '-'}</td>
+                    <td><button class="btn btn-danger btn-sm ${dis}" data-action="cancel-bind" data-id="${r.row_id}" title="${tip}"><i class="bi bi-x-circle me-1"></i>İptal</button></td>
+                </tr>`
+            }).join('');
+            tblBindBody.innerHTML = html;
+        }
+
+        const TX_TR = {
+            'SALE': 'Satış',
+            'PURCHASE': 'Alış',
+            'RETURN': 'İade',
+            'EXCHANGE': 'Çeviri',
+            'TRANSFER': 'Virman',
+            'ADJUSTMENT': 'Düzeltme',
+            'PAYMENT_IN': 'Tahsilat',
+            'PAYMENT_OUT': 'Ödeme',
+            'ORDER_IN': 'Sipariş',
+            'ORDER_OUT': 'Sipariş'
+        };
+
+        function tTx(v) {
+            const key = (v || '').toString().toUpperCase();
+            return TX_TR[key] || v || '-'
+        }
+
+        const BIND_TR = {'ENTRY': 'Bağlama', 'EXIT': 'Çözme', 'CONVERT': 'Çeviri', 'SWAP': 'Takas'};
+
+        function tBindKind(v) {
+            const key = (v || '').toString().toUpperCase();
+            return BIND_TR[key] || v || '-'
+        }
+
+        btnList.addEventListener('click', () => {
+            const activeKind = kindButtons.find(b => b.classList.contains('active'))?.dataset.kind || 'ALL';
+            const activeScope = scopeButtons.find(b => b.classList.contains('active'))?.dataset.scope || 'TODAY';
+            const pn = (f_process_no.value || '').trim();
+            const sid = (f_supplier_id.value || '').trim();
+
+            const params = new URLSearchParams();
+            params.append('kind', activeKind);
+            params.append('scope', activeScope);
+            if (activeScope === 'TODAY') {
+                params.append('date_from', f_date_from.value);
+                params.append('date_to', f_date_to.value)
+            } else if (activeScope === 'RANGE') {
+                if (f_date_from.value) params.append('date_from', f_date_from.value);
+                if (f_date_to.value) params.append('date_to', f_date_to.value)
+            }
+            if (pn) params.append('process_no', pn);
+            if (sid) params.append('supplier_id', sid);
+
+            showBusy(true);
+            fetch(`${URL_DETAIL}?${params.toString()}`, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j)))
+                .then(data => {
+                    updateStats(data.stats || {});
+                    renderProc(data.proc || []);
+                    renderBind(data.bind || [])
+                })
+                .catch(err => toastErr(err?.error_msg || 'Listeleme başarısız.'))
+                .finally(() => showBusy(false))
+        });
+
+        document.addEventListener('click', function (e) {
+            const el = e.target.closest('[data-action]');
+            if (!el) return;
+            if (el.classList.contains('disabled')) return;
+            const action = el.dataset.action;
+            if (action === 'cancel-proc') {
+                confirmAndCancel({row_id: el.dataset.id, row_type: 'PROC'})
+            }
+            if (action === 'cancel-bind') {
+                confirmAndCancel({row_id: el.dataset.id, row_type: 'BIND'})
+            }
+        });
+
+        function confirmAndCancel(payload) {
+            const ask = window.Swal ? Swal.fire({
+                icon: 'warning',
+                title: 'İptal edilsin mi?',
+                text: 'Geri alınamaz. Devam etmek istiyor musunuz?',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, iptal et',
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: '#FFD700',
+                cancelButtonColor: '#6c757d'
+            }) : Promise.resolve({isConfirmed: confirm('İptal edilsin mi?')});
+            ask.then(res => {
+                if (!res.isConfirmed) return;
+                showBusy(true);
+                fetch(URL_CANCEL_ROW, {method: 'POST', headers: {'X-CSRFToken': CSRF_TOKEN}, body: toFormData(payload)})
+                    .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j)))
+                    .then(d => {
+                        if (d.result === true) {
+                            toastOK('Satır iptal edildi');
+                            btnList.click()
+                        } else toastErr(d.error_msg || 'İptal başarısız.')
+                    })
+                    .catch(err => toastErr(err?.error_msg || 'İptal sırasında hata'))
+                    .finally(() => showBusy(false))
+            })
+        }
+
+        btnGroupCancel.addEventListener('click', () => {
+            const pn = (f_process_no.value || '').trim();
+            if (!pn) {
+                toastErr('Toplu iptal için İşlem No girin.');
+                return
+            }
+            const ask = window.Swal ? Swal.fire({
+                icon: 'warning',
+                title: 'Toplu iptal edilsin mi?',
+                text: `${pn} numaralı işlemin tüm satırları iptal edilecek.`,
+                showCancelButton: true,
+                confirmButtonText: 'Evet, iptal et',
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }) : Promise.resolve({isConfirmed: confirm('Toplu iptal?')});
+            ask.then(res => {
+                if (!res.isConfirmed) return;
+                showBusy(true);
+                fetch(URL_CANCEL_GROUP, {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': CSRF_TOKEN},
+                    body: toFormData({process_no: pn})
+                })
+                    .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j)))
+                    .then(d => {
+                        if (d.result === true) {
+                            toastOK('Toplu iptal tamamlandı');
+                            btnList.click()
+                        } else toastErr(d.error_msg || 'Toplu iptal başarısız.')
+                    })
+                    .catch(err => toastErr(err?.error_msg || 'Toplu iptal sırasında hata'))
+                    .finally(() => showBusy(false))
+            })
+        });
+
+        function toFormData(obj) {
+            const fd = new FormData();
+            Object.entries(obj || {}).forEach(([k, v]) => fd.append(k, v));
+            return fd
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setKind('ALL');
+            const t = todayStr();
+            f_date_from.value = t;
+            f_date_to.value = t;
+
+            // Metronic Flatpickr Entegrasyonu
+            let fpFrom, fpTo;
+            if (typeof flatpickr !== 'undefined') {
+                const fpConfig = {
+                    dateFormat: "Y-m-d",
+                    defaultDate: t,
+                    disableMobile: "true"
+                };
+                // Eğer projenizde flatpickr Türkçe dil dosyası yüklüyse fpConfig içine `locale: "tr"` ekleyebilirsiniz.
+                fpFrom = flatpickr("#f_date_from", fpConfig);
+                fpTo = flatpickr("#f_date_to", fpConfig);
+            }
+
+            // setScope fonksiyonunu Flatpickr ile uyumlu çalışacak şekilde eziyoruz
+            const oldSetScope = setScope;
+            window.setScope = function (s) {
+                oldSetScope(s);
+                if (s === 'TODAY') {
+                    const today = todayStr();
+                    f_date_from.value = today;
+                    f_date_to.value = today;
+                    if (fpFrom && fpTo) {
+                        fpFrom.setDate(today);
+                        fpTo.setDate(today);
+                    }
+                }
+            };
+
+            setScope('TODAY');
+            btnList.click();
+        });
+    </script>
+{% endblock footer %}

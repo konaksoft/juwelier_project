@@ -1,0 +1,194 @@
+<!doctype html>
+{% load static %}
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Kuyum Plus | Yeni İletişim Talebi</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f5f7fb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #121826;
+        }
+
+        .wrapper {
+            width: 100%;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .px {
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        .py {
+            padding-top: 24px;
+            padding-bottom: 24px;
+        }
+
+        .pt {
+            padding-top: 32px;
+        }
+
+        .pb {
+            padding-bottom: 32px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .muted {
+            color: #667085;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #ffcd02;
+            color: #121826;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+        }
+
+        .h1 {
+            font-size: 22px;
+            margin: 0 0 6px 0;
+        }
+
+        .card {
+            border: 1px solid #e9eef5;
+            border-radius: 10px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            text-align: left;
+            font-size: 13px;
+            color: #667085;
+            padding: 12px 14px;
+            border-bottom: 1px solid #eef2f7;
+            background: #fafbff;
+        }
+
+        .table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f4f9;
+            vertical-align: top;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #98a2b3;
+        }
+
+        a {
+            color: #5b21b6;
+            text-decoration: none;
+        }
+
+        .logo {
+            height: 36px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+           style="background:#ffffff; border-bottom:1px solid #eef2f7;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="800" cellspacing="0" cellpadding="0"
+                       style="width:800px; max-width:800px; margin:0 auto;">
+                    <tr>
+                        <td align="center" style="padding:12px 0 10px 0;">
+                            <img
+                                    src="cid:{{ logo_cid }}"
+                                    alt="Kuyum Plus"
+                                    width="160" height="50"
+                                    style="
+                                    display:block;
+                                    margin:0 auto !important;
+                                    width:160px !important;
+                                    height:50px !important;
+                                    max-width:150px !important;
+                                    border:0; outline:none; text-decoration:none;
+                                    -ms-interpolation-mode:bicubic;
+                            ">
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+
+    <div class="container px py">
+        <div class="center" style="padding:24px 0 8px 0;">
+            <span class="badge">Yeni İletişim Talebi</span>
+            <h1 class="h1">Form gönderimi başarıyla alındı</h1>
+            <p class="muted" style="margin:8px 0 0 0;">Aşağıda ziyaretçinin detayları yer almaktadır.</p>
+        </div>
+
+        <div class="card px py" style="margin-top:20px;">
+            <table class="table" role="presentation">
+                <thead>
+                <tr>
+                    <th style="width:220px;">Alan</th>
+                    <th>Değer</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Ad Soyad</td>
+                    <td><strong>{{ full_name }}</strong></td>
+                </tr>
+                <tr>
+                    <td>E-posta</td>
+                    <td><a href="mailto:{{ email }}">{{ email }}</a></td>
+                </tr>
+                <tr>
+                    <td>Telefon</td>
+                    <td><a href="tel:{{ phone }}">{{ phone }}</a></td>
+                </tr>
+                <tr>
+                    <td>Mesaj</td>
+                    <td style="white-space:pre-line;">{{ message }}</td>
+                </tr>
+                <tr>
+                    <td>Gönderim Zamanı</td>
+                    <td>{{ created_on|date:"d.m.Y H:i" }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="px py" style="text-align:center;">
+            <p class="muted" style="margin:16px 0 0 0;">
+                Bu e-posta, <strong>kuyumplus.com</strong> iletişim formu üzerinden otomatik olarak gönderilmiştir.
+            </p>
+        </div>
+    </div>
+
+    <div class="px pb center footer">
+        © {{ created_on|date:"Y" }} Kuyum Plus • Tüm hakları saklıdır.
+    </div>
+</div>
+</body>
+</html>

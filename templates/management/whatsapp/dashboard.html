@@ -1,0 +1,1054 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+    /* ✅ Checkbox sütunu hizalama fix */
+    #waCreditReqTableAdmin th:first-child,
+    #waCreditReqTableAdmin td:first-child {
+        width: 45px !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+    }
+
+    /* DataTables genel uyum */
+    #waCreditReqTableAdmin {
+        table-layout: fixed; /* sütun genişlikleri sabit */
+        width: 100% !important;
+    }
+    </style>
+
+{% endblock header %}
+{% block body %}
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="app-content container-xxl">
+
+            <!-- Üst filtre/aksiyonlar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div class="input-group" style="max-width:520px">
+                    <span class="input-group-text">Mağaza</span>
+                    <select id="storeSelect" class="form-select">
+                        <!-- JS doldurur · ilk seçenek "Tümü" -->
+                    </select>
+                    <button id="btnReloadAll" class="btn btn-light">Yükle</button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button id="btnAuto" class="btn btn-sm btn-light" data-on="0">Oto Yenile: Kapalı</button>
+                </div>
+            </div>
+
+            <!-- Sekmeler -->
+            <ul class="nav nav-tabs mb-5" id="waTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1"
+                            type="button" role="tab">
+                        Genel · Kullanım & Sohbetler
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button"
+                            role="tab">
+                        Şablonlar & Onay İsimleri
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" type="button"
+                            role="tab">
+                        Mağaza Kotaları
+                    </button>
+                </li>
+{#                <li class="nav-item" role="presentation">#}
+{#                    <button class="nav-link" id="wa-tab-reqs" data-bs-toggle="tab" data-bs-target="#wa-pane-reqs"#}
+{#                            type="button" role="tab">#}
+{#                        Talepler#}
+{#                    </button>#}
+{#                </li>#}
+
+            </ul>
+
+            <div class="tab-content" id="waTabsContent">
+                <!-- TAB 1: Genel -->
+                <div class="tab-pane fade show active" id="tab1" role="tabpanel">
+                    <div class="row g-6">
+
+                        <!-- Kullanım özetleri -->
+                        <div class="col-xl-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <div class="card-title"><h3>Kullanım</h3></div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-6">
+                                        <div class="text-muted">Bugün</div>
+                                        <div class="fs-2hx fw-bold" id="dCount">0</div>
+                                        <div class="progress h-7px mt-3">
+                                            <div id="dProg" class="progress-bar" style="width:0%"></div>
+                                        </div>
+                                        <div class="fs-7 text-muted mt-2" id="dNote">Sınırsız</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted">Bu Ay</div>
+                                        <div class="fs-2hx fw-bold" id="mCount">0</div>
+                                        <div class="progress h-7px mt-3">
+                                            <div id="mProg" class="progress-bar" style="width:0%"></div>
+                                        </div>
+                                        <div class="fs-7 text-muted mt-2" id="mNote">Sınırsız</div>
+                                    </div>
+                                    <div id="usageErr" class="text-danger small mt-3 d-none"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kullanıcı bazlı toplamlar -->
+                        <div class="col-xl-8">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <div class="card-title"><h3>Tüm Kullanıcılar · Toplam Gönderimler</h3></div>
+                                    <div class="card-toolbar">
+                                        <button id="btnReloadUserTotals" class="btn btn-sm btn-light">Yenile</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table align-middle" id="tblUserTotals">
+                                        <thead>
+                                        <tr>
+                                            <th>Kullanıcı</th>
+                                            <th>Toplam WhatsApp Mesajı</th>
+                                            <th>Son Mesaj</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                    <div id="userTotalsErr" class="text-danger small mt-2 d-none"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Müşteri tarafından başlatılan sohbetler -->
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title"><h3>Müşteri Başlatılan Sohbetler</h3></div>
+                                    <div class="card-toolbar">
+                                        <button id="btnReloadInbound" class="btn btn-sm btn-light">Yenile</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table align-middle" id="tblInbound">
+                                        <thead>
+                                        <tr>
+                                            <th>Numara</th>
+                                            <th>Durum</th>
+                                            <th>Okunmamış</th>
+                                            <th>Son</th>
+                                            <th></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                    <div id="inboundErr" class="text-danger small d-none"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- TAB 2: Şablonlar -->
+                <div class="tab-pane fade" id="tab2" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><h3>Şablonlar & Müşteri Onay İsimleri</h3></div>
+                            <div class="card-toolbar">
+                                <button id="btnTplAll" class="btn btn-sm btn-light me-2">Tümünü Seç</button>
+                                <button id="btnTplNone" class="btn btn-sm btn-light me-2">Temizle</button>
+                                <button id="btnReloadTpl" class="btn btn-sm btn-light me-2">Yenile</button>
+                                <button id="btnSaveTpl" class="btn btn-sm btn-primary">Kaydet</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <input id="tplSearch" type="text" class="form-control form-control-sm mb-3"
+                                   placeholder="Ara (isim/dil)">
+                            <div id="tplBox" style="max-height:420px; overflow:auto"></div>
+                            <div id="tplErr" class="text-danger small mt-2 d-none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Kotalar -->
+                <div class="tab-pane fade" id="tab3" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><h3>Mağaza Bazlı WhatsApp Kotaları</h3></div>
+                            <div class="card-toolbar">
+                                <button id="btnSaveQuotas" class="btn btn-sm btn-primary">Tümünü Kaydet</button>
+                                <button id="btnReloadQuotas" class="btn btn-sm btn-light ms-2">Yenile</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <table class="table align-middle" id="tblQuotas">
+                                <thead>
+                                <tr>
+                                    <th>Mağaza</th>
+                                    <th>Kontör (Bakiye)</th>
+                                    <th>Bugün / Bu Ay Kullanım</th>
+                                    <th>Etkin</th>
+                                </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <div id="quotaErr" class="text-danger small mt-2 d-none"></div>
+                        </div>
+                    </div>
+                </div>
+
+
+{#                <div class="tab-pane fade" id="wa-pane-reqs" role="tabpanel" aria-labelledby="wa-tab-reqs">#}
+{#                    <div class="card mb-4">#}
+{#                        <div class="card-body">#}
+{##}
+{#                            <div id="tableToolbar"#}
+{#                                 class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">#}
+{#                                <div class="d-flex align-items-center gap-2">#}
+{#                                    <select id="waReqStatus" class="form-select form-select-sm" style="width:180px;">#}
+{#                                        <option value="">Tümü</option>#}
+{#                                        <option value="PENDING">Beklemede</option>#}
+{#                                        <option value="APPROVED">Onaylandı</option>#}
+{#                                        <option value="REJECTED">Reddedildi</option>#}
+{#                                    </select>#}
+{#                                    <button class="btn btn-sm btn-light" id="btnReqsReload">#}
+{#                                        <i class="fa-solid fa-rotate-right"></i> Yenile#}
+{#                                    </button>#}
+{#                                </div>#}
+{##}
+{#                                <div class="d-flex align-items-center gap-2">#}
+{#                                    <button class="btn btn-light-success btn-sm" id="approveSelected">#}
+{#                                        <i class="fa-solid fa-check"></i> Toplu Onayla#}
+{#                                    </button>#}
+{#                                    <button class="btn btn-light-danger btn-sm" id="rejectSelected">#}
+{#                                        <i class="fa-solid fa-xmark"></i> Toplu Reddet#}
+{#                                    </button>#}
+{#                                    <div class="position-relative">#}
+{#                                        <button type="button" class="btn btn-light-primary btn-sm"#}
+{#                                                data-kt-menu-trigger="click"#}
+{#                                                data-kt-menu-placement="bottom-end">#}
+{#                                            <i class="fa-solid fa-download"></i> Dışa Aktar#}
+{#                                        </button>#}
+{#                                        <div id="reqExportMenu"#}
+{#                                             class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"#}
+{#                                             data-kt-menu="true">#}
+{#                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3"#}
+{#                                                                           data-kt-export="copy">Panoya Kopyala</a>#}
+{#                                            </div>#}
+{#                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3"#}
+{#                                                                           data-kt-export="excel">Excel</a></div>#}
+{#                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3"#}
+{#                                                                           data-kt-export="csv">CSV</a></div>#}
+{#                                            <div class="menu-item px-3"><a href="#" class="menu-link px-3"#}
+{#                                                                           data-kt-export="pdf">PDF</a></div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+{##}
+{#                            <div class="table-responsive">#}
+{#                                <table id="waCreditReqTableAdmin" class="table align-middle table-row-dashed fs-6 gy-5">#}
+{#                                    <thead>#}
+{#                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">#}
+{#                                        <th class="w-10px">#}
+{#                                            <div class="form-check form-check-sm form-check-custom form-check-solid me-3">#}
+{#                                                <input id="selectAllReqs" class="form-check-input" type="checkbox">#}
+{#                                            </div>#}
+{#                                        </th>#}
+{#                                        <th>Tarih</th>#}
+{#                                        <th>Mağaza</th>#}
+{#                                        <th>İstenen</th>#}
+{#                                        <th>Durum</th>#}
+{#                                        <th>Talep Notu</th>#}
+{#                                        <th>Karar</th>#}
+{#                                        <th>İşlem</th>#}
+{#                                    </tr>#}
+{#                                    </thead>#}
+{#                                    <tbody class="text-gray-600 fw-semibold"></tbody>#}
+{#                                </table>#}
+{#                            </div>#}
+{##}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Şablon Log Modal -->
+    <div class="modal fade" id="tplLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tplLogsTitle">Şablon Logları</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>Zaman</th>
+                            <th>Numara</th>
+                            <th>Durum</th>
+                            <th>Kullanıcı</th>
+                            <th>Hata</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tplLogsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approve/Reject modalları (hafif) -->
+    <div class="modal fade" id="waApproveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Talebi Onayla</h5>
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary"
+                            data-bs-dismiss="modal">
+                        <i class="ki-duotone ki-cross fs-2"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="approveReqId">
+                    <div class="mb-3">
+                        <label class="form-label">Tanımlanacak Kontör</label>
+                        <input type="number" class="form-control" id="approveAmount" min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Not (opsiyonel)</label>
+                        <textarea id="approveNote" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" data-bs-dismiss="modal">Kapat</button>
+                    <button class="btn btn-primary" id="btnApproveDo">Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="waRejectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Talebi Reddet</h5>
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary"
+                            data-bs-dismiss="modal">
+                        <i class="ki-duotone ki-cross fs-2"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="rejectReqId">
+                    <div class="mb-3"><label class="form-label">Not (opsiyonel)</label>
+                        <textarea id="rejectNote" class="form-control" rows="2"
+                                  placeholder="Red gerekçesi..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" data-bs-dismiss="modal">Kapat</button>
+                    <button class="btn btn-danger" id="btnRejectDo">Reddet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css">
+
+    <script>
+        // ---- yardımcılar
+        function qstr(obj) {
+            return new URLSearchParams(obj).toString();
+        }
+
+        function getCSRFCookie(name = 'csrftoken') {
+            const m = document.cookie.match(new RegExp('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)'));
+            return m ? decodeURIComponent(m[2]) : '';
+        }
+
+        async function fetchJSON(url, opts = {}) {
+            const r = await fetch(url, {credentials: 'same-origin', ...opts});
+            const text = await r.text();
+            if (!r.ok) throw new Error(`HTTP ${r.status}: ${text.slice(0, 200)}`);
+            if (!text) return {};
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`JSON parse error: ${text.slice(0, 200)}`);
+            }
+        }
+
+        const qs = (id) => document.getElementById(id);
+        const showErr = (id, msg) => {
+            const el = qs(id);
+            if (!el) return;
+            el.textContent = msg || '';
+            el.classList.toggle('d-none', !msg);
+        };
+
+        // ---- URL’ler (backend beklenen cevap şekli yorumlarda)
+        const URL_STORES = "{% url 'whatsapp:api_store_list' %}";
+        // GET -> {items:[{id,label}], ...}
+        const URL_USAGE = "{% url 'whatsapp:api_usage' %}";
+        // GET ?store_id -> {daily:{count,limit,remaining,progress}, monthly:{...}}
+        const URL_CONV = "{% url 'whatsapp:api_conversations' %}";
+        // GET ?store_id=&started_by=CUSTOMER -> {data:[{id,phone,status,unread,last_at}]}
+        const URL_STATS_USERS = "{% url 'whatsapp:api_user_totals' %}";
+        // GET ?store_id= (opsiyonel) -> {items:[{user_id,name,sent_count,last_at}]}
+
+        const URL_TPLS = "{% url 'whatsapp:api_templates' %}";
+        // GET ?store_id -> {items:[{name,title,category,languages,alias?}], allowed:[name,...]}
+        const URL_TPL_LOGS = "{% url 'whatsapp:api_template_logs' %}";
+        // GET ?store_id&name= -> {name,data:[{created_at,to,status,user,err}]}
+        const URL_TPLS_SAVE = "{% url 'whatsapp:api_templates_save' %}";
+        // POST body {allowed:[...], aliases:{name:"alias",...}}
+
+        const URL_STORE_QUOTAS = "{% url 'whatsapp:api_store_quotas' %}";
+        // GET -> {items:[{store_id,label,enabled,daily_limit,monthly_limit,daily_count,monthly_count}]}
+        const URL_STORE_QUOTAS_SAVE = "{% url 'whatsapp:api_store_quotas_save' %}";
+        // POST body {items:[{store_id,enabled,daily_limit,monthly_limit}]}
+
+        const HREF_CONV = "{% url 'whatsapp:conversation_detail' 999999 %}";
+
+        // ---- durum
+        let CURRENT_STORE = "";       // "" = Tümü
+        let TPL_ALL = [];
+        let TPL_ALLOWED = new Set();
+        let TPL_ALIASES = {};         // name -> alias
+
+        async function loadStores() {
+            const js = await fetchJSON(URL_STORES);
+            const sel = qs("storeSelect");
+            const items = js.items || [];
+            sel.innerHTML = `<option value="">Tümü</option>` + items.map(x => `<option value="${x.id}">${x.label}</option>`).join("");
+            if (CURRENT_STORE === "" && items.length) {
+            }
+            sel.value = CURRENT_STORE;
+        }
+
+        qs("storeSelect")?.addEventListener("change", e => {
+            CURRENT_STORE = e.target.value;
+            refreshTabActive();
+        });
+
+        async function loadUsage() {
+            showErr("usageErr", "");
+            try {
+                const params = {};
+                if (CURRENT_STORE) params.store_id = CURRENT_STORE;
+                const js = await fetchJSON(`${URL_USAGE}?${qstr(params)}`);
+                const d = js.daily || {}, m = js.monthly || {};
+                qs("dCount").innerText = d.count ?? 0;
+                qs("dProg").style.width = ((d.progress ?? 0) + "%");
+                qs("dNote").innerText = d.limit == null ? "Sınırsız" : `${d.count}/${d.limit} • Kalan ${d.remaining}`;
+                qs("mCount").innerText = m.count ?? 0;
+                qs("mProg").style.width = ((m.progress ?? 0) + "%");
+                qs("mNote").innerText = m.limit == null ? "Sınırsız" : `${m.count}/${m.limit} • Kalan ${m.remaining}`;
+            } catch (e) {
+                showErr("usageErr", "Kullanım bilgisi alınamadı: " + e.message);
+            }
+        }
+
+        async function loadUserTotals() {
+            showErr("userTotalsErr", "");
+            try {
+                const params = {};
+                if (CURRENT_STORE) params.store_id = CURRENT_STORE;
+                const js = await fetchJSON(`${URL_STATS_USERS}?${qstr(params)}`);
+                const tb = qs("tblUserTotals").querySelector("tbody");
+                tb.innerHTML = (js.items || []).map(x => `
+                <tr>
+                  <td>${x.name}</td>
+                  <td class="fw-bold">${x.sent_count}</td>
+                  <td>${x.last_at ? new Date(x.last_at).toLocaleString() : "-"}</td>
+                </tr>`).join("");
+            } catch (e) {
+                showErr("userTotalsErr", "Toplamlar yüklenemedi: " + e.message);
+            }
+        }
+
+        qs("btnReloadUserTotals")?.addEventListener("click", loadUserTotals);
+
+        // ---- TAB1: inbound conv
+        async function loadInbound() {
+            showErr("inboundErr", "");
+            try {
+                const params = {started_by: "CUSTOMER"};
+                if (CURRENT_STORE) params.store_id = CURRENT_STORE;
+                const js = await fetchJSON(`${URL_CONV}?${qstr(params)}`);
+                const tb = qs("tblInbound").querySelector("tbody");
+                tb.innerHTML = (js.data || []).map(x => `
+                    <tr>
+                      <td>${x.phone}</td>
+                      <td>${x.status}</td>
+                      <td>${x.unread}</td>
+                      <td>${x.last_at ? new Date(x.last_at).toLocaleString() : "-"}</td>
+                      <td><a class="btn btn-sm btn-primary" href="${HREF_CONV.replace('999999', x.id)}">Aç</a></td>
+                    </tr>`).join("");
+            } catch (e) {
+                showErr("inboundErr", "Sohbetler yüklenemedi: " + e.message);
+            }
+        }
+
+        qs("btnReloadInbound")?.addEventListener("click", loadInbound);
+
+        function renderTplList(filter = "") {
+            const box = qs("tplBox");
+            const q = (filter || "").toLowerCase();
+            const items = (TPL_ALL || []).filter(t => {
+                const langs = (t.languages || []).join(",").toLowerCase();
+                const alias = (TPL_ALIASES[t.name] || "").toLowerCase();
+                return !q || t.name.toLowerCase().includes(q) || (t.title || "").toLowerCase().includes(q) || langs.includes(q) || alias.includes(q);
+            });
+            box.innerHTML = items.map(t => {
+                const approved = true;
+                const checked = TPL_ALLOWED.has(t.name) ? "checked" : "";
+                const aliasVal = (TPL_ALIASES[t.name] ?? t.alias ?? "");
+                return `
+                      <div class="border rounded p-3 mb-2 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div class="d-flex align-items-start gap-3 flex-fill">
+                          <div class="form-check mt-1">
+                            <input class="form-check-input tpl-chk" type="checkbox" data-name="${t.name}" ${checked}>
+                          </div>
+                          <div>
+                            <div class="fw-semibold">${t.title || t.name}</div>
+                            <div class="text-muted fs-8">${t.name} · ${(t.languages || []).join(", ")}</div>
+                            <div class="mt-2 d-flex align-items-center gap-2">
+                              <label class="form-label fs-8 mb-0">Müşteri Onay Adı</label>
+                              <input class="form-control form-control-sm tpl-alias" style="width:260px" data-name="${t.name}" value="${aliasVal || ''}" placeholder="örn. Tamir Bilgisi">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="text-end">
+                          <span class="badge ${approved ? 'bg-light text-success' : 'bg-light text-muted'}">${(t.category || '').toLowerCase()}</span>
+                          <button class="btn btn-link btn-sm text-muted ms-2 tpl-logs" data-name="${t.name}">Loglar</button>
+                        </div>
+                      </div>`;
+            }).join("");
+
+            box.querySelectorAll(".tpl-chk").forEach(el => {
+                el.addEventListener("change", e => {
+                    const name = e.target.dataset.name;
+                    if (e.target.checked) TPL_ALLOWED.add(name); else TPL_ALLOWED.delete(name);
+                });
+            });
+            box.querySelectorAll(".tpl-alias").forEach(el => {
+                el.addEventListener("input", e => {
+                    const name = e.target.dataset.name;
+                    TPL_ALIASES[name] = e.target.value.trim();
+                });
+            });
+            box.querySelectorAll(".tpl-logs").forEach(el => {
+                el.addEventListener("click", () => openTplLogs(el.dataset.name));
+            });
+        }
+
+        async function loadTemplates() {
+            showErr("tplErr", "");
+            try {
+                const params = {};
+                if (CURRENT_STORE) params.store_id = CURRENT_STORE;
+                const js = await fetchJSON(`${URL_TPLS}?${qstr(params)}`);
+                TPL_ALL = js.items || [];
+                TPL_ALLOWED = new Set(js.allowed || []);
+                TPL_ALIASES = {};
+                (TPL_ALL || []).forEach(t => {
+                    if (t.alias) TPL_ALIASES[t.name] = t.alias;
+                });
+                renderTplList(qs("tplSearch").value);
+            } catch (e) {
+                showErr("tplErr", "Şablonlar yüklenemedi: " + e.message);
+            }
+        }
+
+        async function saveTemplates() {
+            showErr("tplErr", "");
+            try {
+                const body = {allowed: Array.from(TPL_ALLOWED), aliases: TPL_ALIASES};
+                const params = {};
+                if (CURRENT_STORE) params.store_id = CURRENT_STORE;
+                await fetchJSON(`${URL_TPLS_SAVE}?${qstr(params)}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": getCSRFCookie()},
+                    body: JSON.stringify(body)
+                });
+            } catch (e) {
+                showErr("tplErr", "Kaydetme hatası: " + e.message);
+            }
+        }
+
+        async function openTplLogs(name) {
+            try {
+                const params = {name};
+                if (CURRENT_STORE) params.store_id = CURRENT_STORE;
+                const js = await fetchJSON(`${URL_TPL_LOGS}?${qstr(params)}`);
+                qs("tplLogsTitle").innerText = `Şablon Logları · ${js.name}`;
+                qs("tplLogsBody").innerHTML = (js.data || []).map(x => `
+                    <tr>
+                      <td>${new Date(x.created_at).toLocaleString()}</td>
+                      <td>${x.to}</td>
+                      <td>${x.status}</td>
+                      <td>${x.user || ""}</td>
+                      <td class="text-muted">${x.err || ""}</td>
+                    </tr>`).join("");
+                new bootstrap.Modal(qs("tplLogsModal")).show();
+            } catch (e) {
+                showErr("tplErr", "Log alınamadı: " + e.message);
+            }
+        }
+
+        qs("tplSearch")?.addEventListener("input", e => renderTplList(e.target.value));
+        qs("btnTplAll")?.addEventListener("click", () => {
+            TPL_ALLOWED = new Set((TPL_ALL || []).map(t => t.name));
+            renderTplList(qs("tplSearch").value);
+        });
+        qs("btnTplNone")?.addEventListener("click", () => {
+            TPL_ALLOWED = new Set();
+            renderTplList(qs("tplSearch").value);
+        });
+        qs("btnReloadTpl")?.addEventListener("click", loadTemplates);
+        qs("btnSaveTpl")?.addEventListener("click", saveTemplates);
+
+        async function loadQuotas() {
+            showErr("quotaErr", "");
+            try {
+                const js = await fetchJSON(URL_STORE_QUOTAS);
+                const tb = qs("tblQuotas").querySelector("tbody");
+                tb.innerHTML = (js.items || []).map(x => `
+                          <tr data-id="${x.store_id}">
+                            <td class="fw-semibold">${x.label}</td>
+                            <td>
+                              <input type="number" min="0" class="form-control form-control-sm q-credit"
+                                     value="${x.credit_balance ?? ''}" placeholder="Sınırsız">
+                              <div class="form-text">Boş bırakırsan sınırsız kabul edilir.</div>
+                            </td>
+                            <td class="text-muted">${(x.daily_count ?? 0)} / ${(x.monthly_count ?? 0)}</td>
+                            <td>
+                              <div class="form-check form-switch">
+                                <input class="form-check-input q-enabled" type="checkbox" ${x.enabled ? 'checked' : ''}>
+                              </div>
+                            </td>
+                          </tr>`).join("");
+            } catch (e) {
+                showErr("quotaErr", "Kotalar (kontör) yüklenemedi: " + e.message);
+            }
+        }
+
+        async function saveQuotas() {
+            showErr("quotaErr", "");
+            try {
+                const rows = Array.from(qs("tblQuotas").querySelectorAll("tbody tr"));
+                const items = rows.map(tr => {
+                    const id = tr.dataset.id;
+                    const credit = tr.querySelector(".q-credit").value;
+                    const enabled = tr.querySelector(".q-enabled").checked;
+                    return {
+                        store_id: id,
+                        enabled,
+                        credit_balance: credit === "" ? null : Number(credit),
+                    };
+                });
+                await fetchJSON(URL_STORE_QUOTAS_SAVE, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": getCSRFCookie()},
+                    body: JSON.stringify({items})
+                });
+                Swal.fire({icon: 'success', title: 'Kaydedildi', timer: 1000, showConfirmButton: false});
+            } catch (e) {
+                showErr("quotaErr", "Kaydetme hatası: " + e.message);
+            }
+        }
+
+        qs("btnReloadQuotas")?.addEventListener("click", loadQuotas);
+        qs("btnSaveQuotas")?.addEventListener("click", saveQuotas);
+
+        let INBOX_TIMER = null;
+
+        function setAutoRefresh(on) {
+            const btn = qs("btnAuto");
+            if (on) {
+                if (!INBOX_TIMER) {
+                    INBOX_TIMER = setInterval(() => {
+                        if (isTabActive('#tab1')) {
+                            loadUserTotals();
+                            loadInbound();
+                            loadUsage();
+                        }
+                    }, 5000);
+                }
+                btn.dataset.on = "1";
+                btn.textContent = "Oto Yenile: Açık";
+                btn.classList.remove("btn-light");
+                btn.classList.add("btn-success");
+            } else {
+                if (INBOX_TIMER) {
+                    clearInterval(INBOX_TIMER);
+                    INBOX_TIMER = null;
+                }
+                btn.dataset.on = "0";
+                btn.textContent = "Oto Yenile: Kapalı";
+                btn.classList.remove("btn-success");
+                btn.classList.add("btn-light");
+            }
+        }
+
+        qs("btnAuto")?.addEventListener("click", () => setAutoRefresh(qs("btnAuto").dataset.on !== "1"));
+
+        function isTabActive(sel) {
+            const el = document.querySelector(sel);
+            return el && el.classList.contains('active') && el.classList.contains('show');
+        }
+
+        function refreshTabActive() {
+            if (isTabActive('#tab1')) {
+                loadUsage();
+                loadUserTotals();
+                loadInbound();
+            }
+            if (isTabActive('#tab2')) {
+                loadTemplates();
+            }
+            if (isTabActive('#tab3')) {
+                loadQuotas();
+            }
+        }
+
+        document.getElementById('waTabs')?.addEventListener('shown.bs.tab', refreshTabActive);
+
+        (async function init() {
+            await loadStores();
+            refreshTabActive();
+        })();
+        qs("btnReloadAll")?.addEventListener("click", refreshTabActive);
+    </script>
+
+    <script>
+    $(document).ready(function () {
+        let reqDT;
+
+        function badgeStatus(s) {
+            const map = {
+                "PENDING": '<span class="badge bg-light-warning text-warning">Beklemede</span>',
+                "APPROVED": '<span class="badge bg-light-success text-success">Onaylandı</span>',
+                "REJECTED": '<span class="badge bg-light-danger text-danger">Reddedildi</span>',
+            };
+            return map[s] || s;
+        }
+
+        function buildAdminUrl() {
+            const st = $('#waReqStatus').val() || '';
+            const p = new URLSearchParams();
+            if (st) p.set('status', st);
+            return '/whatsapp/api/credit-requests/all' + (p.toString() ? ('?' + p.toString()) : '');
+        }
+
+        function initReqDT() {
+            reqDT = $('#waCreditReqTableAdmin').DataTable({
+                dom: '<"top d-flex justify-content-end mb-3"f>' +
+                     'rt' +
+                     '<"bottom d-flex justify-content-between align-items-center mb-4"lp>',
+                info: false,
+                paging: true,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Tümü']],
+                order: [[1, 'desc']],
+                processing: true,
+                serverSide: false,
+                autoWidth: false,
+                ajax: { url: buildAdminUrl(), dataSrc: 'data' },
+                columnDefs: [
+                    { targets: 0, width: '45px', orderable: false, className: 'text-center align-middle' },
+                    { targets: '_all', className: 'align-middle' }
+                ],
+                columns: [
+                    {
+                        data: 'id',
+                        orderable: false,
+                        render: id => `
+                            <div class="form-check form-check-sm form-check-custom form-check-solid d-flex justify-content-center">
+                                <input type="checkbox" class="form-check-input row-checkbox" value="${id}">
+                            </div>`
+                    },
+                    { data: 'created_at', render: d => d ? new Date(d).toLocaleString() : '' },
+                    { data: 'store_label' },
+                    { data: 'requested_amount', render: d => `${d || 0} kontör` },
+                    { data: 'status', render: d => badgeStatus(d) },
+                    { data: 'note', defaultContent: '' },
+                    {
+                        data: null,
+                        render: r => (r.decided_by || '') +
+                            (r.decided_at ? `<br><small>${new Date(r.decided_at).toLocaleString()}</small>` : '')
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        render: row => {
+                            if (row.status !== 'PENDING') return '<em>-</em>';
+                            return `
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-light-primary admin-approve" data-id="${row.id}" data-amount="${row.requested_amount}">Onayla</button>
+                                    <button class="btn btn-sm btn-light-danger admin-reject" data-id="${row.id}">Reddet</button>
+                                </div>`;
+                        }
+                    }
+                ],
+                language: { url: "/static/management/plugins/custom/datatables/TR.json" },
+                buttons: [
+                    { extend: 'copy', title: 'Talepler', className: 'btnCopyHidden', text: '' },
+                    { extend: 'excel', title: 'Talepler', className: 'btnExcelHidden', text: '' },
+                    { extend: 'csv', title: 'Talepler', className: 'btnCsvHidden', text: '' },
+                    { extend: 'pdf', title: 'Talepler', className: 'btnPdfHidden', text: '' }
+                ],
+                initComplete: function () {
+                    $('.dt-buttons').remove();
+                }
+            });
+
+            // "Tümünü seç" eventi
+            $('#selectAllReqs').on('change', function () {
+                const checked = $(this).is(':checked');
+                $('.row-checkbox').prop('checked', checked);
+            });
+        }
+
+        $(document).on('click', '#reqExportMenu [data-kt-export]', function (e) {
+            e.preventDefault();
+            const type = $(this).data('kt-export');
+            const table = $('#waCreditReqTableAdmin').DataTable();
+
+            switch (type) {
+                case 'copy':  table.button('.btnCopyHidden').trigger(); break;
+                case 'excel': table.button('.btnExcelHidden').trigger(); break;
+                case 'csv':   table.button('.btnCsvHidden').trigger(); break;
+                case 'pdf':   table.button('.btnPdfHidden').trigger(); break;
+            }
+        });
+
+        function reloadReqDT() {
+            if ($.fn.DataTable.isDataTable('#waCreditReqTableAdmin'))
+                reqDT.ajax.url(buildAdminUrl()).load();
+            else
+                initReqDT();
+        }
+
+        $('#wa-tab-reqs').on('shown.bs.tab', reloadReqDT);
+        $('#btnReqsReload').on('click', reloadReqDT);
+        $('#waReqStatus').on('change', reloadReqDT);
+
+        $(document).on('click', '#reqExportMenu [data-kt-export]', function (e) {
+            e.preventDefault();
+            const type = $(this).data('kt-export');
+            $('.dt-buttons .buttons-' + type).click();
+        });
+
+        $('#approveSelected').on('click', async function () {
+            const ids = $('.row-checkbox:checked').map(function () { return this.value; }).get();
+            if (!ids.length)
+                return Swal.fire('Uyarı', 'En az bir talep seçin.', 'warning');
+
+            const res = await Swal.fire({
+                title: 'Toplu Onay',
+                text: `${ids.length} talep onaylansın mı?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Evet',
+                cancelButtonText: 'Vazgeç'
+            });
+            if (!res.isConfirmed) return;
+
+            try {
+                const r = await fetch('/whatsapp/api/credit-requests/bulk-decide', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFCookie()},
+                    body: JSON.stringify({ids, action: 'approve'})
+                });
+                const js = await r.json();
+
+                if (js.result) {
+                    Swal.fire({icon: 'success', title: 'Talepler onaylandı', timer: 1200, showConfirmButton: false});
+
+                    const dt = $('#waCreditReqTableAdmin').DataTable();
+                    ids.forEach(id => {
+                        const row = dt.row($(`button[data-id="${id}"]`).parents('tr'));
+                        if (!row.node()) return;
+                        const data = row.data();
+                        data.status = 'APPROVED';
+                        data.decided_by = "{{ request.user.get_full_name }}";
+                        data.decided_at = new Date().toISOString();
+                        row.data(data).invalidate();
+                    });
+                    dt.draw(false);
+                } else {
+                    Swal.fire('Hata', js.error_msg || 'Toplu işlem başarısız', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Hata', 'Sunucuya istek gönderilemedi', 'error');
+                console.error(err);
+            }
+        });
+
+
+        $('#rejectSelected').on('click', async function () {
+            const ids = $('.row-checkbox:checked').map(function () { return this.value; }).get();
+            if (!ids.length)
+                return Swal.fire('Uyarı', 'En az bir talep seçin.', 'warning');
+
+            const res = await Swal.fire({
+                title: 'Toplu Reddet',
+                text: `${ids.length} talep reddedilsin mi?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Evet',
+                cancelButtonText: 'Vazgeç'
+            });
+            if (!res.isConfirmed) return;
+
+            try {
+                const r = await fetch('/whatsapp/api/credit-requests/bulk-decide', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFCookie()},
+                    body: JSON.stringify({ids, action: 'reject'})
+                });
+                const js = await r.json();
+
+                if (js.result) {
+                    Swal.fire({icon: 'success', title: 'Talepler reddedildi', timer: 1200, showConfirmButton: false});
+
+                    const dt = $('#waCreditReqTableAdmin').DataTable();
+                    ids.forEach(id => {
+                        const row = dt.row($(`button[data-id="${id}"]`).parents('tr'));
+                        if (!row.node()) return;
+                        const data = row.data();
+                        data.status = 'REJECTED';
+                        data.decided_by = "{{ request.user.get_full_name }}";
+                        data.decided_at = new Date().toISOString();
+                        row.data(data).invalidate();
+                    });
+                    dt.draw(false);
+                } else {
+                    Swal.fire('Hata', js.error_msg || 'Toplu işlem başarısız', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Hata', 'Sunucuya istek gönderilemedi', 'error');
+                console.error(err);
+            }
+        });
+
+        // [ADDED] Satırdaki tekli "Onayla" butonu modal açsın (delegated)
+        $(document).on('click', '.admin-approve', function (e) {
+            e.preventDefault();
+            const id  = $(this).data('id');
+            const amt = parseInt($(this).data('amount') || '0', 10);
+            $('#approveReqId').val(id);
+            $('#approveAmount').val(amt > 0 ? amt : 500);
+            new bootstrap.Modal('#waApproveModal').show();
+        });
+
+        // [ADDED] Satırdaki tekli "Reddet" butonu modal açsın (delegated)
+        $(document).on('click', '.admin-reject', function (e) {
+            e.preventDefault();
+            $('#rejectReqId').val($(this).data('id'));
+            $('#rejectNote').val('');
+            new bootstrap.Modal('#waRejectModal').show();
+        });
+
+        // [ADDED] Onay modalındaki "Onayla" gönder
+        $('#btnApproveDo').on('click', async function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.setAttribute('data-kt-indicator', 'on');
+
+            const id = $('#approveReqId').val();
+            const amount = parseInt($('#approveAmount').val() || '0', 10);
+            const note = ($('#approveNote').val() || '').trim();
+
+            try {
+                const res = await fetch('/whatsapp/api/credit-requests/decide', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFCookie() },
+                    body: JSON.stringify({ id, action: 'approve', amount, note })
+                });
+                const js = await res.json();
+                if (js.result) {
+                    Swal.fire({icon:'success', title:'Onaylandı', timer:1000, showConfirmButton:false});
+                    bootstrap.Modal.getInstance(document.getElementById('waApproveModal'))?.hide();
+
+                    const dt = $('#waCreditReqTableAdmin').DataTable();
+                    const row = dt.row($(`button[data-id="${id}"]`).parents('tr'));
+                    const data = row.data();
+                    data.status = 'APPROVED';
+                    data.decided_by = "{{ request.user.get_full_name }}";
+                    data.decided_at = new Date().toISOString();
+                    data.decision_note = note || '';
+                    row.data(data).invalidate().draw(false);
+                } else {
+                    Swal.fire('Hata', js.error_msg || 'İşlem başarısız', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Hata', 'İstek başarısız', 'error');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+            }
+        });
+
+        // [ADDED] Red modalındaki "Reddet" gönder
+        $('#btnRejectDo').on('click', async function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.setAttribute('data-kt-indicator', 'on');
+
+            const id = $('#rejectReqId').val();
+            const note = ($('#rejectNote').val() || '').trim();
+
+            try {
+                const res = await fetch('/whatsapp/api/credit-requests/decide', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFCookie() },
+                    body: JSON.stringify({ id, action: 'reject', note })
+                });
+                const js = await res.json();
+                if (js.result) {
+                    Swal.fire({icon:'success', title:'Reddedildi', timer:1000, showConfirmButton:false});
+                    bootstrap.Modal.getInstance(document.getElementById('waRejectModal'))?.hide();
+
+                    const dt = $('#waCreditReqTableAdmin').DataTable();
+                    const row = dt.row($(`button[data-id="${id}"]`).parents('tr'));
+                    const data = row.data();
+                    data.status = 'REJECTED';
+                    data.decided_by = "{{ request.user.get_full_name }}";
+                    data.decided_at = new Date().toISOString();
+                    data.decision_note = note || '';
+                    row.data(data).invalidate().draw(false);
+                } else {
+                    Swal.fire('Hata', js.error_msg || 'İşlem başarısız', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Hata', 'İstek başarısız', 'error');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.removeAttribute('data-kt-indicator');
+            }
+        });
+
+        initReqDT();
+    });
+</script>
+
+{% endblock %}

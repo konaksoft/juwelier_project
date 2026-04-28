@@ -1,0 +1,279 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+{% block page_title %}Toptan Satış Modülü | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus Toptan Modülü ile toplu satış, kademeli iskonto ve dövizli fiyat listelerini
+    yönetin; hızlı teklif-irsaliye-fatura akışı ve çek-senet takibi sayesinde B2B süreçlerinizi
+    hızlandırın.{% endblock page_description %}
+{% block page_keywords %}toptan modülü, wholesale, kuyumcu toptan programı, toplu satış, fiyat teklifi, iskonto, çek
+    senet{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/moduller/toptan/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus – Toptan Satış Modülü{% endblock og_title %}
+{% block og_description %}Çoklu fiyat listesi, hızlı proforma ve çek-senet vadeli ödeme desteğiyle toptan satış
+    operasyonlarınızı tek panelde yönetin.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/toptan.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/moduller/toptan/{% endblock og_url %}
+{% block twitter_title %}Toptan Modülü | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}B2B müşterilere özel iskonto, dövizli faturalama ve otomatik teklif süreçleri için Toptan
+    Modülü’nü keşfedin.{% endblock twitter_description %}
+{% block header %}
+    <style>
+        .breadcrumb-slim {
+            padding-top: 4rem !important;
+            padding-bottom: 4rem !important;
+        }
+
+        .my-ul-padding {
+            padding-top: 1rem !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .breadcrumb-slim {
+                padding-bottom: 2rem !important;
+                padding-top: 2rem !important;
+
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.6rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: 1rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .my-padding{
+                padding: 2rem !important;
+            }
+
+              .breadcrumb-area {
+                padding-top: 10rem !important;
+                padding-bottom: 2rem !important;
+            }
+
+            .breadcrumb-area .page-title {
+                font-size: 1.25rem !important;
+                line-height: 1.2;
+            }
+
+
+            .breadcrumb-area .page-list li {
+                font-size: 0.875rem !important;
+            }
+
+            .breadcrumb-area .page-list {
+                gap: 0.25rem;
+            }
+            .breadcrumb-slim {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.2rem !important;
+                margin-bottom: .5rem !important;
+
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: .8rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+
+    </style>
+{% endblock header %}
+{% block body %}
+    <div class="breadcrumb-area bg-cover breadcrumb-responsive breadcrumb-slim"
+         style="margin: 0!important; background-color:#F8F9FC">
+        <div class="container">
+            <div class="breadcrumb-inner">
+                <div class="row justify-content-center breadcrumb-row">
+                    <div class="col-lg-6 breadcrumb-col">
+                        <h2 class="page-title">Toptan Satış Modülü</h2>
+                    </div>
+                    <div class="col-lg-6 text-lg-end breadcrumb-col">
+                        <ul class="page-list my-ul-padding">
+                            <li><a href="{% url '' %}" style="color:black!important">Anasayfa</a></li>
+                            <li><a href="#" style="color: black!important">Modüller</a></li>
+                            <li>Toptan</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="service-area pd-top-90 pd-bottom-0 my-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-12 mb-4 mb-lg-0">
+                    <div class="td-sidebar service-sidebar">
+                        <div class="widget widget_info">
+                            <h5 class="widget-title"><i class="fas fa-handshake"></i> Modül Bilgisi</h5>
+                            <div class="widget-info-inner">
+                                <h6>Amaç</h6>
+                                <p>Toptan Satış Yönetimi</p>
+                                <h6>Kapsam</h6>
+                                <p>Teklif, İrsaliye, Fatura, Çek-Senet</p>
+                                <h6>Sürüm</h6>
+                                <p>v1.0</p>
+                                <h6>Destek</h6>
+                                <p>7/24 Teknik Destek</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="blog-details-page-content">
+                        <div class="single-blog-inner mb-0">
+                            <div class="thumb mb-4 my-image-size">
+                                <img src="{% static 'theme/media/toptan.webp' %}" alt="Toptan Modülü Görseli">
+                            </div>
+                            <div class="details">
+                                <h3>Toplu Satışta Maksimum Verim</h3>
+                                <p>Kuyum Plus Toptan Modülü, bayilerinize özel fiyat listeleri ve kademeli iskontolar
+                                    tanımlamanıza olanak tanır. Hızlı teklif oluşturup tek tıkla irsaliye-fatura akışına
+                                    geçerek zaman kazanın; çek-senet ve dövizli ödeme planıyla finansal riskinizi
+                                    yönetin.</p>
+
+                                <h4>Öne Çıkan Özellikler</h4>
+                                <ul class="single-list-inner style-check style-heading">
+                                    <li><i class="far fa-check-circle"></i> <strong>Çoklu Fiyat Listesi &amp; Kademeli
+                                        İskonto</strong></li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Hızlı Teklif &gt; İrsaliye &gt;
+                                        Fatura</strong> akışı
+                                    </li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Çek / Senet &amp; Vadeli Ödeme
+                                        Planı</strong></li>
+                                    <li><i class="far fa-check-circle"></i> <strong>Dövizli Faturalama &amp; Parite
+                                        Takibi</strong></li>
+                                </ul>
+
+                                <h4 class="mt-5">Nasıl Çalışır?</h4>
+                                <p>Ürünleri toptan fiyat listesine bağlayın, müşterinize PDF teklifini e-posta ile
+                                    gönderin. Teklif onaylandığında sistem otomatik irsaliye ve ardından faturayı
+                                    oluşturur; çek-senet vade bilgileri cari hesabına işlenir ve nakit akış raporlarına
+                                    yansır.</p>
+
+                                <h4 class="mt-5">Sıkça Sorulan Sorular</h4>
+                                <div class="accordion accordion-inner style-2 accordion-icon-left" id="whFAQ">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="wq1">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                                    data-bs-target="#wc1" aria-expanded="true">
+                                                Teklifi faturalamaya otomatik çevirebilir miyim?
+                                            </button>
+                                        </h2>
+                                        <div id="wc1" class="accordion-collapse collapse show" aria-labelledby="wq1"
+                                             data-bs-parent="#whFAQ">
+                                            <div class="accordion-body">Evet. Teklif onaylandıktan sonra &ldquo;Belge
+                                                Oluştur&rdquo; butonuyla irsaliye ve fatura otomatik hazırlanır.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="wq2">
+                                            <button class="accordion-button collapsed" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#wc2">
+                                                Dövizli fiyat listesi tanımlayabilir miyim?
+                                            </button>
+                                        </h2>
+                                        <div id="wc2" class="accordion-collapse collapse" aria-labelledby="wq2"
+                                             data-bs-parent="#whFAQ">
+                                            <div class="accordion-body">TL, USD, EUR ve GBP bazlı liste oluşturabilir,
+                                                satış anında kur paritesi otomatik uygulanır.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="wq3">
+                                            <button class="accordion-button collapsed" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#wc3">
+                                                Çek-senet vade uyarıları alabilir miyim?
+                                            </button>
+                                        </h2>
+                                        <div id="wc3" class="accordion-collapse collapse" aria-labelledby="wq3"
+                                             data-bs-parent="#whFAQ">
+                                            <div class="accordion-body">Vade yaklaşınca hem uygulama içi bildirim hem de
+                                                e-posta uyarısı alırsınız.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}{% endblock footer %}

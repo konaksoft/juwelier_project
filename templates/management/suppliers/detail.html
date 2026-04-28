@@ -1,0 +1,1328 @@
+{% extends "management/base.html" %}
+{% load static %}
+
+{% block header %}
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
+    <style>
+        /* --- KUYUM PLUS: DARK & GOLD CONCEPT --- */
+        :root {
+            --bg-dark-gradient: linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
+            --card-bg: linear-gradient(135deg, rgba(26, 37, 58, .90), rgba(34, 49, 74, .90));
+            --accent-gold: #FFD700;
+            --accent-gold-hover: #FFB400;
+            --text-primary: #ffffff;
+            --text-muted: #a1a5b7;
+            --border-gold-subtle: rgba(255, 215, 0, .15);
+            --danger-red: #ff4d4f;
+            --success-green: #28c76f;
+        }
+
+        body, .app-main, .wrapper {
+            background: var(--bg-dark-gradient) !important;
+            color: var(--text-primary);
+        }
+
+        .supplier-detail-container {
+            padding: 1.5rem;
+        }
+
+        /* FAZ 11 / UX-06 — Primary CTA buton (Cariyi Düzelt) */
+        .primary-cta-button {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .primary-cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(255, 180, 0, 0.55) !important;
+        }
+        .primary-cta-button:active {
+            transform: translateY(0);
+        }
+
+        /* ORTAK KART YAPISI */
+        .kp-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-gold-subtle);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(12px);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* KPI KARTLARI */
+        .kpi-card {
+            background: rgba(15, 27, 43, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.25rem;
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .kpi-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            color: var(--text-primary);
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+
+        /* BAKİYE KARTLARI */
+        .balance-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 0.8rem;
+            text-align: center;
+            border: 1px solid transparent;
+        }
+
+        .balance-card:hover {
+            border-color: var(--border-gold-subtle);
+        }
+
+        .balance-currency {
+            color: var(--accent-gold);
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .balance-net {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        /* SEKMELER (Metronic Override) */
+        .nav-line-tabs .nav-item .nav-link {
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            padding-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .nav-line-tabs .nav-item .nav-link.active,
+        .nav-line-tabs .nav-item .nav-link:hover {
+            color: var(--accent-gold);
+            border-bottom-color: var(--accent-gold);
+        }
+
+        /* TABLO TASARIMI */
+        .table.ops-table thead th {
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border-gold-subtle);
+            padding-bottom: 1rem;
+        }
+
+        .table.ops-table tbody td {
+            color: var(--text-primary);
+            padding: 1rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .table.ops-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table.ops-table tbody tr:hover {
+            background: rgba(255, 215, 0, 0.02);
+        }
+
+        /* BANKA KARTI */
+        .bank-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .iban-text {
+            font-family: monospace;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        /* RENK SINIFLARI */
+        .text-pos {
+            color: var(--success-green) !important;
+        }
+
+        .text-neg {
+            color: var(--danger-red) !important;
+        }
+
+        .text-gold {
+            color: var(--accent-gold) !important;
+        }
+
+        /* PLASIYER BÖLÜMÜ */
+        .plasiyer-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="supplier-detail-container">
+
+        <div class="kp-card">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+
+                <div class="d-flex align-items-center">
+                    <div class="symbol symbol-70px me-5">
+                        <div class="symbol-label"
+                             style="background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.2);">
+                            <i class="bi bi-gem fs-1 text-gold"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-white fw-bolder mb-1">{{ record.company_name }}</h1>
+                        <div class="d-flex flex-wrap gap-3 fs-7 fw-bold text-muted">
+                            <span class="d-flex align-items-center"><i
+                                    class="bi bi-geo-alt me-1"></i> {{ record.city.name|default:"-" }}</span>
+                            <span class="d-flex align-items-center"><i
+                                    class="bi bi-telephone me-1"></i> {{ record.phone|default:"-" }}</span>
+                            {% if record.is_active %}
+                                <span class="badge badge-light-success border border-success border-opacity-25">AKTİF ÇALIŞILIYOR</span>
+                            {% else %}
+                                <span class="badge badge-light-danger border border-danger border-opacity-25">PASİF</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="plasiyer-box">
+                    <div class="symbol symbol-40px symbol-circle">
+                        <span class="symbol-label bg-light-primary text-primary fw-bold">P</span>
+                    </div>
+                    <div>
+                        <div class="fs-8 text-muted fw-bold text-uppercase">Plasiyer / Çantacı</div>
+                        <div class="fs-6 fw-bolder text-white">{{ record.person_name|default:"Belirtilmemiş" }} {{ record.person_surname }}</div>
+                    </div>
+                    {% if record.phone %}
+                        <a href="tel:{{ record.phone }}" class="btn btn-icon btn-sm btn-active-color-primary"
+                           title="Ara">
+                            <i class="bi bi-telephone-fill fs-5"></i>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    {# ════════════════════════════════════════════════════ #}
+                    {# FAZ 11 / UX-06 — Primary Aksiyon: Cariyi Düzelt      #}
+                    {# Sayfada en belirgin aksiyon — esnaf gözünün hemen   #}
+                    {# bu butona gitmesi hedeflenir.                        #}
+                    {# ════════════════════════════════════════════════════ #}
+                    <button type="button"
+                            class="btn btn-warning fw-bolder primary-cta-button d-flex align-items-center"
+                            onclick="showAdjustmentModal()"
+                            title="Tedarikçi carisini sıfırla veya belirli bir tutara eşitle (Mutabakat Düzeltmesi)"
+                            style="box-shadow: 0 6px 20px rgba(255, 180, 0, 0.35); padding: 0.65rem 1.25rem;">
+                        <i class="bi bi-sliders2 fs-4 me-2"></i>
+                        <span class="fs-6">Cariyi Düzelt</span>
+                    </button>
+                    <a href="{% url 'suppliers:download-report' record.id %}" target="_blank"
+                       class="btn btn-sm btn-secondary d-flex align-items-center">
+                        <i class="bi bi-file-earmark-pdf-fill me-2 text-dark"></i> <span
+                            class="text-dark">Rapor İndir</span>
+                    </a>
+                    <button class="btn btn-sm btn-secondary d-flex align-items-center" onclick="showBankModal()">
+                        <i class="bi bi-bank me-2"></i> Hesap Bilgileri
+                    </button>
+                    <a href="{% url 'suppliers:index' %}" class="btn btn-sm btn-light-warning">
+                        <i class="bi bi-arrow-return-left me-1"></i> Listeye Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# ════════════════════════════════════════════════════════════════ #}
+        {# FAZ 11 / UX-01 + UX-02 — KPI Sadeleştirmesi (2026-04-24)         #}
+        {# Kuyumcu esnafının ihtiyaç duymadığı analitik kartlar (İşlem      #}
+        {# Hacmi, İade Oranı) varsayılan ekrandan kaldırıldı; "Detaylı     #}
+        {# Analiz" collapsible panelinde gizlendi. Esnaf önce bilmek       #}
+        {# istediği iki şeyi görür: Kaç işlem var, son ne zaman temas etmiş.#}
+        {# ════════════════════════════════════════════════════════════════ #}
+        <div class="row g-4 mb-3">
+            <div class="col-12 col-md-6">
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background: rgba(255, 215, 0, 0.1); color: #FFD700;">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <div class="kpi-label">Toplam İşlem</div>
+                    <div class="kpi-value text-white">{{ kpi_total_tx }}</div>
+                    <div class="kpi-sub text-muted">Adet Kayıt</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="kpi-card">
+                    <div class="kpi-icon" style="background: rgba(57, 136, 255, 0.1); color: #3988ff;">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="kpi-label">Son Hareket</div>
+                    {# FAZ 11 / SYNC-04: Standart TR format (gg.aa.yyyy) #}
+                    <div class="kpi-value text-white fs-3 mt-1">
+                        {% if kpi_last_date %}
+                            {{ kpi_last_date|date:"d.m.Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="kpi-sub text-white opacity-50">
+                        {% if kpi_last_date %}{{ kpi_last_date|time:"H:i" }}{% else %}İşlem Yok{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Detaylı Analiz — varsayılan kapalı, isteyen açar #}
+        <div class="mb-6">
+            <button class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-bold"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#detailedAnalysis"
+                    aria-expanded="false" title="İşlem hacmi ve iade oranı gibi analitik veriler">
+                <i class="bi bi-chevron-down me-1"></i>
+                Detaylı Analiz <span class="text-muted opacity-50 fs-9">(İşlem Hacmi, İade Oranı)</span>
+            </button>
+            <div class="collapse mt-3" id="detailedAnalysis">
+                <div class="row g-4">
+                    <div class="col-12 col-md-6">
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background: rgba(40, 199, 111, 0.1); color: #28c76f;">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div class="kpi-label">Toplam İşlem Hacmi</div>
+                            <div class="kpi-value text-white">{{ kpi_volume_gram|floatformat:2 }}
+                                <small class="fs-6 text-muted">Gr</small>
+                            </div>
+                            <div class="kpi-sub text-success"><i class="bi bi-caret-up-fill"></i> Toptan + Barkodlu</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </div>
+                            <div class="kpi-label">İade / Tamir Oranı</div>
+                            <div class="kpi-value text-white">% {{ kpi_return_rate }}</div>
+                            <div class="kpi-sub {% if kpi_return_rate > 5 %}text-danger{% else %}text-muted{% endif %}">
+                                {% if kpi_return_rate > 5 %}Ortalamanın Üstünde{% else %}Normal Seviye{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ════════════════════════════════════════════════════════════════ #}
+        {# FAZ 11 / UX-03 — Metal / Nakit Bakiye Ayrımı (2026-04-24)        #}
+        {# Bakiyeler iki kategoriye ayrıldı:                                #}
+        {#   • Metal (HS, HG) — Has Altın / Has Gümüş gram bazlı            #}
+        {#   • Nakit & Döviz (TRY, USD, EUR, GBP, CAD, QAR) — fiat bazlı    #}
+        {# Boş kategori gizlenir; esnaf yalnızca ilgili bakiyeleri görür.   #}
+        {# ════════════════════════════════════════════════════════════════ #}
+        <div class="kp-card">
+            <div class="d-flex align-items-center mb-4 pb-2 border-bottom border-secondary border-opacity-25">
+                <i class="bi bi-wallet2 text-gold fs-3 me-2"></i>
+                <h3 class="card-title text-white fw-bold mb-0">Finansal Durum & Bakiyeler</h3>
+            </div>
+
+            {# Akıllı Özet (CAT-04 ile doldurulacak) — varsayılan gizli #}
+            <div id="balanceSmartSummary" class="d-none mb-4">
+                <div class="alert bg-dark border border-warning border-opacity-25 py-2 px-3 mb-0"
+                     style="border-radius: 8px;">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle text-warning fs-5 me-2"></i>
+                        <div id="balanceSmartSummaryText" class="fs-7 text-white"></div>
+                    </div>
+                </div>
+            </div>
+
+            {# Yükleme spinner'ı — JS dolduracak #}
+            <div id="balanceLoader" class="text-center py-5">
+                <div class="spinner-border text-gold" role="status"></div>
+            </div>
+
+            {# Metal Bakiyeleri (HS, HG) #}
+            <div id="balanceMetalSection" class="mb-4 d-none">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-coin text-gold me-2"></i>
+                    <span class="text-white fw-bold fs-6">Metal Bakiyesi</span>
+                    <span class="text-muted fs-9 ms-2">— Has Altın / Has Gümüş (gram bazlı)</span>
+                </div>
+                <div class="row g-4" id="balanceMetal"></div>
+            </div>
+
+            {# Nakit / Döviz Bakiyeleri #}
+            <div id="balanceFiatSection" class="d-none">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-cash-stack text-info me-2"></i>
+                    <span class="text-white fw-bold fs-6">Nakit / Döviz Bakiyesi</span>
+                    <span class="text-muted fs-9 ms-2">— TRY, USD, EUR ve diğer fiat para birimleri</span>
+                </div>
+                <div class="row g-4" id="balanceFiat"></div>
+            </div>
+
+            {# Tamamen boş bakiye durumu #}
+            <div id="balanceEmpty" class="d-none text-center text-muted py-4 fs-7">
+                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                Bu tedarikçiyle aktif bakiye bulunmuyor.
+            </div>
+
+            {# Geriye dönük uyumluluk: eski JS bu container'ı arıyorsa boş bırakılır #}
+            <div id="balanceContainer" class="d-none"></div>
+        </div>
+
+        <div class="kp-card px-0 pt-0 pb-2">
+            <div class="px-6 pt-4 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-10">
+                <ul class="nav nav-line-tabs nav-stretch fs-6 border-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#tab_history">
+                            <i class="bi bi-list-columns-reverse me-2"></i> İşlem Geçmişi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tab_products">
+                            <i class="bi bi-pie-chart me-2"></i> Ürün Analizi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tab_banks">
+                            <i class="bi bi-credit-card-2-front me-2"></i> Banka Hesapları
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content px-6 py-6">
+
+                <div class="tab-pane fade show active" id="tab_history">
+                    {# ════════════════════════════════════════════════════════════════ #}
+                    {# FAZ 11 / UX-04 — Genişletilmiş Filtreler (2026-04-24)             #}
+                    {# Hızlı chip'ler + detaylı panel (Tarih, Kategori, Tutar aralığı). #}
+                    {# Sunucu taraflı filtre — DataTable'a parametre olarak iletilir.    #}
+                    {# ════════════════════════════════════════════════════════════════ #}
+
+                    {# Hızlı tarih chip'leri #}
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                        <span class="text-muted fs-9 fw-bold me-2">HIZLI:</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 quick-filter"
+                                data-range="month">Bu Ay
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 quick-filter"
+                                data-range="3months">Son 3 Ay
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 quick-filter"
+                                data-range="year">Bu Yıl
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 quick-filter active"
+                                data-range="all">Tümü
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link text-warning ms-auto"
+                                data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                            <i class="bi bi-funnel me-1"></i> Detaylı Filtre
+                        </button>
+                    </div>
+
+                    {# Detaylı filtre paneli — varsayılan kapalı #}
+                    <div class="collapse mb-3" id="advancedFilters">
+                        <div class="p-3 rounded"
+                             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label fs-9 text-muted fw-bold">Başlangıç Tarihi</label>
+                                    <input type="date" id="fDateFrom"
+                                           class="form-control form-control-sm bg-dark text-white border-secondary">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-9 text-muted fw-bold">Bitiş Tarihi</label>
+                                    <input type="date" id="fDateTo"
+                                           class="form-control form-control-sm bg-dark text-white border-secondary">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-9 text-muted fw-bold">Kategori</label>
+                                    <select id="fMaterial"
+                                            class="form-select form-select-sm bg-dark text-white border-secondary">
+                                        <option value="">Tüm Kategoriler</option>
+                                        <option value="GOLD">Altın</option>
+                                        <option value="SCRAP">Hurda</option>
+                                        <option value="BRACELET">Bilezik</option>
+                                        <option value="SILVER">Gümüş</option>
+                                        <option value="WATCH">Saat</option>
+                                        <option value="DIAMOND">Elmas / Pırlanta</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button type="button" class="btn btn-sm btn-secondary w-100"
+                                            onclick="clearAdvancedFilters()">
+                                        <i class="bi bi-x-circle me-1"></i> Filtreleri Temizle
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-9 text-muted fw-bold">Min Tutar</label>
+                                    <input type="number" id="fMinAmount" step="0.01" min="0"
+                                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                                           placeholder="Örn: 100">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-9 text-muted fw-bold">Maks Tutar</label>
+                                    <input type="number" id="fMaxAmount" step="0.01" min="0"
+                                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                                           placeholder="Örn: 10000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mb-4">
+                        <select id="fType"
+                                class="form-select form-select-sm w-150px bg-dark border-secondary text-white">
+                            <option value="">Tüm Türler</option>
+                            <option value="ENTRY">Giriş (Borç)</option>
+                            <option value="EXIT">Çıkış (Alacak)</option>
+                        </select>
+                        <select id="fCur"
+                                class="form-select form-select-sm w-100px bg-dark border-secondary text-white">
+                            <option value="">Döviz</option>
+                            <option value="HS">HS</option>
+                            <option value="TRY">TRY</option>
+                            <option value="USD">USD</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="historyTable" class="table ops-table align-middle">
+                            <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>İşlem No</th>
+                                <th>Tür</th>
+                                <th>Ürün / Açıklama</th>
+                                <th class="text-end">Miktar</th>
+                                <th class="text-end">Birim Fiyat</th>
+                                <th class="text-end">Toplam (HS)</th>
+                                <th class="text-end">Toplam (TL)</th>
+                            </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab_products">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h5 class="text-muted text-uppercase fs-7 fw-bolder mb-4">En Çok Alınan Ürün Grupları (Top
+                                5)</h5>
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed table-row-gray-800 align-middle gs-0 gy-3">
+                                    <thead>
+                                    <tr class="fs-7 fw-bolder text-muted border-bottom-0">
+                                        <th class="p-0 min-w-150px">Ürün Adı / Kategori</th>
+                                        <th class="p-0 min-w-100px text-end">Toplam Adet</th>
+                                        <th class="p-0 min-w-100px text-end">Toplam Gram</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for p in top_products %}
+                                        <tr>
+                                            <td>
+                                                <span class="text-white fw-bolder d-block fs-6">{{ p.product__name }}</span>
+                                                {% if p.product__category__name %}
+                                                    <span class="text-muted fs-8">{{ p.product__category__name }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="badge badge-light-primary">{{ p.total_qty|default:"0" }} Adet</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="text-gold fw-bold fs-6">{{ p.total_gr|floatformat:2 }} Gr</span>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-5">
+                                                Henüz bu tedarikçiden ürün girişi yapılmamış.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="alert alert-dismissible bg-light-warning border border-warning border-dashed p-5">
+                                <i class="bi bi-lightbulb fs-2hx text-warning mb-4 d-block"></i>
+                                <h5 class="mb-1 text-warning">Analiz Bilgisi</h5>
+                                <span class="fs-7 text-gray-400">
+                                    Bu liste, hem barkodlu ürün girişlerini hem de toptan alışları kapsar. En yüksek gramajlı işlem gören ürün grupları yukarıda sıralanmıştır.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab_banks">
+                    <div class="text-center text-muted fs-6 py-10">
+                        <i class="bi bi-info-circle fs-3 d-block mb-3"></i>
+                        Tedarikçiye ait banka bilgileri bu alanda listelenecek.<br>
+                        (Banka modülü eklendiğinde aktifleşecektir)
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal fade" id="bankModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #1A253A; border: 1px solid rgba(255,215,0,0.2);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-white">Banka Hesapları</h5>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
+                        <i class="bi bi-x fs-2 text-white"></i>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted text-center">Kayıtlı banka hesabı yok.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════ #}
+    {# FAZ 11 / BL-01 — CARİ SIFIRLAMA / MANUEL DÜZELTME MODAL           #}
+    {# ══════════════════════════════════════════════════════════════════ #}
+    {# Immutable Ledger uyumlu — backend POST /suppliers/adjustment/create #}
+    {# Modal içeriği 3 mod destekler: ALL / BY_CURRENCY / CUSTOM          #}
+    {# ══════════════════════════════════════════════════════════════════ #}
+    <div class="modal fade" id="adjustmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content"
+                 style="background: #1A253A; border: 1px solid rgba(255,215,0,0.25);">
+
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title text-white fw-bolder">
+                            <i class="bi bi-sliders2 text-warning me-2"></i>
+                            Tedarikçi Cari Düzeltme (Mutabakat)
+                        </h5>
+                        <div class="text-muted fs-8 mt-1">
+                            {{ record.company_name }} için cari hesabı sıfırlayın veya belirli bir tutara eşitleyin.
+                        </div>
+                    </div>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
+                        <i class="bi bi-x fs-2 text-white"></i>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    {# Uyarı kutusu — Immutable Ledger bilgilendirmesi #}
+                    <div class="alert bg-dark border border-warning border-opacity-25 py-2 px-3 mb-4"
+                         style="border-radius: 8px;">
+                        <div class="d-flex">
+                            <i class="bi bi-info-circle text-warning fs-5 me-2"></i>
+                            <div class="fs-8 text-muted">
+                                Bu işlem mevcut kayıtları <strong class="text-white">silmez</strong>.
+                                Sistem ters yönde bir <strong class="text-warning">Mutabakat Düzeltmesi Fişi (ADJ)</strong>
+                                keser ve cari bakiyeyi hedef tutara eşitler. İşlem izlenebilir ve denetlenebilir.
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Mevcut Bakiye Özeti — loadAdjustmentBalances() dolduracak #}
+                    <div class="mb-4">
+                        <div class="fs-8 fw-bold text-muted text-uppercase mb-2">Mevcut Cari Durum</div>
+                        <div id="adjBalanceSummary" class="row g-2">
+                            <div class="col-12 text-center text-muted fs-8 py-3">Yükleniyor...</div>
+                        </div>
+                    </div>
+
+                    {# Ana Form #}
+                    <form id="adjustmentForm" autocomplete="off">
+                        {% csrf_token %}
+
+                        {# Mod Seçici (radio) #}
+                        <div class="mb-3">
+                            <div class="fs-8 fw-bold text-muted text-uppercase mb-2">İşlem Türü</div>
+                            <div class="d-flex flex-column gap-2">
+                                <label class="form-check text-white p-3 rounded"
+                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                                    <input class="form-check-input me-2" type="radio" name="adj_mode" value="ALL"
+                                           checked>
+                                    <span class="fw-bold">Tüm Para Birimlerini Sıfırla</span>
+                                    <span class="d-block fs-9 text-muted ms-4">Mevcut tüm bakiyeler (HS, TRY, USD vb.) sıfırlanır — tam mutabakat.</span>
+                                </label>
+
+                                <label class="form-check text-white p-3 rounded"
+                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                                    <input class="form-check-input me-2" type="radio" name="adj_mode"
+                                           value="BY_CURRENCY">
+                                    <span class="fw-bold">Belirli Bir Para Birimini Sıfırla</span>
+                                    <span class="d-block fs-9 text-muted ms-4">Sadece seçilen para biriminin bakiyesi sıfırlanır; diğerleri korunur.</span>
+                                </label>
+
+                                <label class="form-check text-white p-3 rounded"
+                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                                    <input class="form-check-input me-2" type="radio" name="adj_mode" value="CUSTOM">
+                                    <span class="fw-bold">Özel Tutara Eşitle</span>
+                                    <span class="d-block fs-9 text-muted ms-4">Belirli bir para biriminin net bakiyesini girdiğiniz tutara eşitler.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {# Currency Seçimi — BY_CURRENCY ve CUSTOM için #}
+                        <div class="row g-3 mb-3" id="adjCurrencyGroup" style="display: none;">
+                            <div class="col-md-6">
+                                <label class="form-label text-white fs-8 fw-bold">Para Birimi</label>
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary"
+                                        id="adjCurrency" name="adj_currency">
+                                    <option value="">-- Seçiniz --</option>
+                                    <option value="HS">HS — Has Altın</option>
+                                    <option value="HG">HG — Has Gümüş</option>
+                                    <option value="TRY">TRY — Türk Lirası</option>
+                                    <option value="USD">USD — Amerikan Doları</option>
+                                    <option value="EUR">EUR — Euro</option>
+                                    <option value="GBP">GBP — İngiliz Sterlini</option>
+                                    <option value="CAD">CAD — Kanada Doları</option>
+                                    <option value="QAR">QAR — Katar Riyali</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="adjTargetGroup" style="display: none;">
+                                <label class="form-label text-white fs-8 fw-bold">Hedef Net Bakiye</label>
+                                <input type="text"
+                                       class="form-control form-control-sm bg-dark text-white border-secondary"
+                                       id="adjTargetAmount" name="adj_target_amount"
+                                       placeholder="Örn: 1.500,50 veya 0"
+                                       inputmode="decimal">
+                                <div class="form-text text-muted fs-9">
+                                    Cari netin eşitleneceği tutar. 0 girerseniz sıfırlama yapılır.
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Açıklama (Zorunlu) #}
+                        <div class="mb-3">
+                            <label class="form-label text-white fs-8 fw-bold">
+                                Açıklama <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control form-control-sm bg-dark text-white border-secondary"
+                                      id="adjDescription" name="adj_description" rows="2"
+                                      minlength="3" maxlength="500" required
+                                      placeholder="Örn: Telefonla mutabık kalındı, kalan kuruşlar silindi."></textarea>
+                            <div class="form-text text-muted fs-9">
+                                Denetim için zorunludur (en az 3 karakter). Bu not ekstre ve raporlarda görünür.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                        İptal
+                    </button>
+                    <button type="button" class="btn btn-sm btn-warning fw-bold" id="adjSubmitBtn"
+                            onclick="submitAdjustment()">
+                        <i class="bi bi-check2-circle me-1"></i>
+                        <span class="btn-label">Düzeltmeyi Uygula</span>
+                        <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/global/plugins.bundle.js' %}"></script>
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+
+    <script>
+        const SUPPLIER_ID = "{{ record.id }}";
+        const URL_BALANCES = "{% url 'suppliers:get-balances-all' %}";
+        const URL_HISTORY = "{% url 'suppliers:get-supplier-process-history' %}";
+
+        // Türkçe Sayı Formatı
+        const fmt = (n, d = 2) => new Intl.NumberFormat('tr-TR', {
+            minimumFractionDigits: d,
+            maximumFractionDigits: d
+        }).format(n || 0);
+
+        // ══════════════════════════════════════════════════════════════════
+        // FAZ 11 / UX-03 + CAT-04 — METAL/NAKİT BAKİYE AYIRIMI + AKILLI ÖZET
+        // ══════════════════════════════════════════════════════════════════
+
+        // Metal currency'ler (gram bazlı). Diğerleri fiat olarak değerlendirilir.
+        const METAL_CURRENCIES = ['HS', 'HG'];
+
+        // Bir bakiye kartı HTML'i üretir (önceki yapıyla bire bir uyumlu).
+        function _renderBalanceCard(item) {
+            let colorClass = "text-muted";
+            let statusText = "DENGEDE";
+            if (item.net > 0) {
+                colorClass = "text-pos";
+                statusText = "ALACAKLIYIZ";
+            } else if (item.net < 0) {
+                colorClass = "text-neg";
+                statusText = "BORÇLUYUZ";
+            }
+            return `
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="balance-card">
+                        <div class="balance-currency">${item.currency}</div>
+                        <div class="balance-net ${colorClass}">${fmt(Math.abs(item.net), 2)}</div>
+                        <div class="fs-9 fw-bold opacity-75 mt-1 ${colorClass}">${statusText}</div>
+                        <div class="separator separator-dashed border-secondary opacity-25 my-2"></div>
+                        <div class="d-flex justify-content-between fs-9 text-muted px-1">
+                            <span title="Bize Giren (Borç)">B: ${fmt(item.payable, 0)}</span>
+                            <span title="Bizden Çıkan (Alacak)">A: ${fmt(item.receivable, 0)}</span>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // CAT-04: Akıllı bakiye özeti üretir.
+        // Tek currency varsa: "Has Altın olarak X gram alacaklısınız."
+        // Çoklu currency varsa: "X farklı para biriminde işlem var. Detay altta."
+        function _buildSmartSummary(rows) {
+            if (!rows.length) return null;
+            const positives = rows.filter(r => r.net > 0);
+            const negatives = rows.filter(r => r.net < 0);
+            if (rows.length === 1) {
+                const r = rows[0];
+                if (r.net > 0)
+                    return `<strong>${fmt(Math.abs(r.net), 2)} ${r.currency}</strong> tutarında ` +
+                           `<span class="text-success fw-bold">alacaklısınız</span>.`;
+                if (r.net < 0)
+                    return `<strong>${fmt(Math.abs(r.net), 2)} ${r.currency}</strong> tutarında ` +
+                           `<span class="text-danger fw-bold">borçlusunuz</span>.`;
+            }
+            const parts = [];
+            if (positives.length) parts.push(`<span class="text-success fw-bold">${positives.length} para biriminde alacak</span>`);
+            if (negatives.length) parts.push(`<span class="text-danger fw-bold">${negatives.length} para biriminde borç</span>`);
+            return `${rows.length} farklı para biriminde işlem var — ${parts.join(', ')}.`;
+        }
+
+        // --- 1. BAKİYELERİ GETİR (Metal / Fiat ayrımı + Akıllı Özet) ---
+        function loadBalances() {
+            const $loader = $('#balanceLoader');
+            const $metalSec = $('#balanceMetalSection');
+            const $fiatSec = $('#balanceFiatSection');
+            const $empty = $('#balanceEmpty');
+            const $smart = $('#balanceSmartSummary');
+            const $smartTxt = $('#balanceSmartSummaryText');
+            const $metalBody = $('#balanceMetal');
+            const $fiatBody = $('#balanceFiat');
+
+            // Reset
+            $loader.show();
+            $metalSec.addClass('d-none');
+            $fiatSec.addClass('d-none');
+            $empty.addClass('d-none');
+            $smart.addClass('d-none');
+            $metalBody.empty();
+            $fiatBody.empty();
+
+            $.getJSON(URL_BALANCES, {supplier_id: SUPPLIER_ID})
+                .done(function (res) {
+                    $loader.hide();
+
+                    const data = res.data || [];
+
+                    // Sıfır bakiyeleri filtrele
+                    const active = data.filter(item =>
+                        Math.abs(item.receivable) >= 0.01 || Math.abs(item.payable) >= 0.01
+                    );
+
+                    if (active.length === 0) {
+                        $empty.removeClass('d-none');
+                        return;
+                    }
+
+                    // CAT-04: Akıllı özet
+                    const summary = _buildSmartSummary(active);
+                    if (summary) {
+                        $smartTxt.html(summary);
+                        $smart.removeClass('d-none');
+                    }
+
+                    // Metal vs Fiat ayrımı
+                    const metalRows = active.filter(r => METAL_CURRENCIES.includes(r.currency));
+                    const fiatRows = active.filter(r => !METAL_CURRENCIES.includes(r.currency));
+
+                    // Metal kategorisi sıralama: HS önce, HG sonra
+                    metalRows.sort((a, b) => METAL_CURRENCIES.indexOf(a.currency) - METAL_CURRENCIES.indexOf(b.currency));
+
+                    // Fiat sıralama: TRY > USD > EUR > diğerleri
+                    const fiatOrder = ['TRY', 'USD', 'EUR', 'GBP', 'CAD', 'QAR'];
+                    fiatRows.sort((a, b) => {
+                        let idxA = fiatOrder.indexOf(a.currency);
+                        let idxB = fiatOrder.indexOf(b.currency);
+                        if (idxA === -1) idxA = 99;
+                        if (idxB === -1) idxB = 99;
+                        return idxA - idxB;
+                    });
+
+                    if (metalRows.length) {
+                        metalRows.forEach(item => $metalBody.append(_renderBalanceCard(item)));
+                        $metalSec.removeClass('d-none');
+                    }
+                    if (fiatRows.length) {
+                        fiatRows.forEach(item => $fiatBody.append(_renderBalanceCard(item)));
+                        $fiatSec.removeClass('d-none');
+                    }
+                })
+                .fail(function () {
+                    $loader.hide();
+                    $empty.removeClass('d-none')
+                          .html('<i class="bi bi-exclamation-triangle text-danger me-1"></i> Bakiye yüklenemedi.');
+                });
+        }
+
+        // --- 2. İŞLEM GEÇMİŞİ TABLOSU ---
+        let table;
+
+        function initHistoryTable() {
+            table = $('#historyTable').DataTable({
+                responsive: true,
+                processing: true,
+                serverSide: true,
+                order: [[0, 'desc']], // Tarihe göre azalan
+                ajax: {
+                    url: URL_HISTORY,
+                    data: function (d) {
+                        d.supplier_id = SUPPLIER_ID;
+                        d.transaction_type = $('#fType').val();
+                        d.currency = $('#fCur').val();
+                        // FAZ 11 / UX-04 — genişletilmiş filtreler
+                        d.date_from = $('#fDateFrom').val();
+                        d.date_to = $('#fDateTo').val();
+                        d.material_type = $('#fMaterial').val();
+                        d.min_amount = $('#fMinAmount').val();
+                        d.max_amount = $('#fMaxAmount').val();
+                    }
+                },
+                columns: [
+                    {
+                        data: 'date',
+                        render: d => `<span class="text-white fw-bold fs-7">${d}</span>`
+                    },
+                    {
+                        data: 'process_no',
+                        render: function (d) {
+                            // FAZ 11 / SYNC-03: Tıklanabilir + kopyalanabilir badge
+                            if (!d) return '-';
+                            const safe = String(d).replace(/'/g, "\\'");
+                            return `<span class="badge badge-light-dark font-monospace fs-8 opacity-75" ` +
+                                   `style="cursor:pointer;" ` +
+                                   `title="Kopyalamak için tıklayın — Toptan ekranındaki fiş no ile eşleştirebilirsiniz" ` +
+                                   `onclick="copyToClipboard('${safe}')">${d} ` +
+                                   `<i class="bi bi-clipboard fs-9 ms-1 opacity-50"></i></span>`;
+                        }
+                    },
+                    {
+                        data: 'transaction_type',
+                        render: function (d) {
+                            // Backend'den gelen transaction_type kodlarına göre renklendirme
+                            if (['PURCHASE', 'STOCK_IN', 'ORDER_IN', 'ENTRY'].includes(d))
+                                return `<span class="badge badge-light-danger fw-bolder px-2 py-1"><i class="bi bi-arrow-down-short text-danger"></i> GİRİŞ</span>`;
+                            return `<span class="badge badge-light-success fw-bolder px-2 py-1"><i class="bi bi-arrow-up-short text-success"></i> ÇIKIŞ</span>`;
+                        }
+                    },
+                    {
+                        data: 'product__name', defaultContent: '-',
+                        render: function (d, t, r) {
+                            // FAZ 11 / CAT-01: Fiş Kalemi Tipi etiketi (badge)
+                            const lbl = r.line_item_label || '';
+                            const typ = r.line_item_type || '';
+                            let badgeClass = 'badge-light-secondary';
+                            if (typ.startsWith('GOLD')) badgeClass = 'badge-light-warning';
+                            else if (typ === 'SCRAP_GRAM') badgeClass = 'badge-light-danger';
+                            else if (typ.startsWith('BRACELET')) badgeClass = 'badge-light-warning';
+                            else if (typ.startsWith('SILVER')) badgeClass = 'badge-light-info';
+                            else if (typ === 'DIAMOND_PIECE') badgeClass = 'badge-light-primary';
+                            else if (typ === 'WATCH_PIECE') badgeClass = 'badge-light-success';
+                            else if (typ === 'CASH_PAYMENT') badgeClass = 'badge-light-info';
+                            const badge = lbl
+                                ? `<span class="badge ${badgeClass} fs-9 me-1">${lbl}</span>`
+                                : '';
+                            return `${badge}<span class="text-white">${d || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'quantity',
+                        className: 'text-end',
+                        render: (d, t, r) => {
+                            // r.unit_str backend'den Gr veya Ad olarak gelir
+                            return `<span class="text-gold fw-bold">${fmt(d, 2)}</span> <small class="text-muted">${r.unit_str || ''}</small>`;
+                        }
+                    },
+                    {
+                        data: 'unit_price_calc',
+                        className: 'text-end',
+                        render: d => `<span class="text-muted fs-8">${fmt(d, 2)}</span>`
+                    },
+                    {
+                        data: 'amount_paid_hs',
+                        className: 'text-end',
+                        render: d => d > 0 ? `<span class="text-white fw-bolder">${fmt(d, 2)}</span> <span class="text-muted fs-9">HS</span>` : '-'
+                    },
+                    {
+                        data: 'amount_paid_tl',
+                        className: 'text-end',
+                        render: d => d > 0 ? `<span class="text-white fw-bolder">${fmt(d, 2)}</span> <span class="text-muted fs-9">₺</span>` : '-'
+                    }
+                ],
+                language: {
+                    zeroRecords: "Kayıt bulunamadı",
+                    processing: "Yükleniyor...",
+                    paginate: {next: ">", previous: "<"}
+                },
+                dom: 'rt<"d-flex justify-content-between mt-3"ip>',
+
+                // FAZ 11 / UX-05 — Process_no bazlı görsel gruplaşma (2026-04-24)
+                // Ardışık aynı process_no'ya sahip satırlar tek bir fişin parçaları
+                // olarak görünür: ilk satırda Belge No tam, sonrakilerde "↳" işareti
+                // ile alt-satır vurgusu.
+                drawCallback: function () {
+                    let lastProcessNo = null;
+                    $(this.api().table().body()).find('tr').each(function () {
+                        const $row = $(this);
+                        const $cell = $row.find('td').eq(1); // process_no kolonu (idx=1)
+                        if (!$cell.length) return;
+                        const currentNo = $cell.text().trim();
+                        if (currentNo && currentNo === lastProcessNo) {
+                            // Aynı fişin ardışık satırı: belge no'yu sadeleştir
+                            $cell.html(
+                                '<span class="text-muted opacity-50 fs-8" title="Aynı fişin alt kalemi">↳</span>'
+                            );
+                            $row.addClass('process-grouped-child');
+                            $row.css('border-left', '3px solid rgba(255,215,0,.25)');
+                        } else {
+                            $row.css('border-left', '3px solid transparent');
+                        }
+                        lastProcessNo = currentNo;
+                    });
+                }
+            });
+        }
+
+        // --- 3. YARDIMCI FONKSİYONLAR ---
+        function showBankModal() {
+            $('#bankModal').modal('show');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'success',
+                    title: 'Kopyalandı', showConfirmButton: false, timer: 1500,
+                    background: '#1A253A', color: '#fff'
+                });
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // FAZ 11 / BL-01 — CARİ DÜZELTME (MUTABAKAT) İŞLEMLERİ
+        // ══════════════════════════════════════════════════════════════════
+
+        const URL_ADJUSTMENT_CREATE = "{% url 'suppliers:adjustment-create' %}";
+
+        // Modal'ı aç — her açılışta bakiye panelini yeniden doldurur.
+        function showAdjustmentModal() {
+            resetAdjustmentForm();
+            loadAdjustmentBalances();
+            $('#adjustmentModal').modal('show');
+        }
+
+        // Form'u baştan sıfırla — kullanıcı modalı kapatıp tekrar açarsa temiz başlar.
+        function resetAdjustmentForm() {
+            $('#adjustmentForm')[0].reset();
+            $('input[name="adj_mode"][value="ALL"]').prop('checked', true);
+            $('#adjCurrencyGroup').hide();
+            $('#adjTargetGroup').hide();
+            $('#adjSubmitBtn').prop('disabled', false);
+            $('#adjSubmitBtn .spinner-border').addClass('d-none');
+            $('#adjSubmitBtn .btn-label').text('Düzeltmeyi Uygula');
+        }
+
+        // Mevcut bakiyeleri API'den çek ve modal içinde göster.
+        function loadAdjustmentBalances() {
+            const container = $('#adjBalanceSummary');
+            container.html('<div class="col-12 text-center text-muted fs-8 py-3">Yükleniyor...</div>');
+
+            $.getJSON(URL_BALANCES, {supplier_id: SUPPLIER_ID})
+                .done(function (res) {
+                    container.empty();
+
+                    const rows = (res.data || []).filter(
+                        r => Math.abs(r.receivable) >= 0.01 || Math.abs(r.payable) >= 0.01
+                    );
+
+                    if (rows.length === 0) {
+                        container.html(
+                            '<div class="col-12 text-center text-success fs-8 py-3">' +
+                            '<i class="bi bi-check-circle-fill me-1"></i> Aktif bakiye bulunmuyor.' +
+                            '</div>'
+                        );
+                        return;
+                    }
+
+                    rows.forEach(item => {
+                        let color = 'text-muted', label = 'Dengede';
+                        if (item.net > 0) { color = 'text-success'; label = 'Biz Alacaklıyız'; }
+                        else if (item.net < 0) { color = 'text-danger'; label = 'Biz Borçluyuz'; }
+
+                        container.append(`
+                            <div class="col-6 col-md-4">
+                                <div class="p-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                                    <div class="fs-9 text-muted fw-bold">${item.currency}</div>
+                                    <div class="fw-bolder ${color}">${fmt(Math.abs(item.net), 2)}</div>
+                                    <div class="fs-9 ${color} opacity-75">${label}</div>
+                                </div>
+                            </div>
+                        `);
+                    });
+                })
+                .fail(function () {
+                    container.html(
+                        '<div class="col-12 text-center text-danger fs-8 py-3">' +
+                        '<i class="bi bi-exclamation-triangle me-1"></i> Bakiye yüklenemedi.' +
+                        '</div>'
+                    );
+                });
+        }
+
+        // Mod değişimi — currency/target alanlarını gizle/göster.
+        $(document).on('change', 'input[name="adj_mode"]', function () {
+            const mode = $(this).val();
+            if (mode === 'ALL') {
+                $('#adjCurrencyGroup').hide();
+                $('#adjTargetGroup').hide();
+            } else if (mode === 'BY_CURRENCY') {
+                $('#adjCurrencyGroup').show();
+                $('#adjTargetGroup').hide();
+            } else if (mode === 'CUSTOM') {
+                $('#adjCurrencyGroup').show();
+                $('#adjTargetGroup').show();
+            }
+        });
+
+        // Adjustment POST — sunucuya gönder, dönen sonuca göre toast ve refresh.
+        function submitAdjustment() {
+            const mode = $('input[name="adj_mode"]:checked').val();
+            const currency = ($('#adjCurrency').val() || '').trim();
+            const targetAmount = ($('#adjTargetAmount').val() || '').trim();
+            const description = ($('#adjDescription').val() || '').trim();
+
+            // Ön doğrulama
+            if (description.length < 3) {
+                Swal.fire({
+                    icon: 'warning', title: 'Açıklama zorunludur',
+                    text: 'En az 3 karakter uzunluğunda bir açıklama girin.',
+                    background: '#1A253A', color: '#fff'
+                });
+                return;
+            }
+            if ((mode === 'BY_CURRENCY' || mode === 'CUSTOM') && !currency) {
+                Swal.fire({
+                    icon: 'warning', title: 'Para birimi seçilmedi',
+                    text: 'Lütfen bir para birimi seçin.',
+                    background: '#1A253A', color: '#fff'
+                });
+                return;
+            }
+            if (mode === 'CUSTOM' && !targetAmount) {
+                Swal.fire({
+                    icon: 'warning', title: 'Hedef tutar eksik',
+                    text: 'Özel tutar modunda hedef net bakiye girilmelidir.',
+                    background: '#1A253A', color: '#fff'
+                });
+                return;
+            }
+
+            // Onay diyaloğu — geri alınamayan işlem uyarısı
+            const modeLabel = {
+                'ALL': 'tüm para birimlerini sıfırlayacaksınız',
+                'BY_CURRENCY': `${currency} bakiyesini sıfırlayacaksınız`,
+                'CUSTOM': `${currency} bakiyesini ${targetAmount} değerine eşitleyeceksiniz`
+            }[mode];
+
+            Swal.fire({
+                title: 'Onaylıyor musunuz?',
+                html: `Bu işlemle <strong>${modeLabel}</strong>.<br>` +
+                      `Bir <strong class="text-warning">Mutabakat Düzeltmesi Fişi</strong> kesilecek.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Uygula',
+                cancelButtonText: 'Vazgeç',
+                background: '#1A253A', color: '#fff',
+                confirmButtonColor: '#FFB400',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+
+                // Submit: spinner aç, butonu kilitle
+                $('#adjSubmitBtn').prop('disabled', true);
+                $('#adjSubmitBtn .spinner-border').removeClass('d-none');
+                $('#adjSubmitBtn .btn-label').text('İşleniyor...');
+
+                const payload = {
+                    'csrfmiddlewaretoken': $('#adjustmentForm [name=csrfmiddlewaretoken]').val(),
+                    'supplier_id': SUPPLIER_ID,
+                    'mode': mode,
+                    'currency': currency,
+                    'target_amount': targetAmount,
+                    'description': description
+                };
+
+                $.post(URL_ADJUSTMENT_CREATE, payload)
+                    .done(function (res) {
+                        if (res && res.result) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Düzeltme Uygulandı',
+                                html: `Fiş No: <code class="text-warning">${res.process_no}</code><br>` +
+                                      `${res.entries_count || 0} para birimi için kayıt açıldı.`,
+                                background: '#1A253A', color: '#fff',
+                                confirmButtonColor: '#28c76f'
+                            }).then(() => {
+                                $('#adjustmentModal').modal('hide');
+                                // Sayfayı yenilemeden bakiye ve tabloyu tazele
+                                loadBalances();
+                                if (table) table.ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error', title: 'Hata',
+                                text: (res && res.error_msg) || 'Bilinmeyen hata.',
+                                background: '#1A253A', color: '#fff'
+                            });
+                        }
+                    })
+                    .fail(function (xhr) {
+                        const msg = (xhr.responseJSON && xhr.responseJSON.error_msg) ||
+                            'Sunucu hatası. Lütfen tekrar deneyin.';
+                        Swal.fire({
+                            icon: 'error', title: 'İşlem Başarısız',
+                            text: msg,
+                            background: '#1A253A', color: '#fff'
+                        });
+                    })
+                    .always(function () {
+                        $('#adjSubmitBtn').prop('disabled', false);
+                        $('#adjSubmitBtn .spinner-border').addClass('d-none');
+                        $('#adjSubmitBtn .btn-label').text('Düzeltmeyi Uygula');
+                    });
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // FAZ 11 / UX-04 — GENİŞLETİLMİŞ FİLTRE FONKSİYONLARI
+        // ══════════════════════════════════════════════════════════════════
+
+        // Hızlı tarih chip'leri için tarih hesaplayıcı.
+        function _calculateDateRange(range) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            let from = null;
+            const toStr = today.toISOString().slice(0, 10);
+
+            if (range === 'month') {
+                from = new Date(now.getFullYear(), now.getMonth(), 1);
+            } else if (range === '3months') {
+                from = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            } else if (range === 'year') {
+                from = new Date(now.getFullYear(), 0, 1);
+            } else { // 'all'
+                return {from: '', to: ''};
+            }
+            return {from: from.toISOString().slice(0, 10), to: toStr};
+        }
+
+        // Detaylı filtre alanlarını sıfırla (chip'leri etkilemez).
+        function clearAdvancedFilters() {
+            $('#fDateFrom, #fDateTo, #fMinAmount, #fMaxAmount').val('');
+            $('#fMaterial').val('');
+            // Chip durumunu da sıfırla
+            $('.quick-filter').removeClass('active');
+            $('.quick-filter[data-range="all"]').addClass('active');
+            if (table) table.ajax.reload();
+        }
+
+        $(document).ready(function () {
+            loadBalances();
+            initHistoryTable();
+
+            // Filtre Değişikliklerini Dinle
+            $('#fType, #fCur, #fMaterial, #fDateFrom, #fDateTo').on('change', function () {
+                table.ajax.reload();
+            });
+
+            // Min/Max tutar — kullanıcı yazmayı bırakınca tetikle (debounce)
+            let _amountTimer;
+            $('#fMinAmount, #fMaxAmount').on('input', function () {
+                clearTimeout(_amountTimer);
+                _amountTimer = setTimeout(() => table.ajax.reload(), 500);
+            });
+
+            // Hızlı tarih chip'leri
+            $(document).on('click', '.quick-filter', function () {
+                $('.quick-filter').removeClass('active');
+                $(this).addClass('active');
+                const range = $(this).data('range');
+                const {from, to} = _calculateDateRange(range);
+                $('#fDateFrom').val(from);
+                $('#fDateTo').val(to);
+                table.ajax.reload();
+            });
+        });
+    </script>
+{% endblock footer %}

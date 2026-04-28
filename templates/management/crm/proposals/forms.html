@@ -1,0 +1,419 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #3f4254;
+            border-bottom: 1px solid #eff2f5;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .total-row {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="app-toolbar py-3 py-lg-6">
+                <div class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            {{ title }}
+                        </h1>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'proposals:index' %}" class="btn btn-light btn-sm">Geri Dön</a>
+                        <button type="button" id="btnSaveProposal" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-save"></i> Kaydet
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-container container-xxl">
+                <div class="card card-flush py-4">
+                    <div class="card-body pt-0">
+                        <form id="proposalForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="proposal_id" value="{{ proposal.id|default:'' }}">
+
+                            <div class="row g-5 mb-5">
+                                <div class="col-md-8">
+                                    <label class="required form-label">Teklif Başlığı</label>
+                                    <input type="text" class="form-control" name="title"
+                                           value="{{ proposal.title|default:'' }}" required
+                                           placeholder="Örn: 2025 Lisans Yenileme">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="required form-label">Tarih</label>
+                                    <input type="date" class="form-control" name="date"
+                                           value="{{ proposal.date|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="required form-label">Geçerlilik</label>
+                                    <input type="date" class="form-control" name="valid_until"
+                                           value="{{ proposal.valid_until|date:'Y-m-d'|default:'' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="row g-5 mb-5">
+                                <div class="col-md-4">
+                                    <label class="form-label">Müşteri Adayı (Lead)</label>
+                                    <select class="form-select" data-control="select2" name="lead_id"
+                                            data-placeholder="Seçiniz">
+                                        <option></option>
+                                        {% for l in leads %}
+                                            <option value="{{ l.id }}"
+                                                    {% if proposal.lead_id == l.id or initial_lead.id == l.id %}selected{% endif %}>{{ l.full_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Mevcut Firma</label>
+                                    <select class="form-select" data-control="select2" name="company_id"
+                                            data-placeholder="Seçiniz">
+                                        <option></option>
+                                        {% for c in companies %}
+                                            <option value="{{ c.id }}"
+                                                    {% if proposal.company_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="required form-label">Durum</label>
+                                    <select class="form-select" name="status">
+                                        {% for k, v in status_choices %}
+                                            <option value="{{ k }}"
+                                                    {% if proposal.status == k %}selected{% endif %}>{{ v }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="required form-label">Para Birimi</label>
+                                    <select class="form-select" name="currency">
+                                        {% for k, v in currency_choices %}
+                                            <option value="{{ k }}"
+                                                    {% if proposal.currency == k %}selected{% endif %}>{{ v }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-section-title">Hizmet ve Ürünler</div>
+                            <div class="table-responsive mb-10">
+                                <table class="table table-row-dashed gs-2 gy-3" id="itemsTable">
+                                    <thead>
+                                    <tr class="fw-bold fs-7 text-gray-800 border-bottom border-gray-200">
+                                        <th class="min-w-150px">Paket</th>
+                                        <th class="min-w-150px">Cihaz</th>
+                                        <th class="min-w-100px">Şube/Mağaza Tanımı</th>
+                                        <th class="min-w-200px">Açıklama</th>
+                                        <th class="w-100px">Adet</th>
+                                        <th class="w-150px">Birim Fiyat</th>
+                                        <th class="w-125px text-end">Tutar</th>
+                                        <th class="w-50px text-center"><i class="fa-solid fa-trash-can"></i></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="itemsBody">
+                                    {% if proposal %}
+                                        {% for item in proposal.items.all %}
+                                            <tr class="item-row">
+                                                <td>
+                                                    <select class="form-select form-select-sm js-package-select"
+                                                            name="item_package[]">
+                                                        <option value="">-- Yok --</option>
+                                                        {% for p in packages %}
+                                                            <option value="{{ p.id }}"
+                                                                    {% if item.package_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm js-device-select"
+                                                            name="item_device[]">
+                                                        <option value="">-- Yok --</option>
+                                                        {% for d in devices %}
+                                                            <option value="{{ d.id }}"
+                                                                    {% if item.device_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                           name="item_store_name[]"
+                                                           value="{{ item.store_name|default:'' }}"
+                                                           placeholder="Örn: Merkez">
+                                                </td>
+                                                <td><input type="text" class="form-control form-control-sm"
+                                                           name="item_description[]" value="{{ item.description }}"
+                                                           required></td>
+                                                <td><input type="number" class="form-control form-control-sm js-calc"
+                                                           name="item_quantity[]" value="{{ item.quantity }}" min="1"
+                                                           required></td>
+                                                <td><input type="number" class="form-control form-control-sm js-calc"
+                                                           name="item_price[]"
+                                                           value="{{ item.unit_price|stringformat:'.2f' }}" step="0.01"
+                                                           required></td>
+                                                <td class="text-end fw-bold row-total">0.00</td>
+                                                <td class="text-center">
+                                                    <button type="button"
+                                                            class="btn btn-icon btn-sm btn-light-danger js-remove-row">
+                                                        <i class="fa-solid fa-xmark"></i></button>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr class="item-row">
+                                            <td>
+                                                <select class="form-select form-select-sm js-package-select"
+                                                        name="item_package[]">
+                                                    <option value="">-- Yok --</option>
+                                                    {% for p in packages %}
+                                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm js-device-select"
+                                                        name="item_device[]">
+                                                    <option value="">-- Yok --</option>
+                                                    {% for d in devices %}
+                                                        <option value="{{ d.id }}">{{ d.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm"
+                                                       name="item_store_name[]" placeholder="Örn: Merkez">
+                                            </td>
+                                            <td><input type="text" class="form-control form-control-sm"
+                                                       name="item_description[]" placeholder="Açıklama" required></td>
+                                            <td><input type="number" class="form-control form-control-sm js-calc"
+                                                       name="item_quantity[]" value="1" min="1" required></td>
+                                            <td><input type="number" class="form-control form-control-sm js-calc"
+                                                       name="item_price[]" value="0.00" step="0.01" required></td>
+                                            <td class="text-end fw-bold row-total">0.00</td>
+                                            <td class="text-center">
+                                                <button type="button"
+                                                        class="btn btn-icon btn-sm btn-light-danger js-remove-row"><i
+                                                        class="fa-solid fa-xmark"></i></button>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-light-primary btn-sm mt-2" id="btnAddRow">
+                                    <i class="fa-solid fa-plus"></i> Satır Ekle
+                                </button>
+                            </div>
+
+                            <div class="row justify-content-end">
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="fw-semibold text-gray-600">Ara Toplam:</span>
+                                        <span class="fw-bold" id="subTotalDisplay">0.00</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="fw-semibold text-gray-600">İskonto:</span>
+                                        <input type="number"
+                                               class="form-control form-control-sm w-100px text-end js-calc"
+                                               name="discount_amount"
+                                               value="{{ proposal.discount_amount|default:'0.00'|stringformat:'.2f' }}"
+                                               step="0.01">
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="fw-semibold text-gray-600">KDV (%):</span>
+                                        <input type="number"
+                                               class="form-control form-control-sm w-100px text-end js-calc"
+                                               name="tax_rate"
+                                               value="{{ proposal.tax_rate|default:'20.00'|stringformat:'.2f' }}"
+                                               step="0.01">
+                                    </div>
+                                    <div class="separator separator-dashed mb-3"></div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fs-4 fw-bold text-gray-800">GENEL TOPLAM:</span>
+                                        <span class="fs-3 fw-bolder text-primary" id="grandTotalDisplay">0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-5 mt-5">
+                                <label class="form-label">Notlar</label>
+                                <textarea class="form-control" name="notes"
+                                          rows="4">{{ proposal.notes|default:'' }}</textarea>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="d-none">
+        <tr id="rowTemplate" class="item-row">
+            <td>
+                <select class="form-select form-select-sm js-package-select" name="item_package[]">
+                    <option value="">-- Yok --</option>
+                    {% for p in packages %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select class="form-select form-select-sm js-device-select" name="item_device[]">
+                    <option value="">-- Yok --</option>
+                    {% for d in devices %}
+                        <option value="{{ d.id }}">{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td><input type="text" class="form-control form-control-sm" name="item_store_name[]"
+                       placeholder="Örn: Merkez">
+            </td>
+            <td><input type="text" class="form-control form-control-sm" name="item_description[]" required></td>
+            <td><input type="number" class="form-control form-control-sm js-calc" name="item_quantity[]" value="1"
+                       min="1" required></td>
+            <td><input type="number" class="form-control form-control-sm js-calc" name="item_price[]" value="0.00"
+                       step="0.01" required></td>
+            <td class="text-end fw-bold row-total">0.00</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-icon btn-sm btn-light-danger js-remove-row"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </td>
+        </tr>
+    </table>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            // ... (Javascript kodlarının aynısı kalacak, ek bir değişiklik gerekmiyor) ...
+            // Hesaplama fonksiyonları genel class yapısını kullandığı için sorunsuz çalışacaktır.
+
+            function calcTotals() {
+                let subTotal = 0;
+                $('#itemsBody .item-row').each(function () {
+                    const qty = parseFloat($(this).find('[name="item_quantity[]"]').val()) || 0;
+                    const price = parseFloat($(this).find('[name="item_price[]"]').val()) || 0;
+                    const total = qty * price;
+                    subTotal += total;
+                    $(this).find('.row-total').text(total.toFixed(2));
+                });
+                const discount = parseFloat($('[name="discount_amount"]').val()) || 0;
+                const taxRate = parseFloat($('[name="tax_rate"]').val()) || 0;
+                const taxBase = Math.max(0, subTotal - discount);
+                const taxAmount = taxBase * (taxRate / 100);
+                const grandTotal = taxBase + taxAmount;
+                $('#subTotalDisplay').text(subTotal.toFixed(2));
+                $('#grandTotalDisplay').text(grandTotal.toFixed(2));
+            }
+
+            $('#btnAddRow').click(function () {
+                const row = $('#rowTemplate').clone().removeAttr('id');
+                $('#itemsBody').append(row);
+            });
+
+            $(document).on('click', '.js-remove-row', function () {
+                if ($('#itemsBody .item-row').length > 1) {
+                    $(this).closest('tr').remove();
+                    calcTotals();
+                } else {
+                    Swal.fire('Uyarı', 'En az bir satır olmalıdır.', 'warning');
+                }
+            });
+
+            $(document).on('input change', '.js-calc', calcTotals);
+
+            $(document).on('change', '.js-package-select', function () {
+                const $row = $(this).closest('tr');
+                const pkgId = $(this).val();
+                if (pkgId) {
+                    $row.find('.js-device-select').val('');
+                    $.get("{% url 'proposals:get_package_info' %}", {id: pkgId}, function (resp) {
+                        if (resp.result) {
+                            $row.find('[name="item_price[]"]').val(resp.price);
+                            $row.find('[name="item_description[]"]').val(resp.name + " Lisansı");
+                            calcTotals();
+                        }
+                    });
+                }
+            });
+
+            $(document).on('change', '.js-device-select', function () {
+                const $row = $(this).closest('tr');
+                const devId = $(this).val();
+                if (devId) {
+                    $row.find('.js-package-select').val('');
+                    $.get("{% url 'proposals:get_device_info' %}", {id: devId}, function (resp) {
+                        if (resp.result) {
+                            $row.find('[name="item_price[]"]').val(resp.price);
+                            $row.find('[name="item_description[]"]').val(resp.name);
+                            calcTotals();
+                        }
+                    });
+                }
+            });
+
+            $('#btnSaveProposal').click(function () {
+                const form = $('#proposalForm')[0];
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                const lead = $('[name="lead_id"]').val();
+                const company = $('[name="company_id"]').val();
+                if (!lead && !company) {
+                    Swal.fire('Eksik Bilgi', 'Lütfen bir Müşteri Adayı veya Firma seçiniz.', 'warning');
+                    return;
+                }
+                $(this).prop('disabled', true).text('Kaydediliyor...');
+                const fd = new FormData(form);
+                $.ajax({
+                    url: "{% url 'proposals:add' %}",
+                    type: "POST",
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    success: function (resp) {
+                        if (resp.result) {
+                            Swal.fire({
+                                title: 'Başarılı',
+                                text: 'Teklif başarıyla kaydedildi.',
+                                icon: 'success',
+                                showCancelButton: true,
+                                confirmButtonText: 'Listeye Dön',
+                                cancelButtonText: 'Düzenlemeye Devam Et'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = "{% url 'proposals:index' %}";
+                                } else {
+                                    if (!$('[name="proposal_id"]').val()) {
+                                        window.history.replaceState(null, null, "?id=" + resp.id);
+                                        $('[name="proposal_id"]').val(resp.id);
+                                        $('.page-heading').text('Teklif Düzenle');
+                                    }
+                                }
+                            });
+                        } else {
+                            Swal.fire('Hata', resp.error_msg, 'error');
+                        }
+                    },
+                    complete: function () {
+                        $('#btnSaveProposal').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Kaydet');
+                    }
+                });
+            });
+
+            calcTotals();
+        });
+    </script>
+{% endblock footer %}

@@ -1,0 +1,860 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-5" id="kt_app_main"
+         style="border:1px groove aliceblue;border-radius:10px;">
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+                <div id="kt_content_container" class="d-flex flex-column-fluid align-items-start container-xxl"
+                     style="max-width:100%;">
+                    <div class="content flex-row-fluid" id="kt_content">
+                        <div class="row my-margin">
+                            <div class="col-md-12">
+                                <div class="card shadow-sm">
+                                    <div class="card-header border-0 pt-6">
+                                        <div class="card-title">
+                                        <span class="card-icon">
+                                            <i class="fa fa-file-invoice text-primary fs-2x"></i>
+                                        </span>
+                                            <h3 class="fw-bolder m-0">İşlem Detayı</h3>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-lg-10 pt-0">
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-10 pb-5 border-bottom border-gray-300">
+                                            <div class="mb-5 mb-md-0">
+                                                <div class="fs-2 fw-bolder text-gray-800 mb-1">{{ process_no }}</div>
+                                                <div class="fs-5 text-gray-600">
+                                                    <i class="fa fa-user me-1"></i> {{ customer_name }}
+                                                </div>
+                                            </div>
+                                            <div class="text-md-end">
+                                                <div class="fs-6 text-gray-500 mb-1">{{ process_date|date:"d/m/Y H:i:s" }}</div>
+                                                <div class="fs-2 fw-bolder text-primary">{{ total_amount|floatformat:2 }}
+                                                    TL
+                                                </div>
+                                                <div class="fs-5 fw-bold text-gray-600">
+                                                    {% if total_gram and total_gram != 0 %}
+                                                        {{ total_gram|floatformat:2 }} gr
+                                                    {% else %}
+                                                        {{ total_piece|default:0 }} adet
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex flex-column gap-5">
+                                            {% for item in items %}
+                                                <div class="border border-dashed border-gray-400 rounded p-5 p-md-7 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center">
+
+                                                    <div class="flex-grow-1 mb-5 mb-xl-0 pe-xl-5">
+                                                        <div class="d-flex align-items-center mb-4">
+                                                            {# ── Ürün Görseli (varsa) ── #}
+                                                            {% if item.product_image_url %}
+                                                                <div class="symbol symbol-60px me-4 overflow-hidden border border-gray-300 rounded">
+                                                                    <img src="{{ item.product_image_url }}" alt="{{ item.product_name }}"
+                                                                         style="width:60px;height:60px;object-fit:cover;">
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="symbol symbol-60px me-4 bg-light-primary d-flex align-items-center justify-content-center rounded border border-gray-300">
+                                                                    <i class="fa-solid fa-gem text-primary fs-2"></i>
+                                                                </div>
+                                                            {% endif %}
+
+                                                            <div class="d-flex flex-column flex-grow-1">
+                                                                <div class="d-flex align-items-center flex-wrap mb-1">
+                                                                    {% if item.is_entry %}
+                                                                        <span class="badge badge-light-success fs-7 fw-bolder me-2 px-3 py-2">
+                                                                            <i class="fa fa-arrow-down text-success me-1"></i> {{ item.transaction_name }}
+                                                                        </span>
+                                                                    {% else %}
+                                                                        <span class="badge badge-light-danger fs-7 fw-bolder me-2 px-3 py-2">
+                                                                            <i class="fa fa-arrow-up text-danger me-1"></i> {{ item.transaction_name }}
+                                                                        </span>
+                                                                    {% endif %}
+
+                                                                    <span class="fs-4 fw-bolder text-gray-800 me-2">{{ item.product_name }}</span>
+                                                                    <span class="fs-5 text-gray-500 me-2">({{ item.quantity_str }})</span>
+
+                                                                    <span class="badge badge-light-primary fw-bolder fs-8 me-2 px-2 py-1">
+                                                                        {{ item.category_name }}
+                                                                    </span>
+                                                                </div>
+
+                                                                {# ── Ürün Meta Rozetleri: Tip, Barkod, Ayar, Alyans ── #}
+                                                                <div class="d-flex flex-wrap gap-2">
+                                                                    {% if item.product_jewelry_type %}
+                                                                        <span class="badge badge-light-info fs-8 px-2 py-1">
+                                                                            <i class="fa-solid fa-tag me-1"></i>{{ item.product_jewelry_type }}
+                                                                        </span>
+                                                                    {% endif %}
+                                                                    {% if item.product_barcode %}
+                                                                        <span class="badge badge-light-dark fs-8 px-2 py-1" style="font-family:monospace;">
+                                                                            <i class="fa-solid fa-barcode me-1"></i>{{ item.product_barcode }}
+                                                                        </span>
+                                                                    {% endif %}
+                                                                    {% if item.product_gold_rate_text %}
+                                                                        <span class="badge badge-light-warning fs-8 px-2 py-1">
+                                                                            <i class="fa-solid fa-medal me-1"></i>{{ item.product_gold_rate_text }}
+                                                                            {% if item.product_milyem %}<span class="text-muted ms-1">({{ item.product_milyem }} M)</span>{% endif %}
+                                                                        </span>
+                                                                    {% endif %}
+                                                                    {% if item.product_ring_size %}
+                                                                        <span class="badge badge-light-success fs-8 px-2 py-1">
+                                                                            <i class="fa-solid fa-ring me-1"></i>Alyans: {{ item.product_ring_size }}
+                                                                        </span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="d-flex flex-wrap text-gray-600 fs-6">
+                                                            <div class="me-8 mb-2">
+                                                                <span class="text-gray-400">Birim:</span>
+                                                                <span class="fw-bold text-gray-800">{{ item.currency }}</span>
+                                                            </div>
+                                                            <div class="me-8 mb-2">
+                                                                <span class="text-gray-400">Fiyat:</span>
+                                                                <span class="fw-bold text-gray-800" data-tr-num="{{ item.unit_price }}" data-tr-dec="2">{{ item.unit_price|floatformat:2 }}</span>
+                                                            </div>
+                                                            <div class="me-8 mb-2">
+                                                                <span class="text-gray-400">Toplam:</span>
+                                                                <span class="fw-bold text-gray-800" data-tr-num="{{ item.amount }}" data-tr-dec="2">{{ item.amount|floatformat:2 }}</span>
+                                                            </div>
+                                                            <div class="mb-2">
+                        <span class="text-gray-400">
+                            <i class="fa fa-user-tie fs-7 me-1"></i> Personel:
+                        </span>
+                                                                <span class="fw-bold text-gray-800">{{ item.employee_name }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="min-w-300px min-w-xl-350px bg-white rounded-4 shadow border border-gray-200 p-5 p-xl-6 mt-5 mt-xl-0">
+
+                                                        {% if item.is_entry %}
+                                                            <div class="d-flex flex-stack bg-light-primary rounded border border-primary border-dashed p-4 shadow-sm">
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="symbol symbol-40px symbol-circle me-3">
+                    <span class="symbol-label bg-white shadow-sm">
+                        <i class="fas fa-arrow-down text-primary fs-3"></i>
+                    </span>
+                                                                    </div>
+                                                                    <div class="d-flex flex-column">
+                                                                        <span class="text-primary fs-8 fw-bolder text-uppercase">İşlem: Alış</span>
+                                                                        <span class="text-gray-800 fs-6 fw-bold">Alış Hası</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    <span class="text-primary fw-bolder fs-2" data-tr-num="{{ item.satis_hasi }}" data-tr-dec="3">{{ item.satis_hasi|floatformat:3 }}</span>
+                                                                    <span class="text-primary fs-7 fw-bold"> HAS</span>
+                                                                </div>
+                                                            </div>
+
+                                                        {% else %}
+                                                            <div class="d-flex flex-stack mb-4 p-4 rounded bg-light-success border border-success border-dashed shadow-sm">
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="symbol symbol-35px symbol-circle me-3">
+                    <span class="symbol-label bg-white shadow-sm">
+                        <i class="fa-solid fa-tags text-success fs-5"></i>
+                    </span>
+                                                                    </div>
+                                                                    <span class="text-success fs-6 fw-bolder text-uppercase">Satış Hası</span>
+                                                                </div>
+                                                                <span class="text-success fw-bolder fs-3">
+                <span data-tr-num="{{ item.satis_hasi }}" data-tr-dec="3">{{ item.satis_hasi|floatformat:3 }}</span> <span class="fs-8">HAS</span>
+            </span>
+                                                            </div>
+
+                                                            <div class="d-flex flex-stack mb-4 px-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <i class="fa-solid fa-calculator text-warning me-3 fs-5"></i>
+                                                                    <span class="text-gray-700 fs-6 fw-bold">Ort. Maliyet</span>
+                                                                </div>
+                                                                <span class="text-warning fw-bolder fs-4">
+                <span data-tr-num="{{ item.maliyet_hasi }}" data-tr-dec="3">{{ item.maliyet_hasi|floatformat:3 }}</span> <span class="fs-8 text-gray-500">HAS</span>
+            </span>
+                                                            </div>
+
+                                                            <div class="separator separator-dashed border-gray-300 my-4"></div>
+
+                                                            <div class="d-flex flex-stack p-4 rounded {% if item.kar_hasi >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white shadow">
+                                                                <div class="d-flex flex-column">
+                <span class="text-white opacity-75 fs-8 fw-bolder text-uppercase mb-1">
+                    {% if item.kar_hasi >= 0 %}Net Kâr{% else %}Net Zarar{% endif %}
+                </span>
+                                                                </div>
+                                                                <div class="text-end">
+                <span class="text-white fw-bolder fs-2" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                    {% if item.kar_hasi >= 0 %}+{% endif %}<span data-tr-num="{{ item.kar_hasi }}" data-tr-dec="3">{{ item.kar_hasi|floatformat:3 }}</span>
+                </span>
+                                                                    <span class="text-white opacity-75 fs-8 fw-bold text-uppercase ms-1">HAS</span>
+                                                                </div>
+                                                            </div>
+                                                        {% endif %}
+
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detay Modal -->
+
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/tr.js"></script>
+
+    <script>
+        // ── TR locale sayı hidrasyonu: data-tr-num + data-tr-dec ──
+        // Örn: data-tr-num="22524.22" data-tr-dec="2" → "22.524,22"
+        (function () {
+            function hydrate() {
+                document.querySelectorAll('[data-tr-num]').forEach(function (el) {
+                    var raw = el.getAttribute('data-tr-num');
+                    if (raw === null || raw === '') return;
+                    var dec = parseInt(el.getAttribute('data-tr-dec') || '2', 10);
+                    var n = parseFloat(raw);
+                    if (isNaN(n)) return;
+                    el.textContent = n.toLocaleString('tr-TR', {
+                        minimumFractionDigits: dec,
+                        maximumFractionDigits: dec
+                    });
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', hydrate);
+            } else {
+                hydrate();
+            }
+        })();
+    </script>
+
+    <script>
+        const filtersPanel = (function () {
+            // ... Mevcut filtersPanel kodları ...
+            // (Değişiklik yok)
+            const st = {
+                process_kind: 'all',
+                tx_kind: 'all',
+                customer: 'all',
+                scope: 'today',
+                date_from: '',
+                date_to: ''
+            };
+            const ddmmyyyy = function (d) {
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = d.getFullYear();
+                return dd + '/' + mm + '/' + yy;
+            };
+            const today = function () {
+                return new Date();
+            };
+            const addDays = function (d, n) {
+                const x = new Date(d);
+                x.setDate(x.getDate() + n);
+                return x;
+            };
+            const startOfWeek = function (d) {
+                const x = new Date(d);
+                const wd = (x.getDay() + 6) % 7;
+                x.setDate(x.getDate() - wd);
+                return x;
+            };
+            const startOfMonth = function (d) {
+                return new Date(d.getFullYear(), d.getMonth(), 1);
+            };
+
+            function setQuick(scope) {
+                st.scope = scope;
+                const now = today();
+                if (scope === 'today') {
+                    st.date_from = ddmmyyyy(now);
+                    st.date_to = ddmmyyyy(now);
+                } else if (scope === 'yesterday') {
+                    const y = addDays(now, -1);
+                    st.date_from = ddmmyyyy(y);
+                    st.date_to = ddmmyyyy(y);
+                } else if (scope === 'week') {
+                    const s = startOfWeek(now);
+                    st.date_from = ddmmyyyy(s);
+                    st.date_to = ddmmyyyy(now);
+                } else if (scope === 'month') {
+                    const s = startOfMonth(now);
+                    st.date_from = ddmmyyyy(s);
+                    st.date_to = ddmmyyyy(now);
+                } else if (scope === 'all') {
+                    st.date_from = '';
+                    st.date_to = '';
+                }
+            }
+
+            setQuick('today');
+
+            function toParams() {
+                return {
+                    process_kind: st.process_kind,
+                    transaction_type: st.tx_kind,
+                    customer_filter: st.customer,
+                    date_from: st.date_from || '',
+                    date_to: st.date_to || ''
+                };
+            }
+
+            function syncChips() {
+                const setAct = function (wrap, attr, val) {
+                    document.querySelectorAll(wrap + ' [' + attr + ']').forEach(function (el) {
+                        el.classList.toggle('active', el.getAttribute(attr) === val);
+                    });
+                };
+                setAct('#pf_process', 'data-val', st.process_kind);
+                setAct('#pf_tx', 'data-val', st.tx_kind);
+                setAct('#pf_customer', 'data-val', st.customer);
+                setAct('#pf_dates', 'data-scope', st.scope);
+
+                document.getElementById('pf_range').style.display = (st.scope === 'range') ? 'flex' : 'none';
+                renderActiveChips();
+            }
+
+            function renderActiveChips() {
+                const wrap = document.getElementById('pf_active');
+                wrap.innerHTML = '';
+                const add = function (label, field) {
+                    const el = document.createElement('span');
+                    el.className = 'chip-mini';
+                    el.dataset.field = field;
+                    el.innerHTML = label + ' <span class="x">&times;</span>';
+                    wrap.appendChild(el);
+                };
+                if (st.process_kind !== 'all') {
+                    const map = {fast: 'Hızlı', retail: 'Perakende', wholesale: 'Toptan'};
+                    add('İşlem Türü: ' + map[st.process_kind], 'process_kind');
+                }
+                if (st.tx_kind !== 'all') {
+                    add('Yön: ' + (st.tx_kind === 'SALE' ? 'Satış' : 'Alış'), 'tx_kind');
+                }
+                if (st.customer !== 'all') {
+                    add('Müşteri: ' + (st.customer === 'with_customer' ? 'Müşterili' : 'Müşterisiz'), 'customer');
+                }
+                if (st.scope === 'range' && st.date_from && st.date_to) {
+                    add('Tarih: ' + st.date_from + ' – ' + st.date_to, 'date');
+                } else if (!['today'].includes(st.scope)) {
+                    const map2 = {yesterday: 'Dün', week: 'Bu Hafta', month: 'Bu Ay', all: 'Tümü'};
+                    if (map2[st.scope]) add('Tarih: ' + map2[st.scope], 'date');
+                }
+                wrap.querySelectorAll('.chip-mini .x').forEach(function (x) {
+                    x.addEventListener('click', function (e) {
+                        const f = e.target.parentElement.dataset.field;
+                        if (f === 'process_kind') st.process_kind = 'all';
+                        if (f === 'tx_kind') st.tx_kind = 'all';
+                        if (f === 'customer') st.customer = 'all';
+                        if (f === 'date') setQuick('today');
+                        syncChips();
+                        _reload();
+                    });
+                });
+            }
+
+            let dtRef = null;
+            const _reload = function () {
+                if (dtRef) dtRef.ajax.reload();
+            };
+
+            function init(dt) {
+                dtRef = dt;
+                if (window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.tr) flatpickr.localize(flatpickr.l10ns.tr);
+                if (window.flatpickr) {
+                    flatpickr('#pf_from', {dateFormat: 'd/m/Y', locale: 'tr'});
+                    flatpickr('#pf_to', {dateFormat: 'd/m/Y', locale: 'tr'});
+                }
+                document.querySelectorAll('#pf_process .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.process_kind = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_tx .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.tx_kind = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_customer .chip').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        st.customer = b.dataset.val;
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.querySelectorAll('#pf_dates .dq').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        const sc = b.dataset.scope;
+                        if (sc === 'range') {
+                            st.scope = 'range';
+                        } else {
+                            setQuick(sc);
+                        }
+                        syncChips();
+                        _reload();
+                    });
+                });
+                document.getElementById('pf_apply').addEventListener('click', function () {
+                    const s = (document.getElementById('pf_from').value || '').trim();
+                    const e = (document.getElementById('pf_to').value || '').trim();
+                    if (s && e) {
+                        st.scope = 'range';
+                        st.date_from = s;
+                        st.date_to = e;
+                        syncChips();
+                        _reload();
+                    }
+                });
+                document.getElementById('pf_clear').addEventListener('click', function () {
+                    setQuick('today');
+                    syncChips();
+                    _reload();
+                });
+                syncChips();
+            }
+
+            return {init: init, toParams: toParams};
+        })();
+    </script>
+
+    <script>
+        function fmtTL(v) {
+            const n = Number(v) || 0;
+            const s = n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+            return s + '\u00A0₺';
+        }
+
+        function fmtHS(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 3}) + '\u00A0gr';
+        }
+
+        function fmtRate(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + '\u00A0₺/gr';
+        }
+
+        function badgeTx(t) {
+            switch (t) {
+                case 'SALE':
+                    return '<span class="tx-pill sale">Satış</span>';
+                case 'PURCHASE':
+                    return '<span class="tx-pill purchase">Alış</span>';
+                case 'RETURN':
+                    return '<span class="tx-pill return">İade</span>';
+                case 'STOCK_IN':
+                    return '<span class="tx-pill stock">Stok</span>';
+                case 'ORDER_IN':
+                    return '<span class="tx-pill order">Sipariş</span>';
+                default:
+                    return '<span class="tx-pill order">İşlem</span>';
+            }
+        }
+
+        function rowClass(t) {
+            if (t === 'SALE') return 'tx-sale';
+            if (t === 'PURCHASE') return 'tx-buy';
+            if (t === 'RETURN') return 'tx-return';
+            if (t === 'STOCK_IN') return 'tx-stock';
+            if (t === 'ORDER_IN') return 'tx-order';
+            return '';
+        }
+
+        let dt = $("#kt_datatable_example_1").DataTable({
+            dom: "<'top d-flex justify-content-end'f>rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+            info: false,
+            paging: true,
+            lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
+            pageLength: 25,
+            searchDelay: 400,
+            processing: true,
+            serverSide: true,
+            order: [[8, 'desc']],
+            orderMulti: false,
+            autoWidth: false,
+            stateSave: false,
+            initComplete: function () {
+                $('#kt_datatable_example_1_filter').appendTo('#dataTableSearch').addClass('mb-0');
+            },
+            select: {style: 'multi', selector: "td:first-child input[type='checkbox']", className: 'row-selected'},
+            ajax: {
+                url: "/process/get-all",
+                type: "GET",
+                dataType: "json",
+                data: function (d) {
+                    Object.assign(d, filtersPanel.toParams());
+                }
+            },
+            columns: [
+                {
+                    data: null,
+                    orderable: false,
+                    className: "text-center",
+                    render: function (d, t, row) {
+                        return '<input class="form-check-input" type="checkbox" value="' + row.process_no + '">';
+                    }
+                },
+                {
+                    data: "process_no",
+                    className: "dt-nowrap",
+                    render: function (data, type, row) {
+                        return '<span style="color:#1235e8;font-weight:600;cursor:pointer" class="open-process-modal" data-process-no="' + data + '">' + data + '</span>';
+                    }
+                },
+                {
+                    data: "quantity_display",
+                    className: "dt-nowrap text-end",
+                    orderable: false
+                },
+                // 2. Ürün (YENİ)
+                {
+                    data: "product_name",
+                    className: "dt-nowrap",
+                    orderable: false // Backend'de sort eklemediysek false
+                },
+                // 3. Miktar (YENİ)
+
+                {
+                    data: "transaction_type", className: "dt-nowrap", render: function (d) {
+                        return badgeTx(d);
+                    }
+                },
+                {data: "employee", className: "dt-nowrap"},
+                {data: "customer", className: "dt-nowrap"},
+
+                {
+                    data: "date",
+                    className: "dt-nowrap",
+                    render: function (d) {
+                        if (!d) return '-';
+                        const x = new Date(d);
+                        return x.toLocaleDateString('tr-TR') + ' ' + x.toLocaleTimeString('tr-TR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                },
+                // ... DataTable columns ayarları ...
+                {
+                    data: null,
+                    orderable: false,
+                    className: "text-center",
+                    render: function (data, type, row) {
+                        const pn = encodeURIComponent(row.process_no);
+
+                        // Detay ve Fiş Linkleri
+                        const urlDetail = '/process/detail/' + pn + '/';
+                        const urlReceipt80 = '/process/receipt/' + pn + '/?paper=80&print=1';
+
+                        // Fatura Oluşturma Linki (Proforma Ekranı)
+                        const urlInvoiceCreate = "{% url 'invoices:create-from-process-group' %}?process_no=" + pn;
+
+                        let actionHtml = '<div class="d-flex justify-content-center gap-2">';
+
+                        // 1. Detay Butonu
+                        actionHtml += '<a href="' + urlDetail + '" class="btn btn-sm btn-light-primary" target="_blank" title="İşlem Detayı"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>';
+
+                        // 2. Fiş Butonu
+                        actionHtml += '<a href="' + urlReceipt80 + '" class="btn btn-sm btn-light-info" target="_blank" title="Termal Fiş (80mm)"><i class="fa-solid fa-receipt"></i></a>';
+
+                        // 3. Fatura / Gider Pusulası Butonu Mantığı
+                        if (row.invoice_url && row.invoice_url.trim() !== '') {
+                            // DURUM A: Kayıt zaten oluşmuş (Pavo veya Manuel).
+
+                            // Eğer Alış (PURCHASE) ise -> Gider Pusulası Görüntüle
+                            // Eğer Satış (SALE) ise -> Fatura Görüntüle
+
+                            // NOT: row.transaction_type backend'den gelmeli. Kodunuzda bu alan var.
+                            const isPurchase = (row.transaction_type === 'PURCHASE');
+
+                            let btnClass = 'btn-light-success';
+                            let iconClass = 'fa-file-invoice';
+                            let title = row.invoice_no ? ('Fatura No: ' + row.invoice_no) : 'Fatura Görüntüle';
+
+                            // URL'i dinamik olarak belirle
+                            // Backend'den gelen row.invoice_url zaten doğru yere (detail veya expense-note) gitmeli ama
+                            // eğer backend sadece ID dönüyorsa URL'i burada kurabiliriz.
+                            // Sizin yapınızda row.invoice_url tam URL olarak geliyor gibi görünüyor.
+                            // Ancak biz Gider Pusulası için özel bir URL istiyoruz.
+
+                            // Eğer row.invoice_url Pavo linki DEĞİLSE ve bizim sistem içindeyse müdahale edelim:
+                            let targetUrl = row.invoice_url;
+
+                            // Eğer Pavo linki değilse ve Alış ise, URL'i değiştir:
+                            if (isPurchase && targetUrl.indexOf('pavo') === -1) {
+                                // Burada invoice ID'ye ihtiyacımız var. row objesinde invoice_id varsa kullanın.
+                                // Yoksa backend'den invoice_id dönmesini sağlayın.
+                                if (row.invoice_id) {
+                                    // Django URL reverse JS içinde zor olduğu için replace yöntemi:
+                                    targetUrl = "{% url 'invoices:expense-note-detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.invoice_id);
+                                    title = 'Gider Pusulası Görüntüle';
+                                    btnClass = 'btn-light-warning'; // Farklı renk
+                                    iconClass = 'fa-file-contract'; // Farklı ikon
+                                }
+                            }
+
+                            actionHtml += '<a href="' + targetUrl + '" class="btn btn-sm ' + btnClass + '" target="_blank" title="' + title + '"><i class="fa-solid ' + iconClass + '"></i></a>';
+
+                        } else {
+                            // DURUM B: Belge kesilmemiş (Sadece Satışlar için geçerli olmalı, çünkü Alışlar otomatik oluşuyor)
+                            // Proforma Fatura Oluşturma ekranına yönlendir.
+                            actionHtml += '<a href="' + urlInvoiceCreate + '" class="btn btn-sm btn-light-warning" title="Fatura Oluştur"><i class="fa-solid fa-file-signature"></i></a>';
+                        }
+
+                        actionHtml += '</div>';
+                        return actionHtml;
+                    }
+                }
+            ],
+            language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+            createdRow: function (row, data) {
+                $(row).addClass(rowClass(data.transaction_type));
+            }
+        });
+        $('#checkAll').on('click', function () {
+            var isChecked = $(this).prop('checked');
+            var rows = dt.rows({page: 'current'}).nodes();
+
+            // Checkbox'ların görsel durumunu güncelle
+            $(rows).find('input[type="checkbox"]').prop('checked', isChecked);
+
+            // DataTables Select eklentisinin durumunu güncelle
+            if (isChecked) {
+                dt.rows({page: 'current'}).select();
+            } else {
+                dt.rows({page: 'current'}).deselect();
+            }
+        });
+        dt.on('deselect', function (e, dt, type, indexes) {
+            if (type === 'row') {
+                $('#checkAll').prop('checked', false);
+            }
+        });
+
+        $('#kt_datatable_example_1').on('xhr.dt', function () {
+            const json = dt.ajax.json();
+            if (!json || !json.data) return;
+            let sumBuy = 0, sumSale = 0, sumNet = 0, sumHas = 0;
+            json.data.forEach(function (r) {
+                sumBuy += Number(r.purchase_amount || 0);
+                sumSale += Number(r.sale_amount || 0);
+                sumNet += Number(r.total_amount || 0);
+                sumHas += Number(r.price_hs || 0);
+            });
+            $('#s_buy_tl').text(fmtTL(sumBuy));
+            $('#s_sale_tl').text(fmtTL(sumSale));
+            const netEl = $('#s_net_tl').text(fmtTL(sumNet)).closest('span');
+            netEl.toggleClass('text-success', sumNet > 0).toggleClass('text-danger', sumNet < 0);
+            $('#s_net_hs').text(fmtHS(sumHas));
+            $('#miniStats').show();
+        });
+
+        filtersPanel.init(dt);
+    </script>
+
+    <script>
+        /* ====== Sayfa fonksiyonları (temiz) ====== */
+
+        // Format yardımcıları
+        function fmtTL(v) {
+            const n = Number(v) || 0;
+            const s = n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+            return s + '\u00A0₺';
+        }
+
+        function fmtHS(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 3}) + '\u00A0gr';
+        }
+
+        function fmtRate(v) {
+            const n = Number(v) || 0;
+            if (!n) return '-';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + '\u00A0₺/gr';
+        }
+
+        function badgeTx(t) {
+            switch (t) {
+                case 'SALE':
+                    return '<span class="tx-pill sale">Satış</span>';
+                case 'PURCHASE':
+                    return '<span class="tx-pill purchase">Alış</span>';
+                case 'RETURN':
+                    return '<span class="tx-pill return">İade</span>';
+                case 'STOCK_IN':
+                    return '<span class="tx-pill stock">Stok</span>';
+                case 'ORDER_IN':
+                    return '<span class="tx-pill order">Sipariş</span>';
+                default:
+                    return '<span class="tx-pill order">İşlem</span>';
+            }
+        }
+
+        function rowClass(t) {
+            if (t === 'SALE') return 'tx-sale';
+            if (t === 'PURCHASE') return 'tx-buy';
+            if (t === 'RETURN') return 'tx-return';
+            if (t === 'STOCK_IN') return 'tx-stock';
+            if (t === 'ORDER_IN') return 'tx-order';
+            return '';
+        }
+
+
+        function deleteSelectedRows() {
+            // DataTables API üzerinden seçili satırların verisini alıyoruz
+            var selectedData = dt.rows({selected: true}).data().toArray();
+            var ids = [];
+
+            // ID'leri topluyoruz (sütun tanımında checkbox value="row.id" yapmıştık)
+            for (var i = 0; i < selectedData.length; i++) {
+                // Eğer data objesinde id varsa onu kullan, yoksa process_no kullan
+                // Backend 'id' bekliyor
+                if (selectedData[i].id) {
+                    ids.push(selectedData[i].id);
+                }
+            }
+
+            if (!ids.length) {
+                Swal.fire({
+                    title: 'Hata!',
+                    text: 'Lütfen en az bir kayıt seçin.',
+                    icon: 'error',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Seçili " + ids.length + " kaydı silmek üzeresiniz!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/process/delete", {
+                        ids: ids, // Dizi olarak gönderiyoruz
+                        csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()
+                    }, function (data) {
+                        if (data.result) {
+                            Swal.fire({
+                                title: 'Silindi',
+                                text: 'Seçili kayıtlar başarıyla silindi.',
+                                icon: 'success',
+                                timer: 1000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Tabloyu yenile ve seçimi temizle
+                                dt.ajax.reload(null, false);
+                                $('#checkAll').prop('checked', false);
+                            });
+                        } else {
+                            Swal.fire('Hata!', data.error_msg || 'Bir hata oluştu', 'error');
+                        }
+                    }).fail(function () {
+                        Swal.fire('Hata!', 'Sunucu hatası oluştu.', 'error');
+                    });
+                }
+            });
+        }
+
+        $('#deleteSelected').on('click', deleteSelectedRows);
+
+        // (Yer: Toplu durum değişikliği için placeholder)
+        $('#changeStatusSelected').on('click', function () {
+            var rows = dt.rows({selected: true}).data().toArray();
+            if (!rows.length) {
+                Swal.fire({
+                    title: 'Hata!',
+                    text: 'Lütfen en az bir kayıt seçin.',
+                    icon: 'error',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            // TODO: toplu durum değişikliği işlemini burada yapın
+        });
+
+        // Export/Print
+        function exportToExcel() {
+            let pno = $('#processDetailsModalLabel').text().split(': ')[1];
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let wb = XLSX.utils.table_to_book(document.getElementById("processDetailsTable"), {sheet: "İşlem Detayları"});
+            XLSX.writeFile(wb, `${pno}_${dateText}.xlsx`);
+        }
+
+        function exportToPDF() {
+            let dateText = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+            let pno = $('#processDetailsModalLabel').text().split(': ')[1];
+            let filename = `${pno}_${dateText}.pdf`;
+            let printableElement = document.getElementById('printableArea');
+            let titleElement = document.querySelector('.title-fis');
+            let original = titleElement.style.fontSize;
+            titleElement.style.fontSize = '10px';
+            html2pdf().set({
+                margin: [1, 1, 1, 1], filename: filename,
+                image: {type: 'jpeg', quality: 0.98},
+                html2canvas: {scale: 2},
+                jsPDF: {unit: 'mm', format: [80, 100], orientation: 'portrait'}
+            }).from(printableElement).save().then(() => {
+                titleElement.style.fontSize = original;
+            });
+        }
+
+        function printDetails() {
+            let html = document.getElementById('printableArea').innerHTML;
+            let original = document.body.innerHTML;
+            document.body.innerHTML = html;
+            window.print();
+            document.body.innerHTML = original;
+            location.reload();
+        }
+
+        // Rapor
+        function generateReport(period) {
+            $.ajax({
+                url: '/dashboard/generate-report',
+                method: 'GET',
+                data: {period: period},
+                xhrFields: {responseType: 'blob'},
+                success: function (data) {
+                    let url = window.URL.createObjectURL(new Blob([data], {type: 'application/pdf'}));
+                    window.open(url, '_blank');
+                },
+                error: function () {
+                    Swal.fire('Hata', 'Rapor oluşturulamadı.', 'error');
+                }
+            });
+        }
+    </script>
+{% endblock footer %}

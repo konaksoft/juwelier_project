@@ -1,0 +1,74 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mağazanız Aktifleştirildi</title>
+  <style>
+    body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f4f6f9;color:#232a33;line-height:1.6}
+    .o_block{max-width:680px;margin:0 auto}
+    .o_card{background:#fff;border-radius:12px;border:1px solid #e9edf3;box-shadow:0 4px 12px rgba(18,28,45,.06)}
+    .o_px{padding-left:28px;padding-right:28px}.o_py{padding-top:24px;padding-bottom:24px}
+    .o_center{text-align:center}.o_heading{margin:0;color:#1f2a37;font-weight:700}
+    .o_text{font-size:15px;margin:0}.muted{color:#6e7783}
+    .circle{border:2px solid #16a34a;border-radius:96px;padding:14px;display:inline-block;background:#dcfce7}
+    .pkg-card{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px}
+    .badge-active{display:inline-block;padding:6px 14px;border-radius:999px;background:#16a34a;color:#fff;font-weight:700;font-size:13px;letter-spacing:.5px}
+  </style>
+</head>
+<body style="background:#dbe5ea;">
+  <div class="o_block" style="padding:12px;">
+
+    <div class="o_card o_px o_py o_center">
+      <a href="https://www.kuyumplus.com">
+        <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="160" alt="KuyumPlus">
+      </a>
+      <p class="muted" style="margin:8px 0 0 0;font-size:14px;">Mağaza Aktivasyonu</p>
+    </div>
+
+    <div class="o_card o_px o_py o_center" style="margin-top:10px;">
+      <span class="circle">
+        <img src="https://cdn-icons-png.flaticon.com/512/845/845646.png" width="48" height="48" alt="Aktif">
+      </span>
+      <h2 class="o_heading" style="font-size:24px;margin:14px 0 6px 0;">Hoş Geldiniz!</h2>
+      <p class="o_text" style="margin:6px 0 12px 0;">
+        <span class="badge-active">AKTİF MÜŞTERİ</span>
+      </p>
+      <p class="o_text" style="margin:0;">
+        <strong>{{ store.title }}</strong> mağazanız ücretli pakete geçirildi.
+        Tüm modülleriniz ve özellikleriniz tam aktiftir.
+      </p>
+    </div>
+
+    {% if package %}
+      <div class="o_card o_px o_py" style="margin-top:10px;">
+        <div class="pkg-card">
+          <p class="o_text" style="margin:0 0 6px 0;"><strong>Aktif Paketiniz:</strong></p>
+          <p class="o_text" style="font-size:18px;font-weight:700;color:#15803d;margin:0;">
+            {{ package.name }}
+          </p>
+          <p class="muted" style="margin:6px 0 0 0;font-size:13px;">
+            Kod: <code>{{ package.code }}</code>
+          </p>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="o_card o_px o_py" style="margin-top:10px;">
+      <p class="o_text" style="margin:0;">
+        <strong>📌 Önemli:</strong> Demo süresince girdiğiniz tüm veriler
+        (ürün, müşteri, satış, fatura) eksiksiz olarak korunmuştur.
+        Mağaza ID'niz değişmedi: <code>{{ store.store_id }}</code>
+      </p>
+    </div>
+
+    <div class="o_card o_px o_py o_center" style="margin-top:10px;border-radius:0 0 12px 12px;">
+      <p class="muted" style="font-size:13px;margin:0;">
+        © Konasoft 2026 | <strong>Kuyum Plus</strong>, <strong>Konasoft</strong> ürünüdür.
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

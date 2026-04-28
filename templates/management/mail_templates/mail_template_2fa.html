@@ -1,0 +1,272 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>{{ subject }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f4f6f9;
+            color: #232a33;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", Arial, sans-serif;
+            line-height: 1.6
+        }
+
+        a {
+            color: #126de5;
+            text-decoration: none
+        }
+
+        img {
+            border: 0;
+            line-height: 100%;
+            height: auto;
+            display: inline-block
+        }
+
+        .o_block {
+            max-width: 680px;
+            margin: 0 auto
+        }
+
+        .o_card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e9edf3;
+            box-shadow: 0 4px 12px rgba(18, 28, 45, .06)
+        }
+
+        .o_px {
+            padding-left: 28px;
+            padding-right: 28px
+        }
+
+        .o_py {
+            padding-top: 24px;
+            padding-bottom: 24px
+        }
+
+        .o_center {
+            text-align: center
+        }
+
+        .o_heading {
+            margin: 0;
+            color: #1f2a37;
+            font-weight: 700
+        }
+
+        .o_text {
+            font-size: 15px;
+            margin: 0
+        }
+
+        .muted {
+            color: #6e7783
+        }
+
+        .btn {
+            display: inline-block;
+            background: #126de5;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 12px 20px
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: #ebf5ff;
+            border: 1px solid #dbeafe;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 22px
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1673e7 0%, #0d58b7 100%);
+            color: #fff;
+            border-radius: 12px
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, rgba(17, 24, 39, .06), rgba(17, 24, 39, .18), rgba(17, 24, 39, .06));
+            margin: 18px 0;
+            border: 0
+        }
+
+        /* Footer chips */
+        .chip {
+            display: inline-block;
+            text-decoration: none;
+            border-radius: 999px;
+            background: #0F172A;
+            border: 1px solid #334155;
+            white-space: nowrap;
+            padding: 10px 14px
+        }
+
+        .chip-txt {
+            font: 600 14px/20px Helvetica, Arial, sans-serif;
+            color: #FFFFFF !important
+        }
+
+        @media (max-width: 640px) {
+            .o_px {
+                padding-left: 18px !important;
+                padding-right: 18px !important
+            }
+
+            .o_py {
+                padding-top: 20px !important;
+                padding-bottom: 20px !important
+            }
+
+            .o_heading {
+                font-size: 22px !important
+            }
+
+            .o_text {
+                font-size: 14px !important
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #0b1220;
+                color: #dbe2ef
+            }
+
+            .o_card {
+                background: #0f172a;
+                border-color: #1f2937;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .35)
+            }
+
+            .o_heading {
+                color: #e5e7eb
+            }
+
+            .muted {
+                color: #97a3b6
+            }
+
+            .pill {
+                background: #0f1b30;
+                border-color: #1d2a44;
+                color: #e5e7eb
+            }
+
+            .divider {
+                background: #1e293b
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="o_block" style="padding:12px;">
+    <!-- Header -->
+    <div class="o_card o_px o_py" style="border-radius:12px;">
+        <div class="o_center">
+            <a href="https://www.kuyumplus.com">
+                <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="160" alt="KuyumPlus">
+            </a>
+            <p class="muted" style="margin:8px 0 0 0;font-size:14px;">Güvenli Giriş Doğrulaması</p>
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="o_card o_px o_py hero" style="margin-top:10px;">
+        <div class="o_center">
+            <img src="https://cdn-icons-png.flaticon.com/512/3064/3064197.png" width="48" height="48" alt=""
+                 style="display:block;margin:2px auto 10px auto;">
+            <h1 class="o_heading" style="font-size:26px;color:#fff;margin-bottom:6px;">Giriş Onayı</h1>
+            <p class="o_text" style="color:#eaf2ff">Merhaba {{ user.username }}, hesabınızı doğrulamak için lütfen
+                aşağıdaki kodu kullanın.</p>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="o_card o_px o_py" style="margin-top:10px;">
+        <div class="o_center" style="margin-bottom:12px;">
+            <span class="pill">{{ otp_string }}</span>
+        </div>
+
+        <p class="o_text" style="text-align:center;margin:0 0 14px 0;">
+            Kod kısa süre içinde geçersiz olacaktır. Güvenliğiniz için bu kodu kimseyle paylaşmayın.
+        </p>
+
+        <div class="o_center" style="margin:10px 0 4px 0;">
+            <a class="btn" href="{{ login_url|default:'https://www.kuyumplus.com/login' }}">Sisteme Giriş Yap</a>
+        </div>
+
+        <hr class="divider">
+
+        <table role="presentation" style="border:0;width:100%;">
+            <tr>
+                <td style="border:0;padding:0 0 6px 0;">
+                    <p class="o_text" style="margin:0;"><strong>Konu:</strong> {{ subject }}</p>
+                </td>
+            </tr>
+            <tr>
+                <td style="border:0;padding:0;">
+                    <p class="o_text muted" style="margin:0;">Bu e-postayı siz talep etmediyseniz görmezden
+                        gelebilirsiniz.</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="o_card o_px o_py" style="margin-top:10px;border-radius:0 0 12px 12px;">
+        <!-- top line: logo + chips + instagram -->
+        <table role="presentation" width="100%" style="border:0;border-collapse:collapse;">
+            <tr>
+                <td style="border:0;padding:0;vertical-align:middle;">
+                    <a href="https://www.kuyumplus.com" style="display:inline-block;">
+                        <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png"
+                             width="140" alt="KuyumPlus" style="display:block;border:0;outline:none;height:auto;">
+                    </a>
+                </td>
+                <td style="border:0;padding:0;text-align:right;vertical-align:middle;">
+                    <table role="presentation"
+                           style="border:0;border-collapse:collapse;display:inline-table;max-width:100%;">
+                        <tr>
+                            <td style="border:0;padding:4px;">
+                                <a class="chip" href="tel:+902166068801"><span class="chip-txt">0&nbsp;216&nbsp;606&nbsp;88&nbsp;01</span></a>
+                            </td>
+                            <td style="border:0;padding:4px;">
+                                <a class="chip" href="mailto:destek@kuyumplus.com"><span class="chip-txt">destek@kuyumplus.com</span></a>
+                            </td>
+                            <td style="border:0;padding-left:8px;vertical-align:middle;">
+                                <a href="https://www.instagram.com/kuyum_plus" style="display:inline-block;">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" width="20"
+                                         height="20" alt="Instagram" style="display:block;border:0;">
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <p class="muted" style="font-size:13px;margin:10px 0 4px 0;">
+            Yenişehir Mah. Sümbül Sk. No: 6-1/79 Sweet Life Center • Pendik - İstanbul
+        </p>
+        <p class="muted" style="font-size:13px;margin:0;">
+            © Konasoft 2025 | Tüm Hakları Saklıdır — <strong>Kuyum Plus</strong>, <strong>Konasoft</strong> ürünüdür.
+        </p>
+    </div>
+</div>
+</body>
+</html>

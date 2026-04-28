@@ -1,0 +1,2763 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* ═══════════════════════════════════════════════════════
+           RFID INPUT (Sanal klavye engelleme icin inputmode="none")
+           ═══════════════════════════════════════════════════════ */
+        .rfid-input {
+            font-size: 1.2rem;
+            height: 3.5rem;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #e2e8f0;
+            background-color: #f8fafc;
+            caret-color: #3b82f6;
+        }
+
+        .rfid-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background-color: #fff;
+        }
+
+        .rfid-input[readonly] {
+            background-color: #eef2ff;
+            cursor: default;
+        }
+
+        .my-margin {
+            margin-top: 2rem;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           MOBIL UYUMLULUK - Buton grid
+           ═══════════════════════════════════════════════════════ */
+        @media (max-width: 767px) {
+            .count-buttons {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: .5rem;
+            }
+
+            .count-buttons .btn {
+                width: 100%;
+            }
+
+            .my-margin {
+                margin-top: 0.5rem;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           YANIP SONME EFEKTI (Okuma aninda)
+           ═══════════════════════════════════════════════════════ */
+        @keyframes flashSuccess {
+            0% { background-color: #d1fae5; }
+            100% { background-color: #fff; }
+        }
+
+        .flash-bg {
+            animation: flashSuccess 0.5s ease;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           BARKOD LINKLERI
+           ═══════════════════════════════════════════════════════ */
+        .barcode-link {
+            cursor: pointer;
+            color: #3b82f6;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        .barcode-link:hover {
+            color: #1d4ed8;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           URUN GORSEL MODALI
+           ═══════════════════════════════════════════════════════ */
+        .product-image-preview {
+            max-width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           RAPOR ONIZLEME
+           ═══════════════════════════════════════════════════════ */
+        .report-preview-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .report-category-badge {
+            display: inline-block;
+            background: #f1f5f9;
+            border-left: 3px solid #3b82f6;
+            padding: 4px 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: #1e293b;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           BUFFER DURUM GOSTERGESI
+           ═══════════════════════════════════════════════════════ */
+        .buffer-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .buffer-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+            transition: background-color 0.2s;
+        }
+
+        .buffer-dot.active {
+            background-color: #3b82f6;
+            animation: pulse 1s infinite;
+        }
+
+        .buffer-dot.flushing {
+            background-color: #f59e0b;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           HIZ GOSTERGESI (Renk kodlamali)
+           ═══════════════════════════════════════════════════════ */
+        .speed-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-weight: 600;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .speed-badge.speed-idle {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .speed-badge.speed-slow {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        .speed-badge.speed-normal {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .speed-badge.speed-high {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           BAGLANTI / DURUM BANNER (Sticky top)
+           ═══════════════════════════════════════════════════════ */
+        .connection-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 2000;
+            padding: 10px 16px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #fff;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .connection-banner.visible {
+            transform: translateY(0);
+        }
+
+        .connection-banner.banner-warn {
+            background: #f59e0b;
+        }
+
+        .connection-banner.banner-error {
+            background: #dc2626;
+        }
+
+        .connection-banner.banner-success {
+            background: #16a34a;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           TOAST NOTIFICATION (Kapsam disi / uyari)
+           ═══════════════════════════════════════════════════════ */
+        .count-toast-container {
+            position: fixed;
+            top: 72px;
+            right: 16px;
+            left: auto;
+            z-index: 1900;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        @media (max-width: 767px) {
+            .count-toast-container {
+                top: 56px;
+                left: 16px;
+                right: 16px;
+            }
+        }
+
+        .count-toast {
+            pointer-events: auto;
+            background: #fff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 6px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e293b;
+            min-width: 240px;
+            animation: toastIn 0.25s ease;
+        }
+
+        .count-toast.toast-warn { border-left-color: #f59e0b; }
+        .count-toast.toast-error { border-left-color: #dc2626; }
+        .count-toast.toast-success { border-left-color: #16a34a; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(40px); }
+        }
+
+        .count-toast.toast-leave {
+            animation: toastOut 0.25s ease forwards;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           MOBIL STICKY SAYAC PANELI
+           ═══════════════════════════════════════════════════════ */
+        .mobile-status-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            padding: 8px 12px;
+            margin: 0 -12px 12px -12px;
+        }
+
+        .mobile-status-bar .ms-counters {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .mobile-status-bar .ms-counter {
+            text-align: center;
+            padding: 6px 4px;
+            border-radius: 6px;
+            background: #f8fafc;
+        }
+
+        .mobile-status-bar .ms-counter .ms-num {
+            font-size: 1.4rem;
+            font-weight: 800;
+            line-height: 1;
+            display: block;
+        }
+
+        .mobile-status-bar .ms-counter .ms-lbl {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mobile-status-bar .ms-counter.ms-found { border-top: 3px solid #16a34a; }
+        .mobile-status-bar .ms-counter.ms-found .ms-num { color: #16a34a; }
+        .mobile-status-bar .ms-counter.ms-errors { border-top: 3px solid #f59e0b; }
+        .mobile-status-bar .ms-counter.ms-errors .ms-num { color: #d97706; }
+        .mobile-status-bar .ms-counter.ms-missing { border-top: 3px solid #dc2626; }
+        .mobile-status-bar .ms-counter.ms-missing .ms-num { color: #dc2626; }
+
+        .mobile-status-bar .ms-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           MOBIL SEKME SISTEMI - Tek DOM, farkli gorunum
+           ═══════════════════════════════════════════════════════ */
+        .count-mobile-tabs {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+            background: #fff;
+        }
+
+        .count-mobile-tabs .ct-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .count-mobile-tabs .ct-tab.active {
+            color: #1e293b;
+            border-bottom-color: #3b82f6;
+        }
+
+        .count-mobile-tabs .ct-tab .ct-badge {
+            display: inline-block;
+            margin-left: 4px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 0.7rem;
+        }
+
+        .count-mobile-tabs .ct-tab.active .ct-badge {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        /* Mobil gorunumde tek card gosterimi - sekme kontrollu */
+        @media (max-width: 767px) {
+            .count-card {
+                display: none;
+            }
+            .count-card.is-active {
+                display: block;
+            }
+            .count-card .card {
+                border: none;
+                box-shadow: none !important;
+            }
+            .count-card .table-responsive {
+                max-height: calc(100vh - 380px) !important;
+                min-height: 240px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .count-mobile-tabs,
+            .mobile-status-bar {
+                display: none !important;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           SAYAC ANIMASYONU - Count-up gecisi icin ipucu
+           ═══════════════════════════════════════════════════════ */
+        .counter-anim {
+            transition: transform 0.2s ease;
+            display: inline-block;
+        }
+
+        .counter-anim.counter-bump {
+            transform: scale(1.2);
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           TAM EKRAN SAYIM MODU
+           ═══════════════════════════════════════════════════════ */
+        body.sayim-fullscreen #kt_header,
+        body.sayim-fullscreen #kt_app_header,
+        body.sayim-fullscreen #kt_aside,
+        body.sayim-fullscreen #kt_app_sidebar,
+        body.sayim-fullscreen #kt_footer,
+        body.sayim-fullscreen #kt_app_footer,
+        body.sayim-fullscreen .header,
+        body.sayim-fullscreen .aside,
+        body.sayim-fullscreen .footer,
+        body.sayim-fullscreen .toolbar {
+            display: none !important;
+        }
+
+        body.sayim-fullscreen #kt_wrapper,
+        body.sayim-fullscreen #kt_app_wrapper,
+        body.sayim-fullscreen #kt_content,
+        body.sayim-fullscreen #kt_app_content,
+        body.sayim-fullscreen #kt_content_container,
+        body.sayim-fullscreen #kt_app_content_container,
+        body.sayim-fullscreen .content,
+        body.sayim-fullscreen .wrapper {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        body.sayim-fullscreen .container-xxl {
+            padding: 8px !important;
+            margin-top: 0 !important;
+            max-width: 100% !important;
+        }
+
+        #btnFullscreen .bi-fullscreen-exit { display: none; }
+        body.sayim-fullscreen #btnFullscreen .bi-fullscreen { display: none; }
+        body.sayim-fullscreen #btnFullscreen .bi-fullscreen-exit { display: inline; }
+
+        /* ═══════════════════════════════════════════════════════
+           MANUEL GIRIS DUGMESI
+           ═══════════════════════════════════════════════════════ */
+        .manual-entry-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .manual-entry-toggle:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .manual-entry-toggle.active {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           FAZ 2: SCOPE SECIM MODAL
+           ═══════════════════════════════════════════════════════ */
+        .scope-type-card {
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .scope-type-card:hover {
+            background: #f8fafc;
+        }
+
+        .scope-type-card.active {
+            border-color: #3b82f6 !important;
+            background: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+        }
+
+        .scope-value-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: background-color 0.12s;
+        }
+
+        .scope-value-item:hover {
+            background: #f1f5f9;
+        }
+
+        .scope-value-item.selected {
+            background: #dbeafe;
+        }
+
+        .scope-value-item input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+        }
+
+        .scope-value-item .sv-label {
+            flex: 1;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .scope-value-item .sv-count {
+            font-size: 0.8rem;
+            color: #64748b;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           FAZ 3: PERFORMANS / TUM LISTEYI GOSTER
+           ═══════════════════════════════════════════════════════ */
+        .table-hint-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+
+        .table-hint-row .btn-show-all {
+            background: transparent;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .table-hint-row .btn-show-all:hover {
+            background: #e0e7ff;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .table-hint-row .cap-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Tum liste modal: Yuksek hacimli liste icin scroll */
+        .full-list-search {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 5;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 8px;
+        }
+
+        .full-list-table {
+            font-size: 0.85rem;
+        }
+
+        .full-list-table tr.is-hidden {
+            display: none;
+        }
+
+        /* FPS / lite mode rozeti */
+        .perf-badge {
+            position: fixed;
+            bottom: 12px;
+            right: 12px;
+            z-index: 1500;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #1e293b;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: none;
+            pointer-events: none;
+        }
+
+        .perf-badge.warn { background: #d97706; }
+        .perf-badge.error { background: #dc2626; }
+
+        body.lite-mode .perf-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    {# Baglanti / durum banner (sayfanin en ustunde, sticky) #}
+    <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite"></div>
+
+    {# Toast notification container #}
+    <div id="countToastContainer" class="count-toast-container" aria-live="polite"></div>
+
+    <div class="container-xxl mt-5">
+
+        {# MOBIL STICKY SAYAC PANELI (sadece mobilde gorunur) #}
+        <div class="mobile-status-bar" id="mobileStatusBar">
+            <div class="ms-counters">
+                <div class="ms-counter ms-found">
+                    <span class="ms-num counter-anim" id="mFoundCount">0</span>
+                    <span class="ms-lbl">Bulunan</span>
+                </div>
+                <div class="ms-counter ms-errors">
+                    <span class="ms-num counter-anim" id="mErrorsCount">0</span>
+                    <span class="ms-lbl">Hatali</span>
+                </div>
+                <div class="ms-counter ms-missing">
+                    <span class="ms-num counter-anim" id="mMissingCount">0</span>
+                    <span class="ms-lbl">Eksik</span>
+                </div>
+            </div>
+            <div class="ms-meta">
+                <span>
+                    <span id="mBufferDot" class="buffer-dot"></span>
+                    <span id="mBufferStatus">Tampon: 0</span>
+                </span>
+                <span id="mSpeedIndicator" class="speed-badge">0 okuma/sn</span>
+            </div>
+        </div>
+
+        <div class="card mb-5 my-margin border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center flex-wrap gap-2 count-buttons w-100 w-md-auto">
+                    <button id="btnStartSession" class="btn btn-primary btn-sm fw-bold fs-6 py-3">
+                        <i class="bi bi-play-fill me-1"></i> BASLAT
+                    </button>
+                    <button id="btnCloseSession" class="btn btn-danger btn-sm fw-bold fs-6 py-3">
+                        <i class="bi bi-stop-fill me-1"></i> BITIR
+                    </button>
+                    <button id="btnResetSession" class="btn btn-secondary btn-sm fw-bold fs-6 py-3">
+                        <i class="bi bi-arrow-clockwise me-1"></i> SIFIRLA
+                    </button>
+                    <button id="btnDownloadPDF" class="btn btn-warning btn-sm fw-bold text-dark fs-6 py-3">
+                        <i class="bi bi-file-pdf me-1"></i> RAPOR
+                    </button>
+                    <button id="btnFullscreen" class="btn btn-light btn-sm fw-bold fs-6 py-3" title="Sayim Modu (Tam Ekran)">
+                        <i class="bi bi-fullscreen"></i>
+                        <i class="bi bi-fullscreen-exit"></i>
+                    </button>
+                </div>
+                <div class="w-100 w-md-auto text-center text-md-end mt-2 mt-md-0 d-flex flex-column flex-md-row align-items-md-center gap-2 justify-content-md-end">
+                    <span id="scopeBadge"
+                          class="badge bg-light-primary text-primary fw-bold rounded-pill px-3 py-2 d-none">
+                        <i class="bi bi-funnel me-1"></i><span id="scopeBadgeText">Kapsam: -</span>
+                    </span>
+                    <span id="statusBadge"
+                          class="badge bg-secondary fs-6 px-4 py-3 rounded-pill">Durum: Bekleniyor</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="infoArea" class="alert alert-info d-none shadow-sm fw-bold"></div>
+        <input type="hidden" id="currentSessionId" value=""/>
+
+        <div class="card mb-5 border-0 shadow-sm">
+            <div class="card-header border-0 pb-0">
+                <h3 class="card-title fw-bold fs-4 text-gray-800">
+                    <i class="bi bi-broadcast me-2 text-primary"></i> RFID / Barkod Tarama Ekrani
+                </h3>
+            </div>
+            <div class="card-body pt-3">
+                <div class="position-relative">
+
+                    <input type="text" id="rfidInput" class="form-control rfid-input"
+                           placeholder="Sayimi Baslatin ve Okutun..."
+                           disabled
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false"
+                           inputmode="none">
+                    <button type="button" id="btnManualEntry" class="manual-entry-toggle" title="Manuel Giris (Klavye Ac)">
+                        <i class="bi bi-keyboard"></i> <span class="d-none d-sm-inline">Manuel</span>
+                    </button>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2 text-muted fs-7 flex-wrap gap-2">
+                    <span>Otomatik Odaklanma Aktif (RFID veya Barkod)</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="speedIndicator" class="speed-badge d-none">0 okuma/sn</span>
+                        <span class="buffer-indicator">
+                            <span id="bufferDot" class="buffer-dot"></span>
+                            <span id="bufferStatus">Tampon: 0</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# MOBIL SEKME NAVIGASYONU - Tek DOM, sekmelerle kontrol edilir #}
+        <div class="count-mobile-tabs" id="countMobileTabs">
+            <button type="button" class="ct-tab active" data-panel="found">
+                <i class="bi bi-check-circle text-success"></i>
+                Bulunan <span class="ct-badge" id="tabBadgeFound">0</span>
+            </button>
+            <button type="button" class="ct-tab" data-panel="errors">
+                <i class="bi bi-exclamation-triangle text-warning"></i>
+                Hatali <span class="ct-badge" id="tabBadgeErrors">0</span>
+            </button>
+            <button type="button" class="ct-tab" data-panel="missing">
+                <i class="bi bi-x-circle text-danger"></i>
+                Eksik <span class="ct-badge" id="tabBadgeMissing">0</span>
+            </button>
+        </div>
+
+        <div class="row g-5">
+            <div class="col-lg-4 col-md-6 count-card is-active" data-panel="found">
+                <div class="card card-flush h-100 border-0 shadow-sm border-top border-3 border-success">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title fw-bold text-gray-800 fs-5">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i> Bulunanlar
+                        </h3>
+                        <span id="foundCount" class="badge bg-light-success text-success fs-6 fw-bolder px-3 counter-anim">0</span>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-hint-row" id="hintFound">
+                            <span class="cap-indicator">
+                                <i class="bi bi-list-ol"></i>
+                                Son <span id="capDisplayFound">0</span> okuma
+                            </span>
+                            <button type="button" class="btn-show-all" data-list="found">
+                                <i class="bi bi-arrows-fullscreen"></i> Tum Listeyi Goster
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table align-middle table-row-dashed fs-6 gy-3" id="tableFound">
+                                <thead class="text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                <tr>
+                                    <th>Barkod</th>
+                                    <th>Gram</th>
+                                    <th>Tip</th>
+                                </tr>
+                                </thead>
+                                <tbody class="fw-semibold text-gray-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 count-card" data-panel="errors">
+                <div class="card card-flush h-100 border-0 shadow-sm border-top border-3 border-warning">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title fw-bold text-gray-800 fs-5">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> Hatali/Yabanci
+                        </h3>
+                        <span id="errorsCount" class="badge bg-light-warning text-warning fs-6 fw-bolder px-3 counter-anim">0</span>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-hint-row" id="hintErrors">
+                            <span class="cap-indicator">
+                                <i class="bi bi-list-ol"></i>
+                                Son <span id="capDisplayErrors">0</span> kayit
+                            </span>
+                            <button type="button" class="btn-show-all" data-list="errors">
+                                <i class="bi bi-arrows-fullscreen"></i> Tum Listeyi Goster
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table align-middle table-row-dashed fs-6 gy-3" id="tableErrors">
+                                <thead class="text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                <tr>
+                                    <th>Barkod</th>
+                                    <th>Mesaj</th>
+                                </tr>
+                                </thead>
+                                <tbody class="fw-semibold text-gray-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-12 count-card" data-panel="missing">
+                <div class="card card-flush h-100 border-0 shadow-sm border-top border-3 border-danger">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title fw-bold text-gray-800 fs-5">
+                            <i class="bi bi-x-circle-fill text-danger me-2"></i> Eksikler
+                        </h3>
+                        <span id="missingCount" class="badge bg-light-danger text-danger fs-6 fw-bolder px-3 counter-anim">0</span>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-hint-row" id="hintMissing">
+                            <span class="cap-indicator">
+                                <i class="bi bi-list-ol"></i>
+                                Ilk <span id="capDisplayMissing">0</span> eksik
+                                <span id="lazyMissingPending" class="badge bg-warning text-dark ms-2 d-none">
+                                    <i class="bi bi-clock-history"></i> <span id="lazyMissingPendingCount">0</span> bekliyor
+                                </span>
+                            </span>
+                            <button type="button" class="btn-show-all" data-list="missing">
+                                <i class="bi bi-arrows-fullscreen"></i> Tum Listeyi Goster
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table align-middle table-row-dashed fs-6 gy-3" id="tableMissing">
+                                <thead class="text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                <tr>
+                                    <th>Barkod</th>
+                                    <th>Gram</th>
+                                    <th>Tip</th>
+                                </tr>
+                                </thead>
+                                <tbody class="fw-semibold text-gray-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# FAZ 3: Performans Rozeti (Hafif Mod / FPS uyarisi) #}
+    <div id="perfBadge" class="perf-badge">
+        <i class="bi bi-speedometer"></i>
+        <span id="perfBadgeText">Hafif Mod</span>
+    </div>
+
+    {# --- FAZ 2: Sayim Kapsami Secim Modali --- #}
+    <div class="modal fade" id="scopeSelectModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-md-down modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-funnel me-2 text-primary"></i>Sayim Kapsamini Secin
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4">
+                    <div id="scopeModalLoader" class="text-center py-5 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Kapsam secenekleri yukleniyor...</p>
+                    </div>
+                    <div id="scopeModalContent" class="d-none">
+                        <div class="mb-3 fw-bold fs-6">Neyi saymak istiyorsunuz?</div>
+
+                        {# Kapsam tipi - radio kartlari #}
+                        <div class="d-grid gap-2 mb-4" id="scopeTypeList">
+                            <label class="card card-flush p-3 border cursor-pointer scope-type-card active" data-scope-type="ALL">
+                                <input type="radio" name="scopeType" value="ALL" class="form-check-input d-none" checked>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-shop fs-3 text-primary me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">Tum Magaza</div>
+                                        <div class="text-muted fs-7">Tum aktif urunler sayilir (<span id="scopeAllCount">0</span> urun)</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="card card-flush p-3 border cursor-pointer scope-type-card" data-scope-type="CATEGORY">
+                                <input type="radio" name="scopeType" value="CATEGORY" class="form-check-input d-none">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-tags fs-3 text-success me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">Kategoriye Gore</div>
+                                        <div class="text-muted fs-7">Ornek: Yuzuk, Bilezik, Kolye</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="card card-flush p-3 border cursor-pointer scope-type-card" data-scope-type="MATERIAL">
+                                <input type="radio" name="scopeType" value="MATERIAL" class="form-check-input d-none">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-gem fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">Materyale Gore</div>
+                                        <div class="text-muted fs-7">Altin, Gumus, Pirlanta, Saat</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="card card-flush p-3 border cursor-pointer scope-type-card" data-scope-type="BRAND">
+                                <input type="radio" name="scopeType" value="BRAND" class="form-check-input d-none">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-bookmark-star fs-3 text-info me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">Markaya Gore</div>
+                                        <div class="text-muted fs-7">Cartier, Rolex, vb.</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="card card-flush p-3 border cursor-pointer scope-type-card" data-scope-type="JEWELRY_TYPE">
+                                <input type="radio" name="scopeType" value="JEWELRY_TYPE" class="form-check-input d-none">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-diagram-3 fs-3 text-danger me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">Mucevher Tipine Gore</div>
+                                        <div class="text-muted fs-7">Yuzuk, Bilezik, Kolye, vs. (serbest metin)</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {# Kapsam secenek listesi (dinamik) #}
+                        <div id="scopeValueSection" class="d-none">
+                            <div class="fw-bold mb-2" id="scopeValueLabel">Secenekler</div>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="scopeValueSearch" class="form-control" placeholder="Arama...">
+                            </div>
+                            <div id="scopeValueList" class="border rounded p-2" style="max-height: 280px; overflow-y: auto;">
+                                <div class="text-muted text-center py-4">Once kapsam tipi secin.</div>
+                            </div>
+                        </div>
+
+                        {# Onizleme #}
+                        <div class="alert alert-info mt-3 mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-info-circle fs-4"></i>
+                            <div>
+                                <div class="fw-bold">Sayim Onizleme</div>
+                                <div id="scopePreviewText">Tum magaza sayilacak.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Iptal
+                    </button>
+                    <button type="button" id="btnScopeConfirm" class="btn btn-primary fw-bold" disabled>
+                        <i class="bi bi-play-fill me-1"></i> Sayimi Baslat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# FAZ 3: Tam Liste Gosterim Modali (DOM cap'le gizlenmis kayitlara erisim) #}
+    <div class="modal fade" id="fullListModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-md-down modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-list-ul me-2 text-primary"></i><span id="fullListTitle">Tam Liste</span>
+                        <span id="fullListCount" class="badge bg-primary ms-2">0</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body p-3" id="fullListBody">
+                    <div class="full-list-search">
+                        <input type="text" id="fullListSearch" class="form-control"
+                               placeholder="Barkod, urun adi, kategori ara..."
+                               autocomplete="off">
+                    </div>
+                    <div id="fullListLoader" class="text-center py-5 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Liste yukleniyor...</p>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm full-list-table" id="fullListTable">
+                            <thead class="table-light" id="fullListThead">
+                                <tr>
+                                    <th>Barkod</th>
+                                    <th>Tip / Urun</th>
+                                    <th>Gram</th>
+                                    <th>Kategori</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullListTbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="fullListEmpty" class="text-center py-4 text-muted d-none">
+                        Kayit bulunamadi.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <small class="text-muted me-auto" id="fullListShownInfo">-</small>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Kapat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- Urun Gorseli Onizleme Modali --- #}
+    <div class="modal fade" id="productImageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold fs-6" id="productImageModalTitle">Urun Gorseli</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div id="productImageLoader" class="py-5 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Yukleniyor...</p>
+                    </div>
+                    <div id="productImageContent" class="d-none">
+                        <img id="productImageEl" src="" alt="Urun Gorseli" class="product-image-preview mb-3">
+                        <div class="text-start">
+                            <p class="mb-1"><strong>Barkod:</strong> <span id="imgBarcode">-</span></p>
+                            <p class="mb-1"><strong>Urun:</strong> <span id="imgName">-</span></p>
+                            <p class="mb-1"><strong>Gram:</strong> <span id="imgGram">-</span></p>
+                            <p class="mb-0"><strong>Kategori:</strong> <span id="imgCategory">-</span></p>
+                        </div>
+                    </div>
+                    <div id="productImageEmpty" class="d-none py-4">
+                        <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                        <p class="text-muted mt-2">Gorsel Yok</p>
+                        <div class="text-start">
+                            <p class="mb-1"><strong>Barkod:</strong> <span id="imgBarcodeEmpty">-</span></p>
+                            <p class="mb-1"><strong>Urun:</strong> <span id="imgNameEmpty">-</span></p>
+                            <p class="mb-1"><strong>Gram:</strong> <span id="imgGramEmpty">-</span></p>
+                            <p class="mb-0"><strong>Kategori:</strong> <span id="imgCategoryEmpty">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- Rapor Onizleme Modali --- #}
+    <div class="modal fade" id="reportPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen-md-down modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-bar-graph me-2"></i>Rapor Onizleme</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body report-preview-body p-3 p-md-4" id="reportPreviewBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Rapor hazirlaniyor...</p>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Kapat
+                    </button>
+                    <button type="button" id="btnDownloadPDFFromModal" class="btn btn-danger">
+                        <i class="bi bi-file-pdf me-1"></i> PDF Olarak Indir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // ═══════════════════════════════════════════════════════
+            // DOM ELEMENTLERI
+            // ═══════════════════════════════════════════════════════
+            var currentSessionId = '';
+            var infoArea = document.getElementById("infoArea");
+            var statusBadge = document.getElementById("statusBadge");
+            var rfidInput = document.getElementById("rfidInput");
+            var bufferStatusEl = document.getElementById("bufferStatus");
+            var bufferDotEl = document.getElementById("bufferDot");
+            var speedIndicatorEl = document.getElementById("speedIndicator");
+
+            var foundCountSpan = document.getElementById("foundCount");
+            var errorsCountSpan = document.getElementById("errorsCount");
+            var missingCountSpan = document.getElementById("missingCount");
+
+            // Mobil status bar elemanlari
+            var mFoundCount = document.getElementById("mFoundCount");
+            var mErrorsCount = document.getElementById("mErrorsCount");
+            var mMissingCount = document.getElementById("mMissingCount");
+            var mBufferStatus = document.getElementById("mBufferStatus");
+            var mBufferDot = document.getElementById("mBufferDot");
+            var mSpeedIndicator = document.getElementById("mSpeedIndicator");
+
+            // Mobil sekme rozetleri
+            var tabBadgeFound = document.getElementById("tabBadgeFound");
+            var tabBadgeErrors = document.getElementById("tabBadgeErrors");
+            var tabBadgeMissing = document.getElementById("tabBadgeMissing");
+
+            // Baglanti banner
+            var connectionBanner = document.getElementById("connectionBanner");
+            var connectionBannerTimer = null;
+
+            // Toast container
+            var toastContainer = document.getElementById("countToastContainer");
+
+            // Manuel giris dugmesi
+            var btnManualEntry = document.getElementById("btnManualEntry");
+            var manualEntryActive = false;
+
+            // ═══════════════════════════════════════════════════════
+            // FAZ 2: KAPSAM (SCOPE) DURUMU
+            // ═══════════════════════════════════════════════════════
+            var scopeBadge = document.getElementById("scopeBadge");
+            var scopeBadgeText = document.getElementById("scopeBadgeText");
+            var scopeOptionsCache = null;        // scope-options endpoint cevabi
+            var pendingScopeType = 'ALL';        // Modal icinde secilen kapsam tipi
+            var pendingScopeValues = [];         // Modal icinde secilen degerler
+            var pendingScopeLabel = '';          // Onizleme etiketi
+            var activeSessionScope = {            // Aktif oturumun kapsami
+                type: 'ALL',
+                label: '',
+                filter: {},
+            };
+
+            function updateScopeBadge(scope) {
+                if (!scope || !scope.type || scope.type === 'ALL') {
+                    scopeBadge.classList.add('d-none');
+                    scopeBadgeText.textContent = 'Kapsam: Tum Magaza';
+                    return;
+                }
+                var label = scope.label || scope.type;
+                scopeBadgeText.textContent = 'Kapsam: ' + label;
+                scopeBadge.classList.remove('d-none');
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // BUFFER / BATCH SISTEMI DEGISKENLERI
+            // ═══════════════════════════════════════════════════════
+            var scanBuffer = [];                // Okunan kodlari biriktirir
+            var processedBarcodes = new Set();  // Mukerrer onleme (oturum boyunca)
+            var flushTimer = null;              // Debounce zamanlayicisi
+            var isFlushing = false;             // Sunucuya gonderim kilidi
+            var retryCount = 0;                 // Hata durumunda tekrar deneme sayaci
+            var inputTimeout = null;            // Input debounce zamanlayicisi
+
+            var BUFFER_MAX = 50;                // Bu sayiya ulasinca otomatik flush
+            var FLUSH_DELAY_MS = 500;           // Bu sure sessizlik olunca otomatik flush
+            var MAX_RETRIES = 3;                // Maksimum tekrar deneme sayisi
+
+            // Tarama hizi hesaplama icin
+            var scanTimestamps = [];            // Son okumalarin zaman damgalari
+            var speedInterval = null;           // Hiz gosterge interval'i
+
+            // Son goruntulenen sayac degerleri (count-up animasyonu icin)
+            var lastFoundTotal = 0;
+            var lastErrorsTotal = 0;
+            var lastMissingTotal = 0;
+
+            // ═══════════════════════════════════════════════════════
+            // FAZ 3: PERFORMANS - DOM CAP & LAZY UPDATE
+            // ═══════════════════════════════════════════════════════
+            // 5000+ urunlu sayimlarda DOM patlamasi ve "tutukluluk" hissini
+            // engellemek icin:
+            //   - Her tablo en fazla MAX_VISIBLE_ROWS satir tutar (eski en
+            //     altta otomatik dusurulur — sayim sayaclari bagimsiz takip edilir).
+            //   - Eksikler tablosundan silme islemleri (her batch'te 5000xN
+            //     tarama yerine) 2.5sn'de bir toplu olarak yapilir.
+            //   - Lite Mode: FPS dusuk algilanirsa silme araligi uzatilir.
+
+            var MAX_VISIBLE_ROWS = 150;            // Her tabloda max DOM satiri
+            var LAZY_MISSING_INTERVAL_MS = 2500;   // Eksikler tarama araligi
+            var LAZY_MISSING_LITE_MS = 5000;       // Lite mode'da daha uzun
+
+            var pendingMissingRemovalIds = new Set();
+            var lazyMissingTimer = null;
+            var liteMode = false;
+
+            // Tum kart sayilari (DOM uzerinden)
+            var capDisplayFound = document.getElementById("capDisplayFound");
+            var capDisplayErrors = document.getElementById("capDisplayErrors");
+            var capDisplayMissing = document.getElementById("capDisplayMissing");
+            var lazyMissingPendingEl = document.getElementById("lazyMissingPending");
+            var lazyMissingPendingCount = document.getElementById("lazyMissingPendingCount");
+            var perfBadge = document.getElementById("perfBadge");
+            var perfBadgeText = document.getElementById("perfBadgeText");
+
+            // ═══════════════════════════════════════════════════════
+            // SAYAC ANIMASYONU (count-up)
+            // Yeni deger eski degerden buyukse kisa bir "bump" efekti ve
+            // ara degerler uzerinden yumusak gecis yapar.
+            // ═══════════════════════════════════════════════════════
+            function animateCounter(elements, fromVal, toVal) {
+                if (!elements || elements.length === 0) return;
+                if (fromVal === toVal) {
+                    for (var i = 0; i < elements.length; i++) {
+                        if (elements[i]) elements[i].textContent = toVal;
+                    }
+                    return;
+                }
+
+                var duration = 400;
+                var startTime = performance.now();
+                var delta = toVal - fromVal;
+
+                function step(now) {
+                    var elapsed = now - startTime;
+                    var t = Math.min(1, elapsed / duration);
+                    // easeOutQuad
+                    var eased = 1 - (1 - t) * (1 - t);
+                    var current = Math.round(fromVal + delta * eased);
+                    for (var i = 0; i < elements.length; i++) {
+                        if (elements[i]) elements[i].textContent = current;
+                    }
+                    if (t < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        for (var j = 0; j < elements.length; j++) {
+                            if (elements[j]) elements[j].textContent = toVal;
+                        }
+                    }
+                }
+                requestAnimationFrame(step);
+
+                // Bump efekti (sadece artislarda)
+                if (delta > 0) {
+                    for (var k = 0; k < elements.length; k++) {
+                        (function (el) {
+                            if (!el) return;
+                            el.classList.add('counter-bump');
+                            setTimeout(function () {
+                                el.classList.remove('counter-bump');
+                            }, 200);
+                        })(elements[k]);
+                    }
+                }
+            }
+
+            function setTotals(totals) {
+                if (!totals) return;
+
+                var newFound = typeof totals.found === 'number' ? totals.found : parseInt(totals.found, 10) || 0;
+                var newErrors = typeof totals.errors === 'number' ? totals.errors : parseInt(totals.errors, 10) || 0;
+                var newMissing = typeof totals.missing === 'number' ? totals.missing : parseInt(totals.missing, 10) || 0;
+
+                animateCounter([foundCountSpan, mFoundCount, tabBadgeFound], lastFoundTotal, newFound);
+                animateCounter([errorsCountSpan, mErrorsCount, tabBadgeErrors], lastErrorsTotal, newErrors);
+                animateCounter([missingCountSpan, mMissingCount, tabBadgeMissing], lastMissingTotal, newMissing);
+
+                lastFoundTotal = newFound;
+                lastErrorsTotal = newErrors;
+                lastMissingTotal = newMissing;
+            }
+
+            function resetTotalsToZero() {
+                lastFoundTotal = 0;
+                lastErrorsTotal = 0;
+                lastMissingTotal = 0;
+                foundCountSpan.textContent = '0';
+                errorsCountSpan.textContent = '0';
+                missingCountSpan.textContent = '0';
+                if (mFoundCount) mFoundCount.textContent = '0';
+                if (mErrorsCount) mErrorsCount.textContent = '0';
+                if (mMissingCount) mMissingCount.textContent = '0';
+                if (tabBadgeFound) tabBadgeFound.textContent = '0';
+                if (tabBadgeErrors) tabBadgeErrors.textContent = '0';
+                if (tabBadgeMissing) tabBadgeMissing.textContent = '0';
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // BAGLANTI BANNER (Sticky - agin / sunucu durumu)
+            // ═══════════════════════════════════════════════════════
+            function showBanner(text, kind, autoHideMs) {
+                connectionBanner.textContent = text;
+                connectionBanner.classList.remove('banner-warn', 'banner-error', 'banner-success');
+                if (kind === 'error') connectionBanner.classList.add('banner-error');
+                else if (kind === 'success') connectionBanner.classList.add('banner-success');
+                else connectionBanner.classList.add('banner-warn');
+                connectionBanner.classList.add('visible');
+
+                if (connectionBannerTimer) {
+                    clearTimeout(connectionBannerTimer);
+                    connectionBannerTimer = null;
+                }
+
+                if (autoHideMs && autoHideMs > 0) {
+                    connectionBannerTimer = setTimeout(hideBanner, autoHideMs);
+                }
+            }
+
+            function hideBanner() {
+                connectionBanner.classList.remove('visible');
+                if (connectionBannerTimer) {
+                    clearTimeout(connectionBannerTimer);
+                    connectionBannerTimer = null;
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // TOAST NOTIFICATION
+            // ═══════════════════════════════════════════════════════
+            function showToast(message, kind, durationMs) {
+                if (!toastContainer) return;
+                var toast = document.createElement('div');
+                toast.className = 'count-toast';
+                if (kind === 'warn') toast.classList.add('toast-warn');
+                else if (kind === 'error') toast.classList.add('toast-error');
+                else if (kind === 'success') toast.classList.add('toast-success');
+
+                toast.textContent = message;
+                toastContainer.appendChild(toast);
+
+                var life = durationMs || 2500;
+                setTimeout(function () {
+                    toast.classList.add('toast-leave');
+                    setTimeout(function () {
+                        if (toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, 250);
+                }, life);
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // CIHAZ ODAKLANMA (HANDS-FREE)
+            // ═══════════════════════════════════════════════════════
+            document.addEventListener('click', function (e) {
+                if (currentSessionId && !e.target.closest('button, a, input, .modal, .ct-tab')) {
+                    rfidInput.focus();
+                }
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // GIRIS ISLEME MANTIGI (RFID / BARKOD OKUYUCU)
+            // ═══════════════════════════════════════════════════════
+
+            // 1. Enter Tusu Yakalama (Cogu barkod/RFID okuyucu veri sonunda Enter gonderir)
+            rfidInput.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    var val = rfidInput.value.trim();
+                    if (val.length > 0) {
+                        handleScannedData(val);
+                    }
+                    rfidInput.value = "";
+                }
+            });
+
+            // 2. Input Dinleme (Enter gondermeyen cihazlar icin Fallback)
+            rfidInput.addEventListener("input", function () {
+                clearTimeout(inputTimeout);
+                inputTimeout = setTimeout(function () {
+                    var val = rfidInput.value.trim();
+                    if (val.length >= 3) {
+                        handleScannedData(val);
+                        rfidInput.value = "";
+                    }
+                }, 200);
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // MANUEL GIRIS MODU - Sanal klavye gerekirse acilir
+            // ═══════════════════════════════════════════════════════
+            btnManualEntry.addEventListener('click', function () {
+                manualEntryActive = !manualEntryActive;
+                if (manualEntryActive) {
+                    // Klavyeyi acabilmek icin inputmode attribute'unu kaldir
+                    rfidInput.removeAttribute('inputmode');
+                    btnManualEntry.classList.add('active');
+                    btnManualEntry.title = 'Scanner Moduna Don';
+                    rfidInput.focus();
+                    showToast('Manuel giris modu acildi.', 'warn', 2000);
+                } else {
+                    rfidInput.setAttribute('inputmode', 'none');
+                    btnManualEntry.classList.remove('active');
+                    btnManualEntry.title = 'Manuel Giris (Klavye Ac)';
+                    // Klavyeyi kapat
+                    rfidInput.blur();
+                    setTimeout(function () { rfidInput.focus(); }, 50);
+                    showToast('Scanner moduna donuldu.', 'success', 1500);
+                }
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // TARANAN VERIYI ISLE VE BUFFER'A EKLE
+            // ═══════════════════════════════════════════════════════
+            function handleScannedData(code) {
+                // Bosluklari ve satir sonlarini temizle
+                code = code.replace(/[\n\r\s]/g, '');
+                if (!code) return;
+
+                // Mukerrer kontrolu (oturum boyunca)
+                if (processedBarcodes.has(code)) {
+                    return;
+                }
+
+                // Buffer'a ekle
+                scanBuffer.push(code);
+                processedBarcodes.add(code);
+
+                // Tarama hizi icin zaman damgasi kaydet
+                scanTimestamps.push(Date.now());
+
+                // UI guncelle
+                updateBufferUI();
+
+                // Flush zamanlayicisini baslat/sifirla
+                scheduleFlush();
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // FLUSH ZAMANLAMA (DEBOUNCE + ESIK DEGERI)
+            // ═══════════════════════════════════════════════════════
+            function scheduleFlush() {
+                // Buffer doluysa hemen gonder
+                if (scanBuffer.length >= BUFFER_MAX) {
+                    flushBuffer();
+                    return;
+                }
+
+                // Aksi halde debounce: 500ms sessizlik sonrasi gonder
+                clearTimeout(flushTimer);
+                flushTimer = setTimeout(function () {
+                    flushBuffer();
+                }, FLUSH_DELAY_MS);
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // BUFFER'I SUNUCUYA TOPLU GONDER (BULK FLUSH)
+            // ═══════════════════════════════════════════════════════
+            function flushBuffer() {
+                clearTimeout(flushTimer);
+
+                if (isFlushing || scanBuffer.length === 0) return;
+                if (!currentSessionId) {
+                    showMessage("Once sayimi baslatin.", true);
+                    return;
+                }
+
+                isFlushing = true;
+
+                // Buffer'daki tum kodlari al ve buffer'i bosalt
+                var batch = scanBuffer.splice(0, scanBuffer.length);
+                updateBufferUI();
+
+                var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch('/counts/bulk-scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        codes: batch
+                    })
+                })
+                .then(function (resp) {
+                    return resp.json();
+                })
+                .then(function (data) {
+                    if (data.result) {
+                        // Basarili: Yeni bulunan satirlari tabloya ekle
+                        if (data.found && data.found.length > 0) {
+                            appendRows('tableFound', data.found, false);
+                        }
+
+                        // Hatali/Yabanci kodlari tabloya ekle
+                        if (data.errors && data.errors.length > 0) {
+                            appendRows('tableErrors', data.errors, true);
+                        }
+
+                        // FAZ 2: Kapsam disi okunan urunler - Hatali sutununda
+                        // ayri bir mesajla gosterilir ve toast uyarisi verilir.
+                        if (data.out_of_scope && data.out_of_scope.length > 0) {
+                            appendRows('tableErrors', data.out_of_scope, true);
+                            var firstOos = data.out_of_scope[0];
+                            var msg;
+                            if (data.out_of_scope.length === 1) {
+                                msg = 'Kapsam disi: ' + (firstOos.barcode || '?');
+                            } else {
+                                msg = data.out_of_scope.length + ' urun kapsam disi (' + (firstOos.barcode || '?') + ' ve digerleri)';
+                            }
+                            showToast(msg, 'warn', 3000);
+                        }
+
+                        // Eksikler tablosundan bulunan urunleri kaldir
+                        if (data.found && data.found.length > 0) {
+                            removeFoundFromMissing(data.found);
+                        }
+
+                        // Sunucudan gelen guncel toplamlari goster (animasyonlu)
+                        if (data.totals) {
+                            setTotals(data.totals);
+                        }
+
+                        // Basarili okuma efekti
+                        if (
+                            (data.found && data.found.length > 0) ||
+                            (data.errors && data.errors.length > 0) ||
+                            (data.out_of_scope && data.out_of_scope.length > 0)
+                        ) {
+                            flashScreen();
+                        }
+
+                        // Agli ise onceki uyariyi gizle
+                        if (retryCount > 0) {
+                            showBanner('Baglanti yeniden saglandi.', 'success', 2000);
+                        }
+
+                        // Retry sayacini sifirla
+                        retryCount = 0;
+                    } else {
+                        showMessage(data.error_msg || 'Bilinmeyen hata.', true);
+                        retryCount = 0;
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Toplu tarama hatasi:', err);
+
+                    // Ag hatasi durumunda kodlari geri koy ve tekrar dene
+                    if (retryCount < MAX_RETRIES) {
+                        retryCount++;
+                        // Kodlari buffer'in basina geri ekle
+                        for (var i = batch.length - 1; i >= 0; i--) {
+                            scanBuffer.unshift(batch[i]);
+                        }
+                        if (retryCount === 1) {
+                            // Ilk hata: Sessiz retry (sadece log)
+                        } else if (retryCount === 2) {
+                            showBanner('Baglanti sorunu, yeniden deneniyor...', 'warn');
+                        } else {
+                            showBanner('Sunucu yanit vermiyor (' + retryCount + '/' + MAX_RETRIES + '). Kodlar beklemede.', 'error');
+                        }
+                    } else {
+                        showBanner('Sunucu baglantisi basarisiz. Kodlar saklandi; tekrar okutmaya gerek yok.', 'error');
+                        retryCount = 0;
+                    }
+                })
+                .finally(function () {
+                    isFlushing = false;
+                    updateBufferUI();
+
+                    // Flush sirasinda yeni kodlar geldiyse tekrar flush baslat
+                    if (scanBuffer.length > 0) {
+                        scheduleFlush();
+                    }
+                });
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // INCREMENTAL DOM GUNCELLEME (SATIRLARI TABLOYA EKLE)
+            // FAZ 3: Her tablo MAX_VISIBLE_ROWS ile sinirli — eski satirlar
+            // alttan dusurulur, kayit kaybolmaz (gerçek sayım durumu DB'de tutulur,
+            // tum liste icin "Tum Listeyi Goster" modalı kullanılır).
+            // ═══════════════════════════════════════════════════════
+            function appendRows(tableId, rows, isErrorTable) {
+                if (!rows || rows.length === 0) return;
+
+                var tbody = document.querySelector('#' + tableId + ' tbody');
+                var fragment = document.createDocumentFragment();
+
+                for (var i = 0; i < rows.length; i++) {
+                    var r = rows[i];
+                    var tr = document.createElement('tr');
+                    tr.classList.add('flash-bg');
+                    if (r.product_id) {
+                        tr.setAttribute('data-product-id', r.product_id);
+                    }
+
+                    if (isErrorTable) {
+                        tr.innerHTML =
+                            '<td><span class="barcode-link" data-product-id="' + (r.product_id || '') + '">' + (r.barcode || '-') + '</span></td>' +
+                            '<td><span class="text-danger">' + (r.message || 'Tanimsiz / Hatali') + '</span></td>';
+                    } else {
+                        tr.innerHTML =
+                            '<td><span class="barcode-link" data-product-id="' + (r.product_id || '') + '">' + (r.barcode || '-') + '</span></td>' +
+                            '<td>' + (r.gram || '-') + '</td>' +
+                            '<td>' + (r.jewelry_type || r.name || '-') + '</td>';
+                    }
+
+                    fragment.appendChild(tr);
+                }
+
+                // Yeni satirlari tablonun basina ekle (en son okunan en ustte)
+                if (tbody.firstChild) {
+                    tbody.insertBefore(fragment, tbody.firstChild);
+                } else {
+                    tbody.appendChild(fragment);
+                }
+
+                // DOM CAP: Sinir asildiginda en alttaki satirlari kaldir
+                applyDomCap(tableId);
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // DOM CAP UYGULA - max satir sayisini koru
+            // ═══════════════════════════════════════════════════════
+            function applyDomCap(tableId) {
+                var tbody = document.querySelector('#' + tableId + ' tbody');
+                if (!tbody) return;
+
+                // Sinir asildi mi?
+                while (tbody.children.length > MAX_VISIBLE_ROWS) {
+                    tbody.removeChild(tbody.lastElementChild);
+                }
+                updateCapDisplays(tableId);
+            }
+
+            function updateCapDisplays(tableId) {
+                if (tableId === 'tableFound' && capDisplayFound) {
+                    capDisplayFound.textContent = document.querySelector('#tableFound tbody').children.length;
+                } else if (tableId === 'tableErrors' && capDisplayErrors) {
+                    capDisplayErrors.textContent = document.querySelector('#tableErrors tbody').children.length;
+                } else if (tableId === 'tableMissing' && capDisplayMissing) {
+                    capDisplayMissing.textContent = document.querySelector('#tableMissing tbody').children.length;
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // EKSIKLER TABLOSUNDAN BULUNANLARI KALDIR (LAZY QUEUE)
+            // FAZ 3: Her batch'te 5000xN tarama yerine ID'leri queue'ya
+            // alip 2.5sn'de bir tek seferde sileriz.
+            // ═══════════════════════════════════════════════════════
+            function removeFoundFromMissing(foundRows) {
+                if (!foundRows || foundRows.length === 0) return;
+
+                for (var i = 0; i < foundRows.length; i++) {
+                    var pid = foundRows[i].product_id;
+                    if (pid) pendingMissingRemovalIds.add(String(pid));
+                }
+
+                updateLazyMissingPendingDisplay();
+                scheduleLazyMissingFlush();
+            }
+
+            function scheduleLazyMissingFlush() {
+                if (lazyMissingTimer !== null) return; // zaten zamanlandi
+                var interval = liteMode ? LAZY_MISSING_LITE_MS : LAZY_MISSING_INTERVAL_MS;
+                lazyMissingTimer = setTimeout(flushLazyMissingRemoval, interval);
+            }
+
+            function flushLazyMissingRemoval() {
+                lazyMissingTimer = null;
+                if (pendingMissingRemovalIds.size === 0) {
+                    updateLazyMissingPendingDisplay();
+                    return;
+                }
+
+                var idsToRemove = pendingMissingRemovalIds;
+                pendingMissingRemovalIds = new Set();
+
+                var missingTbody = document.querySelector('#tableMissing tbody');
+                if (!missingTbody) {
+                    updateLazyMissingPendingDisplay();
+                    return;
+                }
+
+                // Kapsanmis satirlar uzerinde tek gecis - O(N)
+                var children = missingTbody.children;
+                var toRemove = [];
+                for (var j = 0; j < children.length; j++) {
+                    var pid = children[j].getAttribute('data-product-id');
+                    if (!pid) {
+                        // data-product-id yoksa link'ten al
+                        var link = children[j].querySelector('.barcode-link');
+                        if (link) pid = link.getAttribute('data-product-id');
+                    }
+                    if (pid && idsToRemove.has(String(pid))) {
+                        toRemove.push(children[j]);
+                    }
+                }
+
+                // Toplu silme — fragment swap'ten daha hizli olur kucuk N icin
+                for (var k = 0; k < toRemove.length; k++) {
+                    toRemove[k].remove();
+                }
+
+                updateCapDisplays('tableMissing');
+                updateLazyMissingPendingDisplay();
+            }
+
+            function updateLazyMissingPendingDisplay() {
+                if (!lazyMissingPendingEl) return;
+                var n = pendingMissingRemovalIds.size;
+                if (n === 0) {
+                    lazyMissingPendingEl.classList.add('d-none');
+                } else {
+                    lazyMissingPendingEl.classList.remove('d-none');
+                    if (lazyMissingPendingCount) lazyMissingPendingCount.textContent = n;
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // BUFFER UI GUNCELLEME (Hem masaustu hem mobil)
+            // ═══════════════════════════════════════════════════════
+            function updateBufferUI() {
+                var count = scanBuffer.length;
+                var text, dotClass;
+
+                if (isFlushing) {
+                    text = 'Tampon: ' + count + ' | Gonderiliyor...';
+                    dotClass = 'buffer-dot flushing';
+                    bufferStatusEl.classList.add('text-warning', 'fw-bold');
+                    bufferStatusEl.classList.remove('text-primary');
+                } else if (count > 0) {
+                    text = 'Tampon: ' + count + ' | Biriktirilyor...';
+                    dotClass = 'buffer-dot active';
+                    bufferStatusEl.classList.add('text-primary', 'fw-bold');
+                    bufferStatusEl.classList.remove('text-warning');
+                } else {
+                    text = 'Tampon: 0';
+                    dotClass = 'buffer-dot';
+                    bufferStatusEl.classList.remove('text-primary', 'text-warning', 'fw-bold');
+                }
+
+                bufferStatusEl.textContent = text;
+                bufferDotEl.className = dotClass;
+
+                if (mBufferStatus) mBufferStatus.textContent = text;
+                if (mBufferDot) mBufferDot.className = dotClass;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // TARAMA HIZI GOSTERGESI (okuma/saniye) - Renk kodlamali
+            // ═══════════════════════════════════════════════════════
+            function applySpeedClass(el, speed) {
+                if (!el) return;
+                el.classList.remove('speed-idle', 'speed-slow', 'speed-normal', 'speed-high');
+                if (speed === 0) el.classList.add('speed-idle');
+                else if (speed < 10) el.classList.add('speed-slow');
+                else if (speed < 50) el.classList.add('speed-normal');
+                else el.classList.add('speed-high');
+            }
+
+            function startSpeedIndicator() {
+                speedInterval = setInterval(function () {
+                    var now = Date.now();
+                    var threeSecondsAgo = now - 3000;
+
+                    // Son 3 saniyedeki okumalari filtrele
+                    scanTimestamps = scanTimestamps.filter(function (ts) {
+                        return ts > threeSecondsAgo;
+                    });
+
+                    var speed = scanTimestamps.length > 0
+                        ? Math.round(scanTimestamps.length / 3)
+                        : 0;
+
+                    var label = speed + ' okuma/sn';
+
+                    speedIndicatorEl.textContent = label;
+                    speedIndicatorEl.classList.remove('d-none');
+                    applySpeedClass(speedIndicatorEl, speed);
+
+                    if (mSpeedIndicator) {
+                        mSpeedIndicator.textContent = label;
+                        applySpeedClass(mSpeedIndicator, speed);
+                    }
+                }, 1000);
+            }
+
+            function stopSpeedIndicator() {
+                if (speedInterval) {
+                    clearInterval(speedInterval);
+                    speedInterval = null;
+                }
+                scanTimestamps = [];
+                speedIndicatorEl.classList.add('d-none');
+                speedIndicatorEl.classList.remove('speed-idle', 'speed-slow', 'speed-normal', 'speed-high');
+                if (mSpeedIndicator) {
+                    mSpeedIndicator.textContent = '0 okuma/sn';
+                    applySpeedClass(mSpeedIndicator, 0);
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // EKRAN FLASH EFEKTI
+            // ═══════════════════════════════════════════════════════
+            function flashScreen() {
+                var cardBody = document.querySelector('.card-body');
+                if (cardBody) {
+                    cardBody.classList.add('flash-bg');
+                    setTimeout(function () {
+                        cardBody.classList.remove('flash-bg');
+                    }, 300);
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // TAM TABLO YUKLEME (Oturum baslatma / sifirlama icin)
+            // ═══════════════════════════════════════════════════════
+            function loadTables() {
+                if (!currentSessionId) return;
+
+                fetch('/counts/get-stock-count-data')
+                    .then(function (resp) { return resp.json(); })
+                    .then(function (data) {
+                        var bulunan = data.bulunan || [];
+                        var hatalilar = data.hatalilar || [];
+                        var eksikler = data.eksikler || [];
+
+                        renderTable('tableFound', bulunan, false);
+                        renderTable('tableErrors', hatalilar, true);
+                        renderTable('tableMissing', eksikler, false);
+
+                        setTotals({
+                            found: bulunan.length,
+                            errors: hatalilar.length,
+                            missing: eksikler.length
+                        });
+
+                        // FAZ 2: Backend'den gelen kapsam bilgisiyle badge'i guncelle
+                        if (data.scope) {
+                            activeSessionScope = {
+                                type: data.scope.type || 'ALL',
+                                label: data.scope.label || '',
+                                filter: data.scope.filter || {},
+                            };
+                            updateScopeBadge(activeSessionScope);
+                        }
+                    })
+                    .catch(function (err) {
+                        console.error('Veri yenileme hatasi:', err);
+                    });
+            }
+
+            function renderTable(tableId, rows, isErrorTable) {
+                var tbody = document.querySelector('#' + tableId + ' tbody');
+                tbody.innerHTML = '';
+
+                // FAZ 3: Buyuk listelerde DOM patlamasini engellemek icin
+                // sadece ilk MAX_VISIBLE_ROWS satir DOM'a eklenir; tam listeye
+                // erisim "Tum Listeyi Goster" modali uzerinden saglanir.
+                // Sayim sayaclari tabakada kalanla degil, sunucu totalleriyle
+                // beslenir, bu yuzden N rakamlari dogru kalir.
+                var visibleRows = rows.length > MAX_VISIBLE_ROWS
+                    ? rows.slice(0, MAX_VISIBLE_ROWS)
+                    : rows;
+
+                var fragment = document.createDocumentFragment();
+
+                for (var i = 0; i < visibleRows.length; i++) {
+                    var r = visibleRows[i];
+                    var tr = document.createElement('tr');
+                    if (r.product_id) {
+                        tr.setAttribute('data-product-id', r.product_id);
+                    }
+
+                    if (isErrorTable) {
+                        tr.innerHTML =
+                            '<td><span class="barcode-link" data-product-id="' + (r.product_id || '') + '">' + (r.barcode || '-') + '</span></td>' +
+                            '<td><span class="text-danger">' + (r.message || 'Tanimsiz / Hatali') + '</span></td>';
+                    } else {
+                        tr.innerHTML =
+                            '<td><span class="barcode-link" data-product-id="' + (r.product_id || '') + '">' + (r.barcode || '-') + '</span></td>' +
+                            '<td>' + (r.gram || '-') + '</td>' +
+                            '<td>' + (r.jewelry_type || r.name || '-') + '</td>';
+                    }
+
+                    fragment.appendChild(tr);
+                }
+
+                tbody.appendChild(fragment);
+                updateCapDisplays(tableId);
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // BARKOD TIKLAMA -> URUN GORSELI MODALI
+            // ═══════════════════════════════════════════════════════
+            document.addEventListener('click', function (e) {
+                var link = e.target.closest('.barcode-link');
+                if (!link) return;
+
+                var productId = link.getAttribute('data-product-id');
+                if (!productId) return;
+
+                e.preventDefault();
+
+                var modal = new bootstrap.Modal(document.getElementById('productImageModal'));
+                document.getElementById('productImageLoader').classList.remove('d-none');
+                document.getElementById('productImageContent').classList.add('d-none');
+                document.getElementById('productImageEmpty').classList.add('d-none');
+                modal.show();
+
+                fetch('/counts/get-product-image?product_id=' + productId)
+                    .then(function (resp) { return resp.json(); })
+                    .then(function (data) {
+                        document.getElementById('productImageLoader').classList.add('d-none');
+
+                        if (data.result) {
+                            if (data.image_url) {
+                                document.getElementById('productImageEl').src = data.image_url;
+                                document.getElementById('imgBarcode').textContent = data.barcode;
+                                document.getElementById('imgName').textContent = data.name;
+                                document.getElementById('imgGram').textContent = data.gram;
+                                document.getElementById('imgCategory').textContent = data.category;
+                                document.getElementById('productImageContent').classList.remove('d-none');
+                            } else {
+                                document.getElementById('imgBarcodeEmpty').textContent = data.barcode;
+                                document.getElementById('imgNameEmpty').textContent = data.name;
+                                document.getElementById('imgGramEmpty').textContent = data.gram;
+                                document.getElementById('imgCategoryEmpty').textContent = data.category;
+                                document.getElementById('productImageEmpty').classList.remove('d-none');
+                            }
+                        } else {
+                            document.getElementById('productImageEmpty').classList.remove('d-none');
+                        }
+                    })
+                    .catch(function () {
+                        document.getElementById('productImageLoader').classList.add('d-none');
+                        document.getElementById('productImageEmpty').classList.remove('d-none');
+                    });
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // MOBIL SEKME GEÇISLERI - Tek DOM, farkli gorunum
+            // ═══════════════════════════════════════════════════════
+            var tabButtons = document.querySelectorAll('#countMobileTabs .ct-tab');
+            var countCards = document.querySelectorAll('.count-card');
+
+            tabButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var panel = btn.getAttribute('data-panel');
+                    tabButtons.forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    countCards.forEach(function (c) {
+                        if (c.getAttribute('data-panel') === panel) {
+                            c.classList.add('is-active');
+                        } else {
+                            c.classList.remove('is-active');
+                        }
+                    });
+                });
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // TAM EKRAN (SAYIM MODU)
+            // El terminali deneyimi icin browser chrome ve sidebar gizlenir
+            // ═══════════════════════════════════════════════════════
+            document.getElementById("btnFullscreen").addEventListener('click', function () {
+                var isActive = document.body.classList.toggle('sayim-fullscreen');
+                if (isActive) {
+                    // Native tam ekran API (desteklendiginde)
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(function () {});
+                    }
+                    showToast('Sayim modu acildi.', 'success', 1500);
+                } else {
+                    if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen().catch(function () {});
+                    }
+                    showToast('Sayim modu kapatildi.', 'warn', 1500);
+                }
+            });
+
+            // Kullanici ESC ile tam ekrandan ciktiginda sinifi kaldir
+            document.addEventListener('fullscreenchange', function () {
+                if (!document.fullscreenElement) {
+                    document.body.classList.remove('sayim-fullscreen');
+                }
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // AGIN DURUMU (online/offline native event'leri)
+            // ═══════════════════════════════════════════════════════
+            window.addEventListener('offline', function () {
+                showBanner('Internet baglantisi kesildi. Kodlar bellekte saklanacak.', 'error');
+            });
+            window.addEventListener('online', function () {
+                showBanner('Internet baglantisi geri geldi.', 'success', 2500);
+                // Bekleyen buffer varsa hemen gonder
+                if (scanBuffer.length > 0 && currentSessionId) {
+                    scheduleFlush();
+                }
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // DURUM & UI FONKSIYONLARI
+            // ═══════════════════════════════════════════════════════
+            function updateStatusBadge(text, colorClass) {
+                statusBadge.textContent = 'Durum: ' + text;
+                statusBadge.className = 'badge bg-' + colorClass + ' fs-6 px-4 py-3 rounded-pill';
+            }
+
+            function showMessage(msg, isError) {
+                infoArea.classList.remove('d-none', 'alert-danger', 'alert-info');
+                infoArea.classList.add(isError ? 'alert-danger' : 'alert-info');
+                infoArea.textContent = msg;
+
+                setTimeout(function () {
+                    infoArea.classList.add('d-none');
+                }, 3000);
+            }
+
+            function enableRFIDInput(enable) {
+                rfidInput.disabled = !enable;
+                if (enable) {
+                    // Scanner modunda readonly ile sanal klavyeyi daha da kesinkes engelle
+                    // (inputmode="none" yeterli olsa da cift guvenlik katmani olusturur)
+                    if (!manualEntryActive) {
+                        rfidInput.setAttribute('readonly', 'readonly');
+                    }
+                    rfidInput.focus();
+                    rfidInput.classList.add('bg-white');
+                } else {
+                    rfidInput.value = "";
+                    rfidInput.removeAttribute('readonly');
+                    rfidInput.classList.remove('bg-white');
+                }
+            }
+
+            // Readonly durumunda HID scanner input event'leri tetiklemeyebilir -
+            // bu yuzden readonly'yi yalnizca dogrudan klavye focus'unu engellemek icin kullaniyoruz.
+            // Scanner okudugunda readonly'yi anlik olarak kaldirip geri alacak wrapper:
+            rfidInput.addEventListener('focus', function () {
+                if (currentSessionId && !manualEntryActive) {
+                    rfidInput.removeAttribute('readonly');
+                }
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // RAPOR ONIZLEME RENDER YARDIMLARI
+            // ═══════════════════════════════════════════════════════
+            function buildReportHTML(data) {
+                var html = '';
+
+                var s = data.summary;
+                html += '' +
+                    '<div class="border rounded p-3 mb-4" style="background:#f8f9fa;">' +
+                    '    <h6 class="fw-bold mb-3">OZET</h6>' +
+                    '    <div class="table-responsive">' +
+                    '        <table class="table table-sm table-bordered mb-0 text-center">' +
+                    '            <thead class="table-dark">' +
+                    '                <tr><th>DURUM</th><th>ADET</th><th>GRAM</th><th>HAS</th></tr>' +
+                    '            </thead>' +
+                    '            <tbody>' +
+                    '                <tr>' +
+                    '                    <td class="text-start fw-bold">SISTEM STOK</td>' +
+                    '                    <td>' + s.total_qty + '</td><td>' + s.total_gram + '</td><td>' + s.total_has + '</td>' +
+                    '                </tr>' +
+                    '                <tr class="text-danger">' +
+                    '                    <td class="text-start fw-bold">EKSIK / KAYIP</td>' +
+                    '                    <td>' + s.missing_qty + '</td><td>' + s.missing_gram + '</td><td>' + s.missing_has + '</td>' +
+                    '                </tr>' +
+                    '                <tr class="text-success">' +
+                    '                    <td class="text-start fw-bold">BULUNAN</td>' +
+                    '                    <td>' + s.found_qty + '</td><td>' + s.found_gram + '</td><td>' + s.found_has + '</td>' +
+                    '                </tr>' +
+                    '            </tbody>' +
+                    '        </table>' +
+                    '    </div>' +
+                    '</div>';
+
+                if (data.missing_groups && data.missing_groups.length > 0) {
+                    html += '<h6 class="fw-bold text-danger mt-4 mb-3"><i class="bi bi-x-circle me-1"></i> EKSIK / KAYIP URUNLER (' + s.missing_qty + ' Adet)</h6>';
+                    html += buildGroupedTable(data.missing_groups, 'table-danger');
+                }
+
+                if (data.error_groups && data.error_groups.length > 0) {
+                    html += '<h6 class="fw-bold text-warning mt-4 mb-3"><i class="bi bi-exclamation-triangle me-1"></i> HATALI / YABANCI URUNLER (' + s.error_qty + ' Adet)</h6>';
+                    html += buildGroupedTable(data.error_groups, 'table-warning');
+                }
+
+                if (data.found_groups && data.found_groups.length > 0) {
+                    html += '<h6 class="fw-bold text-success mt-4 mb-3"><i class="bi bi-check-circle me-1"></i> BULUNAN URUNLER (' + s.found_qty + ' Adet)</h6>';
+                    html += buildGroupedTable(data.found_groups, 'table-success');
+                }
+
+                return html;
+            }
+
+            function buildGroupedTable(groups, headerClass) {
+                var html = '';
+                for (var g = 0; g < groups.length; g++) {
+                    var group = groups[g];
+                    html += '<div class="report-category-badge">' + group.category + ' (' + group.count + ' Adet)</div>';
+                    html += '<div class="table-responsive mb-3">' +
+                        '<table class="table table-sm table-bordered table-striped mb-0">' +
+                        '<thead class="' + headerClass + '">' +
+                        '<tr><th>BARKOD</th><th>URUN</th><th class="text-end">GRAM</th><th class="text-end">HAS</th></tr>' +
+                        '</thead><tbody>';
+
+                    for (var i = 0; i < group.items.length; i++) {
+                        var item = group.items[i];
+                        html += '<tr>' +
+                            '<td class="fw-bold">' + item.barcode + '</td>' +
+                            '<td>' + item.name + '</td>' +
+                            '<td class="text-end">' + item.gram + '</td>' +
+                            '<td class="text-end">' + item.has + '</td>' +
+                            '</tr>';
+                    }
+
+                    html += '</tbody></table></div>';
+                }
+                return html;
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // BUTON ISLEMLERI
+            // ═══════════════════════════════════════════════════════
+
+            // ═══════════════════════════════════════════════════════
+            // FAZ 2: KAPSAM SECIM MODAL YONETIMI
+            // ═══════════════════════════════════════════════════════
+            var scopeModalEl = document.getElementById('scopeSelectModal');
+            var scopeModalInstance = null;
+            var btnScopeConfirm = document.getElementById('btnScopeConfirm');
+            var scopeTypeList = document.getElementById('scopeTypeList');
+            var scopeValueSection = document.getElementById('scopeValueSection');
+            var scopeValueLabel = document.getElementById('scopeValueLabel');
+            var scopeValueSearch = document.getElementById('scopeValueSearch');
+            var scopeValueList = document.getElementById('scopeValueList');
+            var scopePreviewText = document.getElementById('scopePreviewText');
+            var scopeAllCount = document.getElementById('scopeAllCount');
+
+            function openScopeModal() {
+                // Modal aciliyor, state reset
+                pendingScopeType = 'ALL';
+                pendingScopeValues = [];
+                pendingScopeLabel = '';
+                document.querySelectorAll('.scope-type-card').forEach(function (el) {
+                    el.classList.toggle('active', el.getAttribute('data-scope-type') === 'ALL');
+                    var input = el.querySelector('input[type="radio"]');
+                    if (input) input.checked = (el.getAttribute('data-scope-type') === 'ALL');
+                });
+                scopeValueSection.classList.add('d-none');
+                scopePreviewText.textContent = 'Tum magaza sayilacak.';
+                btnScopeConfirm.disabled = false;
+                if (scopeValueSearch) scopeValueSearch.value = '';
+
+                if (!scopeModalInstance) {
+                    scopeModalInstance = new bootstrap.Modal(scopeModalEl);
+                }
+                scopeModalInstance.show();
+
+                // Secenekleri yukle
+                document.getElementById('scopeModalLoader').classList.remove('d-none');
+                document.getElementById('scopeModalContent').classList.add('d-none');
+
+                fetch('/counts/scope-options')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        document.getElementById('scopeModalLoader').classList.add('d-none');
+                        document.getElementById('scopeModalContent').classList.remove('d-none');
+                        if (data.result) {
+                            scopeOptionsCache = data;
+                            if (scopeAllCount) scopeAllCount.textContent = data.total_products || 0;
+                        } else {
+                            showMessage(data.error_msg || 'Kapsam secenekleri alinamadi.', true);
+                        }
+                    })
+                    .catch(function () {
+                        document.getElementById('scopeModalLoader').classList.add('d-none');
+                        document.getElementById('scopeModalContent').classList.remove('d-none');
+                        showMessage('Sunucuya ulasilamadi.', true);
+                    });
+            }
+
+            // Kapsam tipi kartlarina tiklama
+            document.querySelectorAll('.scope-type-card').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    var st = card.getAttribute('data-scope-type');
+                    pendingScopeType = st;
+                    pendingScopeValues = [];
+
+                    document.querySelectorAll('.scope-type-card').forEach(function (el) {
+                        el.classList.remove('active');
+                        var input = el.querySelector('input[type="radio"]');
+                        if (input) input.checked = false;
+                    });
+                    card.classList.add('active');
+                    var radio = card.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+
+                    if (st === 'ALL') {
+                        scopeValueSection.classList.add('d-none');
+                        scopePreviewText.textContent = 'Tum magaza sayilacak.';
+                        btnScopeConfirm.disabled = false;
+                    } else {
+                        scopeValueSection.classList.remove('d-none');
+                        if (scopeValueSearch) scopeValueSearch.value = '';
+                        renderScopeValueList(st, '');
+                        updateScopePreview();
+                        btnScopeConfirm.disabled = true;
+                    }
+                });
+            });
+
+            function renderScopeValueList(scopeType, filter) {
+                if (!scopeOptionsCache) {
+                    scopeValueList.innerHTML = '<div class="text-muted text-center py-4">Secenekler yukleniyor...</div>';
+                    return;
+                }
+
+                var items = [];
+                if (scopeType === 'CATEGORY') {
+                    scopeValueLabel.textContent = 'Kategori Secin (Coklu secim mumkun)';
+                    items = (scopeOptionsCache.categories || []).map(function (c) {
+                        return { value: c.id, label: c.name, count: c.count };
+                    });
+                } else if (scopeType === 'MATERIAL') {
+                    scopeValueLabel.textContent = 'Materyal Tipi Secin';
+                    items = (scopeOptionsCache.materials || []).map(function (m) {
+                        return { value: m.value, label: m.label, count: m.count };
+                    });
+                } else if (scopeType === 'BRAND') {
+                    scopeValueLabel.textContent = 'Marka Secin';
+                    items = (scopeOptionsCache.brands || []).map(function (b) {
+                        return { value: b.value, label: b.label, count: b.count };
+                    });
+                } else if (scopeType === 'JEWELRY_TYPE') {
+                    scopeValueLabel.textContent = 'Mucevher Tipi Secin';
+                    items = (scopeOptionsCache.jewelry_types || []).map(function (j) {
+                        return { value: j.value, label: j.label, count: j.count };
+                    });
+                }
+
+                // Arama filtresi
+                var q = (filter || '').toLowerCase().trim();
+                if (q) {
+                    items = items.filter(function (i) {
+                        return (i.label || '').toLowerCase().indexOf(q) !== -1;
+                    });
+                }
+
+                if (items.length === 0) {
+                    scopeValueList.innerHTML = '<div class="text-muted text-center py-4">Secenek bulunamadi.</div>';
+                    return;
+                }
+
+                var html = '';
+                items.forEach(function (it) {
+                    var isSelected = pendingScopeValues.indexOf(it.value) !== -1;
+                    html += '' +
+                        '<label class="scope-value-item ' + (isSelected ? 'selected' : '') + '">' +
+                        '  <input type="checkbox" value="' + escapeHtml(it.value) + '" ' + (isSelected ? 'checked' : '') + '>' +
+                        '  <span class="sv-label">' + escapeHtml(it.label) + '</span>' +
+                        '  <span class="sv-count">' + (it.count || 0) + ' urun</span>' +
+                        '</label>';
+                });
+                scopeValueList.innerHTML = html;
+
+                // Secim degisimini dinle
+                scopeValueList.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+                    cb.addEventListener('change', function () {
+                        var v = cb.value;
+                        var idx = pendingScopeValues.indexOf(v);
+                        if (cb.checked && idx === -1) pendingScopeValues.push(v);
+                        if (!cb.checked && idx !== -1) pendingScopeValues.splice(idx, 1);
+                        cb.closest('.scope-value-item').classList.toggle('selected', cb.checked);
+                        updateScopePreview();
+                        btnScopeConfirm.disabled = pendingScopeValues.length === 0;
+                    });
+                });
+            }
+
+            if (scopeValueSearch) {
+                scopeValueSearch.addEventListener('input', function () {
+                    renderScopeValueList(pendingScopeType, scopeValueSearch.value);
+                });
+            }
+
+            function updateScopePreview() {
+                if (pendingScopeType === 'ALL') {
+                    scopePreviewText.textContent = 'Tum magaza sayilacak.';
+                    pendingScopeLabel = '';
+                    return;
+                }
+                if (pendingScopeValues.length === 0) {
+                    scopePreviewText.textContent = 'Henuz deger secilmedi.';
+                    pendingScopeLabel = '';
+                    return;
+                }
+
+                // Etiketleri topla ve urun sayisini hesapla
+                var items = [];
+                var totalCount = 0;
+                var source = [];
+                if (pendingScopeType === 'CATEGORY') source = scopeOptionsCache.categories || [];
+                else if (pendingScopeType === 'MATERIAL') source = scopeOptionsCache.materials || [];
+                else if (pendingScopeType === 'BRAND') source = scopeOptionsCache.brands || [];
+                else if (pendingScopeType === 'JEWELRY_TYPE') source = scopeOptionsCache.jewelry_types || [];
+
+                pendingScopeValues.forEach(function (v) {
+                    var found = source.find(function (s) {
+                        return String(s.value || s.id) === String(v);
+                    });
+                    if (found) {
+                        items.push(found.label || found.name || v);
+                        totalCount += (found.count || 0);
+                    }
+                });
+
+                pendingScopeLabel = items.join(', ');
+                scopePreviewText.textContent = (
+                    pendingScopeLabel +
+                    ' kapsaminda yaklasik ' + totalCount + ' urun sayilacak.'
+                );
+            }
+
+            function escapeHtml(s) {
+                if (s === null || s === undefined) return '';
+                return String(s)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function buildScopeFilter() {
+                if (pendingScopeType === 'ALL') return {};
+                if (pendingScopeType === 'CATEGORY') return { category_ids: pendingScopeValues.slice() };
+                if (pendingScopeType === 'MATERIAL') return { material_types: pendingScopeValues.slice() };
+                if (pendingScopeType === 'BRAND') return { brands: pendingScopeValues.slice() };
+                if (pendingScopeType === 'JEWELRY_TYPE') return { jewelry_types: pendingScopeValues.slice() };
+                return {};
+            }
+
+            // --- BASLAT: Kapsam modalini ac ---
+            document.getElementById("btnStartSession").addEventListener("click", function () {
+                openScopeModal();
+            });
+
+            // --- Modal icinden "Sayimi Baslat" ---
+            btnScopeConfirm.addEventListener('click', function () {
+                var scopeFilter = buildScopeFilter();
+                var scopeLabel = pendingScopeLabel || '';
+
+                var formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('scope_type', pendingScopeType);
+                formData.append('scope_filter', JSON.stringify(scopeFilter));
+                formData.append('scope_label', scopeLabel);
+
+                btnScopeConfirm.disabled = true;
+
+                fetch('/counts/session/start', {method: 'POST', body: formData})
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        btnScopeConfirm.disabled = false;
+
+                        if (data.result) {
+                            currentSessionId = data.session_id;
+                            document.getElementById("currentSessionId").value = currentSessionId;
+
+                            activeSessionScope = {
+                                type: data.scope_type || 'ALL',
+                                label: data.scope_label || '',
+                                filter: data.scope_filter || {},
+                            };
+                            updateScopeBadge(activeSessionScope);
+
+                            // Buffer ve mukerrer onbellegini sifirla
+                            processedBarcodes.clear();
+                            scanBuffer = [];
+                            retryCount = 0;
+                            updateBufferUI();
+
+                            showMessage(data.message, false);
+                            updateStatusBadge('Sayim Yapiliyor...', 'success');
+                            enableRFIDInput(true);
+                            startSpeedIndicator();
+                            loadTables();
+
+                            if (scopeModalInstance) scopeModalInstance.hide();
+                        } else if (data.conflict) {
+                            // Aktif farkli kapsamli oturum var
+                            Swal.fire({
+                                title: 'Acik Oturum Var',
+                                text: data.error_msg,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Mevcut Oturumu Kapat ve Devam Et',
+                                cancelButtonText: 'Vazgec',
+                            }).then(function (result) {
+                                if (result.isConfirmed) {
+                                    // Once reset-session cagrisi ile eski oturumu kapat
+                                    var rf = new FormData();
+                                    rf.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                                    fetch('/counts/reset-session', {method: 'POST', body: rf})
+                                        .then(function (r) { return r.json(); })
+                                        .then(function () {
+                                            // Yeniden dene
+                                            btnScopeConfirm.click();
+                                        });
+                                }
+                            });
+                        } else {
+                            showMessage(data.error_msg || 'Oturum baslatilamadi.', true);
+                        }
+                    })
+                    .catch(function () {
+                        btnScopeConfirm.disabled = false;
+                        showMessage('Sunucuya ulasilamadi.', true);
+                    });
+            });
+
+            // --- BITIR ---
+            document.getElementById("btnCloseSession").addEventListener("click", function () {
+                if (!currentSessionId) return;
+
+                Swal.fire({
+                    title: 'Sayimi Bitir?',
+                    text: "Sayim oturumu kapatilacak.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Bitir',
+                    cancelButtonText: 'Iptal'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        // Bekleyen buffer varsa once gonder
+                        if (scanBuffer.length > 0) {
+                            flushBuffer();
+                        }
+
+                        var formData = new FormData();
+                        formData.append('session_id', currentSessionId);
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                        fetch('/counts/close-session', {method: 'POST', body: formData})
+                            .then(function (r) { return r.json(); })
+                            .then(function (data) {
+                                if (data.result) {
+                                    showMessage("Sayim basariyla tamamlandi.");
+                                    updateStatusBadge('Tamamlandi', 'danger');
+                                    enableRFIDInput(false);
+                                    stopSpeedIndicator();
+                                    // Kapsam badge'i aktif oturum bittiginde gizle
+                                    activeSessionScope = { type: 'ALL', label: '', filter: {} };
+                                    updateScopeBadge(activeSessionScope);
+                                }
+                            });
+                    }
+                });
+            });
+
+            // --- SIFIRLA ---
+            document.getElementById("btnResetSession").addEventListener("click", function () {
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "Tum sayim verileri silinecek!",
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Sifirla'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        var formData = new FormData();
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                        fetch('/counts/reset-session', {method: 'POST', body: formData})
+                            .then(function (r) { return r.json(); })
+                            .then(function (data) {
+                                if (data.result) {
+                                    showMessage("Oturum sifirlandi.");
+                                    updateStatusBadge('Sifirlandi', 'secondary');
+                                    enableRFIDInput(false);
+                                    stopSpeedIndicator();
+                                    currentSessionId = '';
+                                    processedBarcodes.clear();
+                                    scanBuffer = [];
+                                    retryCount = 0;
+                                    resetTotalsToZero();
+                                    updateBufferUI();
+                                    // Kapsam badge'i temizle
+                                    activeSessionScope = { type: 'ALL', label: '', filter: {} };
+                                    updateScopeBadge(activeSessionScope);
+                                    loadTables();
+                                }
+                            });
+                    }
+                });
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // RAPOR BUTONU -> ONIZLEME MODALI
+            // ═══════════════════════════════════════════════════════
+            document.getElementById("btnDownloadPDF").addEventListener("click", function () {
+                if (!currentSessionId) {
+                    showMessage("Aktif veya tamamlanmis bir oturum yok.", true);
+                    return;
+                }
+
+                var reportModal = new bootstrap.Modal(document.getElementById('reportPreviewModal'));
+                document.getElementById('reportPreviewBody').innerHTML =
+                    '<div class="text-center py-5">' +
+                    '    <div class="spinner-border text-primary" role="status"></div>' +
+                    '    <p class="mt-2 text-muted">Rapor hazirlaniyor...</p>' +
+                    '</div>';
+                reportModal.show();
+
+                fetch('/counts/preview-report/' + currentSessionId + '/')
+                    .then(function (resp) { return resp.json(); })
+                    .then(function (data) {
+                        if (data.result) {
+                            document.getElementById('reportPreviewBody').innerHTML = buildReportHTML(data);
+                        } else {
+                            document.getElementById('reportPreviewBody').innerHTML =
+                                '<p class="text-danger text-center py-4">Rapor verisi alinamadi.</p>';
+                        }
+                    })
+                    .catch(function () {
+                        document.getElementById('reportPreviewBody').innerHTML =
+                            '<p class="text-danger text-center py-4">Sunucu ile iletisim kurulamadi.</p>';
+                    });
+            });
+
+            // --- Modal icinden PDF Indir ---
+            document.getElementById("btnDownloadPDFFromModal").addEventListener("click", function () {
+                if (!currentSessionId) return;
+                var url = '/counts/download-pdf/' + currentSessionId + '/';
+                window.open(url, '_blank');
+            });
+
+            // ═══════════════════════════════════════════════════════
+            // FAZ 3: TUM LISTEYI GOSTER MODALI
+            // DOM cap nedeniyle gizlenen kayitlara erisim + arama filtresi.
+            // Endpoint: /counts/get-stock-count-data — kapsam farkindali.
+            // ═══════════════════════════════════════════════════════
+            var fullListModalEl = document.getElementById('fullListModal');
+            var fullListModalInstance = null;
+            var fullListTitle = document.getElementById('fullListTitle');
+            var fullListCount = document.getElementById('fullListCount');
+            var fullListLoader = document.getElementById('fullListLoader');
+            var fullListTbody = document.getElementById('fullListTbody');
+            var fullListThead = document.getElementById('fullListThead');
+            var fullListEmpty = document.getElementById('fullListEmpty');
+            var fullListSearch = document.getElementById('fullListSearch');
+            var fullListShownInfo = document.getElementById('fullListShownInfo');
+            var fullListAllRows = [];   // Yuklenen tum satirlar (filtre bagimsiz)
+
+            // Show-all butonlarini dinle
+            document.querySelectorAll('.btn-show-all').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var listKey = btn.getAttribute('data-list'); // found | errors | missing
+                    openFullListModal(listKey);
+                });
+            });
+
+            function openFullListModal(listKey) {
+                if (!fullListModalInstance) {
+                    fullListModalInstance = new bootstrap.Modal(fullListModalEl);
+                }
+
+                // Baslik ve sutun yapisi
+                var titleMap = {
+                    found: { title: 'Bulunan Urunler', isError: false },
+                    errors: { title: 'Hatali / Yabanci Urunler', isError: true },
+                    missing: { title: 'Eksik Urunler', isError: false },
+                };
+                var meta = titleMap[listKey] || { title: 'Tum Liste', isError: false };
+                fullListTitle.textContent = meta.title;
+                fullListCount.textContent = '0';
+                fullListAllRows = [];
+                fullListTbody.innerHTML = '';
+                fullListEmpty.classList.add('d-none');
+                if (fullListSearch) fullListSearch.value = '';
+
+                // Sutun basliklari listeye gore
+                if (meta.isError) {
+                    fullListThead.innerHTML =
+                        '<tr><th>Barkod</th><th>Aciklama</th><th>Tip</th><th>Kategori</th></tr>';
+                } else {
+                    fullListThead.innerHTML =
+                        '<tr><th>Barkod</th><th>Tip / Urun</th><th>Gram</th><th>Kategori</th></tr>';
+                }
+
+                fullListShownInfo.textContent = '-';
+                fullListLoader.classList.remove('d-none');
+                fullListModalInstance.show();
+
+                // Veriyi cek
+                fetch('/counts/get-stock-count-data')
+                    .then(function (resp) { return resp.json(); })
+                    .then(function (data) {
+                        fullListLoader.classList.add('d-none');
+                        var rows = [];
+                        if (listKey === 'found') rows = data.bulunan || [];
+                        else if (listKey === 'errors') rows = data.hatalilar || [];
+                        else if (listKey === 'missing') rows = data.eksikler || [];
+
+                        fullListAllRows = rows;
+                        fullListCount.textContent = rows.length;
+                        renderFullList(rows, meta.isError, '');
+                    })
+                    .catch(function () {
+                        fullListLoader.classList.add('d-none');
+                        fullListEmpty.classList.remove('d-none');
+                        fullListEmpty.textContent = 'Sunucu ile iletisim kurulamadi.';
+                    });
+            }
+
+            function renderFullList(rows, isErrorTable, search) {
+                fullListTbody.innerHTML = '';
+
+                if (!rows || rows.length === 0) {
+                    fullListEmpty.classList.remove('d-none');
+                    fullListEmpty.textContent = 'Kayit bulunamadi.';
+                    fullListShownInfo.textContent = '0 / 0';
+                    return;
+                }
+
+                fullListEmpty.classList.add('d-none');
+                var fragment = document.createDocumentFragment();
+                var q = (search || '').toLowerCase().trim();
+                var matched = 0;
+
+                for (var i = 0; i < rows.length; i++) {
+                    var r = rows[i];
+                    var hay = (
+                        (r.barcode || '') + ' ' +
+                        (r.jewelry_type || r.name || '') + ' ' +
+                        (r.category_name || '') + ' ' +
+                        (r.message || '')
+                    ).toLowerCase();
+                    if (q && hay.indexOf(q) === -1) continue;
+                    matched++;
+
+                    var tr = document.createElement('tr');
+                    if (isErrorTable) {
+                        tr.innerHTML =
+                            '<td class="fw-bold">' + escapeHtml(r.barcode || '-') + '</td>' +
+                            '<td class="text-danger">' + escapeHtml(r.message || 'Tanimsiz / Hatali') + '</td>' +
+                            '<td>' + escapeHtml(r.jewelry_type || '-') + '</td>' +
+                            '<td>' + escapeHtml(r.category_name || '-') + '</td>';
+                    } else {
+                        tr.innerHTML =
+                            '<td class="fw-bold">' + escapeHtml(r.barcode || '-') + '</td>' +
+                            '<td>' + escapeHtml(r.jewelry_type || r.name || '-') + '</td>' +
+                            '<td>' + escapeHtml(r.gram || '-') + '</td>' +
+                            '<td>' + escapeHtml(r.category_name || '-') + '</td>';
+                    }
+                    fragment.appendChild(tr);
+                }
+
+                fullListTbody.appendChild(fragment);
+                fullListShownInfo.textContent = matched + ' / ' + rows.length;
+                if (matched === 0 && q) {
+                    fullListEmpty.classList.remove('d-none');
+                    fullListEmpty.textContent = '"' + q + '" icin sonuc bulunamadi.';
+                }
+            }
+
+            // Arama (debounce)
+            if (fullListSearch) {
+                var fullListSearchTimer = null;
+                fullListSearch.addEventListener('input', function () {
+                    clearTimeout(fullListSearchTimer);
+                    fullListSearchTimer = setTimeout(function () {
+                        var meta = fullListTitle.textContent.indexOf('Hatali') !== -1 ? true : false;
+                        renderFullList(fullListAllRows, meta, fullListSearch.value);
+                    }, 200);
+                });
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // FAZ 3: FPS MONITOR & OTOMATIK LITE MODE
+            // Sayim aktifken her saniye fps olcer; ardisik 3 saniye
+            // FPS < 25 ise lite mode'a gecip gosterge gorunur.
+            // ═══════════════════════════════════════════════════════
+            var fpsSamples = [];
+            var fpsLowStreak = 0;
+            var fpsRafId = null;
+            var fpsLastTime = 0;
+
+            function setLiteMode(active) {
+                if (active === liteMode) return;
+                liteMode = active;
+                if (active) {
+                    document.body.classList.add('lite-mode');
+                    perfBadge.classList.remove('warn', 'error');
+                    perfBadge.classList.add('warn');
+                    perfBadgeText.textContent = 'Hafif Mod (Performans)';
+                    showToast('Cihaz yavas algilandi. Hafif Mod devrede.', 'warn', 3500);
+                } else {
+                    document.body.classList.remove('lite-mode');
+                    perfBadge.classList.remove('warn', 'error');
+                }
+            }
+
+            function startFpsMonitor() {
+                if (fpsRafId) return;
+                fpsLastTime = performance.now();
+                fpsSamples = [];
+                fpsLowStreak = 0;
+
+                function tick(now) {
+                    var dt = now - fpsLastTime;
+                    if (dt > 0) {
+                        var fps = 1000 / dt;
+                        fpsSamples.push(fps);
+                        if (fpsSamples.length > 60) fpsSamples.shift();
+                    }
+                    fpsLastTime = now;
+                    fpsRafId = requestAnimationFrame(tick);
+                }
+
+                fpsRafId = requestAnimationFrame(tick);
+
+                // Her 1 sn'de bir ortalamayi degerlendir
+                if (window._fpsCheckInterval) clearInterval(window._fpsCheckInterval);
+                window._fpsCheckInterval = setInterval(function () {
+                    if (fpsSamples.length === 0) return;
+                    var sum = 0;
+                    for (var i = 0; i < fpsSamples.length; i++) sum += fpsSamples[i];
+                    var avg = sum / fpsSamples.length;
+
+                    if (avg < 25) {
+                        fpsLowStreak++;
+                        if (fpsLowStreak >= 3 && !liteMode) {
+                            setLiteMode(true);
+                        }
+                    } else if (avg > 45) {
+                        fpsLowStreak = 0;
+                        // Lite mode'dan otomatik çıkma — kullanıcı sayım bitirince temizlenir
+                    } else {
+                        fpsLowStreak = Math.max(0, fpsLowStreak - 1);
+                    }
+                }, 1000);
+            }
+
+            function stopFpsMonitor() {
+                if (fpsRafId) {
+                    cancelAnimationFrame(fpsRafId);
+                    fpsRafId = null;
+                }
+                if (window._fpsCheckInterval) {
+                    clearInterval(window._fpsCheckInterval);
+                    window._fpsCheckInterval = null;
+                }
+                fpsSamples = [];
+                fpsLowStreak = 0;
+                setLiteMode(false);
+            }
+
+            // Bekleyen lazy missing flush'larini sayim sonu/sifirlama oncesi temizle
+            function forceFlushPendingLazy() {
+                if (lazyMissingTimer) {
+                    clearTimeout(lazyMissingTimer);
+                    lazyMissingTimer = null;
+                }
+                flushLazyMissingRemoval();
+            }
+
+            // Sayim baslatildiginda FPS monitor'u baslat, bittiginde durdur
+            // (mevcut start/close/reset handler'lari guncellenmiyor — bu modulu
+            // dis disardan dinleyici olarak baglariz).
+            var origEnableRFIDInput = enableRFIDInput;
+            enableRFIDInput = function (enable) {
+                origEnableRFIDInput(enable);
+                if (enable) {
+                    startFpsMonitor();
+                } else {
+                    forceFlushPendingLazy();
+                    stopFpsMonitor();
+                }
+            };
+
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock footer %}

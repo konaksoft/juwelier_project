@@ -1,0 +1,1912 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
+    <style>
+        /* --- GENEL AYARLAR --- */
+        .toolbar-btn-size {
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- TABLOLAR --- */
+        table.dataTable td, table.dataTable th {
+            vertical-align: middle !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        tr.type-purchase td:first-child {
+            border-left: 4px solid #ffc107 !important;
+        }
+
+        /* Gider Pusulası (Sarı) */
+        tr.type-sale td:first-child {
+            border-left: 4px solid #50cd89 !important;
+        }
+
+        /* Fatura (Yeşil) */
+        .dataTables_wrapper .top {
+            display: none !important;
+        }
+
+        /* --- SEKMELER (TABS) --- */
+        .nav-line-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 5px;
+        }
+
+        .nav-line-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-line-tabs .nav-item .nav-link {
+            color: #7e8299;
+            border-bottom: 2px solid transparent;
+            font-size: 1rem;
+            padding-bottom: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .nav-line-tabs .nav-item .nav-link.active {
+            color: #009ef7;
+            border-bottom: 2px solid #009ef7;
+        }
+
+        /* --- FİLTRE BUTONLARI --- */
+        .filter-btn-group {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-btn-group::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-btn-group .btn {
+            border-radius: 6px;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-btn-group .btn.active {
+            background-color: #009ef7;
+            color: white;
+            border-color: #009ef7;
+        }
+
+        /* --- GİB DURUM ROZETLERİ --- */
+        .gib-code-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .gib-code-badge i { font-size: 0.65rem; }
+        .gib-code-success { background: #e8fff3; color: #0bb783; border: 1px solid #0bb78333; }
+        .gib-code-processing { background: #eee5ff; color: #7239ea; border: 1px solid #7239ea33; }
+        .gib-code-sent { background: #e1f0ff; color: #009ef7; border: 1px solid #009ef733; }
+        .gib-code-waiting { background: #fff8dd; color: #f6b100; border: 1px solid #f6b10033; }
+        .gib-code-error { background: #fff5f8; color: #f1416c; border: 1px solid #f1416c33; }
+        .gib-code-draft { background: #f5f8fa; color: #7e8299; border: 1px solid #7e829933; }
+
+        /* --- PDF MODAL AYARLARI --- */
+        .modal-dialog.modal-xl {
+            max-width: 1140px;
+        }
+
+        #pdfPreviewFrame {
+            width: 100%;
+            height: 75vh !important;
+            border: none;
+            background-color: #525659;
+        }
+
+        /* --- MOBİL UYUMLULUK (RESPONSIVE) --- */
+        @media (max-width: 768px) {
+            .page-heading {
+                font-size: 1.25rem !important;
+                margin-bottom: 5px !important;
+            }
+
+            .toolbar-btn-size {
+                width: 2.2rem;
+                height: 2.2rem;
+            }
+
+            .card-body {
+                padding: 1rem !important;
+            }
+
+            .date-filter-group {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+
+            .date-filter-group input {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+
+            .date-filter-group div.d-flex {
+                width: 100%;
+                gap: 5px;
+            }
+
+            .modal-dialog {
+                margin: 0;
+                max-width: 100%;
+                height: 100vh;
+            }
+
+            .modal-content {
+                height: 100vh;
+                border-radius: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-body {
+                flex: 1;
+                padding: 0 !important;
+                overflow: hidden;
+            }
+
+            #pdfPreviewFrame {
+                height: 100%;
+                width: 100%;
+            }
+
+            #mobilePdfMessage {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                background-color: #f8f9fa;
+            }
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                    <div class="card shadow-sm w-100 mt-3">
+                        <div class="card-body p-3 p-md-5">
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+                                <div>
+                                    <h1 class="page-heading text-dark fw-bold fs-3 my-0">Belge Yönetimi</h1>
+                                    <div class="text-muted fs-7 fw-semibold d-none d-md-block">Proformalar, Faturalar ve
+                                        Gider Pusulaları
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <!-- Serbest Fatura Oluştur -->
+                                    <a href="{% url 'invoices:create-free' %}"
+                                       class="btn btn-sm btn-light-warning fw-bold"
+                                       title="Herhangi bir işlem ekranına bağlı kalmadan fatura kes">
+                                        <i class="fa-solid fa-file-circle-plus"></i>
+                                        <span class="d-none d-sm-inline">Serbest Fatura</span>
+                                    </a>
+
+                                    <!-- ADIM 1: e-Süreç'e Taslak Gönder -->
+                                    <button onclick="esurec_send()" class="btn btn-sm btn-light-primary fw-bold"
+                                            title="Seçili faturaları e-Süreç'e taslak olarak gönderir">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                                        <span class="d-none d-sm-inline">e-Süreç'e Gönder</span>
+                                    </button>
+
+                                    <!-- ADIM 2: GİB'e Gönder (e-Süreç üzerinden) -->
+                                    <button onclick="esurec_send_to_gib()" class="btn btn-sm btn-light-danger fw-bold"
+                                            title="e-Süreç'teki taslak faturaları GİB'e gönderir (geri alınamaz!)">
+                                        <i class="fa-solid fa-paper-plane"></i>
+                                        <span class="d-none d-sm-inline">GİB'e Gönder</span>
+                                    </button>
+
+                                    <!-- Hatalı faturayı düzenlemeye al -->
+                                    <button onclick="esurec_reset_to_draft()" class="btn btn-sm btn-light-warning fw-bold"
+                                            title="Hata almış faturayı taslağa döndürüp tekrar düzenlemenizi sağlar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        <span class="d-none d-sm-inline">Düzenlemeye Al</span>
+                                    </button>
+
+
+
+                                    <!-- ADIM 4: Toplu Senkronizasyon (Tüm Gönderilmiş Faturalar) -->
+                                    <button onclick="esurec_bulk_sync()" class="btn btn-sm btn-light-success fw-bold"
+                                            title="GİB'e gönderilmiş tüm faturaların durumunu senkronize eder">
+                                        <i class="fa-solid fa-arrows-rotate"></i>
+                                        <span class="d-none d-sm-inline">🔄 Durumları Senkronize Et</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column flex-md-row flex-wrap gap-3 mb-5 align-items-stretch align-items-md-center">
+                                <div class="filter-btn-group">
+                                    <button type="button" class="btn btn-light btn-active-primary active"
+                                            data-filter="all">Tümü
+                                    </button>
+                                    <button type="button" class="btn btn-light btn-active-primary" data-filter="today">
+                                        Bugün
+                                    </button>
+                                    <button type="button" class="btn btn-light btn-active-primary"
+                                            data-filter="yesterday">Dün
+                                    </button>
+                                    <button type="button" class="btn btn-light btn-active-primary"
+                                            data-filter="this_week">Bu Hf.
+                                    </button>
+                                    <button type="button" class="btn btn-light btn-active-primary"
+                                            data-filter="this_month">Bu Ay
+                                    </button>
+                                </div>
+
+                                <div class="d-flex gap-2 ms-md-auto align-items-center date-filter-group">
+                                    <input type="date" id="date_from" class="form-control form-control-sm w-150px"
+                                           placeholder="Başlangıç">
+                                    <span class="text-gray-400 d-none d-md-inline">-</span>
+                                    <input type="date" id="date_to" class="form-control form-control-sm w-150px"
+                                           placeholder="Bitiş">
+                                    <div class="d-flex gap-1 w-100">
+                                        <button class="btn btn-sm btn-icon btn-light-primary w-100" id="btnApply"
+                                                title="Uygula"><i class="fa-solid fa-filter"></i></button>
+                                        <button class="btn btn-sm btn-icon btn-light-danger w-100" id="btnReset"
+                                                title="Temizle"><i class="fa-solid fa-xmark"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <ul class="nav nav-line-tabs mb-5 fs-6 overflow-auto flex-nowrap">
+                                <li class="nav-item">
+                                    <a class="nav-link active text-nowrap" data-bs-toggle="tab" href="#tab_drafts">
+                                        <i class="fa-solid fa-file-pen me-2"></i> Proforma (Taslak)
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-nowrap" data-bs-toggle="tab" href="#tab_issued">
+                                        <i class="fa-solid fa-file-invoice-dollar me-2"></i> Kesilen Faturalar
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-nowrap" data-bs-toggle="tab" href="#tab_expense">
+                                        <i class="fa-solid fa-receipt me-2"></i> Gider Pusulaları
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="tabs">
+                                <div class="tab-pane fade show active" id="tab_drafts" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-icon btn-light-danger toolbar-btn-size btn-delete-bulk"
+                                                    data-table="#tableDrafts" title="Seçilileri Sil"><i
+                                                    class="fa-solid fa-trash fs-5"></i></button>
+                                        </div>
+                                        <div class="position-relative w-100 w-md-250px">
+                                            <i class="fa-solid fa-magnifying-glass fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500"></i>
+                                            <input type="text" id="searchDrafts"
+                                                   class="form-control form-control-solid ps-12 dt-search"
+                                                   data-table="#tableDrafts" placeholder="Ara..."/>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="tableDrafts" class="table align-middle table-row-dashed fs-6 gy-3"
+                                               style="width:100%">
+                                            <thead>
+                                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-10px pe-2"><input class="form-check-input check-all"
+                                                                               type="checkbox"
+                                                                               data-target="#tableDrafts"></th>
+                                                <th class="min-w-100px">No</th>
+                                                <th class="min-w-100px">Müşteri</th>
+                                                <th class="min-w-80px">Tarih</th>
+                                                <th class="text-end min-w-80px">Tutar</th>
+                                                <th class="text-center min-w-70px">Durum</th>
+                                                <th class="min-w-120px">GİB Durum / Hata</th>
+                                                <th class="text-end min-w-125px">İşlemler</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-700 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="tab_issued" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-icon btn-light-danger toolbar-btn-size btn-delete-bulk"
+                                                    data-table="#tableIssued" title="Seçilileri Sil"><i
+                                                    class="fa-solid fa-trash fs-5"></i></button>
+
+                                            <!-- SY-02: PavoPOS Kaynak Filtresi -->
+                                            <div class="btn-group btn-group-sm ms-2" id="pavoFilter" role="group">
+                                                <button type="button" class="btn btn-light-primary active pavo-filter-btn" data-source="all">Tümü</button>
+                                                <button type="button" class="btn btn-light-primary pavo-filter-btn" data-source="manual">Manuel</button>
+                                                <button type="button" class="btn btn-light-primary pavo-filter-btn" data-source="pavo">
+                                                    <i class="fa-solid fa-cash-register me-1"></i>PavoPOS
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="position-relative w-100 w-md-250px">
+                                            <i class="fa-solid fa-magnifying-glass fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500"></i>
+                                            <input type="text" id="searchIssued"
+                                                   class="form-control form-control-solid ps-12 dt-search"
+                                                   data-table="#tableIssued" placeholder="Ara..."/>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="tableIssued" class="table align-middle table-row-dashed fs-6 gy-3"
+                                               style="width:100%">
+                                            <thead>
+                                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-10px pe-2"><input class="form-check-input check-all"
+                                                                               type="checkbox"
+                                                                               data-target="#tableIssued"></th>
+                                                <th class="min-w-100px">Fatura No</th>
+                                                <th class="min-w-100px">Müşteri</th>
+                                                <th class="min-w-80px">Tarih</th>
+                                                <th class="text-end min-w-80px">Tutar</th>
+                                                <th class="text-center min-w-70px">Durum</th>
+                                                <th class="text-center min-w-50px">Belge Tipi</th>
+                                                <th class="min-w-120px">GİB Durum / Hata</th>
+                                                <th class="text-end min-w-100px">İşlemler</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-700 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="tab_expense" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-icon btn-light-danger toolbar-btn-size btn-delete-bulk"
+                                                    data-table="#tableExpense" title="Seçilileri Sil"><i
+                                                    class="fa-solid fa-trash fs-5"></i></button>
+                                            <!-- e-Süreç'e Gönder (Gider Pusulası) -->
+                                            <button onclick="esurec_send_expense()" class="btn btn-sm btn-light-primary fw-bold"
+                                                    title="Seçili gider pusulalarını e-Süreç'e taslak gönderir">
+                                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                                <span class="d-none d-sm-inline">e-Süreç'e Gönder</span>
+                                            </button>
+                                            <!-- GİB'e Gönder (Gider Pusulası) -->
+                                            <button onclick="esurec_send_expense_to_gib()" class="btn btn-sm btn-light-danger fw-bold"
+                                                    title="Gider pusulalarını GİB'e gönderir (geri alınamaz!)">
+                                                <i class="fa-solid fa-paper-plane"></i>
+                                                <span class="d-none d-sm-inline">GİB'e Gönder</span>
+                                            </button>
+                                            <!-- Durum Sorgula (Gider Pusulası) -->
+                                            <button onclick="esurec_expense_status()" class="btn btn-sm btn-light-info fw-bold"
+                                                    title="GİB durumunu sorgula">
+                                                <i class="fa-solid fa-rotate"></i>
+                                                <span class="d-none d-sm-inline">Durum Sorgula</span>
+                                            </button>
+                                        </div>
+                                        <div class="position-relative w-100 w-md-250px">
+                                            <i class="fa-solid fa-magnifying-glass fs-3 position-absolute top-50 translate-middle-y ms-4 text-gray-500"></i>
+                                            <input type="text" id="searchExpense"
+                                                   class="form-control form-control-solid ps-12 dt-search"
+                                                   data-table="#tableExpense" placeholder="Ara..."/>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="tableExpense" class="table align-middle table-row-dashed fs-6 gy-3"
+                                               style="width:100%">
+                                            <thead>
+                                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                                <th class="w-10px pe-2"><input class="form-check-input check-all"
+                                                                               type="checkbox"
+                                                                               data-target="#tableExpense"></th>
+                                                <th class="min-w-100px">Belge No</th>
+                                                <th class="min-w-100px">Satıcı (Müşteri)</th>
+                                                <th class="min-w-80px">Tarih</th>
+                                                <th class="text-end min-w-80px">Tutar</th>
+                                                <th class="text-center min-w-70px">Durum</th>
+                                                <th class="min-w-120px">GİB Durum</th>
+                                                <th class="text-end min-w-100px">İşlemler</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="text-gray-700 fw-semibold"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalPdfPreview" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title fw-bold">Belge Önizleme</h5>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i
+                            class="fa-solid fa-xmark fs-2"></i></div>
+                </div>
+                <div class="modal-body p-0 d-flex justify-content-center align-items-center bg-light">
+                    <div id="mobilePdfMessage" class="d-none text-center p-5">
+                        <i class="fa-solid fa-file-pdf fs-1 text-danger mb-3" style="font-size: 3rem;"></i>
+                        <h4 class="fw-bold text-gray-800 mb-3">PDF Belgesi</h4>
+                        <p class="text-gray-600 mb-4 px-3">Mobil cihazlarda veya uygulama içi tarayıcıda (WebView)
+                            önizleme desteklenmeyebilir.</p>
+                        <a href="#" id="btnMobileDownload" class="btn btn-primary" download>
+                            <i class="fa-solid fa-download me-2"></i> Belgeyi İndir / Aç
+                        </a>
+                    </div>
+                    <iframe id="pdfPreviewFrame" src="" class="w-100 h-100"></iframe>
+                </div>
+                <div class="modal-footer py-2 bg-light">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <a href="#" id="btnDownloadPdf" class="btn btn-sm btn-primary d-none d-md-inline-flex" download>
+                        <i class="fa-solid fa-download me-1"></i> İndir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── GİB HATA DETAY MODALI (Kullanıcı hatayı tam olarak okuyabilsin) ── #}
+    <div class="modal fade" id="modalGibErrorDetail" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header py-3 bg-light-danger">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                        GİB / Entegratör Hata Detayı
+                    </h5>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark fs-2"></i>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted small">Fatura No</label>
+                        <div id="gibErrorInvoiceNo" class="fs-5 fw-bold text-gray-800">—</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted small">GİB Durum Kodu</label>
+                        <div id="gibErrorStatusCode" class="fs-6">—</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted small">Kullanıcı Dostu Mesaj</label>
+                        <div id="gibErrorFriendly"
+                             class="alert alert-danger mb-0 fw-semibold"
+                             style="white-space: pre-wrap; word-break: break-word;">—</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold text-muted small">Entegratör Teknik Detayı</label>
+                        <div id="gibErrorRaw"
+                             class="border rounded p-3 bg-light text-gray-700 small"
+                             style="white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow-y: auto;">
+                            —
+                        </div>
+                    </div>
+                    <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-4 mt-4">
+                        <i class="fa-solid fa-circle-info fs-2 text-warning me-3"></i>
+                        <div class="d-flex flex-stack flex-grow-1">
+                            <div class="fw-semibold small">
+                                <div class="fs-7 text-gray-700">
+                                    Bu hata <strong>entegratör (MySoft) ya da GİB</strong> tarafından üretilmiştir.
+                                    Hata devam ederse yöneticinize veya e-Süreç destek ekibine bu mesajı iletin.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnGibErrorCopy">
+                        <i class="fa-solid fa-copy me-1"></i> Hata Mesajını Kopyala
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+    <script>
+        $(function () {
+            // --- 1. SABİTLER VE URL TANIMLARI ---
+            const URLS = {
+                detail: "{% url 'invoices:detail' '00000000-0000-0000-0000-000000000000' %}",
+                expense: "{% url 'invoices:expense-note-detail' '00000000-0000-0000-0000-000000000000' %}",
+                download: "{% url 'invoices:download' '00000000-0000-0000-0000-000000000000' %}",
+                editProforma: "{% url 'invoices:create-from-process-group' %}",
+                createFree: "{% url 'invoices:create-free' %}",
+                getAll: "{% url 'invoices:get-all' %}",
+                delete: "{% url 'invoices:delete' %}",
+                status: "{% url 'invoices:change-status' %}"
+            };
+            const CSRF = $("input[name='csrfmiddlewaretoken']").val();
+            let currentQuickDate = 'all';
+
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+
+            // --- 2. YARDIMCI FONKSİYONLAR (Rozetler) ---
+            // Durum rozeti: GİB onayını gib_status_code üzerinden gösterir, status alanı sadece iç durum
+            const getStatusBadge = (s, row) => {
+                const gibCode = String((row && row.gib_status_code) || '').trim();
+
+                // GİB onay durumunu gib_status_code'dan al (1300 = GİB Onayladı)
+                if (gibCode === '1300') {
+                    return '<span class="badge badge-light-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Kesildi (GİB Onaylı)</span>';
+                }
+
+                const map = {
+                    'ISSUED': ['warning', 'Onaylandı (Gönderime Hazır)'],
+                    'APPROVED': ['success', 'Onaylandı'],
+                    'SENT': ['primary', 'GİB\'e Gönderildi'],
+                    'QUEUED': ['info', 'İşleniyor'],
+                    'DRAFT': ['secondary', 'Taslak/Proforma'],
+                    'CANCELED': ['danger', 'İptal'],
+                    'ERROR': ['danger', 'Hata'],
+                    'REJECTED': ['danger', 'Reddedildi'],
+                };
+                const v = map[(s || '').toUpperCase()] || ['secondary', s];
+                return `<span class="badge badge-light-${v[0]} fw-bold">${v[1]}</span>`;
+            };
+
+            // GİB durum kodu → renkli badge
+            const getGibCodeBadge = (code) => {
+                const c = String(code || '').trim();
+                const map = {
+                    '1300': ['gib-code-success', 'fa-circle-check', 'GİB Onayladı'],
+                    '1200': ['gib-code-sent', 'fa-paper-plane', 'Entegratöre İletildi'],
+                    '1100': ['gib-code-processing', 'fa-spinner fa-spin', 'İşleniyor'],
+                    '1000': ['gib-code-waiting', 'fa-hourglass-half', 'Kuyrukta'],
+                    '100':  ['gib-code-sent', 'fa-cloud-arrow-up', 'e-Süreç Kabul Etti'],
+                    '10':   ['gib-code-draft', 'fa-file-pen', 'e-Süreç Taslağı'],
+                    '0':    ['gib-code-draft', 'fa-file', 'Taslak'],
+                    '1400': ['gib-code-error', 'fa-triangle-exclamation', 'GİB Hatası'],
+                    '1500': ['gib-code-error', 'fa-ban', 'Reddedildi'],
+                    '1230': ['gib-code-error', 'fa-xmark', 'İptal Edildi'],
+                };
+                const v = map[c];
+                if (v) return `<span class="gib-code-badge ${v[0]}"><i class="fa-solid ${v[1]}"></i> ${v[2]}</span>`;
+                if (c && c !== '') return `<span class="gib-code-badge gib-code-draft"><i class="fa-solid fa-question"></i> Kod: ${c}</span>`;
+                return '';
+            };
+
+            // XSS önlemi: HTML attribute/metin kaçış için basit yardımcı
+            const escHtml = (s) => String(s ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+            const getGibErrorBadge = (row) => {
+                const codeBadge = getGibCodeBadge(row.gib_status_code);
+
+                // Info ikonu + modal trigger data-attribute'ları
+                // data-* alanları HTML escape edilir; modal'a iletildiğinde .text() ile render
+                const hasDetail = row.gib_error || row.gib_status_desc;
+                const infoIcon = hasDetail ? `
+                    <button type="button"
+                            class="btn btn-icon btn-sm btn-active-light-info p-0 ms-1 align-baseline gib-error-info-btn"
+                            style="width:18px;height:18px;"
+                            data-invoice-no="${escHtml(row.invoice_no || '')}"
+                            data-gib-code="${escHtml(row.gib_status_code || '')}"
+                            data-gib-error="${escHtml(row.gib_error || '')}"
+                            data-gib-desc="${escHtml(row.gib_status_desc || '')}"
+                            title="Hata detayını göster">
+                        <i class="fa-solid fa-circle-info text-info fs-7"></i>
+                    </button>` : '';
+
+                if (row.gib_error) {
+                    const errText = row.gib_error.length > 50 ? row.gib_error.substring(0, 50) + '…' : row.gib_error;
+                    return `<div class="d-flex flex-column gap-1">
+                        <div class="d-flex align-items-center gap-1">${codeBadge}${infoIcon}</div>
+                        <span class="text-danger fw-semibold fs-8" title="${escHtml(row.gib_error)}">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>${escHtml(errText)}
+                        </span>
+                    </div>`;
+                }
+                if (codeBadge) {
+                    let detail = '';
+                    if (row.gib_status_desc) {
+                        detail = `<span class="text-muted fs-8">${escHtml(row.gib_status_desc.substring(0, 60))}</span>`;
+                    }
+                    return `<div class="d-flex flex-column gap-1">
+                        <div class="d-flex align-items-center gap-1">${codeBadge}${infoIcon}</div>
+                        ${detail}
+                    </div>`;
+                }
+                return '<span class="text-muted fs-8">—</span>';
+            };
+
+            // GİB Kod → İnsan okunur açıklama (modal için)
+            const gibCodeLabel = (code) => {
+                const m = {
+                    '0':   'Taslak (Henüz e-Süreç\'e gönderilmedi)',
+                    '10':  'e-Süreç Taslağı Oluşturuldu',
+                    '100': 'e-Süreç Kabul Etti, GİB Kuyruğunda',
+                    '1000':'GİB Kuyruğunda',
+                    '1100':'GİB\'de İşleniyor',
+                    '1200':'Entegratöre İletildi',
+                    '1300':'GİB Onayladı (Kesildi)',
+                    '1400':'GİB Hatası',
+                    '1500':'GİB Reddetti',
+                    '1230':'İptal Edildi',
+                };
+                const c = String(code || '').trim();
+                return m[c] ? `<span class="badge badge-light-secondary fs-7">Kod ${c} — ${m[c]}</span>`
+                            : (c ? `<span class="badge badge-light-secondary fs-7">Kod ${c}</span>` : '—');
+            };
+
+            // Info ikonuna tıklayınca modali aç — event delegation (DataTable redraw'a dayanıklı)
+            $(document).on('click', '.gib-error-info-btn', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const $btn = $(this);
+                const invoiceNo = $btn.data('invoice-no') || '—';
+                const gibCode   = $btn.data('gib-code') || '';
+                const gibError  = $btn.data('gib-error') || '';
+                const gibDesc   = $btn.data('gib-desc') || '';
+
+                // .text() kullanarak XSS'ten tamamen güvenli render
+                $('#gibErrorInvoiceNo').text(invoiceNo);
+                $('#gibErrorStatusCode').html(gibCodeLabel(gibCode));
+                $('#gibErrorFriendly').text(gibError || '(Hata mesajı yok — durum bilgilendirmesi aşağıdadır)');
+                $('#gibErrorRaw').text(gibDesc || '(Entegratör açıklaması bulunamadı)');
+
+                // Kopyala butonu — birleşik mesajı clipboard'a koyar
+                $('#btnGibErrorCopy').off('click').on('click', function () {
+                    const composed = `Fatura No: ${invoiceNo}\nGİB Kodu: ${gibCode}\n\nMesaj:\n${gibError}\n\nEntegratör Detay:\n${gibDesc}`;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(composed).then(() => {
+                            const $b = $(this);
+                            const original = $b.html();
+                            $b.html('<i class="fa-solid fa-check me-1"></i> Kopyalandı!');
+                            setTimeout(() => $b.html(original), 1500);
+                        });
+                    }
+                }.bind($('#btnGibErrorCopy')[0]));
+
+                $('#modalGibErrorDetail').modal('show');
+            });
+
+            const getEdocBadge = (type) => {
+                if (type === 'EFATURA') return '<span class="badge badge-light-primary">e-Fatura</span>';
+                if (type === 'EARSIV') return '<span class="badge badge-light-success">e-Arşiv</span>';
+                if (type === 'PROFORMA') return '<span class="badge badge-light-warning">Proforma</span>';
+                if (type === 'GIDER') return '<span class="badge badge-light-info">Gider Pusulası</span>';
+                return '<span class="badge badge-light-secondary">-</span>';
+            };
+
+            // --- 3. PDF ÖNİZLEME FONKSİYONU ---
+            window.openPdfPreview = function (url) {
+                if (!url.startsWith('http')) {
+                    url = window.location.origin + url;
+                }
+
+                if (isMobile) {
+                    $('#pdfPreviewFrame').addClass('d-none');
+                    $('#mobilePdfMessage').removeClass('d-none').addClass('d-flex');
+
+                    $('#btnMobileDownload')
+                        .attr('href', 'javascript:void(0)')
+                        .off('click')
+                        .on('click', function (e) {
+                            e.preventDefault();
+                            window.location.href = url;
+                        });
+                } else {
+                    $('#mobilePdfMessage').removeClass('d-flex').addClass('d-none');
+                    $('#pdfPreviewFrame').removeClass('d-none').attr('src', url);
+                }
+
+                $('#btnDownloadPdf').attr('href', url);
+                $('#modalPdfPreview').modal('show');
+            }
+
+            // --- SY-02: PavoPOS Kaynak Filtresi Durumu ---
+            let currentPavoSource = 'all';
+
+            $(document).on('click', '.pavo-filter-btn', function () {
+                $('.pavo-filter-btn').removeClass('active');
+                $(this).addClass('active');
+                currentPavoSource = $(this).data('source');
+                dtIssued.ajax.reload(null, false);
+            });
+
+            // --- 4. DATATABLES AYARLARI ---
+            const dtConfig = {
+                dom: "rt<'bottom d-flex justify-content-between align-items-center mb-4'l p><'clear'>",
+                info: false, paging: true, pageLength: 25, processing: true, serverSide: true,
+                order: [[3, 'desc']], orderMulti: false, autoWidth: false, stateSave: false,
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"},
+                responsive: false
+            };
+
+            // --- 4.1 PROFORMA TABLOSU (Drafts) ---
+            const dtDrafts = $("#tableDrafts").DataTable({
+                ...dtConfig,
+                ajax: {
+                    url: URLS.getAll,
+                    type: "GET",
+                    data: d => {
+                        d.invoice_type = "SALE";
+                        d.tab_type = "draft";
+                        d.quick_date = currentQuickDate;
+                        d.date_from = $("#date_from").val();
+                        d.date_to = $("#date_to").val();
+                    }
+                },
+                columns: [
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center ps-4",
+                        render: (d, t, r) => `<input class="form-check-input row-check" type="checkbox" value="${r.id}">`
+                    },
+                    {
+                        data: "invoice_no", render: (d, t, r) => {
+                            // Draft sekmesi: GİB'e gönderilmemiş → yerel PDF
+                            const url = URLS.download.replace('00000000-0000-0000-0000-000000000000', r.id);
+                            return `<a href="javascript:void(0)" onclick="openPdfPreview('${url}')" class="text-gray-800 text-hover-primary fw-bold">${d || 'TASLAK'}</a>`;
+                        }
+                    },
+                    {data: "customer", defaultContent: "-"},
+                    {data: "issue_date", name: "issue_date", defaultContent: "-"},
+                    {
+                        data: "grand_total",
+                        className: "text-end",
+                        render: d => `<span class="fw-bold text-dark">${parseFloat(d || 0).toFixed(2)} TL</span>`
+                    },
+                    {
+                        data: "status",
+                        className: "text-center",
+                        render: (d, t, row) => getStatusBadge(d, row)
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        render: (d, t, row) => getGibErrorBadge(row)
+                    },
+                    {
+                        data: "id", orderable: false, className: "text-end pe-4", render: function (id, t, row) {
+                            const pNo = row.process_no || '';
+                            const urlPdf = URLS.download.replace('00000000-0000-0000-0000-000000000000', id);
+
+                            let editBtn = pNo
+                                ? `<a href="${URLS.editProforma}?process_no=${encodeURIComponent(pNo)}" class="btn btn-icon btn-light-warning btn-sm me-1" title="Düzenle"><i class="fa-solid fa-pen-to-square"></i></a>`
+                                : `<button class="btn btn-icon btn-light-secondary btn-sm me-1" disabled title="Process bağlantısı yok"><i class="fa-solid fa-pen-to-square"></i></button>`;
+
+                            // Zaten GİB sürecinde veya kesilmişse finalize butonunu gösterme
+                            const gibCode = String(row.gib_status_code || '').trim();
+                            const isInGibProcess = ['100', '1000', '1100', '1200', '1300'].includes(gibCode);
+                            const isAlreadyIssued = (row.status || '').toUpperCase() === 'ISSUED';
+
+                            let finalizeBtn = '';
+                            if (!isInGibProcess && !isAlreadyIssued) {
+                                finalizeBtn = `<button class="btn btn-icon btn-light-success btn-sm act-finalize me-1" data-id="${id}" title="Onayla (Gönderime Hazırla)"><i class="fa-solid fa-check"></i></button>`;
+                            }
+
+                            return `<div class="d-flex justify-content-end">
+                                    ${editBtn}
+                                    ${finalizeBtn}
+                                    <button class="btn btn-icon btn-light-danger btn-sm act-delete-single me-1" data-id="${id}" title="Sil"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="btn btn-icon btn-light-primary btn-sm" onclick="openPdfPreview('${urlPdf}')" title="Önizle"><i class="fa-solid fa-eye"></i></button>
+                                </div>`;
+                        }
+                    }
+                ]
+            });
+
+            // --- 4.2 KESİLEN FATURALAR TABLOSU (Issued) ---
+            const dtIssued = $("#tableIssued").DataTable({
+                ...dtConfig,
+                ajax: {
+                    url: URLS.getAll,
+                    type: "GET",
+                    data: d => {
+                        d.invoice_type = "SALE";
+                        d.tab_type = "issued";
+                        d.source = currentPavoSource; // SY-02: PavoPOS filtresi
+                        d.quick_date = currentQuickDate;
+                        d.date_from = $("#date_from").val();
+                        d.date_to = $("#date_to").val();
+                    }
+                },
+                createdRow: (row, data) => {
+                    $(row).addClass('type-sale');
+                    // SY-02: PavoPOS satırlarını görsel olarak ayır
+                    if (data.is_pavo) $(row).addClass('pavo-row');
+                },
+                columns: [
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center ps-4",
+                        render: (d, t, r) => `<input class="form-check-input row-check" type="checkbox" value="${r.id}">`
+                    },
+                    {
+                        data: "invoice_no", render: (d, t, r) => {
+                            // SY-02: PavoPOS badge ekleme
+                            const pavoBadge = r.is_pavo ? ' <span class="badge badge-sm badge-light-info ms-1">PavoPOS</span>' : '';
+                            // Issued sekmesi: Tüm faturalar GİB sürecinden geçmiş, e-Süreç proxy PDF
+                            return `<a href="javascript:void(0)" onclick="openEsurecPdfPreview('${r.id}')" class="text-gray-800 text-hover-primary fw-bold">${d || '-'}</a>${pavoBadge}`;
+                        }
+                    },
+                    {data: "customer", defaultContent: "-"},
+                    {data: "issue_date", name: "issue_date", defaultContent: "-"},
+                    {
+                        data: "grand_total",
+                        className: "text-end",
+                        render: d => `<span class="fw-bold text-dark">${parseFloat(d || 0).toFixed(2)} TL</span>`
+                    },
+                    {
+                        data: "status",
+                        className: "text-center",
+                        render: (d, t, row) => getStatusBadge(d, row)
+                    },
+                    {data: "edoc_type", className: "text-center", render: (d) => getEdocBadge(d)},
+                    {
+                        data: null,
+                        orderable: false,
+                        render: (d, t, row) => getGibErrorBadge(row)
+                    },
+                    {
+                        data: "id", orderable: false, className: "text-end pe-4", render: function (id, t, row) {
+                            // Issued sekmesi: Tüm faturalar GİB sürecinde → e-Süreç proxy PDF
+                            let pdfBtn = `<button class="btn btn-icon btn-light-info btn-sm" onclick="openEsurecPdfPreview('${id}')" title="Mühürlü PDF (GİB)"><i class="fa-solid fa-file-pdf"></i></button>`;
+
+                            // XML butonu
+                            let xmlBtn = `<button class="btn btn-icon btn-light-warning btn-sm" onclick="openEsurecXmlDownload('${id}')" title="UBL XML İndir"><i class="fa-solid fa-file-code"></i></button>`;
+
+                            let deleteBtn = `<button class="btn btn-icon btn-light-danger btn-sm act-delete-single" data-id="${id}" title="İptal/Sil"><i class="fa-solid fa-trash"></i></button>`;
+
+                            return `<div class="d-flex justify-content-end gap-1">${pdfBtn}${xmlBtn}${deleteBtn}</div>`;
+                        }
+                    }
+                ]
+            });
+
+            // --- 4.3 GİDER PUSULALARI TABLOSU (Expense) ---
+            const dtExpense = $("#tableExpense").DataTable({
+                ...dtConfig,
+                ajax: {
+                    url: URLS.getAll,
+                    type: "GET",
+                    data: d => {
+                        d.invoice_type = "PURCHASE";
+                        d.quick_date = currentQuickDate;
+                        d.date_from = $("#date_from").val();
+                        d.date_to = $("#date_to").val();
+                    }
+                },
+                createdRow: (row, data) => {
+                    $(row).addClass('type-purchase');
+                },
+                columns: [
+                    {
+                        data: "id",
+                        orderable: false,
+                        className: "text-center ps-4",
+                        render: (d, t, r) => `<input class="form-check-input row-check" type="checkbox" value="${r.id}">`
+                    },
+                    {
+                        data: "invoice_no", render: (d, t, r) => {
+                            const url = URLS.download.replace('00000000-0000-0000-0000-000000000000', r.id);
+                            return `<a href="javascript:void(0)" onclick="openPdfPreview('${url}')" class="text-gray-800 text-hover-primary fw-bold">${d || '-'}</a>`;
+                        }
+                    },
+                    {data: "customer", defaultContent: "-"},
+                    {data: "issue_date", name: "issue_date", defaultContent: "-"},
+                    {
+                        data: "grand_total",
+                        className: "text-end",
+                        render: d => `<span class="fw-bold text-dark">${parseFloat(d || 0).toFixed(2)} TL</span>`
+                    },
+                    {data: "status", className: "text-center", render: (d, t, row) => getStatusBadge(d, row)},
+                    {
+                        data: null,
+                        orderable: false,
+                        render: (d, t, row) => getGibErrorBadge(row)
+                    },
+                    {
+                        data: "id", orderable: false, className: "text-end pe-4", render: function (id, t, row) {
+                            const urlPdf = URLS.download.replace('00000000-0000-0000-0000-000000000000', id);
+                            return `<div class="d-flex justify-content-end gap-1">
+                                    <button class="btn btn-icon btn-light-primary btn-sm" onclick="openPdfPreview('${urlPdf}')" title="PDF"><i class="fa-solid fa-eye"></i></button>
+                                    <button class="btn btn-icon btn-light-danger btn-sm act-delete-single" data-id="${id}" title="Sil"><i class="fa-solid fa-trash"></i></button>
+                                </div>`;
+                        }
+                    }
+                ]
+            });
+
+            // --- 5. İŞLEM FONKSİYONLARI ---
+
+            function reloadTables() {
+                dtDrafts.ajax.reload(null, false);
+                dtIssued.ajax.reload(null, false);
+                dtExpense.ajax.reload(null, false);
+            }
+
+            function executeDelete(ids) {
+                if (!ids || ids.length === 0) return Swal.fire('Uyarı', 'Seçim yapınız.', 'info');
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Seçili kayıtlar silinecek veya iptal edilecek.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sil / İptal Et',
+                    cancelButtonText: 'Vazgeç',
+                    customClass: {confirmButton: "btn btn-danger", cancelButton: "btn btn-light"}
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        $.post(URLS.delete, {ids: ids, csrfmiddlewaretoken: CSRF}, (res) => {
+                            if (res.result) {
+                                Swal.fire('Başarılı', 'İşlem tamamlandı', 'success');
+                                reloadTables();
+                                $('.check-all').prop('checked', false);
+                            } else {
+                                Swal.fire('Hata', res.error_msg, 'error');
+                            }
+                        });
+                    }
+                });
+            }
+
+            function doFinalize(id) {
+                Swal.fire({
+                    title: 'Fatura Onaylansın mı?',
+                    html: 'Proforma fatura onaylanarak gönderime hazır hale getirilecek.<br>' +
+                          '<small class="text-muted">Not: Bu işlem belgeyi "Onaylandı (Gönderime Hazır)" durumuna geçirir.<br>' +
+                          'GİB\'e göndermek için ayrıca "GİB\'e Gönder" butonunu kullanmanız gerekir.</small>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Onayla',
+                    cancelButtonText: 'Vazgeç',
+                    customClass: {confirmButton: "btn btn-primary", cancelButton: "btn btn-light"}
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        $.post(URLS.status, {
+                            ids: [id],
+                            action: 'issue',
+                            csrfmiddlewaretoken: CSRF
+                        }, function (resp) {
+                            if (resp.result) {
+                                reloadTables();
+                                Swal.fire({
+                                    toast: true, position: 'top-end', icon: 'success',
+                                    title: 'Fatura onaylandı (gönderime hazır)', showConfirmButton: false, timer: 2500
+                                });
+                            } else {
+                                Swal.fire('Hata', resp.error_msg || 'İşlem başarısız', 'error');
+                            }
+                        });
+                    }
+                });
+            }
+
+            // --- 6. EVENT LISTENERLAR ---
+
+            $('.btn-delete-bulk').click(function () {
+                const tableId = $(this).data('table');
+                const ids = [];
+                $(tableId + ' .row-check:checked').each(function () {
+                    ids.push($(this).val());
+                });
+                executeDelete(ids);
+            });
+
+            $(document).on('click', '.act-delete-single', function () {
+                executeDelete([$(this).data('id')]);
+            });
+
+            $(document).on('click', '.act-finalize', function () {
+                doFinalize($(this).data('id'));
+            });
+
+            $('.filter-btn-group .btn').click(function () {
+                $('.filter-btn-group .btn').removeClass('active');
+                $(this).addClass('active');
+                currentQuickDate = $(this).data('filter');
+                $("#date_from, #date_to").val('');
+                reloadTables();
+            });
+
+            $("#btnApply").click(() => {
+                $('.filter-btn-group .btn').removeClass('active');
+                currentQuickDate = '';
+                reloadTables();
+            });
+
+            $("#btnReset").click(() => {
+                $("#date_from, #date_to, .dt-search").val('');
+                $('.filter-btn-group .btn').removeClass('active');
+                $('.filter-btn-group .btn[data-filter="all"]').addClass('active');
+                currentQuickDate = 'all';
+                dtIssued.search('').draw();
+                dtDrafts.search('').draw();
+                dtExpense.search('').draw();
+            });
+
+            $('.dt-search').on('keyup', function () {
+                const tableId = $(this).data('table');
+                $(tableId).DataTable().search(this.value).draw();
+            });
+
+            $(".check-all").change(function () {
+                const target = $(this).data("target");
+                $(target + " .row-check").prop('checked', this.checked);
+            });
+        });
+    </script>
+
+
+    <script>
+        // =====================================================================
+        // YARDIMCI FONKSİYONLAR
+        // =====================================================================
+
+        function getSelectedIds() {
+            var ids = [];
+            $('.tab-pane.active .row-check:checked').each(function () {
+                ids.push($(this).val());
+            });
+            return ids;
+        }
+
+        /**
+         * Seçili faturaların müşteri bilgilerini kontrol eder.
+         * DataTable row datasından customer alanı "-" veya boş olan faturaları tespit eder.
+         *
+         * @returns {object} { valid: bool, invalidInvoices: [{id, invoice_no}] }
+         */
+        function validateSelectedCustomers() {
+            var invalidInvoices = [];
+            var activeTable = null;
+
+            // Aktif sekmedeki DataTable'ı bul
+            if ($('#tab_drafts').hasClass('active')) {
+                activeTable = $.fn.DataTable.isDataTable('#tableDrafts') ? $('#tableDrafts').DataTable() : null;
+            } else if ($('#tab_issued').hasClass('active')) {
+                activeTable = $.fn.DataTable.isDataTable('#tableIssued') ? $('#tableIssued').DataTable() : null;
+            } else if ($('#tab_expense').hasClass('active')) {
+                activeTable = $.fn.DataTable.isDataTable('#tableExpense') ? $('#tableExpense').DataTable() : null;
+            }
+
+            if (!activeTable) return {valid: true, invalidInvoices: []};
+
+            $('.tab-pane.active .row-check:checked').each(function () {
+                var id = $(this).val();
+                var row = activeTable.row($(this).closest('tr'));
+                if (row && row.data()) {
+                    var data = row.data();
+                    var customer = (data.customer || '').trim();
+                    // Müşterisi olmayan fatura: "-", boş, "Muhtelif" veya "Nihai" ile başlıyorsa
+                    if (!customer || customer === '-' || customer === '—') {
+                        invalidInvoices.push({
+                            id: id,
+                            invoice_no: data.invoice_no || id
+                        });
+                    }
+                }
+            });
+
+            return {
+                valid: invalidInvoices.length === 0,
+                invalidInvoices: invalidInvoices
+            };
+        }
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function reloadAllTables() {
+            try {
+                if ($.fn.DataTable.isDataTable('#tableDrafts')) $('#tableDrafts').DataTable().ajax.reload(null, false);
+                if ($.fn.DataTable.isDataTable('#tableIssued')) $('#tableIssued').DataTable().ajax.reload(null, false);
+                if ($.fn.DataTable.isDataTable('#tableExpense')) $('#tableExpense').DataTable().ajax.reload(null, false);
+            } catch (e) {
+                console.warn('Tablo yenileme hatası:', e);
+            }
+        }
+
+        // =====================================================================
+        // KUYRUK DURUMU POLLİNG
+        // =====================================================================
+
+        var _queuePollingTimer = null;
+        var _queuePollingIds = [];
+
+        function startQueuePolling(ids) {
+            _queuePollingIds = ids;
+            if (_queuePollingTimer) clearInterval(_queuePollingTimer);
+
+            checkQueueStatus();
+            _queuePollingTimer = setInterval(checkQueueStatus, 4000);
+        }
+
+        function stopQueuePolling() {
+            if (_queuePollingTimer) {
+                clearInterval(_queuePollingTimer);
+                _queuePollingTimer = null;
+            }
+            _queuePollingIds = [];
+        }
+
+        function checkQueueStatus() {
+            if (!_queuePollingIds.length) {
+                stopQueuePolling();
+                return;
+            }
+
+            $.ajax({
+                url: '/invoices/api/esurec/queue-status/?invoice_ids=' + _queuePollingIds.join(','),
+                type: 'GET',
+                success: function (res) {
+                    if (!res.result) return;
+
+                    var allDone = true;
+                    var successCount = 0;
+                    var failCount = 0;
+                    var failMessages = [];
+
+                    (res.items || []).forEach(function (item) {
+                        if (item.status === 'QUEUED' || item.status === 'PROCESSING' || item.status === 'RETRYING') {
+                            allDone = false;
+                        } else if (item.status === 'SUCCESS') {
+                            successCount++;
+                        } else if (item.status === 'FAILED') {
+                            failCount++;
+                            if (item.error_message) failMessages.push(item.error_message);
+                        }
+                    });
+
+                    if (!res.has_pending || allDone) {
+                        stopQueuePolling();
+                        reloadAllTables();
+
+                        if (failCount === 0 && successCount > 0) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: successCount + ' fatura başarıyla işlendi',
+                                showConfirmButton: false, timer: 4000
+                            });
+                        } else if (failCount > 0 && successCount > 0) {
+                            Swal.fire('Kısmen Başarılı',
+                                successCount + ' başarılı, ' + failCount + ' başarısız.\n' +
+                                failMessages.slice(0, 2).join('\n'), 'warning');
+                        } else if (failCount > 0) {
+                            Swal.fire('Hata', failMessages.slice(0, 3).join('\n') || 'Gönderim başarısız.', 'error');
+                        }
+                    }
+                }
+            });
+        }
+
+        // =====================================================================
+        // 1. e-SÜREÇ'E TASLAK GÖNDER
+        // =====================================================================
+
+        function esurec_send() {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyarı', 'Lütfen gönderilecek faturaları seçin.', 'warning');
+                return;
+            }
+
+            // ── Müşteri validasyonu: VKN/TCKN eksik faturaları engelle ──
+            var customerCheck = validateSelectedCustomers();
+            if (!customerCheck.valid) {
+                var noList = customerCheck.invalidInvoices
+                    .slice(0, 5)
+                    .map(function (inv) { return '<b>' + inv.invoice_no + '</b>'; })
+                    .join(', ');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Müşteri Bilgisi Eksik',
+                    html: 'Aşağıdaki faturalarda geçerli bir müşteri (TCKN/VKN) seçili değil:<br><br>' +
+                        noList +
+                        (customerCheck.invalidInvoices.length > 5 ? '<br>ve ' + (customerCheck.invalidInvoices.length - 5) + ' fatura daha...' : '') +
+                        '<br><br><small class="text-muted">E-Fatura/E-Arşiv oluşturabilmek için tüm faturalara geçerli bir müşteri atanmalıdır.</small>',
+                    confirmButtonText: 'Tamam',
+                    customClass: {confirmButton: 'btn btn-warning'}
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'e-Süreç\'e Gönder',
+                html: '<b>' + ids.length + '</b> fatura e-Süreç\'e taslak olarak gönderilecek.<br>' +
+                    '<small class="text-muted">GİB\'e iletilip onay alınana kadar "Fatura Kesildi" statüsüne geçmez.</small>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Gönder',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light'}
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'Gönderiliyor...',
+                    html: 'Faturalar e-Süreç\'e gönderiliyor.',
+                    allowOutsideClick: false,
+                    didOpen: function () {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: '/invoices/api/esurec/send/',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({invoice_ids: ids}),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    success: function (res) {
+                        Swal.close();
+
+                        if (res.mode === 'async') {
+                            if (res.result) {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'info',
+                                    title: (res.queued || ids.length) + ' fatura kuyruğa alındı',
+                                    html: 'e-Süreç taslak oluşturma arka planda işleniyor...',
+                                    showConfirmButton: false,
+                                    timer: 4000,
+                                    timerProgressBar: true,
+                                });
+                                startQueuePolling(ids);
+                            } else {
+                                Swal.fire('Hata', res.error_msg || res.msg || 'Kuyruğa alınamadı.', 'error');
+                            }
+                            reloadAllTables();
+                        } else {
+                            // Senkron mod
+                            if (res.result) {
+                                Swal.fire({
+                                    toast: true, position: 'top-end', icon: 'success',
+                                    title: res.msg || 'Gönderildi', showConfirmButton: false, timer: 3000
+                                });
+                            } else {
+                                Swal.fire('Hata', res.error_msg || res.msg || 'Gönderim başarısız.', 'error');
+                            }
+                            reloadAllTables();
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.close();
+                        var msg = 'Sunucu hatası.';
+                        try {
+                            msg = JSON.parse(xhr.responseText).error_msg || msg;
+                        } catch (e) {
+                        }
+                        Swal.fire('Hata', msg, 'error');
+                    }
+                });
+            });
+        }
+
+        // =====================================================================
+        // 2. GİB'E GÖNDER
+        // =====================================================================
+
+        function esurec_send_to_gib() {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyarı', 'Lütfen GİB\'e gönderilecek faturaları seçin.', 'warning');
+                return;
+            }
+
+            // ── Müşteri validasyonu: VKN/TCKN eksik faturaları engelle ──
+            var customerCheck = validateSelectedCustomers();
+            if (!customerCheck.valid) {
+                var noList = customerCheck.invalidInvoices
+                    .slice(0, 5)
+                    .map(function (inv) { return '<b>' + inv.invoice_no + '</b>'; })
+                    .join(', ');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Müşteri Bilgisi Eksik',
+                    html: 'Aşağıdaki faturalarda geçerli bir müşteri (TCKN/VKN) seçili değil:<br><br>' +
+                        noList +
+                        (customerCheck.invalidInvoices.length > 5 ? '<br>ve ' + (customerCheck.invalidInvoices.length - 5) + ' fatura daha...' : '') +
+                        '<br><br><small class="text-muted">E-Fatura/E-Arşiv oluşturabilmek için tüm faturalara geçerli bir müşteri atanmalıdır.</small>',
+                    confirmButtonText: 'Tamam',
+                    customClass: {confirmButton: 'btn btn-warning'}
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'GİB\'e Gönder',
+                html: '<b>' + ids.length + '</b> fatura GİB\'e gönderilecek.<br>' +
+                    '<small class="text-muted">Taslağı olmayan faturalar için otomatik taslak oluşturulacak.</small><br>' +
+                    '<small class="text-danger">Bu işlem geri alınamaz!</small>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-paper-plane"></i> GİB\'e Gönder',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light'}
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                // ── FIRE-AND-FORGET UX ──
+                // Modal hemen kapansın, kullanıcı arayüzü kilitlemesin.
+                // İşlem arka planda yürür, sonuç toast ile bildirilir.
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: ids.length + ' fatura GİB\'e gönderiliyor...',
+                    html: '<small>İşlem arka planda devam ediyor.</small>',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                });
+
+                // ADIM 1: Önce e-Süreç'e taslak gönder (zaten varsa günceller ve döner)
+                $.ajax({
+                    url: '/invoices/api/esurec/send/',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({invoice_ids: ids}),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    success: function (draftRes) {
+                        // Taslak async kuyruğa alındıysa, polling ile tamamlanmasını bekle
+                        if (draftRes.mode === 'async') {
+                            _waitDraftThenGib(ids);
+                            return;
+                        }
+
+                        // Taslak senkron tamamlandı — hata varsa bildir, başarılıysa GİB adımına geç
+                        if (!draftRes.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'error',
+                                title: 'Taslak oluşturulamadı',
+                                text: draftRes.error_msg || 'Bilinmeyen hata',
+                                showConfirmButton: false, timer: 5000
+                            });
+                            reloadAllTables();
+                            return;
+                        }
+
+                        _doGibSend(ids);
+                    },
+                    error: function (xhr) {
+                        var msg = 'Sunucu hatası.';
+                        try { msg = JSON.parse(xhr.responseText).error_msg || msg; } catch (e) {}
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'error',
+                            title: 'e-Süreç Bağlantı Hatası',
+                            html: '<small>' + msg + '</small>',
+                            showConfirmButton: false, timer: 5000
+                        });
+                        reloadAllTables();
+                    }
+                });
+            });
+        }
+
+        // Async taslak oluşturma tamamlanana kadar polling yap, sonra GİB'e gönder
+        function _waitDraftThenGib(ids) {
+            // Modal yok — toast zaten gösterildi. Sessizce polling yap.
+            var maxAttempts = 30;
+            var attempt = 0;
+            var pollInterval = setInterval(function () {
+                attempt++;
+                $.ajax({
+                    url: '/invoices/api/esurec/queue-status/?invoice_ids=' + ids.join(','),
+                    type: 'GET',
+                    success: function (pollRes) {
+                        if (!pollRes.result) return;
+                        var hasPending = pollRes.has_pending;
+                        if (!hasPending || attempt >= maxAttempts) {
+                            clearInterval(pollInterval);
+                            // Taslak işlemi bitti — herhangi bir hata var mı kontrol et
+                            var failedItems = (pollRes.items || []).filter(function (i) {
+                                return i.status === 'FAILED' || i.status === 'ERROR';
+                            });
+                            if (failedItems.length > 0 && failedItems.length === (pollRes.items || []).length) {
+                                Swal.fire({
+                                    toast: true, position: 'top-end', icon: 'error',
+                                    title: 'Taslak Oluşturma Başarısız',
+                                    html: '<small>' + failedItems.slice(0, 2).map(function (f) { return f.error_message; }).join('; ') + '</small>',
+                                    showConfirmButton: false, timer: 6000
+                                });
+                                reloadAllTables();
+                                return;
+                            }
+                            if (attempt >= maxAttempts && hasPending) {
+                                Swal.fire({
+                                    toast: true, position: 'top-end', icon: 'warning',
+                                    title: 'Taslak işlemi hâlâ devam ediyor',
+                                    html: '<small>Durum sorgulama ile takip edebilirsiniz.</small>',
+                                    showConfirmButton: false, timer: 5000
+                                });
+                                reloadAllTables();
+                                return;
+                            }
+                            // En az bir başarılı taslak var — GİB adımına geç
+                            _doGibSend(ids);
+                        }
+                    },
+                    error: function () {
+                        if (attempt >= maxAttempts) {
+                            clearInterval(pollInterval);
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'warning',
+                                title: 'Taslak durum sorgusu zaman aşımına uğradı',
+                                showConfirmButton: false, timer: 4000
+                            });
+                            reloadAllTables();
+                        }
+                    }
+                });
+            }, 3000);
+        }
+
+        // ── ADIM 2: GİB'e gönder (arka planda, toast ile bildirim) ──
+        function _doGibSend(ids) {
+            // Arka planda yürüyor — ekranı kilitleme
+            $.ajax({
+                url: '/invoices/api/esurec/send-to-gib/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({invoice_ids: ids}),
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                success: function (res) {
+                    if (res.mode === 'async') {
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'info',
+                                title: (res.queued || ids.length) + ' fatura GİB kuyruğuna alındı',
+                                html: '<small>Sonuç arka planda bekleniyor...</small>',
+                                showConfirmButton: false,
+                                timer: 5000,
+                                timerProgressBar: true,
+                            });
+                            startQueuePolling(ids);
+                        } else {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'error',
+                                title: 'GİB Gönderim Hatası',
+                                text: res.error_msg || res.msg || 'Kuyruğa alınamadı.',
+                                showConfirmButton: false, timer: 5000
+                            });
+                        }
+                    } else {
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg || 'GİB\'e gönderildi',
+                                showConfirmButton: false, timer: 4000
+                            });
+                        } else {
+                            var errDetail = '';
+                            if (res.details && res.details.length) {
+                                errDetail = res.details.filter(function (d) { return d.error_msg; })
+                                    .map(function (d) { return d.invoice_no + ': ' + d.error_msg; })
+                                    .slice(0, 3).join('\n');
+                            }
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'error',
+                                title: 'GİB Gönderim Hatası',
+                                text: errDetail || res.error_msg || 'Gönderim başarısız.',
+                                showConfirmButton: false, timer: 6000
+                            });
+                        }
+                    }
+                    reloadAllTables();
+                },
+                error: function (xhr) {
+                    var msg = 'Sunucu hatası.';
+                    try { msg = JSON.parse(xhr.responseText).error_msg || msg; } catch (e) {}
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'error',
+                        title: 'GİB Gönderim Hatası',
+                        html: '<small>' + msg + '</small>',
+                        showConfirmButton: false, timer: 5000
+                    });
+                    reloadAllTables();
+                }
+            });
+        }
+
+
+
+        // =====================================================================
+        // 4. e-SÜREÇ PDF ÖNİZLEME (Canlı Proxy)
+        // =====================================================================
+        // PDF view artık doğrudan HttpResponse(pdf_bytes) döndürüyor.
+        // AJAX + Base64 yerine, iframe src'yi doğrudan proxy URL'e yönlendiriyoruz.
+        // Hata durumunda iframe içinde HTML hata sayfası gösterilir.
+
+        window.openEsurecPdfPreview = function (invoiceId) {
+            var proxyUrl = '/invoices/api/esurec/pdf/?invoice_id=' + invoiceId;
+            openPdfPreview(proxyUrl);
+        };
+
+        // =====================================================================
+        // 5. e-SÜREÇ XML İNDİR
+        // =====================================================================
+
+        window.openEsurecXmlDownload = function (invoiceId) {
+            Swal.fire({
+                title: 'XML indiriliyor...', allowOutsideClick: false,
+                didOpen: function () { Swal.showLoading(); }
+            });
+
+            $.ajax({
+                url: '/invoices/api/esurec/xml/?invoice_id=' + invoiceId,
+                type: 'GET',
+                xhrFields: { responseType: 'blob' },
+                success: function (data, status, xhr) {
+                    Swal.close();
+                    var contentType = xhr.getResponseHeader('Content-Type') || '';
+
+                    // Eğer XML dosyası döndüyse (binary blob)
+                    if (contentType.indexOf('application/xml') !== -1 || contentType.indexOf('text/xml') !== -1) {
+                        var blob = new Blob([data], {type: 'application/xml'});
+                        var url = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        // Content-Disposition'dan dosya adını çek
+                        var cd = xhr.getResponseHeader('Content-Disposition') || '';
+                        var fn = 'fatura.xml';
+                        var match = cd.match(/filename="?(.+?)"?$/);
+                        if (match) fn = match[1];
+                        a.download = fn;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: 'XML indirildi', showConfirmButton: false, timer: 2000
+                        });
+                    } else {
+                        // JSON yanıt (hata durumu)
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            try {
+                                var json = JSON.parse(reader.result);
+                                Swal.fire('Hata', json.error_msg || 'XML alınamadı.', 'error');
+                            } catch (e) {
+                                Swal.fire('Hata', 'XML alınamadı.', 'error');
+                            }
+                        };
+                        reader.readAsText(data);
+                    }
+                },
+                error: function () {
+                    Swal.close();
+                    Swal.fire('Hata', 'XML indirilirken sunucu hatası oluştu.', 'error');
+                }
+            });
+        };
+
+        // =====================================================================
+        // 6. TOPLU DURUM SENKRONİZASYONU
+        // =====================================================================
+
+        function esurec_bulk_sync() {
+            Swal.fire({
+                title: 'Durumları Senkronize Et',
+                html: 'GİB\'e gönderilmiş <b>tüm</b> faturaların durumları e-Süreç üzerinden sorgulanacak.<br>' +
+                      '<small class="text-muted">Bu işlem birkaç saniye sürebilir.</small>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-arrows-rotate"></i> Senkronize Et',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-success', cancelButton: 'btn btn-light'}
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'Senkronize ediliyor...',
+                    html: 'GİB durumları sorgulanıyor, lütfen bekleyin.',
+                    allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                // "Kesilen Faturalar" tabındaki tüm satırlardan SENT, QUEUED, APPROVED status'lu olanları çek
+                // Ama tablo server-side olduğu için sadece görünen satırları değil,
+                // sunucudan tüm SENT faturaları çekmemiz lazım.
+                // Bunun yerine: Seçili fatura yoksa → /invoices/api/esurec/status/ POST ile
+                // tüm "sync_all: true" parametresi gönder
+                $.ajax({
+                    url: '/invoices/api/esurec/status/',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({sync_all: true}),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    success: function (res) {
+                        Swal.close();
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg || 'Durumlar senkronize edildi',
+                                showConfirmButton: false, timer: 4000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.error_msg || 'Senkronizasyon başarısız.', 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function () {
+                        Swal.close();
+                        Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                    }
+                });
+            });
+        }
+        // =====================================================================
+        // 7. HATA → TASLAK SIFIRLAMA (Düzenlemeye Al)
+        // =====================================================================
+
+        function esurec_reset_to_draft() {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyarı', 'Lütfen düzenlemeye almak istediğiniz faturayı seçin.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Düzenlemeye Al',
+                html: '<b>' + ids.length + '</b> fatura "Taslak" durumuna döndürülecek.<br>' +
+                      '<small class="text-muted">Yalnızca "Hata Aldı" durumundaki faturalar işlenir. ' +
+                      'e-Süreç taslağı varsa otomatik iptal edilir.</small><br><br>' +
+                      '<small class="text-warning"><i class="fa fa-triangle-exclamation"></i> ' +
+                      'Fatura tarihini ve bilgilerini güncelledikten sonra tekrar gönderebilirsiniz.</small>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-pen-to-square"></i> Düzenlemeye Al',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-warning', cancelButton: 'btn btn-light'}
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'İşleniyor...',
+                    html: 'Fatura taslağa döndürülüyor, lütfen bekleyin.',
+                    allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: '/invoices/api/esurec/reset-to-draft/',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({invoice_ids: ids}),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    success: function (res) {
+                        Swal.close();
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg || 'Fatura düzenlemeye alındı',
+                                showConfirmButton: false, timer: 5000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.error_msg || 'İşlem başarısız.', 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function () {
+                        Swal.close();
+                        Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error');
+                    }
+                });
+            });
+        }
+
+        // =====================================================================
+        // GİDER PUSULASI — e-Süreç İŞLEMLERİ
+        // =====================================================================
+
+        // Gider Pusulası seçili ID'lerini al (expense tabından)
+        function getExpenseSelectedIds() {
+            var ids = [];
+            $('#tableExpense .row-check:checked').each(function () {
+                ids.push($(this).val());
+            });
+            return ids;
+        }
+
+        // 1. Gider Pusulası → e-Süreç'e taslak gönder
+        function esurec_send_expense() {
+            var ids = getExpenseSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyarı', 'Lütfen gönderilecek gider pusulalarını seçin.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'e-Süreç\'e Gönder',
+                html: '<b>' + ids.length + '</b> gider pusulası e-Süreç\'e taslak olarak gönderilecek.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Gönder',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light'}
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'Gönderiliyor...',
+                    html: 'Gider pusulaları e-Süreç\'e gönderiliyor.',
+                    allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: '/invoices/api/esurec/send-expense/',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({invoice_ids: ids}),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    success: function (res) {
+                        Swal.close();
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg || 'Gider pusulaları gönderildi',
+                                showConfirmButton: false, timer: 3000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.error_msg || res.msg || 'Gönderim başarısız.', 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function (xhr) {
+                        Swal.close();
+                        var msg = 'Sunucu hatası.';
+                        try { msg = JSON.parse(xhr.responseText).error_msg || msg; } catch (e) {}
+                        Swal.fire('Hata', msg, 'error');
+                    }
+                });
+            });
+        }
+
+        // 2. Gider Pusulası → GİB'e gönder
+        function esurec_send_expense_to_gib() {
+            var ids = getExpenseSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyarı', 'Lütfen GİB\'e gönderilecek gider pusulalarını seçin.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'GİB\'e Gönder (Gider Pusulası)',
+                html: '<b>' + ids.length + '</b> gider pusulası GİB\'e gönderilecek.<br>' +
+                    '<small class="text-danger fw-bold">Bu işlem geri alınamaz!</small>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-paper-plane me-1"></i> GİB\'e Gönder',
+                cancelButtonText: 'Vazgeç',
+                customClass: {confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light'}
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'GİB\'e gönderiliyor...',
+                    allowOutsideClick: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: '/invoices/api/esurec/send-expense-to-gib/',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({invoice_ids: ids}),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    success: function (res) {
+                        Swal.close();
+                        if (res.result) {
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: res.msg || 'GİB\'e gönderildi',
+                                showConfirmButton: false, timer: 3000
+                            });
+                        } else {
+                            Swal.fire('Hata', res.error_msg || 'GİB gönderim hatası.', 'error');
+                        }
+                        reloadAllTables();
+                    },
+                    error: function (xhr) {
+                        Swal.close();
+                        var msg = 'Sunucu hatası.';
+                        try { msg = JSON.parse(xhr.responseText).error_msg || msg; } catch (e) {}
+                        Swal.fire('Hata', msg, 'error');
+                    }
+                });
+            });
+        }
+
+        // 3. Gider Pusulası → GİB Durum Sorgula
+        function esurec_expense_status() {
+            var ids = getExpenseSelectedIds();
+            if (!ids.length) {
+                Swal.fire('Uyarı', 'Lütfen durumu sorgulanacak gider pusulalarını seçin.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Durum sorgulanıyor...',
+                allowOutsideClick: false,
+                didOpen: function () { Swal.showLoading(); }
+            });
+
+            $.ajax({
+                url: '/invoices/api/esurec/expense-status/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({invoice_ids: ids}),
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                success: function (res) {
+                    Swal.close();
+                    if (res.result) {
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: res.msg || 'Durum güncellendi',
+                            showConfirmButton: false, timer: 3000
+                        });
+                    } else {
+                        Swal.fire('Hata', res.error_msg || 'Sorgulama hatası.', 'error');
+                    }
+                    reloadAllTables();
+                },
+                error: function () {
+                    Swal.close();
+                    Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                }
+            });
+        }
+    </script>
+
+{% endblock footer %}

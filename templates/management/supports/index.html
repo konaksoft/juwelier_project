@@ -1,0 +1,940 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        #table_model_wrapper .top {
+            display: none;
+        }
+
+        #tableToolbar .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin: 0;
+        }
+
+        #tableToolbar .dataTables_filter input {
+            height: 2.4rem;
+            border-radius: .45rem;
+        }
+
+        .toolbar-btn-size {
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 6.5rem;
+            height: 2.7rem;
+        }
+
+        .my-margin {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            margin-right: 0.8rem;
+            margin-left: 0.8rem;
+        }
+
+        .bg-gold-gradient {
+            background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 100%);
+            color: #3e2723;
+            border: 1px solid #b8860b;
+        }
+
+        .bg-admin-dark {
+            background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+            color: white;
+        }
+
+        .bg-emerald-gradient {
+            background: linear-gradient(135deg, #2ecc71 0%, #11998e 100%);
+            color: white;
+            border: 1px solid #10b981;
+        }
+
+        .bg-ruby-gradient {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+            border: 1px solid #ef4444;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .form-select.select2-hidden-accessible {
+            display: none;
+        }
+
+        .date-preset-btn.active {
+            background-color: #ffffff !important;
+            color: #3E97FF !important;
+            box-shadow: 0 .1rem 1rem .25rem rgba(0, 0, 0, .05) !important;
+        }
+
+        .flatpickr-custom-trigger {
+            opacity: 0;
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+
+        .video-card {
+            transition: transform .2s ease, box-shadow .2s ease;
+            border-radius: .75rem;
+            overflow: hidden;
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .12) !important;
+        }
+
+        .video-card .ratio {
+            border-radius: .75rem .75rem 0 0;
+            overflow: hidden;
+        }
+
+        .module-group-title {
+            position: relative;
+            padding-bottom: .5rem;
+        }
+
+        .module-group-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(135deg, #d4af37, #f3e5ab);
+            border-radius: 2px;
+        }
+
+        .btn-delete-video {
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+
+        .video-card:hover .btn-delete-video {
+            opacity: 1;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="container-fluid">
+
+            {# ── ÜST KART: Çözüm Merkezi Başlığı + Ana Sekmeler ── #}
+            <div id="kt_app_toolbar" class="app-toolbar">
+                <div class="card shadow-sm w-100 my-margin">
+                    <div class="card-body pb-0">
+                        <div class="page-title d-flex flex-column justify-content-center mb-1">
+                            <h1 class="page-heading text-gray-900 fw-bold fs-3">Çözüm Merkezi</h1>
+                        </div>
+                        <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold"
+                            id="mainTabs" role="tablist">
+                            <li class="nav-item mt-2">
+                                <a class="nav-link text-active-primary ms-0 me-10 py-5 active"
+                                   data-bs-toggle="tab" href="#tab-destek" role="tab">
+                                    <i class="fas fa-headset me-2 fs-4"></i>Destek Talepleri
+                                </a>
+                            </li>
+                            <li class="nav-item mt-2">
+                                <a class="nav-link text-active-primary ms-0 me-10 py-5"
+                                   data-bs-toggle="tab" href="#tab-egitim" role="tab">
+                                    <i class="fas fa-play-circle me-2 fs-4"></i>Eğitim Videoları
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── ANA TAB İÇERİĞİ ── #}
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+                <div class="tab-content" id="mainTabContent">
+
+                    {# ═══════════════════════════════════════════════════ #}
+                    {# SEKME 1: DESTEK TALEPLERİ (mevcut yapı aynen)     #}
+                    {# ═══════════════════════════════════════════════════ #}
+                    <div class="tab-pane fade active show" id="tab-destek" role="tabpanel">
+
+                        {# Arama / Tarih Filtre / Oluştur Butonu + İç Sekmeler #}
+                        <div class="card shadow-sm mb-5">
+                            <div class="card-body">
+                                <div class="d-flex flex-stack flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center position-relative me-2">
+                                            <i class="fa-solid fa-magnifying-glass position-absolute ms-4 fs-7 text-gray-400"></i>
+                                            <input type="text" id="customSearch"
+                                                   class="form-control form-control-sm form-control-solid w-250px ps-12"
+                                                   placeholder="Talep No veya Konu Ara"/>
+                                        </div>
+                                        <div class="d-flex bg-light rounded p-1 me-3">
+                                            <input type="hidden" id="filterStartDate">
+                                            <input type="hidden" id="filterEndDate">
+                                            <div class="position-relative">
+                                                <input type="text" id="flatpickr_range"
+                                                       class="flatpickr-custom-trigger">
+                                                <button type="button"
+                                                        class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2"
+                                                        id="btnCustomDate">
+                                                    <i class="fa-solid fa-calendar-days me-2 fs-8"></i>Özel
+                                                </button>
+                                            </div>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn active"
+                                                    data-range="all">Tümü
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                                    data-range="today">Bugün
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-icon-gray-600 btn-active-white btn-active-text-primary fw-bold px-3 py-2 rounded-2 date-preset-btn"
+                                                    data-range="week">Bu Hafta
+                                            </button>
+                                        </div>
+
+                                        <div id="model_table_buttons_container" class="d-none"></div>
+                                        {% if not staff %}
+                                            <button type="button" class="btn btn-primary btn-sm "
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#addRequestModal">
+                                                <i class="ki-duotone ki-plus fs-2"></i> <span
+                                                    class="d-none d-lg-inline ms-1">Destek Oluştur</span>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {# İç Sekmeler: Tümü / Bekleyen / Başlayan / Tamamlanan #}
+                                <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mt-3"
+                                    id="supportInnerTabs">
+                                    <li class="nav-item mt-2"><a
+                                            class="nav-link text-active-primary ms-0 me-10 py-5 active"
+                                            data-bs-toggle="tab" href="#all">Tümü</a></li>
+                                    <li class="nav-item mt-2"><a
+                                            class="nav-link text-active-primary ms-0 me-10 py-5"
+                                            data-bs-toggle="tab" href="#wait">Bekleyen</a></li>
+                                    <li class="nav-item mt-2"><a
+                                            class="nav-link text-active-primary ms-0 me-10 py-5"
+                                            data-bs-toggle="tab" href="#start">Başlayan</a></li>
+                                    <li class="nav-item mt-2"><a
+                                            class="nav-link text-active-primary ms-0 me-10 py-5"
+                                            data-bs-toggle="tab" href="#result">Tamamlanan</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {# DataTable İç Sekme İçerikleri #}
+                        <div class="tab-content" id="supportTabContent">
+                            <div class="tab-pane fade active show" id="all" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table id="model_table_all"
+                                                   class="table align-middle table-row-dashed fs-6">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th class="w-10px pe-2">#</th>
+                                                    <th class="text-start">Talep No</th>
+                                                    <th class="text-start">Durum</th>
+                                                    <th class="text-start">Firma</th>
+                                                    <th class="text-start">Talep Eden</th>
+                                                    <th class="text-start">Konu</th>
+                                                    <th class="text-center">Öncelik</th>
+                                                    <th class="text-start">Kategori</th>
+                                                    <th class="text-start">Oluşturma Tarihi</th>
+                                                    <th class="text-start">İlgilenen Personel</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="wait" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table id="model_table_wait"
+                                                   class="table align-middle table-row-dashed fs-6">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th class="w-10px pe-2">#</th>
+                                                    <th class="text-start">Talep No</th>
+                                                    <th class="text-start">Durum</th>
+                                                    <th class="text-start">Firma</th>
+                                                    <th class="text-start">Talep Eden</th>
+                                                    <th class="text-start">Konu</th>
+                                                    <th class="text-center">Öncelik</th>
+                                                    <th class="text-start">Kategori</th>
+                                                    <th class="text-start">Oluşturma Tarihi</th>
+                                                    <th class="text-start">İlgilenen Personel</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="start" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table id="model_table_start"
+                                                   class="table align-middle table-row-dashed fs-6">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th class="w-10px pe-2">#</th>
+                                                    <th class="text-start">Talep No</th>
+                                                    <th class="text-start">Durum</th>
+                                                    <th class="text-start">Firma</th>
+                                                    <th class="text-start">Talep Eden</th>
+                                                    <th class="text-start">Konu</th>
+                                                    <th class="text-center">Öncelik</th>
+                                                    <th class="text-start">Kategori</th>
+                                                    <th class="text-start">Oluşturma Tarihi</th>
+                                                    <th class="text-start">İlgilenen Personel</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="result" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table id="model_table_result"
+                                                   class="table align-middle table-row-dashed fs-6">
+                                                <thead>
+                                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                                    <th class="w-10px pe-2">#</th>
+                                                    <th class="text-start">Talep No</th>
+                                                    <th class="text-start">Durum</th>
+                                                    <th class="text-start">Firma</th>
+                                                    <th class="text-start">Talep Eden</th>
+                                                    <th class="text-start">Konu</th>
+                                                    <th class="text-center">Öncelik</th>
+                                                    <th class="text-start">Kategori</th>
+                                                    <th class="text-start">Oluşturma Tarihi</th>
+                                                    <th class="text-start">İlgilenen Personel</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-semibold"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ═══════════════════════════════════════════════════ #}
+                    {# SEKME 2: EĞİTİM VİDEOLARI                        #}
+                    {# ═══════════════════════════════════════════════════ #}
+                    <div class="tab-pane fade" id="tab-egitim" role="tabpanel">
+
+                        {# Superuser: Video Ekle Butonu #}
+                        {% if request.user.is_superuser %}
+                            <div class="d-flex justify-content-end mb-5">
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#addVideoModal">
+                                    <i class="ki-duotone ki-plus fs-2"></i>
+                                    <span class="ms-1">Yeni Video Ekle</span>
+                                </button>
+                            </div>
+                        {% endif %}
+
+                        {# Video Listesi - Modüle Göre Gruplu #}
+                        {% regroup training_videos by module_name as video_groups %}
+                        {% for group in video_groups %}
+                            <div class="mb-10">
+                                <h3 class="fw-bold text-gray-800 mb-5 module-group-title">
+                                    <i class="fas fa-folder-open me-2 text-warning"></i>{{ group.grouper }}
+                                </h3>
+                                <div class="row g-5">
+                                    {% for video in group.list %}
+                                        <div class="col-md-6 col-lg-4" id="video-card-{{ video.id }}">
+                                            <div class="card shadow-sm h-100 video-card position-relative">
+                                                {% if request.user.is_superuser %}
+                                                    <button class="btn btn-sm btn-icon btn-light-danger btn-delete-video position-absolute top-0 end-0 m-2"
+                                                            data-id="{{ video.id }}"
+                                                            style="z-index: 2;"
+                                                            title="Videoyu Sil">
+                                                        <i class="fas fa-trash-alt fs-7"></i>
+                                                    </button>
+                                                {% endif %}
+                                                <div class="card-body p-0">
+                                                    <div class="ratio ratio-16x9">
+                                                        <iframe
+                                                                src="https://www.youtube-nocookie.com/embed/{{ video.youtube_id }}?rel=0&modestbranding=1"
+                                                                title="{{ video.title }}"
+                                                                frameborder="0"
+                                                                loading="lazy"
+                                                                referrerpolicy="strict-origin-when-cross-origin"
+                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                                allowfullscreen>
+                                                        </iframe>
+                                                    </div>
+                                                    <div class="p-4">
+                                                        <h5 class="fw-bold text-gray-800 mb-1">{{ video.title }}</h5>
+                                                        <small class="text-muted">{{ video.module_name }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="card shadow-sm" id="empty-video-placeholder">
+                                <div class="card-body text-center py-15">
+                                    <i class="fas fa-video fs-3x text-gray-300 d-block mb-5"></i>
+                                    <p class="text-gray-600 fs-5 mb-0">Henüz eğitim videosu eklenmemiş.</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── MODAL: Talep Oluştur ── #}
+    <div class="modal fade" id="addRequestModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-gold-gradient">
+                    <h5 class="modal-title text-white">Talep Oluştur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" id="add-form">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="required form-label">Kategori</label>
+                                <select class="form-select" data-control="select2" data-placeholder="Kategori seçiniz"
+                                        name="category" data-allow-clear="true"
+                                        data-dropdown-parent="#addRequestModal">
+                                    <option></option>
+                                    <option value="developer">Geliştirme</option>
+                                    <option value="error">Hata</option>
+                                    <option value="support">Teknik Destek</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Konu</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Dosya</label>
+                                <input type="file" class="form-control" name="file">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Mesaj</label>
+                                <textarea name="message" rows="6" class="form-control"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-gold-gradient">
+                    <button class="btn bg-ruby-gradient" data-bs-dismiss="modal" type="button">İptal</button>
+                    <button class="btn bg-emerald-gradient" id="btnSave" type="button">Gönder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── MODAL: Personel Ata ── #}
+    <div class="modal fade" id="personelAddModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg mw-500px">
+            <div class="modal-content">
+                <div class="modal-header bg-admin-dark">
+                    <h5 class="modal-title text-white">Personel Atama Ekranı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" id="personelForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="request_id" name="request_id">
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="required form-label">Öncelik Durumu</label>
+                                <select class="form-select" name="priority" data-control="select2"
+                                        data-hide-search="true" data-dropdown-parent="#personelAddModal">
+                                    <option value="LOW">Düşük</option>
+                                    <option value="MEDIUM" selected>Orta</option>
+                                    <option value="HIGH">Yüksek</option>
+                                    <option value="CRITICAL">Kritik</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="required form-label">Personeller</label>
+                                <select required class="form-select" id="personels_select" data-control="select2"
+                                        name="personel" data-dropdown-parent="#personelAddModal"
+                                        data-placeholder="Personel seçiniz"></select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn bg-ruby-gradient" data-bs-dismiss="modal" type="button">İptal</button>
+                    <button class="btn bg-admin-dark text-white" id="btnPersonel" type="button">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── MODAL: Eğitim Videosu Ekle (Sadece Superuser) ── #}
+    {% if request.user.is_superuser %}
+        <div class="modal fade" id="addVideoModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-gold-gradient">
+                        <h5 class="modal-title">Eğitim Videosu Ekle</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addVideoForm">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="required form-label">Modül Adı</label>
+                                <input type="text" class="form-control" name="module_name" required
+                                       placeholder="Örn: Stok Yönetimi, Satış, Müşteri">
+                            </div>
+                            <div class="mb-3">
+                                <label class="required form-label">Video Başlığı</label>
+                                <input type="text" class="form-control" name="title" required
+                                       placeholder="Örn: Stok Girişi Nasıl Yapılır?">
+                            </div>
+                            <div class="mb-3">
+                                <label class="required form-label">YouTube Linki veya Video ID</label>
+                                <input type="text" class="form-control" name="youtube_url" required
+                                       placeholder="YouTube linki yapıştırın (watch, youtu.be, shorts veya video ID)">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Sıralama</label>
+                                <input type="number" class="form-control" name="order" value="0" min="0">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer bg-gold-gradient">
+                        <button class="btn bg-ruby-gradient" data-bs-dismiss="modal" type="button">İptal</button>
+                        <button class="btn bg-emerald-gradient" id="btnSaveVideo" type="button">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock body %}
+
+{% block footer %}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+
+    <script>
+        function formatDate(date) {
+            let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
+
+        function setDateFilter(start, end, btnElement) {
+            $('#filterStartDate').val(start);
+            $('#filterEndDate').val(end);
+            $('.date-preset-btn, #btnCustomDate').removeClass('bg-white shadow-sm text-primary');
+            if (btnElement) $(btnElement).addClass('bg-white shadow-sm text-primary');
+            reloadActiveTable();
+        }
+
+        function reloadActiveTable() {
+            var activeTab = $("#supportTabContent > .tab-pane.active table").attr('id');
+            if (activeTab && $.fn.DataTable.isDataTable('#' + activeTab)) {
+                $('#' + activeTab).DataTable().draw();
+            }
+        }
+
+        var tables = {wait: null, start: null, result: null, all: null};
+
+        function initTable(tableId, filterType) {
+            return $(tableId).DataTable({
+                info: true, paging: true, searchDelay: 400, processing: true, serverSide: true, autoWidth: false,
+                order: [[8, "desc"]],
+                ajax: {
+                    url: "{% url 'supports:get-all' %}",
+                    data: function (d) {
+                        d.filter = filterType;
+                        d.start_date = $('#filterStartDate').val();
+                        d.end_date = $('#filterEndDate').val();
+                    }
+                },
+                columns: [
+                    {
+                        data: "id", orderable: false, className: "text-center", render: function (data) {
+                            return `<div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" value="${data}" /></div>`;
+                        }
+                    },
+                    {
+                        data: "ticket_no",
+                        className: "text-gray-800 fw-bold",
+                        render: function (data, type, row) {
+                            return `<a href="/supports/index-detail/${row.id}" class="text-gray-800 text-hover-primary fw-bold">#${data}</a>`;
+                        }
+                    },
+                    {
+                        data: "status", render: function (data) {
+                            let statusKey = data ? data.toLowerCase() : '';
+                            var isStaff = "{{ staff|yesno:'true,false' }}" === "true";
+                            if (!isStaff && statusKey === 'stopped') {
+                                statusKey = 'in_progress';
+                            }
+                            let statusMap = {
+                                'pending': {class: 'bg-light-warning text-warning', text: 'Beklemede'},
+                                'assigned': {class: 'bg-light-info text-info', text: 'Personel Atandı'},
+                                'in_progress': {class: 'bg-light-primary text-primary', text: 'İşlemde'},
+                                'stopped': {class: 'bg-light-danger text-danger', text: 'Durduruldu'},
+                                'resolved': {class: 'bg-light-success text-success', text: 'Tamamlandı'}
+                            };
+                            let s = statusMap[statusKey] || {class: 'bg-light-secondary', text: data};
+                            return `<span class='badge ${s.class}'>${s.text}</span>`;
+                        }
+                    },
+                    {
+                        data: "personel_request__store__store_id", render: function (data, type, row) {
+                            let html = `<span class="text-gray-600 fw-bold">${data}</span>`;
+                            if (row.unread_count && row.unread_count > 0) {
+                                html += `<span class="badge badge-circle badge-danger ms-2 w-20px h-20px fs-9">${row.unread_count}</span>`;
+                            }
+                            return html;
+                        }
+                    },
+                    {data: "personel_request__username"},
+                    {data: "title"},
+                    {
+                        data: "priority", className: "text-center", render: function (data) {
+                            var badges = {
+                                'LOW': {'class': 'badge-light-success', 'text': 'Düşük'},
+                                'MEDIUM': {'class': 'badge-light-info', 'text': 'Orta'},
+                                'HIGH': {'class': 'badge-light-warning', 'text': 'Yüksek'},
+                                'CRITICAL': {'class': 'badge-light-danger', 'text': 'Kritik'}
+                            };
+                            var priority = badges[data] || {'class': 'badge-light-secondary', 'text': data || 'Orta'};
+                            var icon = data === 'CRITICAL' ? '<i class="fas fa-exclamation-circle text-danger me-1"></i>' : '';
+                            return `<span class="badge ${priority.class} fs-8 fw-bold">${icon}${priority.text}</span>`;
+                        }
+                    },
+                    {
+                        data: "category", render: function (data) {
+                            return {
+                                'error': 'Hata',
+                                'developer': 'Geliştirme',
+                                'support': 'Teknik Destek'
+                            }[data] || data;
+                        }
+                    },
+                    {
+                        data: "created_at", render: function (data) {
+                            return data ? moment(data).format('DD.MM.YYYY HH:mm') : '-';
+                        }
+                    },
+                    {
+                        data: "assigned_staff__username",
+                        render: function (data, type, row) { {% if staff %} if (!data && row.status !== "RESOLVED") {
+                            var isSuperUser = "{{ request.user.is_superuser|yesno:'true,false' }}" === "true";
+                            if (isSuperUser) {
+                                return `<button class="btn btn-sm btn-info personel-ata bg-admin-dark" data-id="${row.id}" data-bs-toggle="modal" data-bs-target="#personelAddModal">Personel Ata</button>`;
+                            } else {
+                                return `<button class="btn btn-sm btn-info btn-quick-assign bg-admin-dark" data-id="${row.id}">Üstüne Al</button>`;
+                            }
+                        } {% endif %} return data || '-';
+                        }
+                    }
+                ],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+        }
+
+        $(document).ready(function () {
+            const fp = flatpickr("#flatpickr_range", {
+                mode: "range", locale: "tr", dateFormat: "Y-m-d", altInput: true,
+                onClose: function (selectedDates, dateStr, instance) {
+                    if (selectedDates.length === 2) {
+                        setDateFilter(instance.formatDate(selectedDates[0], "Y-m-d"), instance.formatDate(selectedDates[1], "Y-m-d"));
+                        $('.date-preset-btn').removeClass('bg-white shadow-sm text-primary');
+                        $('#btnCustomDate').addClass('bg-white shadow-sm text-primary');
+                        $('#btnCustomDate').html(`<i class="fa-solid fa-calendar-check me-2 fs-8"></i> ${instance.formatDate(selectedDates[0], "d.m")} - ${instance.formatDate(selectedDates[1], "d.m")}`);
+                    }
+                }
+            });
+
+            $('#btnCustomDate').on('click', function (e) {
+                e.stopPropagation();
+                fp.open();
+            });
+
+            $('.date-preset-btn').on('click', function () {
+                fp.clear();
+                $('#btnCustomDate').html('<i class="fa-solid fa-calendar-days me-2 fs-8"></i>Özel');
+                const range = $(this).data('range');
+                const today = new Date();
+                let start = '', end = '';
+
+                if (range === 'today') {
+                    start = formatDate(today);
+                    end = formatDate(today);
+                } else if (range === 'week') {
+                    let day = today.getDay();
+                    let diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                    let monday = new Date(today);
+                    monday.setDate(diff);
+                    let sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6);
+                    start = formatDate(monday);
+                    end = formatDate(sunday);
+                }
+                setDateFilter(start, end, this);
+            });
+
+            tables.all = initTable('#model_table_all', 'all');
+
+            {# Sadece iç sekmeleri (Tümü/Bekleyen/Başlayan/Tamamlanan) dinle #}
+            $('#supportInnerTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var target = $(e.target).attr("href").replace('#', '');
+                if (tables[target]) {
+                    tables[target].ajax.reload();
+                } else {
+                    tables[target] = initTable('#model_table_' + target, target);
+                }
+            });
+
+            $('#personelAddModal').on('show.bs.modal', function (e) {
+                var btn = $(e.relatedTarget);
+                var requestId = btn.data('id');
+                $('#request_id').val(requestId);
+
+                $.ajax({
+                    url: "/supports/get-personels", type: "POST",
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (res) {
+                        var $select = $("#personels_select");
+                        $select.empty().append(new Option("", "", false, false));
+                        res.data.forEach(function (item) {
+                            $select.append(new Option(item.first_name + ' ' + item.last_name, item.id));
+                        });
+                    }
+                });
+            });
+
+            $("#btnPersonel").click(function () {
+                var form = $("#personelForm");
+                if (!form[0].checkValidity()) {
+                    form[0].reportValidity();
+                    return;
+                }
+
+                $.ajax({
+                    url: "/supports/set-personel", type: "POST", data: form.serialize(),
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (data) {
+                        if (data.result) {
+                            Swal.fire({
+                                icon: 'success', title: 'Başarılı', text: 'İşlem gerçekleştirildi.',
+                                timer: 1500, showConfirmButton: false
+                            }).then(() => {
+                                $("#personelAddModal").modal("hide");
+                                reloadActiveTable();
+                            });
+                        } else {
+                            Swal.fire('Hata', data.error_msg, 'error');
+                        }
+                    }
+                });
+            });
+
+            $('#customSearch').on('keyup', function () {
+                var activeTabId = $("#supportTabContent > .tab-pane.active table").attr('id');
+                var tabKey = activeTabId ? activeTabId.replace('model_table_', '') : 'all';
+
+                if (tables[tabKey]) {
+                    tables[tabKey].search(this.value).draw();
+                }
+            });
+
+            $("#btnSave").click(function () {
+                let form = $("#add-form")[0];
+                if (form.checkValidity() == false) {
+                    form.reportValidity();
+                    return;
+                }
+                let formData = new FormData(form);
+                $.ajax({
+                    url: "/supports/add", type: "POST", data: formData,
+                    processData: false, contentType: false,
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (data) {
+                        if (data.result === true) {
+                            Swal.fire({
+                                title: 'Oluşturuldu', text: 'Talep Başarıyla Oluşturuldu', icon: 'success',
+                                timer: 1000, showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Hata!', data.error_msg, 'error');
+                        }
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-quick-assign', function () {
+                var requestId = $(this).data('id');
+                var currentUserId = "{{ request.user.id }}";
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "Talep üzerinize atanacaktır.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Evet, üstüme al',
+                    cancelButtonText: 'İptal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "/supports/set-personel", type: "POST",
+                            headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                            data: {'request_id': requestId, 'personel': currentUserId},
+                            success: function (data) {
+                                if (data.result) {
+                                    Swal.fire({
+                                        icon: 'success', title: 'Atandı', text: 'Talep başarıyla üzerinize alındı.',
+                                        timer: 1500, showConfirmButton: false
+                                    }).then(() => {
+                                        reloadActiveTable();
+                                    });
+                                } else {
+                                    Swal.fire('Hata', data.error_msg, 'error');
+                                }
+                            },
+                            error: function () {
+                                Swal.fire('Hata', 'Bir sunucu hatası oluştu.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            {# ── Eğitim Videosu Ekle (AJAX) ── #}
+            $("#btnSaveVideo").click(function () {
+                let form = $("#addVideoForm")[0];
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                $.ajax({
+                    url: "{% url 'supports:add-training-video' %}",
+                    type: "POST",
+                    data: $(form).serialize(),
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (data) {
+                        if (data.result === true) {
+                            Swal.fire({
+                                title: 'Eklendi',
+                                text: 'Eğitim videosu başarıyla eklendi.',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                $("#addVideoModal").modal("hide");
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Hata!', data.error_msg, 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Hata', 'Bir sunucu hatası oluştu.', 'error');
+                    }
+                });
+            });
+
+            {# ── Eğitim Videosu Sil (AJAX) ── #}
+            $(document).on('click', '.btn-delete-video', function () {
+                var videoId = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "Bu eğitim videosu kalıcı olarak silinecektir.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'İptal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "{% url 'supports:delete-training-video' %}",
+                            type: "POST",
+                            data: {'video_id': videoId},
+                            headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                            success: function (data) {
+                                if (data.result) {
+                                    $('#video-card-' + videoId).fadeOut(300, function () {
+                                        $(this).remove();
+                                        if ($('.video-card').length === 0) {
+                                            $('#tab-egitim .row').parent().html(
+                                                '<div class="card shadow-sm" id="empty-video-placeholder">' +
+                                                '<div class="card-body text-center py-15">' +
+                                                '<i class="fas fa-video fs-3x text-gray-300 d-block mb-5"></i>' +
+                                                '<p class="text-gray-600 fs-5 mb-0">Henüz eğitim videosu eklenmemiş.</p>' +
+                                                '</div></div>'
+                                            );
+                                        }
+                                    });
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Silindi',
+                                        text: 'Video başarıyla silindi.',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    });
+                                } else {
+                                    Swal.fire('Hata', data.error_msg, 'error');
+                                }
+                            },
+                            error: function () {
+                                Swal.fire('Hata', 'Bir sunucu hatası oluştu.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

@@ -1,0 +1,830 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* ── Durum Kartları ── */
+        .status-card {
+            border-radius: 0.75rem;
+            transition: box-shadow 0.2s;
+        }
+        .status-card:hover {
+            box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.08);
+        }
+        .status-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 1.25rem;
+        }
+        .status-icon.bg-success-light { background-color: rgba(80,205,137,0.15); color: #50cd89; }
+        .status-icon.bg-danger-light  { background-color: rgba(241,65,108,0.15); color: #f1416c; }
+        .status-icon.bg-warning-light { background-color: rgba(255,199,0,0.15);  color: #ffc700; }
+        .status-icon.bg-gray-light    { background-color: rgba(181,181,195,0.15); color: #b5b5c3; }
+
+        /* ── Token Giriş Alanı ── */
+        .token-input-group .form-control {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            letter-spacing: 0.025em;
+        }
+
+        /* ── Bağlantı Testi Sonuçları ── */
+        #testResultArea {
+            display: none;
+            border-radius: 0.5rem;
+        }
+        #testResultArea.show { display: block; }
+
+        /* ── Son Kontrol Bilgisi ── */
+        .last-check-info {
+            font-size: 0.8rem;
+            color: #a1a5b7;
+        }
+    </style>
+{% endblock header %}
+
+{% block content %}
+    {% csrf_token %}
+
+    <div class="d-flex flex-wrap flex-stack mb-6">
+        <h3 class="fw-bolder my-2">
+            <i class="fas fa-cogs text-primary me-2"></i>
+            e-Süreç Entegrasyon Ayarları
+        </h3>
+        <div class="d-flex align-items-center my-2">
+            <a href="{% url 'banking:index' %}" class="btn btn-sm btn-light-primary">
+                <i class="fas fa-arrow-left me-1"></i> Banka Hareketleri
+            </a>
+        </div>
+    </div>
+
+    {% if error_msg %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-15">
+                <i class="fas fa-exclamation-triangle text-warning fs-2x mb-4 d-block"></i>
+                <h4 class="text-gray-700">{{ error_msg }}</h4>
+            </div>
+        </div>
+    {% else %}
+
+    <div class="row g-5 g-xl-8">
+
+        <div class="col-xl-7">
+
+            <div class="card status-card shadow-sm mb-5">
+                <div class="card-header border-0 pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bolder text-dark">Entegrasyon Durumu</span>
+                        <span class="text-muted mt-1 fw-bold fs-7">e-Süreç bağlantı bilgileri</span>
+                    </h3>
+                    <div class="card-toolbar">
+                        {% if credential.is_active %}
+                            <span class="badge badge-light-success fs-7 fw-bold" id="statusBadge">
+                                <i class="fas fa-check-circle me-1"></i> Aktif
+                            </span>
+                        {% else %}
+                            <span class="badge badge-light-danger fs-7 fw-bold" id="statusBadge">
+                                <i class="fas fa-times-circle me-1"></i> Pasif
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+
+                    <div class="d-flex align-items-center mb-5">
+                        <div class="status-icon {% if credential.is_active and has_token %}bg-success-light{% else %}bg-gray-light{% endif %} me-4">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-800 fw-bold d-block fs-6">Bağlantı</span>
+                            <span class="text-muted fw-bold d-block fs-7">
+                                {% if credential.is_active and has_token %}Token tanımlı ve aktif{% elif has_token %}Token tanımlı ama entegrasyon pasif{% else %}Token tanımlı değil{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-5">
+                        <div class="status-icon {% if credential.efatura_active %}bg-success-light{% else %}bg-gray-light{% endif %} me-4" id="efaturaIcon">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-800 fw-bold d-block fs-6">e-Fatura Modülü</span>
+                            <span class="text-muted fw-bold d-block fs-7" id="efaturaStatus">
+                                {% if credential.efatura_active %}Aktif{% else %}Bilinmiyor / Pasif{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-5">
+                        <div class="status-icon {% if credential.banking_active %}bg-success-light{% else %}bg-gray-light{% endif %} me-4" id="bankingIcon">
+                            <i class="fas fa-building-columns"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-800 fw-bold d-block fs-6">Açık Bankacılık Modülü</span>
+                            <span class="text-muted fw-bold d-block fs-7" id="bankingStatus">
+                                {% if credential.banking_active %}Aktif{% else %}Bilinmiyor / Pasif{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <div class="status-icon bg-gray-light me-4">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="text-gray-800 fw-bold d-block fs-6">Son Kontrol</span>
+                            <span class="text-muted fw-bold d-block fs-7 last-check-info" id="lastCheckInfo">
+                                {% if credential.last_health_check_at %}
+                                    {{ credential.last_health_check_at|date:"d.m.Y H:i" }}
+                                    — Durum: {{ credential.last_health_status }}
+                                {% else %}
+                                    Henüz kontrol yapılmadı
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card status-card shadow-sm">
+                <div class="card-header border-0 pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bolder text-dark">Bağlantı Testi</span>
+                        <span class="text-muted mt-1 fw-bold fs-7">e-Süreç'e canlı bağlantı kontrolü</span>
+                    </h3>
+                </div>
+                <div class="card-body pt-2">
+                    <p class="text-gray-600 fs-7 mb-5">
+                        Bu işlem, e-Süreç sunucusuna Katman 1 (HMAC) ve Katman 2 (Tenant Token)
+                        doğrulaması ile S2S isteği atar. e-Fatura ve açık bankacılık
+                        modüllerinin aktiflik durumunu doğrular.
+                    </p>
+
+                    <button type="button"
+                            class="btn btn-primary fw-bold"
+                            id="btnTestConnection"
+                            {% if not has_token %}disabled{% endif %}>
+                        <i class="fas fa-satellite-dish me-2"></i>
+                        Bağlantıyı Test Et
+                    </button>
+
+                    <div id="testResultArea" class="mt-5 p-4 border rounded">
+                        <div id="testResultContent"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-xl-5">
+
+            <div class="card status-card shadow-sm">
+                <div class="card-header border-0 pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bolder text-dark">Token Yönetimi</span>
+                        <span class="text-muted mt-1 fw-bold fs-7">
+                            {% if has_token %}Token mevcut (şifreli){% else %}Token henüz tanımlanmadı{% endif %}
+                        </span>
+                    </h3>
+                </div>
+                <div class="card-body pt-2">
+
+                    {% if has_token %}
+                        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed mb-5 p-4">
+                            <i class="fas fa-shield-halved fs-2x text-primary me-4"></i>
+                            <div class="d-flex flex-stack flex-grow-1">
+                                <div class="fw-bold">
+                                    <div class="fs-6 text-gray-700">Token Durumu</div>
+                                    <div class="fs-7 text-gray-500">
+                                        {% if token_valid %}
+                                            <span class="text-success fw-bold">Geçerli</span>
+                                            {% if token_expires_soon %}
+                                                <span class="text-warning ms-2">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    Süresi yakında doluyor!
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-danger fw-bold">Geçersiz / Süresi Dolmuş</span>
+                                        {% endif %}
+                                        {% if credential.token_expires_at %}
+                                            <br>
+                                            <span class="text-muted">
+                                                Son kullanma: {{ credential.token_expires_at|date:"d.m.Y H:i" }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-5">
+                        <label class="form-label fw-bold fs-6 text-gray-700">
+                            {% if has_token %}Yeni Token (Güncellemek için){% else %}Tenant Token{% endif %}
+                        </label>
+                        <div class="input-group token-input-group">
+                            <input type="password"
+                                   class="form-control form-control-solid"
+                                   id="inputTenantToken"
+                                   placeholder="e-Süreç yöneticinizden aldığınız token'ı yapıştırın..."
+                                   autocomplete="off">
+                            <button class="btn btn-light-primary" type="button" id="btnToggleToken" title="Göster/Gizle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-muted mt-2">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Token, e-Süreç süper yöneticisi tarafından üretilir ve
+                            size bir kez gösterilir. Güvenli bir yerde saklayın.
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-success fw-bold w-100 mb-3" id="btnSaveToken">
+                        <i class="fas fa-save me-2"></i>
+                        {% if has_token %}Token'ı Güncelle{% else %}Token'ı Kaydet ve Etkinleştir{% endif %}
+                    </button>
+
+                    {% if has_token and credential.is_active %}
+                        <button type="button" class="btn btn-light-danger fw-bold w-100" id="btnDeactivate">
+                            <i class="fas fa-power-off me-2"></i>
+                            Entegrasyonu Devre Dışı Bırak
+                        </button>
+                    {% endif %}
+
+                    <div class="separator my-6"></div>
+                    <div class="fs-7 text-gray-500">
+                        <p class="mb-2">
+                            <strong>Nasıl çalışır?</strong>
+                        </p>
+                        <ul class="ps-4 mb-0">
+                            <li class="mb-1">Token, Fernet şifreleme ile veritabanında güvenli saklanır.</li>
+                            <li class="mb-1">Her S2S isteğinde HMAC imzası (Katman 1) ve token (Katman 2) gönderilir.</li>
+                            <li class="mb-1">Token 90 gün geçerlidir. Süresi dolmadan yenilenmelidir.</li>
+                            <li>Entegrasyonu devre dışı bırakmak tüm e-Süreç bağlantısını durdurur.</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- AÇIK BANKACILIK → TOPLU FATURA VARSAYILAN AYARLARI             -->
+    <!-- Banka hesap hareketlerinden toplu e-fatura oluştururken       -->
+    <!-- kullanılacak varsayılan ürün adı, ayar ve işçilik ayarları.   -->
+    <!-- ============================================================ -->
+    <div class="row g-5 g-xl-8 mt-2">
+        <div class="col-12">
+            <div class="card status-card shadow-sm">
+                <div class="card-header border-0 pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bolder text-dark">
+                            <i class="fas fa-coins text-warning me-2"></i>
+                            Açık Bankacılık Fatura Ayarları
+                        </span>
+                        <span class="text-muted mt-1 fw-bold fs-7">
+                            Banka hesap hareketlerinden toplu e-fatura oluştururken kullanılacak varsayılan değerler
+                        </span>
+                    </h3>
+                </div>
+                <div class="card-body pt-2">
+
+                    <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed mb-5 p-4">
+                        <i class="fas fa-circle-info fs-2x text-warning me-4"></i>
+                        <div class="d-flex flex-stack flex-grow-1">
+                            <div class="fw-bold fs-7 text-gray-700">
+                                Banka hesabına düşen tutar, bu ayarlar üzerinden
+                                <strong>Metal (KDV %0)</strong> ve
+                                <strong>İşçilik (KDV %20, Özel Matrah — KDVK 23/e)</strong>
+                                kalemlerine ayrıştırılır. İşçilik tipi
+                                <strong>AMOUNT</strong> seçiliyse değer KDV DAHİL TL tutarıdır;
+                                <strong>PERCENT</strong> seçiliyse toplam üzerinden yüzde uygulanır.
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="formInvoiceDefaults" autocomplete="off">
+                        <div class="row g-5">
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold fs-6 text-gray-700">
+                                    <i class="fas fa-tag text-gray-500 me-1"></i>
+                                    Varsayılan Ürün Adı
+                                </label>
+                                <input type="text"
+                                       id="inputInvoiceProductName"
+                                       class="form-control form-control-solid"
+                                       maxlength="150"
+                                       placeholder="Örn: 24 Ayar Has Altın"
+                                       value="{{ einvoice_settings.default_invoice_product_name|default:'24 Ayar Has Altın' }}">
+                                <div class="form-text text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Metal kaleminin ürün adı olarak faturaya yazılır.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold fs-6 text-gray-700">
+                                    <i class="fas fa-gem text-gray-500 me-1"></i>
+                                    Varsayılan Ayar
+                                </label>
+                                <select id="selectInvoiceKarat" class="form-select form-select-solid">
+                                    {% for k_val, k_label in karat_choices %}
+                                        <option value="{{ k_val }}"
+                                            {% if einvoice_settings.default_invoice_karat == k_val %}selected{% endif %}>
+                                            {{ k_label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Milyem → 24:1.000, 22:0.916, 18:0.750, 14:0.585, 8:0.333.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold fs-6 text-gray-700">
+                                    <i class="fas fa-hammer text-gray-500 me-1"></i>
+                                    İşçilik Tipi
+                                </label>
+                                <select id="selectInvoiceLaborType" class="form-select form-select-solid">
+                                    {% for lt_val, lt_label in labor_type_choices %}
+                                        <option value="{{ lt_val }}"
+                                            {% if einvoice_settings.default_invoice_labor_type == lt_val %}selected{% endif %}>
+                                            {{ lt_label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>AMOUNT</strong>: Sabit TL (KDV dahil). <strong>PERCENT</strong>: Toplam üzerinden yüzde.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold fs-6 text-gray-700">
+                                    <i class="fas fa-calculator text-gray-500 me-1"></i>
+                                    İşçilik Değeri
+                                </label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           id="inputInvoiceLaborValue"
+                                           class="form-control form-control-solid"
+                                           step="0.0001"
+                                           min="0"
+                                           value="{{ einvoice_settings.default_invoice_labor_value|default:'0.0000' }}">
+                                    <span class="input-group-text" id="laborUnitLabel">
+                                        {% if einvoice_settings.default_invoice_labor_type == 'AMOUNT' %}TL{% else %}%{% endif %}
+                                    </span>
+                                </div>
+                                <div class="form-text text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <span id="laborValueHint">
+                                        {% if einvoice_settings.default_invoice_labor_type == 'AMOUNT' %}
+                                            Her havale için sabit KDV dahil TL tutarı.
+                                        {% else %}
+                                            Örn: 5 → toplam tutarın %5'i işçilik olarak kesilir.
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="separator my-6"></div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button"
+                                    class="btn btn-light-primary fw-bold"
+                                    id="btnPreviewSplit">
+                                <i class="fas fa-calculator me-1"></i> Örnek Hesap (100.000 TL)
+                            </button>
+                            <button type="button"
+                                    class="btn btn-success fw-bold"
+                                    id="btnSaveInvoiceDefaults">
+                                <i class="fas fa-save me-1"></i> Ayarları Kaydet
+                            </button>
+                        </div>
+
+                        <div id="invoicePreviewArea" class="mt-4 d-none">
+                            <div class="alert alert-light-info border border-dashed border-info">
+                                <div class="fw-bold text-gray-800 mb-2">
+                                    <i class="fas fa-chart-pie me-1"></i> Örnek Ayrıştırma (100.000 TL havale):
+                                </div>
+                                <div id="invoicePreviewContent" class="fs-7 text-gray-700"></div>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+{% endblock content %}
+
+
+{% block footer %}
+    <script>
+    // Sayfa DOM ağacı tamamen yüklendikten sonra çalışmasını garantilemek için jQuery document.ready kullanıyoruz.
+    $(function() {
+        'use strict';
+
+        // CSRF Token'ı güvenli bir şekilde anlık olarak DOM'dan çeken fonksiyon.
+        function getCsrfToken() {
+            var csrfInput = document.querySelector("input[name='csrfmiddlewaretoken']");
+            return csrfInput ? csrfInput.value : '';
+        }
+
+        var SETTINGS_URL = "{% url 'banking:settings' %}";
+
+        // ────────────────────────────────────────────────────
+        // Token Göster/Gizle Toggle
+        // ────────────────────────────────────────────────────
+        var $tokenInput = $('#inputTenantToken');
+        $('#btnToggleToken').on('click', function() {
+            var isPassword = $tokenInput.attr('type') === 'password';
+            $tokenInput.attr('type', isPassword ? 'text' : 'password');
+            $(this).find('i').toggleClass('fa-eye fa-eye-slash');
+        });
+
+        // ────────────────────────────────────────────────────
+        // Token Kaydet
+        // ────────────────────────────────────────────────────
+        $('#btnSaveToken').on('click', function() {
+            var token = $tokenInput.val().trim();
+            if (!token) {
+                Swal.fire('Uyarı', 'Lütfen bir token girin.', 'warning');
+                return;
+            }
+
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Kaydediliyor...');
+
+            $.ajax({
+                url: SETTINGS_URL,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ action: 'save_token', tenant_token: token }),
+                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    if (res.result) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: res.msg,
+                            confirmButtonText: 'Tamam'
+                        }).then(function() {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Hata', res.msg, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Hata', 'Sunucu hatası: ' + xhr.status, 'error');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Token\'ı Kaydet');
+                }
+            });
+        });
+
+        // ────────────────────────────────────────────────────
+        // Bağlantı Testi
+        // ────────────────────────────────────────────────────
+        $('#btnTestConnection').on('click', function() {
+            var $btn = $(this);
+            var $resultArea = $('#testResultArea');
+            var $resultContent = $('#testResultContent');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Test ediliyor...');
+            $resultArea.removeClass('show border-success border-danger border-warning');
+            $resultContent.html('');
+
+            $.ajax({
+                url: SETTINGS_URL,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ action: 'test_connection' }),
+                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    $resultArea.addClass('show');
+
+                    if (res.result) {
+                        $resultArea.addClass('border-success');
+                        var html = '<div class="d-flex align-items-center mb-3">';
+                        html += '<i class="fas fa-check-circle text-success fs-2x me-3"></i>';
+                        html += '<div><h5 class="mb-0 text-success">Bağlantı Başarılı</h5>';
+                        html += '<span class="text-muted fs-7">' + (res.msg || '') + '</span></div></div>';
+
+                        html += '<div class="row g-3 mt-2">';
+                        html += '<div class="col-6">';
+                        html += '<div class="d-flex align-items-center">';
+                        html += '<i class="fas fa-file-invoice me-2 ' + (res.efatura_active ? 'text-success' : 'text-muted') + '"></i>';
+                        html += '<span class="fs-7">e-Fatura: <strong>' + (res.efatura_active ? 'Aktif' : 'Pasif') + '</strong></span>';
+                        html += '</div></div>';
+                        html += '<div class="col-6">';
+                        html += '<div class="d-flex align-items-center">';
+                        html += '<i class="fas fa-building-columns me-2 ' + (res.banking_active ? 'text-success' : 'text-muted') + '"></i>';
+                        html += '<span class="fs-7">Bankacılık: <strong>' + (res.banking_active ? 'Aktif' : 'Pasif') + '</strong></span>';
+                        html += '</div></div>';
+                        html += '</div>';
+
+                        if (res.dealer_title) {
+                            html += '<div class="mt-3 text-muted fs-7">';
+                            html += '<i class="fas fa-building me-1"></i> e-Süreç Firma: <strong>' + res.dealer_title + '</strong>';
+                            html += '</div>';
+                        }
+
+                        $resultContent.html(html);
+
+                        // Sayfa üzerindeki durum ikonlarını güncelle
+                        updateStatusIcons(res);
+
+                    } else {
+                        $resultArea.addClass(res.status === 'DEGRADED' ? 'border-warning' : 'border-danger');
+                        var iconClass = res.status === 'DEGRADED' ? 'text-warning fa-exclamation-triangle' : 'text-danger fa-times-circle';
+                        var titleText = res.status === 'DEGRADED' ? 'Bağlantı Yavaş' : 'Bağlantı Başarısız';
+
+                        var html = '<div class="d-flex align-items-center">';
+                        html += '<i class="fas ' + iconClass + ' fs-2x me-3"></i>';
+                        html += '<div><h5 class="mb-1 ' + (res.status === 'DEGRADED' ? 'text-warning' : 'text-danger') + '">' + titleText + '</h5>';
+                        html += '<span class="text-gray-600 fs-7">' + (res.msg || 'Bilinmeyen hata') + '</span>';
+
+                        if (res.error_code) {
+                            html += '<br><span class="text-muted fs-8">Hata kodu: ' + res.error_code + '</span>';
+                        }
+                        html += '</div></div>';
+
+                        $resultContent.html(html);
+                    }
+                },
+                error: function(xhr) {
+                    $resultArea.addClass('show border-danger');
+                    $resultContent.html(
+                        '<div class="d-flex align-items-center">' +
+                        '<i class="fas fa-times-circle text-danger fs-2x me-3"></i>' +
+                        '<div><h5 class="mb-0 text-danger">Bağlantı Hatası</h5>' +
+                        '<span class="text-muted fs-7">Sunucu yanıt vermedi (HTTP ' + xhr.status + ')</span></div></div>'
+                    );
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="fas fa-satellite-dish me-2"></i>Bağlantıyı Test Et');
+                }
+            });
+        });
+
+        // ────────────────────────────────────────────────────
+        // Entegrasyonu Devre Dışı Bırak
+        // ────────────────────────────────────────────────────
+        $('#btnDeactivate').on('click', function() {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: 'Entegrasyonu devre dışı bırakmak tüm e-Süreç bağlantısını durduracaktır.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f1416c',
+                confirmButtonText: 'Evet, Devre Dışı Bırak',
+                cancelButtonText: 'Vazgeç'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: SETTINGS_URL,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ action: 'deactivate' }),
+                        headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                        success: function(res) {
+                            if (res.result) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Devre Dışı',
+                                    text: res.msg,
+                                    confirmButtonText: 'Tamam'
+                                }).then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Hata', res.msg, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Hata', 'Sunucu hatası: ' + xhr.status, 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        // ════════════════════════════════════════════════════
+        // AÇIK BANKACILIK TOPLU FATURA VARSAYILAN AYARLARI
+        // ════════════════════════════════════════════════════
+
+        // İşçilik Tipi değiştiğinde birim etiketini ve ipucunu güncelle
+        $('#selectInvoiceLaborType').on('change', function() {
+            var t = $(this).val();
+            if (t === 'AMOUNT') {
+                $('#laborUnitLabel').text('TL');
+                $('#laborValueHint').text('Her havale için sabit KDV dahil TL tutarı.');
+            } else {
+                $('#laborUnitLabel').text('%');
+                $('#laborValueHint').text('Örn: 5 → toplam tutarın %5\'i işçilik olarak kesilir.');
+            }
+        });
+
+        // Decimal-safe sayı parser (TR ve EN formatı)
+        function _parseDecimal(v) {
+            if (v === null || v === undefined) return 0;
+            var s = String(v).trim().replace(',', '.');
+            var n = parseFloat(s);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function _fmt2(n) {
+            return (Math.round(n * 100) / 100).toLocaleString('tr-TR', {
+                minimumFractionDigits: 2, maximumFractionDigits: 2
+            });
+        }
+
+        function _fmt3(n) {
+            return (Math.round(n * 1000) / 1000).toLocaleString('tr-TR', {
+                minimumFractionDigits: 3, maximumFractionDigits: 3
+            });
+        }
+
+        // Örnek Ayrıştırma Önizlemesi (100.000 TL üzerinden sunucu mantığının aynısı)
+        $('#btnPreviewSplit').on('click', function() {
+            var sample = 100000;
+            var laborType = $('#selectInvoiceLaborType').val();
+            var laborValue = _parseDecimal($('#inputInvoiceLaborValue').val());
+            var karat = parseInt($('#selectInvoiceKarat').val(), 10) || 24;
+            var productName = ($('#inputInvoiceProductName').val() || '').trim() || '24 Ayar Has Altın';
+
+            var laborInclVat = (laborType === 'AMOUNT')
+                ? laborValue
+                : sample * (laborValue / 100);
+
+            if (laborInclVat < 0 || laborInclVat > sample) {
+                $('#invoicePreviewArea').removeClass('d-none');
+                $('#invoicePreviewContent').html(
+                    '<span class="text-danger">' +
+                    '<i class="fas fa-exclamation-triangle me-1"></i> ' +
+                    'Geçersiz işçilik değeri. İşçilik tutarı havale tutarından büyük olamaz.' +
+                    '</span>'
+                );
+                return;
+            }
+
+            var laborExclVat = laborInclVat / 1.20;
+            var laborVat = laborInclVat - laborExclVat;
+            var metalAmount = sample - laborInclVat;
+
+            var milyemMap = { 24: 1.000, 22: 0.916, 18: 0.750, 14: 0.585, 8: 0.333 };
+            var milyem = milyemMap[karat] || 1.000;
+
+            var html = '';
+            html += '<div class="row g-3">';
+            html += '  <div class="col-md-6">';
+            html += '    <div class="d-flex justify-content-between"><span>Havale Tutarı:</span>' +
+                    '<strong>' + _fmt2(sample) + ' TL</strong></div>';
+            html += '    <div class="d-flex justify-content-between"><span>Metal Bedeli (KDV %0):</span>' +
+                    '<strong class="text-primary">' + _fmt2(metalAmount) + ' TL</strong></div>';
+            html += '    <div class="d-flex justify-content-between"><span>İşçilik KDV Dahil:</span>' +
+                    '<strong>' + _fmt2(laborInclVat) + ' TL</strong></div>';
+            html += '    <div class="d-flex justify-content-between"><span>İşçilik Matrah (KDV Hariç):</span>' +
+                    '<strong>' + _fmt2(laborExclVat) + ' TL</strong></div>';
+            html += '    <div class="d-flex justify-content-between"><span>İşçilik KDV (%20):</span>' +
+                    '<strong>' + _fmt2(laborVat) + ' TL</strong></div>';
+            html += '  </div>';
+            html += '  <div class="col-md-6">';
+            html += '    <div class="d-flex justify-content-between"><span>Ürün Adı:</span>' +
+                    '<strong>' + productName + '</strong></div>';
+            html += '    <div class="d-flex justify-content-between"><span>Ayar:</span>' +
+                    '<strong>' + karat + ' (milyem ' + milyem.toFixed(3) + ')</strong></div>';
+            html += '    <div class="d-flex justify-content-between text-warning"><span>Not:</span>' +
+                    '<span class="fs-8">Gram hesabı anlık has satış kuruna göre backend\'de yapılır.</span></div>';
+            html += '  </div>';
+            html += '</div>';
+
+            $('#invoicePreviewArea').removeClass('d-none');
+            $('#invoicePreviewContent').html(html);
+        });
+
+        // Varsayılan Ayarları Kaydet
+        $('#btnSaveInvoiceDefaults').on('click', function() {
+            var productName = ($('#inputInvoiceProductName').val() || '').trim();
+            var karat = parseInt($('#selectInvoiceKarat').val(), 10);
+            var laborType = $('#selectInvoiceLaborType').val();
+            var laborValue = _parseDecimal($('#inputInvoiceLaborValue').val());
+
+            if (!productName) {
+                Swal.fire('Uyarı', 'Lütfen varsayılan ürün adını girin.', 'warning');
+                return;
+            }
+            if (![24, 22, 18, 14, 8].indexOf(karat) >= 0 && [24, 22, 18, 14, 8].indexOf(karat) === -1) {
+                Swal.fire('Uyarı', 'Geçersiz ayar seçimi.', 'warning');
+                return;
+            }
+            if (['AMOUNT', 'PERCENT'].indexOf(laborType) === -1) {
+                Swal.fire('Uyarı', 'Geçersiz işçilik tipi.', 'warning');
+                return;
+            }
+            if (laborValue < 0) {
+                Swal.fire('Uyarı', 'İşçilik değeri negatif olamaz.', 'warning');
+                return;
+            }
+            if (laborType === 'PERCENT' && laborValue > 100) {
+                Swal.fire('Uyarı', 'Yüzde tipi için 100\'den büyük değer giremezsiniz.', 'warning');
+                return;
+            }
+
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Kaydediliyor...');
+
+            $.ajax({
+                url: SETTINGS_URL,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    action: 'save_invoice_defaults',
+                    default_invoice_product_name: productName,
+                    default_invoice_karat: karat,
+                    default_invoice_labor_type: laborType,
+                    default_invoice_labor_value: laborValue
+                }),
+                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(res) {
+                    if (res.result) {
+                        Swal.fire({
+                            toast: true, position: 'top-end',
+                            icon: 'success', title: res.msg || 'Kaydedildi.',
+                            showConfirmButton: false, timer: 3500
+                        });
+                    } else {
+                        Swal.fire('Hata', res.msg || 'Kayıt başarısız.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    var msg = 'Sunucu hatası: ' + xhr.status;
+                    try {
+                        var j = JSON.parse(xhr.responseText || '{}');
+                        if (j.msg) msg = j.msg;
+                    } catch (e) {}
+                    Swal.fire('Hata', msg, 'error');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Ayarları Kaydet');
+                }
+            });
+        });
+
+        // ────────────────────────────────────────────────────
+        // Yardımcı: Sayfa Durum İkonlarını Güncelle
+        // ────────────────────────────────────────────────────
+        function updateStatusIcons(data) {
+            // e-Fatura ikonu
+            var $efIcon = $('#efaturaIcon');
+            var $efStatus = $('#efaturaStatus');
+            $efIcon.removeClass('bg-success-light bg-gray-light');
+            if (data.efatura_active) {
+                $efIcon.addClass('bg-success-light');
+                $efStatus.text('Aktif');
+            } else {
+                $efIcon.addClass('bg-gray-light');
+                $efStatus.text('Pasif');
+            }
+
+            // Bankacılık ikonu
+            var $bkIcon = $('#bankingIcon');
+            var $bkStatus = $('#bankingStatus');
+            $bkIcon.removeClass('bg-success-light bg-gray-light');
+            if (data.banking_active) {
+                $bkIcon.addClass('bg-success-light');
+                $bkStatus.text('Aktif');
+            } else {
+                $bkIcon.addClass('bg-gray-light');
+                $bkStatus.text('Pasif');
+            }
+
+            // Son kontrol
+            if (data.last_check) {
+                var d = new Date(data.last_check);
+                var formatted = d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+                $('#lastCheckInfo').text(formatted + ' — Durum: ' + (data.status || 'OK'));
+            }
+        }
+
+    });
+    </script>
+{% endblock footer %}

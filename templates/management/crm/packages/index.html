@@ -1,0 +1,258 @@
+{% extends 'management/base.html' %}
+{% load static %}
+{% block header %}
+    <style>
+        #kt_datatable_example_1_wrapper .top {
+            display: none !important
+        }
+
+        .toolbar-btn-size {
+            width: 6.5rem;
+            height: 2.7rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .my-margin {
+            margin-top: 1rem;
+            margin-bottom: 0;
+            margin-right: .4rem;
+            margin-left: .4rem
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                    <div class="card shadow-sm w-100 my-margin">
+                        <div class="card-body">
+                            <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                                <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                                    <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                                        Paketler
+                                    </h1>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 gap-lg-3">
+                                    <a href="{% url 'packages:module-index' %}" class="btn btn-light toolbar-btn-size">
+                                        <i class="fa-solid fa-cubes me-1"></i><span
+                                            class="d-none d-lg-inline">Modüller</span>
+                                    </a>
+                                    <button type="button" class="btn btn-primary toolbar-btn-size"
+                                            data-bs-toggle="modal" data-bs-target="#addModal">
+                                        <i class="ki-duotone ki-plus fs-2"></i><span
+                                            class="d-none d-lg-inline ms-1">Ekle</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <div id="tableToolbar"
+                                     class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                    <div class="d-flex toolbar-buttons my-margin1" style="gap:.6rem">
+                                        <button type="button" class="btn btn-light-danger toolbar-btn-size"
+                                                id="deleteSelected" title="Sil">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-light-success toolbar-btn-size"
+                                                id="changeStatusSelected" title="Durum Değiştir">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </button>
+                                    </div>
+                                    <div id="dataTableSearch"></div>
+                                </div>
+
+                                <table id="kt_datatable_example_1"
+                                       class="table align-middle table-row-dashed fs-6 gy-5">
+                                    <thead>
+                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                        <th class="w-10px pe-2">
+                                            <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                <input class="form-check-input" type="checkbox" id="checkAll">
+                                            </div>
+                                        </th>
+                                        <th>Ad</th>
+                                        <th>Kur</th>
+                                        <th class="text-end">Lisans Fiyatı</th>
+                                        <th class="text-end">Bakım Oranı</th>
+                                        <th class="text-end">Yıllık Bakım Tutarı</th>
+                                        <th class="text-center">Sıra</th>
+                                        <th class="text-center">Öneri</th>
+                                        <th class="text-center">Durum</th>
+                                        <th class="text-end min-w-100px">İşlemler</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="addModal">
+        <div class="modal-dialog modal-dialog-centered mw-500px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Yeni Paket Oluştur</h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
+                        <i class="ki-duotone ki-cross fs-1"></i>
+                    </div>
+                </div>
+
+                <form id="add-form" method="post" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="fv-row mb-5">
+                            <label class="required form-label">Paket Adı</label>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Örn: Gold Paket"
+                                   required/>
+                            <div class="form-text">Diğer tüm detayları (fiyat, özellikler vb.) bir sonraki ekranda
+                                gireceksiniz.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                        <button type="submit" id="btnSave" class="btn btn-primary">Oluştur ve Düzenle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        let dt;
+
+        var KTDatatablesServerSide = function () {
+            var initDatatable = function () {
+                dt = $("#kt_datatable_example_1").DataTable({
+                    dom: '<\'top d-flex justify-content-end\'f>rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
+                    serverSide: true,
+                    processing: true,
+                    ajax: "{% url 'packages:get-all' %}",
+                    initComplete: function () {
+                        $('#kt_datatable_example_1_filter').appendTo('#dataTableSearch').addClass('mb-0');
+                    },
+                    columns: [
+                        {
+                            data: "id", orderable: false, className: "text-center",
+                            render: (data) => `<input class="form-check-input row-checkbox" type="checkbox" value="${data}">`
+                        },
+                        {
+                            data: "name",
+                            render: (data, type, row) => `<a href="/packages/${row.id}/" class="text-gray-800 text-hover-primary fw-bold">${data}</a>`
+                        },
+                        {data: "currency", className: "text-center"},
+                        {data: "price_license", className: "text-end fw-bold text-primary"},
+                        {data: "maintenance_percent", className: "text-end"},
+                        {data: "maintenance_amount", className: "text-end text-gray-600"},
+                        {data: "order", className: "text-center"},
+                        {
+                            data: "is_recommended", className: "text-center",
+                            render: (val, type, row) => val ? `<span class='badge badge-warning'>${row.badge_text || 'Önerilen'}</span>` : '-'
+                        },
+                        {
+                            data: "is_active", className: "text-center",
+                            render: (val) => val ? `<span class='badge badge-light-success'>Aktif</span>` : `<span class='badge badge-light-danger'>Pasif</span>`
+                        },
+                        {
+                            data: null, className: "text-end", orderable: false,
+                            render: (data, type, row) => `
+                                <a href="/packages/${row.id}/" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Düzenle">
+                                    <i class="ki-duotone ki-pencil fs-2"></i>
+                                </a>
+                            `
+                        }
+                    ],
+                    order: [[6, 'asc']],
+                    language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+                });
+
+                $('#checkAll').change(function () {
+                    $('.row-checkbox').prop('checked', this.checked);
+                });
+            };
+
+            return {
+                init: function () {
+                    initDatatable();
+                }
+            }
+        }();
+
+        KTUtil.onDOMContentLoaded(function () {
+            KTDatatablesServerSide.init();
+        });
+
+        // Hızlı Ekleme ve Yönlendirme
+        $('#add-form').submit(function (e) {
+            e.preventDefault();
+            const btn = $('#btnSave');
+            btn.prop('disabled', true).text('Oluşturuluyor...');
+
+            const fd = new FormData(this);
+            $.ajax({
+                url: "{% url 'packages:add' %}",
+                type: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (resp) {
+                    if (resp.result) {
+                        // Başarılı ise detay sayfasına yönlendir
+                        window.location.href = resp.redirect_url;
+                    } else {
+                        Swal.fire('Hata', resp.error_msg, 'error');
+                        btn.prop('disabled', false).text('Oluştur ve Düzenle');
+                    }
+                }
+            });
+        });
+
+        // Toplu Silme
+        $('#deleteSelected').click(function () {
+            const ids = $('.row-checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+            if (!ids.length) return Swal.fire('Uyarı', 'Seçim yapınız.', 'warning');
+
+            $.post("{% url 'packages:delete' %}", {
+                ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
+            }, function (resp) {
+                if (resp.result) dt.ajax.reload();
+            });
+        });
+
+        // Status Change
+        $('#changeStatusSelected').click(function () {
+            const ids = $('.row-checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+            if (!ids.length) return Swal.fire('Uyarı', 'Seçim yapınız.', 'warning');
+
+            $.post("{% url 'packages:change-status' %}", {
+                ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
+            }, function (resp) {
+                if (resp.result) dt.ajax.reload();
+            });
+        });
+    </script>
+{% endblock footer %}

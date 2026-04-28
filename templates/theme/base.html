@@ -1,0 +1,701 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="facebook-domain-verification" content="fcg6wncomcflzacuw786ges7h8naxh"/>
+
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return;
+            n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n;
+            n.push = n;
+            n.loaded = !0;
+            n.version = '2.0';
+            n.queue = [];
+            t = b.createElement(e);
+            t.async = !0;
+            t.src = v;
+            s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1284725660016797');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+                   src="https://www.facebook.com/tr?id=1284725660016797&ev=PageView&noscript=1"
+    /></noscript>
+    {% block seo %}
+        <title>{% block page_title %}Kuyum Plus | Profesyonel Kuyumcu Yönetim Yazılımı{% endblock page_title %}</title>
+        <meta name="description"
+              content="{% block page_description %}Kuyum Plus | Profesyonel Kuyumcu Yönetim Yazılımı. Stok takibi, satış yönetimi, müşteri ve tedarikçi ilişkileri ile işinizi dijitalleştirin.{% endblock page_description %}">
+        <meta name="keywords"
+              content="{% block page_keywords %}kuyumcu programı, altın yönetim yazılımı, kuyumculuk ERP, stok takibi, muhasebe yazılımı, kuyumcu otomasyonu{% endblock page_keywords %}">
+        <link rel="canonical" href="{% block canonical_url %}https://www.kuyumplus.com/{% endblock canonical_url %}">
+
+        <meta property="og:type" content="website">
+        <meta property="og:title"
+              content="{% block og_title %}Kuyum Plus - Profesyonel Kuyumcu Yönetim Yazılımı{% endblock og_title %}">
+        <meta property="og:description"
+              content="{% block og_description %}Altın, gümüş ve değerli taş ticaretinde dijital dönüşümünüzü başlatın. Kuyum Plus ile iş süreçlerinizi hızlandırın.{% endblock og_description %}">
+        <meta property="og:image"
+              content="{% block og_image %}https://www.kuyumplus.com/static/theme/img/new_logo/1.png{% endblock og_image %}">
+        <meta property="og:url" content="{% block og_url %}https://www.kuyumplus.com{% endblock og_url %}">
+
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title"
+              content="{% block twitter_title %}Kuyum Plus - Profesyonel Kuyumcu Yönetim Yazılımı{% endblock twitter_title %}">
+        <meta name="twitter:description"
+              content="{% block twitter_description %}Altın, gümüş ve değerli taş ticaretinde dijital dönüşümünüzü başlatın. Kuyum Plus ile iş süreçlerinizi hızlandırın.{% endblock twitter_description %}">
+        <meta name="twitter:image"
+              content="{% block twitter_image %}https://www.kuyumplus.com/static/theme/img/new_logo/1.png{% endblock twitter_image %}">
+    {% endblock seo %}
+
+    <link rel="shortcut icon" href="{% static 'theme/img/new_logo/1.png' %}" type="image/x-icon">
+
+    <link href="{% static 'theme/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/fontawesome.min.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/nice-select.min.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/magnific-popup.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/responsive.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/owl.min.css' %}" rel="stylesheet">
+    <link href="{% static 'theme/css/swiper-bundle.min.css' %}" rel="stylesheet">
+
+    <style>
+        /* --- GLOBAL PRESETS --- */
+        :root {
+            --gold-primary: #f8bc27;
+            --gold-dark: #b88b0b;
+            --dark-bg: #0f0f0f;
+            --light-bg: #fdfbf7;
+        }
+
+        /* --- NAVBAR PREMIUM STYLING --- */
+        .navbar-area {
+            background-color: #ffffff !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            padding: 15px 0;
+        }
+
+        .navbar-area .navbar-nav li a {
+            color: #222;
+            font-weight: 600;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-area .navbar-nav li a:hover {
+            color: var(--gold-primary);
+        }
+
+        /* PREMIUM BUTTON STYLING (HESABIM) */
+        .btn-nav-premium {
+            background-color: #000;
+            color: #fff !important;
+            border: 2px solid #000;
+            border-radius: 50px;
+            padding: 10px 28px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            text-decoration: none;
+            line-height: 1.2;
+        }
+
+        .btn-nav-premium:hover {
+            background-color: var(--gold-primary);
+            border-color: var(--gold-primary);
+            color: #000 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(248, 188, 39, 0.4);
+        }
+
+        /* Header Logo */
+        .header-logo img {
+            max-height: 55px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* --- MOBİL UYUMLULUK AYARLARI (HEADER) --- */
+        @media only screen and (max-width: 991.98px) {
+            .navbar-area {
+                padding: 10px 0;
+            }
+
+            .navbar-collapse {
+                position: fixed;
+                top: 75px;
+                left: 0;
+                width: 100%;
+                height: auto;
+                max-height: 80vh;
+                overflow-y: auto;
+                background: #fff;
+                padding: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                border-top: 1px solid #f1f1f1;
+            }
+
+            .navbar-nav .sub-menu {
+                display: none;
+                padding-left: 15px;
+                background: #f9f9f9;
+                margin-top: 10px;
+            }
+
+            .menu-item-has-children.open > .sub-menu {
+                display: block;
+            }
+
+            .header-logo {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 10;
+            }
+
+            .header-logo img {
+                max-height: 40px;
+            }
+
+            .nav-right-part-desktop {
+                display: none;
+            }
+
+            .mobile-menu-btn-container {
+                display: block !important;
+                margin-top: 20px;
+                padding: 15px;
+                border-top: 1px solid #f1f1f1;
+                text-align: center;
+            }
+
+            .mobile-menu-btn-container .btn-nav-premium {
+                width: 100%;
+                display: block;
+            }
+
+            .mobile-nav-right {
+                position: absolute;
+                right: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 100;
+            }
+
+            .btn-mobile-sm {
+                padding: 6px 15px !important;
+                font-size: 12px !important;
+                white-space: nowrap;
+            }
+
+            .mobile-menu-btn-container {
+                display: none !important;
+            }
+
+            .nav-right-part-desktop {
+                display: none !important;
+            }
+
+            .mobile-nav-right .btn-nav-premium {
+                padding: 5px 14px !important;
+                font-size: 11px !important;
+                border-width: 1px !important;
+                line-height: 1.2 !important;
+                min-width: auto !important;
+                height: auto !important;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .mobile-menu-btn-container {
+                display: none;
+            }
+        }
+
+        /* --- FOOTER STYLING --- */
+        .footer-area {
+            background-color: var(--dark-bg) !important;
+            border-top: 4px solid var(--gold-primary);
+            color: #aaa;
+            padding-top: 80px;
+        }
+
+        .footer-area .widget-title {
+            color: var(--gold-primary) !important;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+        }
+
+        .footer-area ul li a, .footer-area p {
+            color: #ccc !important;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+
+        .footer-area ul li a:hover {
+            color: var(--gold-primary) !important;
+            padding-left: 5px;
+        }
+
+        .footer-area .social-media li a {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            display: inline-block;
+            transition: 0.3s;
+        }
+
+        .footer-area .social-media li a:hover {
+            background: var(--gold-primary);
+            border-color: var(--gold-primary);
+            color: #000;
+        }
+
+        .footer-bottom {
+            background-color: #000;
+            border-top: 1px solid #222;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+
+        .footer-bottom a {
+            color: #888;
+            margin-left: 15px;
+            transition: 0.3s;
+        }
+
+        .footer-bottom a:hover {
+            color: var(--gold-primary);
+        }
+
+        /* --- WHATSAPP --- */
+        .whatsapp-sticky-container {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 9999;
+        }
+
+        .whatsapp-modern-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #25d366, #128c7e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            transition: all 0.3s ease;
+            animation: pulse-border 2s infinite;
+        }
+
+        .whatsapp-modern-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .whatsapp-modern-btn svg {
+            width: 35px;
+            height: 35px;
+            fill: #fff;
+        }
+
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.6);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+            }
+        }
+
+        /* --- FIXED COOKIE CONSENT BAR --- */
+        .cookie-consent-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            padding: 15px 0;
+            border-top: 1px solid #ddd;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+            z-index: 20000;
+            display: none; /* Başlangıçta gizli, JS ile açılır */
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .cookie-consent-bar.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cookie-content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .cookie-text {
+            font-size: 0.95rem;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .btn-cookie-accept {
+            background: var(--gold-primary);
+            color: #000;
+            border: none;
+            padding: 8px 25px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn-cookie-accept:hover {
+            background: var(--gold-dark);
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .cookie-content-wrapper {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .whatsapp-sticky-container {
+                bottom: 20px;
+                left: 15px;
+            }
+
+            .whatsapp-modern-btn {
+                width: 50px;
+                height: 50px;
+            }
+
+            .whatsapp-modern-btn svg {
+                width: 28px;
+                height: 28px;
+            }
+        }
+    </style>
+
+    {% block header %}{% endblock header %}
+</head>
+<body>
+
+<div class="body-overlay" id="body-overlay"></div>
+
+<nav class="navbar navbar-area navbar-area-2 navbar-expand-lg">
+    <div class="container nav-container">
+
+        <div class="responsive-mobile-menu">
+            <button class="menu toggle-btn d-block d-lg-none"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#itech_main_menu"
+                    aria-controls="itech_main_menu"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
+                <span class="icon-left"></span>
+                <span class="icon-right"></span>
+            </button>
+        </div>
+
+        <div class="header-logo">
+            <a href="{% url '' %}">
+                <img src="{% static 'theme/img/new_logo/1.png' %}" alt="Kuyum Plus Logo">
+            </a>
+        </div>
+
+        <div class="mobile-nav-right d-block d-lg-none">
+            {% if user.is_authenticated %}
+                <a class="btn-nav-premium btn-mobile-sm" href="{% url 'accounts:profile' %}">Hesabım</a>
+            {% else %}
+                <a class="btn-nav-premium btn-mobile-sm" href="{% url 'login' %}">Giriş</a>
+            {% endif %}
+        </div>
+
+        <div class="collapse navbar-collapse" id="itech_main_menu">
+            <ul class="navbar-nav menu-open text-lg-center ps-lg-5 mx-auto">
+                <li><a href="{% url '' %}">Anasayfa</a></li>
+                <li class="menu-item-has-children">
+                    <a href="#">Hizmetlerimiz</a>
+                    <ul class="sub-menu">
+                        <li><a href="{% url 'kuyumplus:stok-takibi' %}">Hızlı İşlem</a></li>
+                        <li><a href="{% url 'kuyumplus:satis-yonetimi' %}">Barkodlu Ürün</a></li>
+                        <li><a href="{% url 'kuyumplus:raporlama' %}">Raporlar ve Grafikler</a></li>
+                        <li><a href="{% url 'kuyumplus:teknik-destek' %}">Ürün Tamir</a></li>
+                        <li><a href="{% url 'kuyumplus:egitim' %}">Sayım</a></li>
+                        <li><a href="{% url 'kuyumplus:envanter-modul' %}">Whatsapp Entegrasyonu</a></li>
+                        <li><a href="{% url 'kuyumplus:efatura' %}">E-Fatura Entegrasyonu</a></li>
+                    </ul>
+                </li>
+                <li><a href="{% url 'kuyumplus:cihazlar' %}">Cihazlar</a></li>
+                <li><a href="{% url 'kuyumplus:hakkimizda' %}">Hakkımızda</a></li>
+                <li><a href="{% url 'kuyumplus:iletisim' %}">İletişim</a></li>
+
+            </ul>
+        </div>
+
+        <div class="nav-right-part nav-right-part-desktop align-self-center">
+            {% if user.is_authenticated %}
+                <a class="btn-nav-premium" href="{% url 'accounts:profile' %}">Hesabım</a>
+            {% else %}
+                <a class="btn-nav-premium" href="{% url 'login' %}">Giriş Yap</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+{% block body %}{% endblock body %}
+
+<footer class="footer-area">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="widget widget_about">
+                    <div class="thumb mb-3">
+                        <a href="{% url '' %}">
+                            <img src="/static/theme/img/new_logo/2.png" alt="logo" style="max-width:220px;">
+                        </a>
+                    </div>
+                    <div class="details">
+                        <p class="mb-4">Kuyumculuk sektörüne özel dijital çözümlerle işinizi geleceğe taşıyoruz.</p>
+                        <ul class="social-media">
+                            <li><a target="_blank" href="https://www.facebook.com/kuyumplus"><i
+                                    class="fab fa-facebook-f"></i></a></li>
+                            <li><a target="_blank" href="https://www.instagram.com/kuyum_plus/"><i
+                                    class="fab fa-instagram"></i></a></li>
+                            <li><a target="_blank" href="https://www.youtube.com/@KuyumPlus"><i
+                                    class="fab fa-youtube"></i></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 col-6 mb-4">
+                <div class="widget widget_nav_menu">
+                    <h4 class="widget-title">Hizmetlerimiz</h4>
+                    <ul>
+                        <li><a href="{% url 'kuyumplus:stok-takibi' %}"><i class="fas fa-angle-right"></i> Hızlı
+                            İşlem</a></li>
+                        <li><a href="{% url 'kuyumplus:satis-yonetimi' %}"><i class="fas fa-angle-right"></i> Barkodlu
+                            Ürün</a></li>
+                        <li><a href="{% url 'kuyumplus:raporlama' %}"><i class="fas fa-angle-right"></i> Raporlar</a>
+                        </li>
+                        <li><a href="{% url 'kuyumplus:teknik-destek' %}"><i class="fas fa-angle-right"></i> Ürün Tamir</a>
+                        </li>
+                        <li><a href="{% url 'kuyumplus:egitim' %}"><i class="fas fa-angle-right"></i> Sayım</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 col-6 mb-4">
+                <div class="widget widget_nav_menu">
+                    <h4 class="widget-title">Hızlı Bağlantılar</h4>
+                    <ul>
+                        <li><a href="{% url '' %}"><i class="fas fa-angle-right"></i> Anasayfa</a></li>
+                        <li><a href="{% url 'kuyumplus:hakkimizda' %}"><i class="fas fa-angle-right"></i> Hakkımızda</a>
+                        </li>
+                        <li><a href="{% url 'kuyumplus:iletisim' %}"><i class="fas fa-angle-right"></i> İletişim</a>
+                        </li>
+                        <li><a href="{% url 'login' %}"><i class="fas fa-angle-right"></i> Giriş Yap</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="widget widget_nav_menu">
+                    <h4 class="widget-title">İletişim</h4>
+                    <ul class="contact-info">
+                        <li class="mb-2"><p><i class="fas fa-map-marker-alt me-2 text-gold"></i> Pendik - İstanbul</p>
+                        </li>
+                        <li class="mb-2"><p><i class="fas fa-envelope me-2 text-gold"></i> <a
+                                href="mailto:destek@kuyumplus.com">destek@kuyumplus.com</a></p></li>
+                        <li class="mb-2"><p><i class="fas fa-phone-alt me-2 text-gold"></i> <a href="tel:+902166068801">+90
+                            216 606 8801</a></p></li>
+                        <li><p><i class="fab fa-whatsapp me-2 text-gold"></i> <a href="tel:+905324893954">+90 532 489
+                            3954</a></p></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 align-self-center text-center text-md-start">
+                    <p class="mb-0">© 2025 Kuyum Plus | Tüm Hakları Saklıdır</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <a href="{% url 'kuyumplus:kvkk' %}">Kullanım Şartları</a>
+                    <a href="{% url 'kuyumplus:kullanimkosullari' %}">Gizlilik Politikası</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cookie-consent-bar" id="cookie-banner">
+        <div class="cookie-content-wrapper">
+            <div class="cookie-text">
+                🍪 Sizlere daha iyi bir deneyim sunmak için çerezleri (cookies) kullanıyoruz. Sitemizi kullanarak çerez
+                politikamızı kabul etmiş sayılırsınız.
+            </div>
+            <div class="cookie-buttons">
+                <a href="{% url 'kuyumplus:kvkk' %}" class="btn btn-sm btn-outline-secondary me-2">Detaylar</a>
+                <button id="btn-accept-cookies" class="btn-cookie-accept">Kabul Et</button>
+            </div>
+        </div>
+    </div>
+</footer>
+<div class="back-to-top"><span class="back-top"><i class="fa fa-angle-up"></i></span></div>
+
+<div class="whatsapp-sticky-container">
+    <a href="https://wa.me/905324893954?text=Merhaba,%20Kuyum%20Plus%20hakkında%20bilgi%20almak%20istiyorum."
+       class="whatsapp-modern-btn"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="WhatsApp ile iletişime geçin">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 222.4-99.6 222.4-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+        </svg>
+    </a>
+</div>
+
+<script src="{% static 'theme/js/jquery.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'theme/js/fontawesome.min.js' %}"></script>
+<script src="{% static 'theme/js/magnific.min.js' %}"></script>
+<script src="{% static 'theme/js/nice-select.min.js' %}"></script>
+<script src="{% static 'theme/js/slick.min.js' %}"></script>
+<script src="{% static 'theme/js/owl.min.js' %}"></script>
+<script src="{% static 'theme/js/counter-up.min.js' %}"></script>
+<script src="{% static 'theme/js/waypoint.min.js' %}"></script>
+<script src="{% static 'theme/js/wow.min.js' %}"></script>
+
+<script src="{% static 'theme/js/main.js' %}"></script>
+<script>
+    $(function () {
+        // Mobil Dropdown Logic
+        function bindMobileDropdown() {
+            if ($(window).width() < 992) {
+                $('.menu-item-has-children > a')
+                    .off('click')
+                    .on('click', function (e) {
+                        e.preventDefault();
+                        // Diğer açık olanları kapat
+                        $(this).parent().siblings().removeClass('open').find('.sub-menu').slideUp();
+                        // Tıklananı aç/kapat
+                        $(this).parent().toggleClass('open').find('.sub-menu').slideToggle();
+                    });
+            } else {
+                $('.menu-item-has-children > a').off('click');
+                $('.menu-item-has-children').removeClass('open');
+                $('.sub-menu').removeAttr('style');
+            }
+        }
+
+        bindMobileDropdown();
+        $(window).on('resize', bindMobileDropdown);
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        var navbarHeight = $('.navbar').outerHeight();
+        $('.navbar-nav a, .scrollto').off('click').on('click', function (event) {
+            if (this.hash != "") {
+                event.preventDefault();
+                var hash = this.hash;
+                $('html, body').stop(true, true).animate({scrollTop: $(hash).offset().top - navbarHeight}, 200, 'swing', function () {
+                    window.location.hash = hash;
+                });
+            }
+        });
+    });
+</script>
+
+<script>
+    window.addEventListener('load', function () {
+        setTimeout(function () {
+            var cookieBanner = document.getElementById('cookie-banner');
+            var acceptBtn = document.getElementById('btn-accept-cookies');
+
+            // Eğer localStorage'da kayıt YOKSA göster
+            if (!localStorage.getItem('cookieAccepted')) {
+                // Display none'ı flex yap, sonra opacity artır
+                cookieBanner.style.display = 'flex';
+                // Küçük bir gecikme ile transition'ı tetikle
+                setTimeout(function () {
+                    cookieBanner.classList.add('show');
+                }, 100);
+            }
+
+            if (acceptBtn) {
+                acceptBtn.addEventListener('click', function () {
+                    // Kapanış animasyonu
+                    cookieBanner.classList.remove('show');
+
+                    // Animasyon bitince DOM'dan kaldır ve kaydet
+                    setTimeout(function () {
+                        cookieBanner.style.display = 'none';
+                        localStorage.setItem('cookieAccepted', 'true');
+                    }, 500); // CSS transition süresiyle aynı (0.5s)
+                });
+            }
+        }, 1500); // Sayfa açıldıktan 1.5 sn sonra kontrol et
+    });
+</script>
+
+<script>
+    function ixSetupPosTimeout(timeoutMs) {
+        if (!window.jQuery || !$.ajaxSetup) return;
+        var ms = Number(timeoutMs);
+        if (isNaN(ms) || ms <= 0) ms = 10000;
+        $.ajaxSetup({timeout: ms});
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        ixSetupPosTimeout(10000);
+    });
+</script>
+
+{% block footer %}{% endblock footer %}
+</body>
+</html>

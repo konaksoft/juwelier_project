@@ -1,0 +1,613 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .chat-container-wrapper {
+            height: 65vh;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container-wrapper::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-input-area {
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            padding: 15px 20px;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            z-index: 10;
+            box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.03);
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            border-radius: 15px;
+            position: relative;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 0;
+        }
+
+        .bubble-right {
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bubble-left {
+            margin-right: auto;
+            border-bottom-left-radius: 2px;
+        }
+
+        .bg-customer {
+            background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 100%); /* Altın */
+            color: #3e2723;
+            border: 1px solid #b8860b;
+        }
+
+        .bg-staff {
+            background-color: #ffffff;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+
+        .bg-admin {
+            background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%); /* Koyu/Modern */
+            color: white;
+        }
+
+        .system-notification {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            width: 100%;
+        }
+
+        .system-notification-badge {
+            background-color: #f1f3f4;
+            color: #5f6368;
+            padding: 6px 16px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            border: 1px solid #dadce0;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .system-notification-badge i {
+            color: #5f6368;
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            background: #f5f7f9;
+            padding: 8px;
+            border-radius: 24px;
+            border: 1px solid #e1e1e1;
+        }
+
+        .chat-input-group:focus-within {
+            border-color: #d4af37;
+            background: #fff;
+        }
+
+        .chat-textarea {
+            border: none;
+            background: transparent;
+            resize: none;
+            padding: 10px;
+            max-height: 120px;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .chat-textarea:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border: none;
+            flex-shrink: 0;
+        }
+
+        .btn-attach {
+            background-color: transparent;
+            color: #7e8299;
+        }
+
+        .btn-attach:hover {
+            background-color: #eef0f8;
+            color: #3f4254;
+        }
+
+        .btn-send {
+            background: linear-gradient(135deg, #2ecc71 0%, #11998e 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-send:hover {
+            transform: scale(1.05);
+        }
+
+        .effort-table th, .effort-table td {
+            font-size: 0.85rem;
+            padding: 0.5rem;
+            vertical-align: middle;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div id="kt_app_content" class="app-content flex-column-fluid">
+            <div id="kt_app_content_container" class="container-fluid">
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header align-items-center py-3 min-h-70px">
+                        <div class="d-flex align-items-center">
+                            <a href="{% if is_superuser or staff %}/supports/index-admin{% else %}/supports/index{% endif %}"
+                               class="btn btn-icon btn-sm btn-light-primary me-3">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+
+                            <div class="d-flex flex-column">
+                                <h3 class="card-title fw-bold text-gray-800 fs-4 mb-0">Destek Detayı</h3>
+                                <div class="d-flex align-items-center mt-1">
+                                    <span class="text-muted fs-7 me-2">Talep No: #{{ support.ticket_no }}</span>
+
+                                    {% if statusD == 'RESOLVED' %}
+                                        <span class="badge badge-light-success fw-bold fs-8">Tamamlandı</span>
+
+                                    {% elif statusD == 'STOPPED' %}
+                                        {% if staff or is_superuser %}
+                                            <span class="badge badge-light-danger fw-bold fs-8">Durduruldu</span>
+                                        {% else %}
+                                            <span class="badge badge-light-warning fw-bold fs-8">İşlemde</span>
+                                        {% endif %}
+
+                                    {% else %}
+                                        <span class="badge badge-light-warning fw-bold fs-8">İşlemde</span>
+                                    {% endif %}
+
+                                    {% if staff or is_superuser %}
+                                        <span class="ms-3 badge badge-secondary fw-bold text-gray-700"
+                                              data-bs-toggle="tooltip" title="Toplam Harcanan Efor">
+                                            <i class="fas fa-clock me-1 text-gray-600"
+                                               style="font-size:0.8rem"></i> {{ total_time }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-toolbar gap-2">
+                            {% if staff or is_superuser %}
+
+                                {% if statusD == 'IN_PROGRESS' or statusD == 'ASSIGNED' %}
+                                    <button type="button" class="btn btn-sm btn-light-warning fw-bold action-btn"
+                                            data-action="stop">
+                                        <i class="fas fa-pause me-1"></i> Durdur
+                                    </button>
+                                {% elif statusD == 'STOPPED' %}
+                                    <button type="button" class="btn btn-sm btn-light-primary fw-bold action-btn"
+                                            data-action="resume">
+                                        <i class="fas fa-play me-1"></i> Devam Et
+                                    </button>
+                                {% endif %}
+
+                                {% if statusD != "RESOLVED" %}
+                                    <button type="button" class="btn btn-sm btn-light-danger fw-bold"
+                                            data-bs-toggle="modal" data-bs-target="#closeSupportModal">
+                                        <i class="fas fa-times-circle me-1"></i> Kapat
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-light-success fw-bold"
+                                            id="btnReactivate">
+                                        <i class="fas fa-sync-alt me-1"></i> Tekrar Aktif Et
+                                    </button>
+                                {% endif %}
+
+                                <button type="button" class="btn btn-icon btn-sm btn-light-secondary"
+                                        id="btnToggleEffort"
+                                        title="Çalışma Geçmişini Gör">
+                                    <i class="fas fa-history"></i>
+                                </button>
+
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if staff or is_superuser %}
+                        <div class="collapse bg-light-secondary border-bottom" id="effortCollapse">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3 text-gray-700">Çalışma Geçmişi (Efor Takibi)</h6>
+                                <div class="table-responsive bg-white rounded shadow-sm p-2">
+                                    <table class="table table-sm table-striped gy-2 effort-table mb-0">
+                                        <thead>
+                                        <tr class="fw-bold text-muted bg-light">
+                                            <th>Başlangıç</th>
+                                            <th>Bitiş</th>
+                                            <th>Durum</th>
+                                            <th class="text-end">Süre (Dk)</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for session in work_sessions %}
+                                            <tr>
+                                                <td>{{ session.start|date:"d.m.Y H:i:s" }}</td>
+                                                <td>
+                                                    {% if session.end %}
+                                                        {{ session.end|date:"d.m.Y H:i:s" }}
+                                                    {% else %}
+                                                        <span class="badge badge-light-success">Devam Ediyor...</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if session.is_active %}
+                                                        <span class="text-success fw-bold">Aktif</span>
+                                                    {% else %}
+                                                        <span class="text-muted">Tamamlandı</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end fw-bold">{{ session.duration }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">Henüz kayıt yok.</td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr class="border-top-2 border-gray-300">
+                                            <td colspan="3" class="text-end fw-bolder">TOPLAM SÜRE:</td>
+                                            <td class="text-end fw-bolder text-primary">{{ total_time }}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="card-body p-0 position-relative">
+
+                        <div class="chat-container-wrapper" id="chatHistory">
+
+                            {% for msg in messagesD %}
+                                {% if msg.is_internal_log %}
+
+                                    {% if "DURAKLATILDI" in msg.message or "DEVAM EDİYOR" in msg.message %}
+
+                                        {% if staff or is_superuser %}
+                                            <div class="system-notification">
+                                                <div class="system-notification-badge">
+                                                    {{ msg.message|safe }}
+                                                    <span class="opacity-50 ms-1"
+                                                          style="font-size:0.7em;">{{ msg.created_at|date:"H:i" }}</span>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+                                    {% else %}
+                                        <div class="system-notification">
+                                            <div class="system-notification-badge">
+                                                {{ msg.message|safe }}
+                                                <span class="opacity-50 ms-1"
+                                                      style="font-size:0.7em;">{{ msg.created_at|date:"H:i" }}</span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                {% else %}
+                                    <div class="d-flex mb-4 {% if msg.sender_id == user_id %}justify-content-end{% else %}justify-content-start{% endif %}">
+                                        <div class="chat-bubble
+                                            {% if msg.sender_id == user_id %}
+                                                bubble-right
+                                                {% if is_superuser %}bg-admin{% elif staff %}bg-staff{% else %}bg-customer{% endif %}
+                                            {% else %}
+                                                bubble-left
+                                                {% if msg.sender__store_id %}bg-customer{% elif msg.is_superuser %}bg-admin{% else %}bg-staff{% endif %}
+                                            {% endif %}">
+
+                                            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-white border-opacity-25">
+                                                <div class="d-flex align-items-center">
+                                                    {% if msg.sender__store_id %}
+                                                        <i class="fas fa-user-tie me-1 opacity-75"></i>
+                                                    {% elif msg.sender_id == user_id and is_superuser %}
+                                                        <i class="fas fa-shield-alt me-1 opacity-75"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-headset me-1 opacity-75"></i>
+                                                    {% endif %}
+                                                    <strong class="small">{{ msg.sender__username }}</strong>
+                                                </div>
+                                                <small class="opacity-75 ms-3"
+                                                       style="font-size:0.7em">{{ msg.created_at|date:"d.m H:i" }}</small>
+                                            </div>
+
+                                            <div class="text-break"
+                                                 style="line-height: 1.5;">{{ msg.message|linebreaksbr }}</div>
+
+                                            {% if msg.attachment %}
+                                                <div class="mt-2 pt-2 border-top border-white border-opacity-25">
+                                                    <a href="/media/{{ msg.attachment }}" target="_blank"
+                                                       class="text-decoration-none small d-flex align-items-center"
+                                                       style="color: inherit; opacity: 0.9;">
+                                                        <i class="fas fa-paperclip me-2"></i> <span
+                                                            class="text-decoration-underline">Dosya Eki</span>
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% empty %}
+                                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted opacity-50">
+                                    <i class="fas fa-comments fa-3x mb-3"></i>
+                                    <p>Henüz mesajlaşma başlamadı.</p>
+                                </div>
+                            {% endfor %}
+
+                            {% if statusD == 'RESOLVED' %}
+                                <div class="system-notification mt-4">
+                                    <div class="system-notification-badge bg-light-success text-success border-success">
+                                        <i class="fas fa-check-circle me-1 text-success"></i> <strong>Destek Talebi
+                                        Kapatılmıştır.</strong>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+                        {% if statusD != "RESOLVED" %}
+                            <div class="chat-input-area">
+                                <form id="fixed-message-form" enctype="multipart/form-data">
+                                    <input type="hidden" name="request_id" value="{{ support_id }}"
+                                           id="fixed_request_id">
+
+                                    <div id="fileNameDisplay" class="small text-primary fw-bold mb-2 ps-2"
+                                         style="display:none;"></div>
+
+                                    <div class="chat-input-group">
+                                        <input type="file" name="file" id="chatFile" class="d-none">
+                                        <button type="button" class="btn btn-circle btn-attach"
+                                                onclick="document.getElementById('chatFile').click()"
+                                                data-bs-toggle="tooltip" title="Dosya Ekle">
+                                            <i class="fas fa-paperclip fs-4"></i>
+                                        </button>
+
+                                        <textarea name="message" class="chat-textarea" rows="1"
+                                                  placeholder="Mesajınızı yazın..." required></textarea>
+
+                                        <button type="submit" class="btn btn-circle btn-send" id="btnFixedSend">
+                                            <i class="fas fa-paper-plane fs-5"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="closeSupportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title text-white"><i class="fas fa-exclamation-triangle me-2"></i> Desteği Kapat
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="closeSupportForm">
+                        <div class="mb-4">
+                            <label class="form-label required fw-bold text-gray-700">Kapanış Nedeni</label>
+                            <select class="form-select form-select-solid" name="reason" data-control="select2"
+                                    data-placeholder="Bir neden seçiniz" data-dropdown-parent="#closeSupportModal"
+                                    required>
+                                <option></option>
+                                <option value="RESOLVED">Çözüldü (Başarılı)</option>
+                                <option value="SOFTWARE_UPDATE">Yazılım Güncellemesi Yapıldı</option>
+                                <option value="USER_ERROR">Kullanıcı Hatası / Eğitim Verildi</option>
+                                <option value="UNRESOLVABLE">Teknik Olarak İmkansız / Reddedildi</option>
+                                <option value="DUPLICATE">Mükerrer Talep</option>
+                                <option value="OTHER">Diğer</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required fw-bold text-gray-700">Açıklama</label>
+                            <textarea class="form-control form-control-solid" name="description" rows="4"
+                                      placeholder="Kapatma ile ilgili detaylı açıklama yazınız..." required></textarea>
+                            <div class="form-text text-muted">Bu açıklama müşteriye de gösterilecektir.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-danger" id="confirmCloseSupport"><i
+                            class="fas fa-check me-1"></i> Talebi Sonlandır
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        $(document).ready(function () {
+            var chatHistory = document.getElementById("chatHistory");
+            if (chatHistory) {
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+
+            $('.chat-textarea').on('input', function () {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if (this.value === '') {
+                    this.style.height = 'auto';
+                }
+            });
+
+            $('#btnToggleEffort').click(function () {
+                $('#effortCollapse').collapse('toggle');
+            });
+
+            $('#chatFile').change(function () {
+                var fileName = $(this).val().split('\\').pop();
+                if (fileName) {
+                    $('#fileNameDisplay').html('<i class="fas fa-file-alt me-1"></i> ' + fileName).show();
+                } else {
+                    $('#fileNameDisplay').hide();
+                }
+            });
+
+            $('#fixed-message-form').submit(function (e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+                var btn = $('#btnFixedSend');
+                var icon = btn.find('i');
+                if (!formData.get('message').trim()) return;
+
+                btn.prop('disabled', true);
+                icon.attr('class', 'fas fa-spinner fa-spin');
+
+                $.ajax({
+                    url: "/supports/send-message", type: "POST", data: formData,
+                    contentType: false, processData: false, headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (data) {
+                        if (data.result) location.reload();
+                        else {
+                            Swal.fire('Hata!', data.error_msg, 'error');
+                            btn.prop('disabled', false);
+                            icon.attr('class', 'fas fa-paper-plane');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Hata!', 'Sunucu hatası', 'error');
+                        btn.prop('disabled', false);
+                        icon.attr('class', 'fas fa-paper-plane');
+                    }
+                });
+            });
+
+            $('.action-btn').click(function () {
+                var action = $(this).data('action');
+                var reqId = $('#fixed_request_id').val();
+                $(this).prop('disabled', true);
+
+                $.ajax({
+                    url: "{% url 'supports:toggle-status' %}",
+                    type: "POST",
+                    data: {request_id: reqId, action: action},
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    success: function (res) {
+                        if (res.result) location.reload();
+                        else Swal.fire('Hata', res.error_msg, 'error');
+                    }
+                });
+            });
+
+            $('#btnReactivate').click(function () {
+                var reqId = $('#fixed_request_id').val() || "{{ support_id }}";
+
+                Swal.fire({
+                    title: 'Tekrar Aktif Et?',
+                    text: "Talep yeniden işleme alınacak ve süre sayacı başlayacak.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Aktif Et',
+                    cancelButtonText: 'İptal'
+                }).then((res) => {
+                    if (res.isConfirmed) {
+                        $.ajax({
+                            url: "{% url 'supports:reactivate' %}",
+                            type: "POST",
+                            data: {request_id: reqId},
+                            headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                            success: function (r) {
+                                if (r.result) location.reload();
+                                else Swal.fire('Hata', r.error_msg, 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            $('#confirmCloseSupport').click(function () {
+                var form = $('#closeSupportForm');
+                var modalEl = document.getElementById('closeSupportModal');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (!form[0].checkValidity()) {
+                    form[0].reportValidity();
+                    return;
+                }
+
+                var reason = form.find('select[name="reason"]').val();
+                var description = form.find('textarea[name="description"]').val();
+                var requestId = $('#fixed_request_id').val();
+
+                Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: "Bu talep kapatılacak ve işlem sonlandırılacak!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Kapat',
+                    cancelButtonText: 'İptal',
+                    customClass: {confirmButton: "btn btn-danger", cancelButton: "btn btn-light"}
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "/supports/support-end", type: "POST",
+                            data: {request_id: requestId, reason: reason, description: description},
+                            headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                            success: function (data) {
+                                if (data.result) {
+                                    modal.hide();
+                                    Swal.fire({
+                                        title: 'Başarılı',
+                                        text: 'Destek talebi kapatıldı.',
+                                        icon: 'success',
+                                        showConfirmButton: false,
+                                        timer: 1500
+                                    })
+                                        .then(() => {
+                                            location.reload();
+                                        });
+                                } else {
+                                    Swal.fire('Hata!', data.error_msg, 'error');
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock footer %}

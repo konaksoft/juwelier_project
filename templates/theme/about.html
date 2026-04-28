@@ -1,0 +1,304 @@
+{% extends 'theme/base.html' %}
+{% load static %}
+
+{# ======================  SEO OVERRIDES  ====================== #}
+{% block page_title %}Hakkımızda | Kuyum Plus{% endblock page_title %}
+{% block page_description %}Kuyum Plus; kuyumculuk sektörüne özel ERP, stok, satış ve finans çözümleri sunan,
+    müşterilerinin dijital dönüşüm yolculuğuna rehberlik eden yenilikçi bir teknoloji
+    şirketidir.{% endblock page_description %}
+{% block page_keywords %}kuyum plus, kuyumcu yazılımı, kuyumculuk erp, hakkımızda, şirket
+    profili{% endblock page_keywords %}
+{% block canonical_url %}https://www.kuyumplus.com/hakkimizda/{% endblock canonical_url %}
+{% block og_title %}Kuyum Plus – Hakkımızda{% endblock og_title %}
+{% block og_description %}Teknoloji, finans ve kuyumculuk tecrübesini tek çatı altında buluşturan Kuyum Plus ekibimizi
+    ve değerlerimizi keşfedin.{% endblock og_description %}
+{% block og_image %}{% static 'theme/media/about1.webp' %}{% endblock og_image %}
+{% block og_url %}https://www.kuyumplus.com/hakkimizda/{% endblock og_url %}
+{% block twitter_title %}Hakkımızda | Kuyum Plus{% endblock twitter_title %}
+{% block twitter_description %}Kuyum Plus’ın hikâyesini, vizyonunu ve ekibini yakından
+    tanıyın.{% endblock twitter_description %}
+{% block header %}
+    <style>
+
+        .breadcrumb-slim {
+            padding-top: 4rem !important;
+            padding-bottom: 4rem !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .breadcrumb-slim {
+                padding-bottom: 2rem !important;
+                padding-top: 2rem !important;
+
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.6rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: 1rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .animate-main-img {
+                display: none !important;
+            }
+
+            .my-image {
+                width: 100% !important;
+                height: 20rem !important;
+            }
+
+            .my-padding {
+                padding-top: 5rem !important;
+                padding-bottom: 3rem !important;
+            }
+
+            .breadcrumb-slim {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-row {
+                justify-content: flex-start !important;
+            }
+
+            .breadcrumb-responsive .breadcrumb-col {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .breadcrumb-responsive .container {
+                margin: 0 !important;
+            }
+
+            .breadcrumb-responsive .page-title {
+                text-align: left !important;
+                font-size: 1.2rem !important;
+                margin-bottom: .5rem !important;
+            }
+
+            .breadcrumb-responsive .page-list {
+                display: flex !important;
+                justify-content: flex-start !important;
+                gap: .3rem;
+                padding: 0;
+                margin: 0;
+            }
+
+            .breadcrumb-responsive .page-list li {
+                list-style: none;
+                font-size: .8rem !important;
+            }
+
+            .breadcrumb-responsive .page-list li + li::before {
+                margin: 0 .2rem;
+                color: #fff;
+            }
+
+            .breadcrumb-responsive .page-list a {
+                color: #fff !important;
+            }
+        }
+    </style>
+
+{% endblock header %}
+
+{% block body %}
+    <div class="breadcrumb-area bg-cover breadcrumb-responsive breadcrumb-slim"
+         style="margin: 0!important; background-color: #F8F9FC">
+        <div class="container">
+            <div class="breadcrumb-inner">
+                <div class="row justify-content-center breadcrumb-row">
+                    <div class="col-lg-6 breadcrumb-col">
+                        <h2 class="page-title">Hakkımızda</h2>
+                    </div>
+                    <div class="col-lg-6 text-lg-end breadcrumb-col">
+                        <ul class="page-list">
+                            <li><a href="{% url '' %}" style="color:black!important;">Anasayfa</a></li>
+                            <li style="color:black">Hakkımızda</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="about-area pd-top-60 pd-bottom-60 ">
+        <div class="container ">
+            <div class="row ">
+                <div class="col-lg-6 align-self-center order-lg-last">
+                    <div class="about-thumb-inner p-xl-5 pt-4 wow animated fadeInRight" data-wow-duration="1.5s">
+                        <img class="animate-main-img " src="{% static 'theme/img/about/14.png' %}"
+                             alt="Kuyum Plus Ekibi">
+                        <img class="main-img m-md-4 my-image" src="{% static 'theme/media/about1.webp' %}"
+                             alt="Ofis Görseli">
+                    </div>
+                </div>
+                <div class="col-lg-6 wow animated fadeInLeft" data-wow-duration="1.5s">
+                    <div class="section-title mt-5 mt-lg-0">
+                        <h6 class="sub-title">Biz Kimiz?</h6>
+                        <h2 class="title"><span>Teknoloji</span> ile Kuyumculuğu Buluşturuyoruz</h2>
+                        <p class="content mb-4 mb-xl-5">
+                            2020 yılında İstanbul’da kurulan Kuyum Plus, kuyumculuk sektörüne özel %100 yerli yazılım
+                            çözümleri geliştirmek amacıyla; teknoloji, finans ve üretim alanlarında uzman
+                            profesyoneller tarafından kuruldu. Amacımız; kuyumcu, üretici ve toptancıların karmaşık
+                            operasyonlarını tek platformda toplayarak iş süreçlerini hızlandırmak ve kârlılığını
+                            artırmak.
+                        </p>
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <div class="single-list-inner style-check style-heading">
+                                    <i class="far fa-check-circle"></i> 35+ Aktif Kuyumcu
+                                </div>
+                                <div class="single-list-inner style-check style-heading">
+                                    <i class="far fa-check-circle"></i> 10K+ Ürün Takibi
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <div class="single-list-inner style-check style-heading">
+                                    <i class="far fa-check-circle"></i> %99,9 Sistem Uptime
+                                </div>
+                                <div class="single-list-inner style-check style-heading">
+                                    <i class="far fa-check-circle"></i> 7/24 Destek Ekibi
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="career-section pd-top-60 pd-bottom-60 bg-cover"
+         style="background-image:url('/static/theme/img/bg/12.png');">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6 text-center">
+                    <div class="section-title text-center text-white">
+                        <h6 class="sub-title">BİZİM YOL HARİTAMIZ</h6>
+                        <h2 class="title text-white">Vizyonumuz &amp; <span>Misyonumuz</span></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="row gy-4">
+                <div class="col-6 col-md-6">
+                    <div class="single-work-process-inner bg-white p-4 border-radius-10 h-100 wow fadeInUp">
+                        <h4>Vizyon</h4>
+                        <p>Sektörün dijital dönüşümünde <strong>global referans</strong> haline gelerek kuyumculuk
+                            ekosistemini
+                            uçtan uca birbirine bağlayan yenilikçi çözümler sunmak.</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-6">
+                    <div class="single-work-process-inner bg-white p-4 border-radius-10 h-100 wow fadeInUp"
+                         data-wow-delay="0.2s">
+                        <h4>Misyon</h4>
+                        <p>Kuyumcu işletmelerinin <em>kârlılığını ve verimliliğini</em> artıracak, kullanımı kolay ve
+                            güvenilir
+                            yazılımlar geliştirerek sürdürülebilir büyümelerine katkı sağlamak.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="team-area bg-relative pd-top-60 pd-bottom-60" style="background-color:white">
+        <div class="container">
+            <div class="section-title text-center">
+                <h6 class="sub-title">EKİBİMİZ</h6>
+                <h2 class="title" style="color: black">Uzman Kadromuzla <span>Yanınızdayız</span></h2>
+            </div>
+
+            <!-- ESKİ row yerine -->
+            <div class="row g-4 row-cols-1 row-cols-sm-2 row-cols-md-3">
+
+                <!-- Her kart: .col d-flex h-100 -->
+                <div class="col d-flex">
+                    <div class="single-team-inner text-center flex-fill d-flex flex-column justify-content-center h-100">
+                        <div class="details">
+                            <h5>Yunus Konak</h5>
+                            <p>Kurucu &amp; CEO</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col d-flex">
+                    <div class="single-team-inner text-center flex-fill d-flex flex-column justify-content-center h-100">
+                        <div class="details">
+                            <h5>Yunus Karagöz</h5>
+                            <p>Yazılım Geliştiricisi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col d-flex">
+                    <div class="single-team-inner text-center flex-fill d-flex flex-column justify-content-center h-100">
+                        <div class="details">
+                            <h5>Enes Karagöz</h5>
+                            <p>Destek Müdürü</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="contact-area pd-top-90  bg-cover my-padding"
+         style="background-image:url('/static/theme/img/bg/13.png');">
+        <div class="container">
+            <div class="contact-inner-1">
+                <div class="row">
+                    <div class="col-lg-8 wow animated fadeInLeft" data-wow-duration="1.5s">
+                        <img class="w-100 my-image" src="{% static 'theme/media/about2.webp' %}" alt="CTA">
+                    </div>
+                    <div class="col-lg-4 wow animated fadeInRight" data-wow-duration="1.5s">
+                        <div class="section-title mb-0">
+                            <h6 class="sub-title">BİZE ULAŞIN</h6>
+                            <h2 class="title">Dijital Dönüşüm <span>Başlasın</span></h2>
+                            <p class="content">İş süreçlerinizi Kuyum Plus ile dönüştürmek için bize mesaj bırakın,
+                                ekibimiz en kısa sürede sizi arasın.</p>
+                            <a href="{% url 'kuyumplus:iletisim' %}" class="btn btn-border-base mt-3">İletişim
+                                Formu </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+{% block footer %}{% endblock footer %}

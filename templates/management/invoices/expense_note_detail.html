@@ -1,0 +1,288 @@
+{% load static l10n %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>Gider Pusulası {{ record.invoice_no }}</title>
+    <style>
+        @page {
+            size: A5 landscape;
+            margin: 0.5cm;
+            @frame footer_frame {
+                -pdf-frame-content: footerContent;
+                bottom: 0cm;
+                margin-left: 0.5cm;
+                margin-right: 0.5cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: "DejaVu Sans", sans-serif;
+            font-size: 9px;
+            color: #000;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        td, th { padding: 3px 4px; vertical-align: middle; }
+
+        /* Yardımcı Sınıflar */
+        .text-bold { font-weight: bold; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-small { font-size: 7px; color: #555; }
+        .uppercase { text-transform: uppercase; }
+
+        /* Renkler */
+        .bg-gray { background-color: #f1f5f9; }
+        .text-blue { color: #0ea5e9; }
+
+        /* Çizgiler */
+        .border-bottom { border-bottom: 1px solid #ccc; }
+        .border-top { border-top: 1px solid #000; }
+        .border-all { border: 1px solid #ccc; }
+
+        /* Tablo Stilleri */
+        #itemsTable th {
+            background-color: #e2e8f0;
+            border-bottom: 1px solid #000;
+            border-top: 1px solid #000;
+            font-weight: bold;
+            font-size: 8px;
+        }
+        #itemsTable td { border-bottom: 1px solid #eee; font-size: 9px; }
+
+        /* Kur Kutusu */
+        .rate-box {
+            border: 1px solid #0ea5e9;
+            background-color: #f0f9ff;
+            padding: 5px;
+            text-align: center;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">
+    <tr>
+        <td width="40%">
+            <h2 class="text-blue uppercase" style="margin:0; font-size: 16pt;">GİDER PUSULASI</h2>
+            <div style="margin-top: 5px;">
+                <span style="color:#666;">Seri/Sıra No:</span>
+                <span class="text-bold" style="font-size: 11px;">{{ record.invoice_no }}</span>
+            </div>
+            <div style="margin-top: 2px; color:#666;">
+                Tarih: {{ record.issue_date|date:"d.m.Y H:i" }}
+            </div>
+        </td>
+
+        <td width="20%" align="center" style="vertical-align: middle;">
+            {% if record.hs_to_try > 0 %}
+                <div class="rate-box">
+                    <div class="text-small text-blue text-bold">İŞLEM KURU (HAS)</div>
+                    <div class="text-bold" style="font-size: 11px;">{{ record.hs_to_try|floatformat:2 }} TL</div>
+                </div>
+            {% endif %}
+        </td>
+
+        <td width="40%" class="text-right">
+            <div class="text-bold uppercase" style="font-size: 10px;">
+                {{ record.store.company.title|default:record.store.title }}
+            </div>
+            <div class="text-small" style="margin-top:2px;">
+                {% with c=record.store.company %}
+                    {{ c.address|default:"" }}<br>
+                    {{ c.district|default:"" }} / {{ c.city|default:"" }}<br>
+                    {% if c.tax_number %}VKN: {{ c.tax_number }} {% endif %}
+                    {% if c.mersis_no %}| Mersis: {{ c.mersis_no }}{% endif %}
+                {% endwith %}
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div class="border-all bg-gray" style="padding: 5px; margin-bottom: 10px;">
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="15%" class="text-bold text-small uppercase">Cari / Ünvan:</td>
+            <td width="45%">
+                {% if record.supplier %}
+                    <span class="text-bold uppercase">{{ record.supplier.company_name }}</span>
+                    {% if record.supplier.person_name %}
+                        <br><span class="text-small">({{ record.supplier.person_name }} {{ record.supplier.person_surname }})</span>
+                    {% endif %}
+                {% elif record.customer %}
+                    <span class="text-bold uppercase">{{ record.customer.first_name }} {{ record.customer.last_name }}</span>
+                {% else %}
+                    <span class="text-bold">Muhtelif Kişi</span>
+                {% endif %}
+            </td>
+
+            <td width="15%" class="text-bold text-small uppercase">VKN / TCKN:</td>
+            <td width="25%">
+                {% if record.supplier %}
+                    {{ record.supplier.tax_number|default:"-" }}
+                    {% if record.supplier.tax_office %}
+                        <br><span class="text-small">({{ record.supplier.tax_office.name }} VD)</span>
+                    {% endif %}
+                {% elif record.customer %}
+                    {{ record.customer.identification_number|default:"-" }}
+                    {% if record.customer.phone %} / {{ record.customer.phone }}{% endif %}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+
+        {% if record.supplier or record.customer %}
+        <tr>
+            <td class="text-bold text-small uppercase" style="padding-top:5px;">Adres:</td>
+            <td colspan="3" class="text-small" style="padding-top:5px;">
+                {% if record.supplier %}
+                    {{ record.supplier.full_location_string }} - {{ record.supplier.company_address }}
+                {% elif record.customer %}
+                    {{ record.customer.address }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+</div>
+
+<table id="itemsTable" cellpadding="4" cellspacing="0">
+    <thead>
+    <tr>
+        <th width="35%">CİNSİ</th>
+        <th width="10%" class="text-center">MİLYEM</th>
+        <th width="15%" class="text-right">MİKTAR</th>
+        <th width="15%" class="text-right">BİRİM HAS</th>
+        <th width="10%" class="text-right">BİRİM FİYAT</th>
+        <th width="15%" class="text-right">TUTAR (TL)</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for it in record.items.all %}
+        <tr>
+            <td>
+                <span class="text-bold">{{ it.product_name }}</span>
+                {% if it.notes %}
+                    <br><span class="text-small" style="font-style:italic;">{{ it.notes }}</span>
+                {% endif %}
+            </td>
+
+            <td class="text-center">
+                {% if it.product and it.product.product_mileage %}
+                    {{ it.product.product_mileage }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+
+            <td class="text-right">
+                {% if it.unit == 'GR' %}
+                    {{ it.quantity|floatformat:3 }} <span class="text-small">gr</span>
+                {% else %}
+                    {{ it.quantity|floatformat:0 }} <span class="text-small">ad</span>
+                {% endif %}
+            </td>
+
+            <td class="text-right">
+                {% if it.price_hs > 0 %}
+                    {{ it.price_hs|floatformat:3 }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+
+            <td class="text-right">{{ it.unit_price|floatformat:2 }}</td>
+
+            <td class="text-right text-bold">{{ it.total_incl_vat|floatformat:2 }}</td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="6" class="text-center" style="padding: 15px;">Kayıt bulunamadı.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<table border="0" cellpadding="0" cellspacing="0" style="margin-top: 15px;">
+    <tr>
+        <td width="60%" style="vertical-align: top; padding-right: 20px;">
+            <div style="border: 1px solid #ccc; padding: 5px; min-height: 40px;">
+                <div class="text-small text-bold" style="color:#666; margin-bottom: 2px;">YALNIZ:</div>
+                <div style="font-style: italic;">
+                    {# Buraya backend'den yazı ile tutar filtresi gönderilebilir #}
+                    ....................................................................................
+                </div>
+            </div>
+
+            {% if record.notes %}
+                <div style="margin-top: 5px; font-size: 8px; color: #555;">
+                    <span class="text-bold">Not:</span> {{ record.notes }}
+                </div>
+            {% endif %}
+        </td>
+
+        <td width="40%">
+            <table class="totals-table" cellspacing="0" cellpadding="2">
+                <tr>
+                    <td class="text-right text-bold">ARA TOPLAM:</td>
+                    <td class="text-right">{{ record.subtotal|floatformat:2 }} TL</td>
+                </tr>
+                <tr>
+                    <td class="text-right text-small">STOPAJ
+                        (%{{ record.items.first.withholding_rate|default:"0"|floatformat:0 }}):
+                    </td>
+                    <td class="text-right text-small">0,00 TL</td>
+                </tr>
+                <tr style="background-color: #eee;">
+                    <td class="text-right text-bold" style="border-top: 1px solid #000; padding: 5px;">ÖDENECEK TUTAR:</td>
+                    <td class="text-right text-bold" style="border-top: 1px solid #000; padding: 5px; font-size: 11px;">
+                        {{ record.grand_total|floatformat:2 }} TL
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div style="margin-top: 25px;">
+    <table width="100%">
+        <tr>
+            <td width="50%" align="center">
+                <div style="border-top: 1px solid #000; width: 80%; padding-top: 5px;">
+                    <div class="text-bold text-small">TESLİM ALAN (FİRMA)</div>
+                    <div class="text-small">{{ record.store.company.title|default:record.store.title }}</div>
+                    <br><br>
+                    <div class="text-small" style="color:#999;">(İmza / Kaşe)</div>
+                </div>
+            </td>
+            <td width="50%" align="center">
+                <div style="border-top: 1px solid #000; width: 80%; padding-top: 5px;">
+                    <div class="text-bold text-small">TESLİM EDEN (SATICI)</div>
+                    <div class="text-small">
+                        {% if record.supplier %}
+                            {{ record.supplier.company_name }}
+                        {% elif record.customer %}
+                            {{ record.customer.first_name }} {{ record.customer.last_name }}
+                        {% else %}
+                            Muhtelif
+                        {% endif %}
+                    </div>
+                    <br><br>
+                    <div class="text-small" style="color:#999;">(İmza)</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div id="footerContent"
+     style="text-align: center; font-size: 7px; color: #999; border-top: 1px solid #ddd; padding-top: 3px;">
+    Bu belge 213 sayılı VUK uyarınca düzenlenmiş olup, Gider Pusulası hükmündedir.
+</div>
+
+</body>
+</html>

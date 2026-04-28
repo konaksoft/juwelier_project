@@ -1,0 +1,242 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+    <title>{{ subject }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Open Sans", Arial, sans-serif;
+            background: #f4f6f9;
+            color: #232a33;
+            line-height: 1.6
+        }
+
+        a {
+            color: #126de5;
+            text-decoration: none
+        }
+
+        img {
+            border: 0;
+            line-height: 100%;
+            height: auto;
+            display: inline-block
+        }
+
+        .o_block {
+            max-width: 680px;
+            margin: 0 auto
+        }
+
+        .o_card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e9edf3;
+            box-shadow: 0 4px 12px rgba(18, 28, 45, .06)
+        }
+
+        .o_px {
+            padding-left: 28px;
+            padding-right: 28px
+        }
+
+        .o_py {
+            padding-top: 24px;
+            padding-bottom: 24px
+        }
+
+        .o_center {
+            text-align: center
+        }
+
+        .o_heading {
+            margin: 0;
+            color: #1f2a37;
+            font-weight: 700
+        }
+
+        .o_text {
+            font-size: 15px;
+            margin: 0
+        }
+
+        .muted {
+            color: #6e7783
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, rgba(17, 24, 39, .06), rgba(17, 24, 39, .18), rgba(17, 24, 39, .06));
+            margin: 18px 0;
+            border: 0
+        }
+
+        .circle {
+            border: 2px solid #126de5;
+            border-radius: 96px;
+            padding: 14px;
+            display: inline-block
+        }
+
+        .chip {
+            display: inline-block;
+            border-radius: 999px;
+            background: #0F172A;
+            border: 1px solid #334155;
+            white-space: nowrap;
+            padding: 10px 14px
+        }
+
+        .chip-txt {
+            font: 600 14px/20px Helvetica, Arial, sans-serif;
+            color: #FFFFFF !important
+        }
+
+        /* Buton Stili */
+        .btn-primary {
+            display: inline-block;
+            background-color: #126de5;
+            color: #ffffff !important;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 640px) {
+            .o_px {
+                padding-left: 18px !important;
+                padding-right: 18px !important
+            }
+
+            .o_py {
+                padding-top: 20px !important;
+                padding-bottom: 20px !important
+            }
+
+            .o_heading {
+                font-size: 22px !important
+            }
+
+            .o_text {
+                font-size: 14px !important
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #0b1220;
+                color: #dbe2ef
+            }
+
+            .o_card {
+                background: #0f172a;
+                border-color: #1f2937;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, .35)
+            }
+
+            .o_heading {
+                color: #e5e7eb
+            }
+
+            .muted {
+                color: #97a3b6
+            }
+
+            .divider {
+                background: #1e293b
+            }
+        }
+    </style>
+</head>
+<body style="background:#dbe5ea;">
+<div class="o_block" style="padding:12px;">
+
+    <div class="o_card o_px o_py">
+        <div class="o_center">
+            <a href="https://www.kuyumplus.com">
+                <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="160" alt="KuyumPlus">
+            </a>
+            <p class="muted" style="margin:8px 0 0 0;font-size:14px;">Kurumsal İşlemler</p>
+        </div>
+    </div>
+
+    <div class="o_card o_px o_py" style="margin-top:10px;">
+        <div class="o_center" style="margin-bottom:8px;">
+        <span class="circle">
+            <img src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" width="48" height="48" alt="Sözleşme">
+        </span>
+        </div>
+        <h2 class="o_heading" style="font-size:24px;margin-bottom:6px;text-align:center;">Sözleşme Onayı</h2>
+        <p class="o_text" style="text-align:center;margin-bottom:0;">
+            Sayın <strong>{{ company.title }}</strong>,<br>
+            Hizmetlerimizin devamlılığı için <strong>{{ contract_name }}</strong> belgesini inceleyip onaylamanız
+            gerekmektedir.
+        </p>
+        <div class="o_center">
+            <a href="{{ link }}" class="btn-primary">Sözleşmeyi İncele ve Onayla</a>
+        </div>
+    </div>
+
+    <div class="o_card o_px o_py" style="margin-top:10px;">
+        <table role="presentation" width="100%" style="border-collapse:collapse">
+            <tr>
+                <td style="padding:6px 0;border-bottom:1px solid #e9edf3;"><strong>Sözleşme Adı</strong></td>
+                <td style="padding:6px 0;border-bottom:1px solid #e9edf3;">{{ contract_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding:6px 0;border-bottom:1px solid #e9edf3;"><strong>Mağaza</strong></td>
+                <td style="padding:6px 0;border-bottom:1px solid #e9edf3;">{{ store_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding:6px 0;"><strong>Tarih</strong></td>
+                <td style="padding:6px 0;">{% now "d.m.Y H:i" %}</td>
+            </tr>
+        </table>
+        <hr class="divider">
+        <p class="o_text muted" style="margin:0; font-size:13px; text-align: center;">
+            Bu işlem güvenliğiniz için SMS onayı gerektirebilir. Bağlantı size özeldir, lütfen paylaşmayınız.
+        </p>
+    </div>
+
+    <div class="o_card o_px o_py" style="margin-top:10px;">
+        <p class="o_text" style="margin:0;">Herhangi bir sorunuz olursa, destek ekibimizle iletişime geçebilirsiniz.</p>
+    </div>
+
+    <div class="o_card o_px o_py" style="margin-top:10px;border-radius:0 0 12px 12px;">
+        <table role="presentation" width="100%" style="border:0;border-collapse:collapse;">
+            <tr>
+                <td style="border:0;padding:0;vertical-align:middle;">
+                    <a href="https://www.kuyumplus.com" style="display:inline-block;">
+                        <img src="https://www.kuyumplus.com/static/theme/img/new_logo/1.png" width="140" alt="KuyumPlus"
+                             style="display:block;height:auto;">
+                    </a>
+                </td>
+                <td style="border:0;padding:0;text-align:right;vertical-align:middle;">
+                    <table role="presentation"
+                           style="border:0;border-collapse:collapse;display:inline-table;max-width:100%;">
+                        <tr>
+                            <td style="border:0;padding:4px;">
+                                <a class="chip" href="tel:+902166068801"><span class="chip-txt">0&nbsp;216&nbsp;606&nbsp;88&nbsp;01</span></a>
+                            </td>
+                            <td style="border:0;padding:4px;">
+                                <a class="chip" href="mailto:destek@kuyumplus.com"><span class="chip-txt">destek@kuyumplus.com</span></a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <p class="muted" style="font-size:13px;margin:10px 0 4px 0;">
+            Yenişehir Mah. Sümbül Sk. No: 6-1/79 Sweet Life Center • Pendik - İstanbul<br>
+            © Konasoft 2025 | Tüm Hakları Saklıdır
+        </p>
+    </div>
+</div>
+</body>
+</html>

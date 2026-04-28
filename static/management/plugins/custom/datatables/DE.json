@@ -1,0 +1,27 @@
+{
+  "sDecimal": ",",
+  "sEmptyTable": "Keine Daten in der Tabelle vorhanden",
+  "sInfo": "Zeige _START_ bis _END_ von _TOTAL_ Einträgen",
+  "sInfoEmpty": "Keine Einträge vorhanden",
+  "sInfoFiltered": "(gefiltert von _MAX_ Einträgen)",
+  "sInfoPostFix": "",
+  "sInfoThousands": ".",
+  "sLengthMenu": " _MENU_ ",
+  "sLoadingRecords": "Wird geladen...",
+  "sProcessing": "Verarbeitung...",
+  "sSearch": "Suchen:",
+  "sZeroRecords": "Keine passenden Einträge gefunden",
+  "oPaginate": {
+    "sFirst": "Erste",
+    "sLast": "Letzte",
+    "sNext": "Nächste",
+    "sPrevious": "Vorherige"
+  },
+  "oAria": {
+    "sSortAscending": ": aktivieren, um Spalte aufsteigend zu sortieren",
+    "sSortDescending": ": aktivieren, um Spalte absteigend zu sortieren"
+  },
+  "select": {
+    "rows": "%d Einträge ausgewählt."
+  }
+}

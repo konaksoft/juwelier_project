@@ -1,0 +1,263 @@
+{# templates/management/stores/store_roles_list.html #}
+{# FAZ 4-5: Mağaza Bazlı Rol Listeleme #}
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        .role-card {
+            transition: box-shadow 0.2s ease, transform 0.15s ease;
+            border: 1px solid #e4e6ef;
+        }
+        .role-card:hover {
+            box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.08);
+            transform: translateY(-2px);
+        }
+        .role-status-badge {
+            font-size: 0.8rem;
+        }
+        .role-perm-count {
+            font-size: 0.85rem;
+            color: #7e8299;
+        }
+        .role-user-count {
+            font-size: 0.85rem;
+        }
+        .empty-state {
+            padding: 4rem 2rem;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            color: #d1d3e0;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                            Mağaza Rolleri
+                        </h1>
+                        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                            <li class="breadcrumb-item text-muted">
+                                <a href="#" class="text-muted text-hover-primary">{{ store.title|default:"Mağaza" }}</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <span class="bullet bg-gray-500 w-5px h-2px"></span>
+                            </li>
+                            <li class="breadcrumb-item text-muted">Roller</li>
+                        </ul>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 gap-lg-3">
+                        <a href="{% url 'stores:store-role-create' %}" class="btn btn-primary">
+                            <i class="ki-duotone ki-plus fs-2"></i>
+                            Yeni Rol Oluştur
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-xxl">
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-dismissible alert-{{ message.tags }} d-flex align-items-center p-5 mb-5">
+                                {% if message.tags == 'success' %}
+                                    <i class="ki-duotone ki-shield-tick fs-2hx text-success me-4">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                {% elif message.tags == 'warning' %}
+                                    <i class="ki-duotone ki-information-5 fs-2hx text-warning me-4">
+                                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                    </i>
+                                {% else %}
+                                    <i class="ki-duotone ki-cross-circle fs-2hx text-danger me-4">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                {% endif %}
+                                <div class="d-flex flex-column">
+                                    <span>{{ message }}</span>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="card">
+                        <div class="card-header border-0 pt-6">
+                            <div class="card-title">
+                                <div class="d-flex align-items-center position-relative my-1">
+                                    <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
+                                        <span class="path1"></span><span class="path2"></span>
+                                    </i>
+                                    <input type="text" id="roleSearch" class="form-control form-control-solid w-250px ps-13"
+                                           placeholder="Rol ara...">
+                                </div>
+                            </div>
+                            <div class="card-toolbar">
+                                <span class="badge badge-light-primary fs-7" id="roleCountBadge">
+                                    {{ roles|length }} rol
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-body pt-0">
+                            {% if roles %}
+                                <div class="row g-4" id="rolesContainer">
+                                    {% for role in roles %}
+                                        <div class="col-12 col-sm-6 col-lg-4 col-xl-3 role-item"
+                                             data-search="{{ role.name|lower }} {{ role.description|default:''|lower }}">
+                                            <div class="card role-card h-100">
+                                                <div class="card-body p-5">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <h5 class="card-title fw-bold text-gray-800 mb-0">
+                                                            {{ role.name }}
+                                                        </h5>
+                                                        {% if role.is_active %}
+                                                            <span class="badge badge-light-success role-status-badge">Aktif</span>
+                                                        {% else %}
+                                                            <span class="badge badge-light-danger role-status-badge">Pasif</span>
+                                                        {% endif %}
+                                                    </div>
+
+                                                    {% if role.description %}
+                                                        <p class="text-muted fs-7 mb-3" style="max-height: 3em; overflow: hidden; text-overflow: ellipsis;">
+                                                            {{ role.description|truncatewords:15 }}
+                                                        </p>
+                                                    {% endif %}
+
+                                                    <div class="separator separator-dashed my-3"></div>
+
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div class="d-flex gap-3">
+                                                            <a href="{% url 'stores:store-role-update' role.id %}"
+                                                               class="btn btn-sm btn-light-primary"
+                                                               title="Düzenle">
+                                                                <i class="ki-duotone ki-pencil fs-6">
+                                                                    <span class="path1"></span><span class="path2"></span>
+                                                                </i>
+                                                                Düzenle
+                                                            </a>
+                                                            <button type="button"
+                                                                    class="btn btn-sm btn-light-danger btn-delete-role"
+                                                                    data-role-id="{{ role.id }}"
+                                                                    data-role-name="{{ role.name }}"
+                                                                    title="Sil">
+                                                                <i class="ki-duotone ki-trash fs-6">
+                                                                    <span class="path1"></span><span class="path2"></span>
+                                                                    <span class="path3"></span><span class="path4"></span>
+                                                                    <span class="path5"></span>
+                                                                </i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state text-center">
+                                    <i class="ki-duotone ki-shield-cross d-block mb-4">
+                                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                    </i>
+                                    <h4 class="text-gray-600 mb-2">Henüz mağaza rolü oluşturulmamış</h4>
+                                    <p class="text-muted mb-5">
+                                        Personelinize özel roller oluşturarak yetki dağılımını yönetin.
+                                    </p>
+                                    <a href="{% url 'stores:store-role-create' %}" class="btn btn-primary">
+                                        <i class="ki-duotone ki-plus fs-2"></i>
+                                        İlk Rolü Oluştur
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Silme onay modal #}
+    <div class="modal fade" id="deleteRoleModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rol Silme Onayı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong id="deleteRoleName"></strong> rolünü silmek istediğinize emin misiniz?</p>
+                    <p class="text-muted fs-7">Bu işlem geri alınamaz. Role atanmış kullanıcıların yetkileri etkilenecektir.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+                    <form id="deleteRoleForm" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Sil</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // ── Arama Fonksiyonu ──
+            var searchInput = document.getElementById('roleSearch');
+            var roleItems = document.querySelectorAll('.role-item');
+            var countBadge = document.getElementById('roleCountBadge');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    var q = (this.value || '').toLowerCase().trim();
+                    var visibleCount = 0;
+                    for (var i = 0; i < roleItems.length; i++) {
+                        var el = roleItems[i];
+                        var hay = el.getAttribute('data-search') || '';
+                        if (hay.indexOf(q) !== -1) {
+                            el.style.display = '';
+                            visibleCount++;
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                    if (countBadge) {
+                        countBadge.textContent = visibleCount + ' rol';
+                    }
+                });
+            }
+
+            // ── Silme Modal ──
+            var deleteButtons = document.querySelectorAll('.btn-delete-role');
+            var deleteModal = document.getElementById('deleteRoleModal');
+            var deleteForm = document.getElementById('deleteRoleForm');
+            var deleteRoleName = document.getElementById('deleteRoleName');
+
+            for (var i = 0; i < deleteButtons.length; i++) {
+                deleteButtons[i].addEventListener('click', function () {
+                    var roleId = this.getAttribute('data-role-id');
+                    var roleName = this.getAttribute('data-role-name');
+
+                    if (deleteRoleName) deleteRoleName.textContent = roleName;
+                    if (deleteForm) {
+                        deleteForm.action = "{% url 'stores:store-role-delete' '00000000-0000-0000-0000-000000000000' %}".replace(
+                            '00000000-0000-0000-0000-000000000000', roleId
+                        );
+                    }
+
+                    var modal = new bootstrap.Modal(deleteModal);
+                    modal.show();
+                });
+            }
+        });
+    </script>
+{% endblock footer %}
