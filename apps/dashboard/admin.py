@@ -5,7 +5,7 @@ from apps.dashboard.models import DailyStoreReport, DailyEmployeeReport, Generat
 @admin.register(DailyStoreReport)
 class DailyStoreReportAdmin(admin.ModelAdmin):
     list_display = (
-        'store', 'report_date', 'sale_count', 'total_sales_tl',
+        'store', 'report_date', 'sale_count', 'total_sales_eur',
         'total_gross_profit', 'transaction_count', 'computed_at',
     )
     list_filter = ('store', 'report_date')
@@ -19,7 +19,7 @@ class DailyStoreReportAdmin(admin.ModelAdmin):
 class DailyEmployeeReportAdmin(admin.ModelAdmin):
     list_display = (
         'store', 'employee', 'report_date', 'sale_count',
-        'total_sales_tl', 'total_gross_profit', 'transaction_count',
+        'total_sales_eur', 'total_gross_profit', 'transaction_count',
     )
     list_filter = ('store', 'report_date')
     search_fields = ('employee__first_name', 'employee__last_name')

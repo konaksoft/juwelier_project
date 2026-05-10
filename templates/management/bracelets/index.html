@@ -505,7 +505,16 @@
                         },
                         {
                             data: "product__name",
-                            render: (d) => `<span style="font-weight:bold;color:rgba(18,53,232,0.93);">${d || ''}</span>`
+                            render: function (d, _t, row) {
+                                // B-FAZ 7 — Bilezik adı tıklanabilir link → Havuz Detay Sayfasına navigasyon
+                                const poolHref = '/bracelets/pool/' + row.id + '/';
+                                const safe = (d || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                return '<a href="' + poolHref + '" ' +
+                                       'style="font-weight:bold;color:rgba(18,53,232,0.93);text-decoration:none;" ' +
+                                       'title="Havuz Detay Sayfasına git" ' +
+                                       'onmouseover="this.style.textDecoration=\'underline\'" ' +
+                                       'onmouseout="this.style.textDecoration=\'none\'">' + safe + '</a>';
+                            }
                         },
                         {   // TEDARİKÇİ — 2026-04-21
                             data: "suppliers_display",
@@ -525,12 +534,25 @@
                         },
                         {   // STOK (GRAM) — FAZ 6: toFixed(3) → TR formatı (2 ondalık, virgül)
                             data: "inventory_stock_weight",
-                            render: (v) => (v != null
-                                ? parseFloat(v).toLocaleString('tr-TR', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2
-                                })
-                                : '0,00')
+                            render: function (v, type, row) {
+                                const stockTxt = (v != null
+                                    ? parseFloat(v).toLocaleString('tr-TR', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })
+                                    : '0,00');
+                                // Stok = mağazanın öz malı.
+                                // Badge yalnız aynı havuzda HÂLÂ müşteri emaneti
+                                // duran kısım için gösterilir.
+                                if (row.has_custody) {
+                                    return stockTxt +
+                                        ' <span class="badge badge-light-warning ms-1" ' +
+                                        'title="Bu havuzda hâlâ müşteri emaneti tutuluyor — Stoğa Al ile mağaza stoğuna alınabilir">' +
+                                        '<i class="fa-solid fa-hand-holding-hand fs-9 me-1"></i>' +
+                                        'Müşteri Emaneti: ' + row.custody_gram + ' gr</span>';
+                                }
+                                return stockTxt;
+                            }
                         },
                         {data: "product__product_mileage"},       // MİLYEM
                         {data: "product__buy_price_hs"},          // HAS (gr başı)
@@ -564,15 +586,17 @@
                                     <a href="${row.detail_url}" class="btn btn-sm btn-light-primary" target="_blank" rel="noopener" title="Detaya Git">
                                       <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>` : '';
-                                // Havuz detay ikonları — havuz ise daha belirgin "katmanlı" ikon kullanılır
-                                const poolIcon = isMultiSourcePool ? 'fa-layer-group' : 'fa-circle-info';
+                                // B-FAZ 7 — Havuz Detayı butonu artık MODAL açmaz,
+                                // doğrudan tam sayfa Havuz Detay & Ekstre sayfasına yönlendirir.
+                                const _activeCount = parseInt(row.active_purchase_count || 0, 10) || 0;
                                 const poolTitle = isMultiSourcePool
-                                    ? 'Havuz Detayı (çoklu kaynak — düzenlemek için ilgili işlemi iptal edin)'
-                                    : 'Havuz Detayı';
+                                    ? ('Havuz Detayı — bu havuzda ' + _activeCount + ' farklı alış kaydı var. Tam ekran ekstre + iptal akışı için tıklayın.')
+                                    : 'Havuz Detayı — tam ekran ekstre, filtreler ve iptal akışı.';
                                 const poolBtnClass = isMultiSourcePool ? 'btn-light-warning' : 'btn-light-info';
+                                const poolUrl = '/bracelets/pool/' + row.id + '/';
                                 const btnPoolInfo = `
-                                    <a href="#" onclick="showPoolContentsModal('${row.id}');return false;" class="btn btn-sm ${poolBtnClass}" title="${poolTitle}">
-                                      <i class="fa-solid ${poolIcon}"></i>
+                                    <a href="${poolUrl}" class="btn btn-sm ${poolBtnClass}" title="${poolTitle}">
+                                      <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>`;
 
                                 if (everSoldOrCompleted) {
@@ -642,48 +666,91 @@
                     }));
             })();
 
-            // ═══ HAVUZ DETAY MODALI (müşteri gösterimi + silme akışı için) ═══
+            // ═══ HAVUZ DETAY MODALI — B-FAZ 7 / 4-sütunlu finansal şeffaflık ═══
             function renderPoolContentsHtml(data) {
                 if (!data || !data.sources) return '';
-                var rows = data.sources.map(function (s) {
-                    var label = s.label || s.supplier_name || 'Tedarikçisiz';
-                    var gramNum = Number(s.gram || 0);
-                    var gramStr = gramNum.toLocaleString('tr-TR', {
+                var fmt3 = function (v) {
+                    return Number(v || 0).toLocaleString('tr-TR', {
                         minimumFractionDigits: 3, maximumFractionDigits: 3
                     });
-                    var meta = [];
-                    if (s.process_no) meta.push('İşlem: ' + s.process_no);
-                    if (s.date) meta.push(s.date);
-                    var metaStr = meta.length ? meta.join(' · ') : '-';
+                };
+                var escapeHtml = function (str) {
+                    return String(str || '').replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                };
+                var rows = data.sources.map(function (s) {
+                    var label = escapeHtml(s.label || s.supplier_name || 'Tedarikçisiz');
+                    var gramStr = fmt3(s.gram);
+                    var unitStr = fmt3(s.price_hs_per_gram);
+                    var totalStr = fmt3(s.price_hs);
+                    var dateLabel = s.date_short || s.date || '';
+                    var procNo = s.process_no || '';
                     var isSupplier = !!s.supplier_id;
+                    var isEstimated = !!s.is_estimated;
                     var chip = isSupplier
-                        ? '<span class="badge badge-light-primary">Tedarikçili</span>'
-                        : '<span class="badge badge-light-secondary">Açılış Stoğu</span>';
+                        ? '<span class="badge badge-light-primary"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                        : '<span class="badge badge-light-secondary"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+                    var estBadge = isEstimated
+                        ? ' <span class="badge badge-light-warning" title="Geçmiş kayıt — değer ağırlıklı ortalama maliyetten tahmin edilmiştir." style="font-size:0.65rem;">~ tahmini</span>'
+                        : '';
+                    var procTitle = procNo
+                        ? ('Sistem referans numarası: ' + escapeHtml(procNo))
+                        : 'Geçmiş kayıt — referans numarası yok';
+                    var metaLine = dateLabel
+                        ? ('<div style="font-size:0.72rem;color:#a1a5b7;margin-top:2px;" ' +
+                           'title="' + procTitle + '">' +
+                           '<i class="fa-regular fa-calendar me-1"></i>' + escapeHtml(dateLabel) +
+                           (procNo ? ' <i class="fa-solid fa-hashtag ms-2 me-1"></i><span style="font-family:monospace;">' + escapeHtml(procNo.slice(-6)) + '</span>' : '') +
+                           '</div>')
+                        : '';
                     return (
-                        '<tr>' +
-                        '<td style="padding:0.4rem;">' + chip + ' <b>' + label + '</b></td>' +
-                        '<td style="padding:0.4rem;text-align:right;"><b>' + gramStr + ' gr</b></td>' +
-                        '<td style="padding:0.4rem;font-size:0.75rem;color:#888;">' + metaStr + '</td>' +
+                        '<tr style="border-bottom:1px solid #f4f4f4;">' +
+                        '<td style="padding:0.6rem 0.4rem;vertical-align:top;">' +
+                        chip + estBadge +
+                        '<div style="font-weight:600;margin-top:4px;">' + label + '</div>' +
+                        metaLine +
+                        '</td>' +
+                        '<td style="padding:0.6rem 0.4rem;text-align:right;vertical-align:top;">' +
+                        '<b>' + gramStr + '</b> <span style="color:#a1a5b7;font-size:0.72rem;">gr</span>' +
+                        '</td>' +
+                        '<td style="padding:0.6rem 0.4rem;text-align:right;vertical-align:top;color:#3f4254;">' +
+                        unitStr + ' <span style="color:#a1a5b7;font-size:0.72rem;">Hs/gr</span>' +
+                        '</td>' +
+                        '<td style="padding:0.6rem 0.4rem;text-align:right;vertical-align:top;">' +
+                        '<b style="color:#181c32;">' + totalStr + '</b> <span style="color:#a1a5b7;font-size:0.72rem;">Hs</span>' +
+                        '</td>' +
                         '</tr>'
                     );
                 }).join('');
-                var totalGram = Number(data.total_gram || 0).toLocaleString('tr-TR', {
-                    minimumFractionDigits: 3, maximumFractionDigits: 3
-                });
+                var totalGram = fmt3(data.total_gram);
+                var totalPriceHs = fmt3(data.total_price_hs);
+                var poolWac = fmt3(data.pool_wac_hs_per_gram);
                 return (
-                    '<div style="max-height:320px;overflow-y:auto;">' +
+                    '<div style="max-height:360px;overflow-y:auto;border:1px solid #f4f4f4;border-radius:0.5rem;">' +
                     '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">' +
-                    '<thead><tr style="border-bottom:2px solid #e4e6ef;color:#7e8299;">' +
-                    '<th style="padding:0.4rem;text-align:left;">Kaynak</th>' +
-                    '<th style="padding:0.4rem;text-align:right;">Gramaj</th>' +
-                    '<th style="padding:0.4rem;text-align:left;">Detay</th>' +
+                    '<thead><tr style="background:#f9f9f9;border-bottom:2px solid #e4e6ef;color:#7e8299;">' +
+                    '<th style="padding:0.55rem 0.4rem;text-align:left;font-weight:600;">Kaynak</th>' +
+                    '<th style="padding:0.55rem 0.4rem;text-align:right;font-weight:600;">Gramaj</th>' +
+                    '<th style="padding:0.55rem 0.4rem;text-align:right;font-weight:600;" title="O işlemdeki birim alış maliyeti.">Birim (Hs/gr)</th>' +
+                    '<th style="padding:0.55rem 0.4rem;text-align:right;font-weight:600;" title="O işlemin toplam Has değeri.">Toplam (Hs)</th>' +
                     '</tr></thead>' +
                     '<tbody>' + rows + '</tbody>' +
-                    '<tfoot><tr style="border-top:2px solid #e4e6ef;background:rgba(255,215,0,0.06);">' +
-                    '<td style="padding:0.4rem;"><b>TOPLAM</b></td>' +
-                    '<td style="padding:0.4rem;text-align:right;"><b>' + totalGram + ' gr</b></td>' +
-                    '<td></td></tr></tfoot>' +
-                    '</table></div>'
+                    '<tfoot>' +
+                    '<tr style="border-top:2px solid #e4e6ef;background:rgba(255,215,0,0.06);">' +
+                    '<td style="padding:0.55rem 0.4rem;"><b>TOPLAM</b></td>' +
+                    '<td style="padding:0.55rem 0.4rem;text-align:right;"><b>' + totalGram + ' gr</b></td>' +
+                    '<td style="padding:0.55rem 0.4rem;text-align:right;color:#7e8299;font-style:italic;" title="Havuzun ağırlıklı ortalama birim maliyeti (WAC).">' +
+                    poolWac + ' Hs/gr' +
+                    '</td>' +
+                    '<td style="padding:0.55rem 0.4rem;text-align:right;"><b>' + totalPriceHs + ' Hs</b></td>' +
+                    '</tr>' +
+                    '</tfoot>' +
+                    '</table></div>' +
+                    '<div style="margin-top:0.5rem;font-size:0.72rem;color:#a1a5b7;">' +
+                    '<i class="fa-solid fa-circle-info me-1"></i>' +
+                    '"Birim (Hs/gr)" o işlemdeki alış birim maliyetini, footer\'daki değer havuzun ağırlıklı ortalamasını (WAC) gösterir.' +
+                    '</div>'
                 );
             }
 
@@ -705,48 +772,158 @@
                 });
             };
 
+            // ─── B-FAZ 7 — yardımcılar ──────────────────────────────
+            var brEscapeHtml = function (str) {
+                return String(str || '').replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            };
+            var brFmt3 = function (v) {
+                return Number(v || 0).toLocaleString('tr-TR', {
+                    minimumFractionDigits: 3, maximumFractionDigits: 3
+                });
+            };
+
+            function brRenderProcessPickerRow(pr) {
+                var hasSupplier = !!pr.supplier_id;
+                var sName = brEscapeHtml(pr.supplier_name || (hasSupplier ? '-' : 'Tedarikçisiz'));
+                var chip = hasSupplier
+                    ? '<span class="badge badge-light-primary me-2"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                    : '<span class="badge badge-light-secondary me-2"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+                var gramStr = brFmt3(pr.gram);
+                var unitStr = brFmt3(pr.price_hs_per_gram);
+                var totalStr = brFmt3(pr.price_hs);
+                var dateLabel = brEscapeHtml(pr.date_short || pr.date || '-');
+                var procTitle = pr.process_no
+                    ? ('Sistem referans numarası: ' + brEscapeHtml(pr.process_no))
+                    : 'Referans numarası yok';
+                var procTail = pr.process_no
+                    ? ('<span class="ms-2" style="font-family:monospace;font-size:0.7rem;color:#a1a5b7;" ' +
+                       'title="' + procTitle + '">#' + brEscapeHtml(pr.process_no.slice(-6)) + '</span>')
+                    : '';
+                return (
+                    '<label class="bracelet-proc-row d-flex align-items-start gap-3 border rounded p-3 mb-2" ' +
+                    'style="cursor:pointer;transition:background-color .15s;">' +
+                    '<input type="radio" name="proc_no" value="' + brEscapeHtml(pr.process_no) + '" ' +
+                    'class="form-check-input mt-1">' +
+                    '<div class="flex-grow-1 text-start">' +
+                    '<div class="d-flex align-items-center flex-wrap mb-1">' +
+                    chip + '<span class="fw-bold">' + sName + '</span>' + procTail +
+                    '</div>' +
+                    '<div class="d-flex flex-wrap gap-3" style="font-size:0.78rem;color:#5e6278;">' +
+                    '<span><i class="fa-solid fa-weight-scale me-1 text-muted"></i><b>' + gramStr + '</b> gr</span>' +
+                    '<span><i class="fa-solid fa-tag me-1 text-muted"></i>' + unitStr + ' Hs/gr</span>' +
+                    '<span><i class="fa-solid fa-coins me-1 text-muted"></i><b>' + totalStr + '</b> Hs</span>' +
+                    '<span class="ms-auto"><i class="fa-regular fa-calendar me-1 text-muted"></i>' + dateLabel + '</span>' +
+                    '</div></div></label>'
+                );
+            }
+
+            function brAttachProcRowHighlight() {
+                var rows = document.querySelectorAll('.bracelet-proc-row');
+                var refresh = function () {
+                    rows.forEach(function (row) {
+                        var input = row.querySelector('input[type="radio"]');
+                        if (input && input.checked) {
+                            row.style.backgroundColor = '#fff3cd';
+                            row.style.borderColor = '#f1c40f';
+                        } else {
+                            row.style.backgroundColor = '';
+                            row.style.borderColor = '';
+                        }
+                    });
+                };
+                rows.forEach(function (row) {
+                    var input = row.querySelector('input[type="radio"]');
+                    if (input) input.addEventListener('change', refresh);
+                });
+            }
+
+            function brConfirmCancellation(ids, processes, selectedProcNo, currentTotalGram) {
+                var pr = processes.find(function (p) { return p.process_no === selectedProcNo; });
+                if (!pr) {
+                    performActualDelete(ids, {selected_process_no: selectedProcNo});
+                    return;
+                }
+                var newGram = Math.max(0, Number(currentTotalGram || 0) - Number(pr.gram || 0));
+                var hasSupplier = !!pr.supplier_id;
+                var sName = brEscapeHtml(pr.supplier_name || (hasSupplier ? '-' : 'Tedarikçisiz'));
+                var chip = hasSupplier
+                    ? '<span class="badge badge-light-primary me-2"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                    : '<span class="badge badge-light-secondary me-2"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+
+                var summaryHtml =
+                    '<div style="text-align:left;">' +
+                    '<div style="background:#fff3cd;border:1px solid #f1c40f;border-radius:0.5rem;padding:1rem;margin-bottom:1rem;">' +
+                    '<div style="font-size:0.75rem;color:#7e8299;margin-bottom:0.35rem;">İPTAL EDİLECEK İŞLEM</div>' +
+                    '<div class="d-flex align-items-center mb-2">' + chip +
+                    '<span class="fw-bold">' + sName + '</span></div>' +
+                    '<div class="d-flex flex-wrap gap-3" style="font-size:0.85rem;color:#181c32;">' +
+                    '<span><i class="fa-solid fa-weight-scale me-1 text-muted"></i><b>' + brFmt3(pr.gram) + '</b> gr</span>' +
+                    '<span><i class="fa-solid fa-tag me-1 text-muted"></i>' + brFmt3(pr.price_hs_per_gram) + ' Hs/gr</span>' +
+                    '<span><i class="fa-solid fa-coins me-1 text-muted"></i><b>' + brFmt3(pr.price_hs) + '</b> Hs</span>' +
+                    '<span><i class="fa-regular fa-calendar me-1 text-muted"></i>' + brEscapeHtml(pr.date_short || pr.date || '-') + '</span>' +
+                    '</div></div>' +
+                    '<div style="background:#f8f9fa;border-radius:0.5rem;padding:0.85rem;font-size:0.85rem;">' +
+                    '<i class="fa-solid fa-circle-info me-1 text-info"></i> Bu işlem geri alınamaz. ' +
+                    'Havuz gramajı: <b>' + brFmt3(currentTotalGram) + ' gr</b> ' +
+                    '<i class="fa-solid fa-arrow-right mx-1 text-muted"></i> ' +
+                    '<b style="color:#d6336c;">' + brFmt3(newGram) + ' gr</b>.' +
+                    '</div></div>';
+
+                Swal.fire({
+                    title: 'Onaylıyor musunuz?',
+                    html: summaryHtml,
+                    icon: 'warning',
+                    width: 560,
+                    showCancelButton: true,
+                    cancelButtonText: 'Geri Dön',
+                    confirmButtonText: 'Evet, İptal Et',
+                    confirmButtonColor: '#d33',
+                    focusCancel: true,
+                    reverseButtons: true,
+                }).then(function (res) {
+                    if (res.isConfirmed) {
+                        performActualDelete(ids, {selected_process_no: selectedProcNo});
+                    } else {
+                        showProcessPicker(ids, processes);
+                    }
+                });
+            }
+
             // Multi-source silmede hangi işlemin iptal edileceğini seçtiren modal
             function showProcessPicker(ids, processes) {
-                // Önce havuz içeriğini de çekelim (aynı anda gösterim için)
                 $.get("/bracelets/get-pool-contents", {'ids[]': ids}, function (contents) {
-                    var poolInfoHtml = (contents && contents.result)
+                    var poolHasInfo = contents && contents.result;
+                    var poolInfoHtml = poolHasInfo
                         ? ('<div style="margin-bottom:1rem;">' +
-                           '<h6 style="margin-bottom:0.5rem;color:#181c32;">Havuz Durumu</h6>' +
+                           '<h6 style="margin-bottom:0.5rem;color:#181c32;font-size:0.9rem;">' +
+                           '<i class="fa-solid fa-layer-group me-1 text-warning"></i>Havuz Durumu' +
+                           '</h6>' +
                            renderPoolContentsHtml(contents) +
                            '</div><hr/>')
                         : '';
+                    var currentTotalGram = poolHasInfo ? contents.total_gram : 0;
 
-                    var rowsHtml = processes.map(function (pr) {
-                        var gramStr = Number(pr.gram || 0).toLocaleString('tr-TR', {
-                            minimumFractionDigits: 3, maximumFractionDigits: 3
-                        });
-                        return (
-                            '<label class="d-flex align-items-center gap-3 border rounded p-3 mb-2" style="cursor:pointer;">' +
-                            '<input type="radio" name="proc_no" value="' + pr.process_no + '" class="form-check-input">' +
-                            '<div class="flex-grow-1 text-start">' +
-                            '<div class="fw-bold">' + (pr.supplier_name || 'Tedarikçisiz') + '</div>' +
-                            '<div class="text-muted small">' +
-                            'İşlem: ' + (pr.process_no || '-') + ' · ' +
-                            gramStr + ' gr · ' + (pr.date || '-') +
-                            '</div></div></label>'
-                        );
-                    }).join('');
+                    var rowsHtml = processes.map(brRenderProcessPickerRow).join('');
 
                     Swal.fire({
                         title: 'Havuz — İptal Edilecek İşlemi Seçin',
                         html:
                             poolInfoHtml +
-                            '<div class="text-start mb-3" style="font-size:0.85rem;">' +
+                            '<div class="text-start mb-3" style="font-size:0.85rem;color:#5e6278;">' +
+                            '<i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>' +
                             'Bu havuza <b>' + processes.length + '</b> farklı alış kaydı eklenmiş. ' +
-                            'Doğrudan silinemez — lütfen iptal etmek istediğiniz alış işlemini seçin. ' +
-                            'Yalnızca o kaynağın gramı havuzdan düşer.' +
-                            '</div>' +
+                            'Doğrudan silemezsiniz. İptal etmek istediğiniz alış işlemini seçin — ' +
+                            'yalnızca o kaynağın gramı havuzdan düşer.</div>' +
                             '<div class="bracelet-proc-picker">' + rowsHtml + '</div>',
-                        width: 720,
+                        width: 760,
                         showCancelButton: true,
                         cancelButtonText: 'Vazgeç',
                         confirmButtonText: 'Seçileni İptal Et',
+                        confirmButtonColor: '#f1c40f',
                         focusConfirm: false,
+                        didOpen: brAttachProcRowHighlight,
                         preConfirm: function () {
                             var selected = document.querySelector('input[name="proc_no"]:checked');
                             if (!selected) {
@@ -757,32 +934,20 @@
                         }
                     }).then(function (res) {
                         if (res.isConfirmed && res.value) {
-                            performActualDelete(ids, {selected_process_no: res.value});
+                            brConfirmCancellation(ids, processes, res.value, currentTotalGram);
                         }
                     });
                 }).fail(function () {
-                    // Havuz içeriği alınamazsa, yalnız işlem seçimli modal göster
-                    var rowsHtml = processes.map(function (pr) {
-                        var gramStr = Number(pr.gram || 0).toLocaleString('tr-TR', {
-                            minimumFractionDigits: 3, maximumFractionDigits: 3
-                        });
-                        return (
-                            '<label class="d-flex align-items-center gap-3 border rounded p-3 mb-2" style="cursor:pointer;">' +
-                            '<input type="radio" name="proc_no" value="' + pr.process_no + '" class="form-check-input">' +
-                            '<div class="flex-grow-1 text-start">' +
-                            '<div class="fw-bold">' + (pr.supplier_name || 'Tedarikçisiz') + '</div>' +
-                            '<div class="text-muted small">' +
-                            'İşlem: ' + (pr.process_no || '-') + ' · ' + gramStr + ' gr · ' + (pr.date || '-') +
-                            '</div></div></label>'
-                        );
-                    }).join('');
+                    var rowsHtml = processes.map(brRenderProcessPickerRow).join('');
                     Swal.fire({
                         title: 'Havuz — İptal Edilecek İşlemi Seçin',
-                        html: rowsHtml,
-                        width: 600,
+                        html: '<div class="bracelet-proc-picker">' + rowsHtml + '</div>',
+                        width: 640,
                         showCancelButton: true,
                         cancelButtonText: 'Vazgeç',
                         confirmButtonText: 'Seçileni İptal Et',
+                        confirmButtonColor: '#f1c40f',
+                        didOpen: brAttachProcRowHighlight,
                         preConfirm: function () {
                             var selected = document.querySelector('input[name="proc_no"]:checked');
                             if (!selected) {
@@ -793,7 +958,7 @@
                         }
                     }).then(function (res) {
                         if (res.isConfirmed && res.value) {
-                            performActualDelete(ids, {selected_process_no: res.value});
+                            brConfirmCancellation(ids, processes, res.value, 0);
                         }
                     });
                 });
@@ -856,18 +1021,60 @@
                         // Multi-source → işlem seçici modal (havuz detay gömülü)
                         showProcessPicker(ids, data.processes);
                     } else {
-                        // Tek kaynak veya hiç yoksa → klasik onay + sil
-                        Swal.fire({
-                            title: 'Emin misiniz?',
-                            text: 'Seçili kayıtlar silinecek ve tedarikçi cari borcu pasife çekilecek.',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            cancelButtonText: 'Vazgeç',
-                            confirmButtonText: 'Evet, Sil',
-                        }).then(function (res) {
-                            if (res.isConfirmed) {
-                                performActualDelete(ids, null);
+                        // Tek kaynak veya hiç yoksa → finansal özetli ara onay (B-FAZ 7)
+                        $.get("/bracelets/get-pool-contents", {'ids[]': ids}, function (contents) {
+                            var summaryHtml = '';
+                            if (contents && contents.result && contents.sources && contents.sources.length) {
+                                var s = contents.sources[0];
+                                var hasSupplier = !!s.supplier_id;
+                                var sName = brEscapeHtml(s.label || s.supplier_name || 'Tedarikçisiz');
+                                var chip = hasSupplier
+                                    ? '<span class="badge badge-light-primary me-2"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                                    : '<span class="badge badge-light-secondary me-2"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+                                summaryHtml =
+                                    '<div style="text-align:left;background:#fff3cd;border:1px solid #f1c40f;border-radius:0.5rem;padding:1rem;margin-bottom:0.5rem;">' +
+                                    '<div style="font-size:0.75rem;color:#7e8299;margin-bottom:0.35rem;">İPTAL EDİLECEK KAYIT</div>' +
+                                    '<div class="d-flex align-items-center mb-2">' + chip +
+                                    '<span class="fw-bold">' + sName + '</span></div>' +
+                                    '<div class="d-flex flex-wrap gap-3" style="font-size:0.85rem;color:#181c32;">' +
+                                    '<span><i class="fa-solid fa-weight-scale me-1 text-muted"></i><b>' + brFmt3(s.gram) + '</b> gr</span>' +
+                                    '<span><i class="fa-solid fa-tag me-1 text-muted"></i>' + brFmt3(s.price_hs_per_gram) + ' Hs/gr</span>' +
+                                    '<span><i class="fa-solid fa-coins me-1 text-muted"></i><b>' + brFmt3(s.price_hs) + '</b> Hs</span>' +
+                                    '</div></div>' +
+                                    '<div style="font-size:0.8rem;color:#5e6278;margin-top:0.5rem;">' +
+                                    '<i class="fa-solid fa-circle-info me-1"></i> Bu kayıt iptal edilecek ve ' +
+                                    (hasSupplier ? 'tedarikçi carisinden düşülecek.' : 'havuzdan kaldırılacak.') +
+                                    '</div>';
                             }
+                            Swal.fire({
+                                title: 'Onaylıyor musunuz?',
+                                html: summaryHtml || 'Seçili kayıt iptal edilecek.',
+                                icon: 'warning',
+                                width: 560,
+                                showCancelButton: true,
+                                cancelButtonText: 'Vazgeç',
+                                confirmButtonText: 'Evet, İptal Et',
+                                confirmButtonColor: '#d33',
+                                focusCancel: true,
+                                reverseButtons: true,
+                            }).then(function (res) {
+                                if (res.isConfirmed) {
+                                    performActualDelete(ids, null);
+                                }
+                            });
+                        }).fail(function () {
+                            Swal.fire({
+                                title: 'Emin misiniz?',
+                                text: 'Seçili kayıt iptal edilecek ve tedarikçi cari borcu pasife çekilecek.',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                cancelButtonText: 'Vazgeç',
+                                confirmButtonText: 'Evet, İptal Et',
+                            }).then(function (res) {
+                                if (res.isConfirmed) {
+                                    performActualDelete(ids, null);
+                                }
+                            });
                         });
                     }
                 }).fail(function () {
@@ -986,7 +1193,27 @@
                 // MİLYEM + Has (gr başı)
                 const mileage = parseFloat(row.product__product_mileage) || 0;
                 $('#product_mileage').val(mileage);
-                $('#bracelet_rate_select').val(mileage ? String(mileage) : '');
+
+                // FAZ 19 / Bulgu D — Ayar dropdown bind: stored milyem option
+                // değerlerinden farklı olabilir (örn. 10 Ayar canonical 417 ↔ option 416,
+                // gümüş 925, custom değerler). En yakın standart ayara snap et.
+                // Eşleşme yoksa boş bırak; kullanıcı manuel seçebilir.
+                try {
+                    const _MILEAGE_SNAP = {
+                        '995': '995', '999': '995',
+                        '916': '916', '917': '916', '915': '916',
+                        '875': '875',
+                        '750': '750',
+                        '585': '585', '586': '585', '584': '585',
+                        '417': '416', '416': '416',
+                        '333': '333', '334': '333'
+                    };
+                    const _milKey = String(parseInt(mileage, 10) || '');
+                    const _snapVal = _MILEAGE_SNAP[_milKey] || '';
+                    $('#bracelet_rate_select').val(_snapVal);
+                } catch (e) {
+                    $('#bracelet_rate_select').val('');
+                }
                 $('#buy_price_hs').val((mileage / 1000).toFixed(3));
 
                 // Görsel önizleme

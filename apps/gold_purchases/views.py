@@ -6,7 +6,7 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q, Sum, Value, DecimalField, F, Func, Subquery, OuterRef, Count, ExpressionWrapper
+from django.db.models import Q, Sum, Value, DecimalField, F, Func, Subquery, OuterRef, Count, ExpressionWrapper, Case, When
 from django.db.models.functions import Coalesce, Cast, Lower, Replace
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -209,14 +209,14 @@ def _resolve_diamond_label_data(p):
 
     dd = getattr(p, 'diamond_detail', None)
 
-    # ── Fiyat: önce DiamondDetail.sale_price (döviz), boşsa Products.sale_price_tl ──
+    # ── Fiyat: önce DiamondDetail.sale_price (döviz), boşsa Products.sale_price_eur ──
     raw_price = 0.0
     raw_currency = ''
     if dd and dd.sale_price is not None and float(dd.sale_price) > 0:
         raw_price = float(dd.sale_price)
         raw_currency = (dd.sale_currency or 'USD').upper()
-    elif getattr(p, 'sale_price_tl', None) and float(p.sale_price_tl or 0) > 0:
-        raw_price = float(p.sale_price_tl)
+    elif getattr(p, 'sale_price_eur', None) and float(p.sale_price_eur or 0) > 0:
+        raw_price = float(p.sale_price_eur)
         raw_currency = 'TRY'
 
     if raw_price > 0:
@@ -746,24 +746,46 @@ def gold_purchase_add(request):
                 elif record.gram and record.gram > 0:
                     # Stoktan üretim değil — normal stok girişi
                     # Has Altın TL kuru (WAC hesabı için)
-                    hs_rate_tl = Decimal('0.0000')
+                    hs_rate_eur = Decimal('0.0000')
                     try:
                         hs_data = PriceService.get_price('GOLD_24K')
-                        hs_rate_tl = hs_data.get('buy_tl', Decimal('0'))
-                        if hs_rate_tl <= 0:
+                        hs_rate_eur = hs_data.get('buy_tl', Decimal('0'))
+                        if hs_rate_eur <= 0:
                             hs_prod = Products.objects.filter(
                                 name__icontains='Has Altın'
-                            ).only('buy_price_tl').first()
+                            ).only('buy_price_eur').first()
                             if hs_prod:
-                                hs_rate_tl = Decimal(str(hs_prod.buy_price_tl or 0))
+                                hs_rate_eur = Decimal(str(hs_prod.buy_price_eur or 0))
                     except Exception:
                         pass
 
-                    # Birim maliyet
-                    unit_cost_hs = record.buy_price_hs or Decimal('0')
-                    unit_cost_tl = Decimal('0.00')
-                    if hs_rate_tl > 0 and unit_cost_hs > 0:
-                        unit_cost_tl = (unit_cost_hs * hs_rate_tl).quantize(
+                    # ── BIRIM MALIYET (WAC icin gram basina HS) ──────────────
+                    # FAZ 34 KOK NEDEN FIX (2026-05-01):
+                    # gold_purchases/index.html:2249'daki JS sunu hesapliyor:
+                    #     totalHas = ((product_mileage + labor_mileage)/1000) * gram + piece_labor
+                    #     buyPriceHs.value = totalHas
+                    # Yani form'daki "Maliyet (Has)" alani, urunun TOPLAM Has
+                    # karsiligini tutar (orn. 15gr x 0.685 = 10.275). Eskiden
+                    # bu deger record.buy_price_hs den dogrudan unit_cost_hs e
+                    # geciyordu; StockService.record_entry WAC formulu ise
+                    # gram bazli (gram x unit_cost_hs) calisiyor:
+                    #     new_wac = (15 x 10.275) / 15 = 10.275 HS/gr
+                    # Sonuc: Dashboard "stock_gram x WAC" = 15 x 10.275 = 154 HS
+                    # gibi imkansiz bir HAS toplami uretiyordu.
+                    #
+                    # Cozum: Toplam Has degerini gram'a bolerek gercek BIRIM
+                    # maliyeti elde et. 1 gramlik urunde toplam == birim
+                    # oldugu icin bug 1 gramda kendini gizliyordu.
+                    _total_buy_hs = Decimal(str(record.buy_price_hs or 0))
+                    _gram = Decimal(str(record.gram or 0))
+                    if _gram > 0 and _total_buy_hs > 0:
+                        unit_cost_hs = (_total_buy_hs / _gram).quantize(Decimal('0.0001'))
+                    else:
+                        unit_cost_hs = Decimal('0')
+
+                    unit_cost_eur = Decimal('0.00')
+                    if hs_rate_eur > 0 and unit_cost_hs > 0:
+                        unit_cost_eur = (unit_cost_hs * hs_rate_eur).quantize(
                             Decimal('0.01')
                         )
 
@@ -788,8 +810,8 @@ def gold_purchase_add(request):
                         ref_type=ref_type,
                         ref_id=f"gold_purchase_{new_record.id}",
                         unit_cost_hs=unit_cost_hs,
-                        unit_cost_tl=unit_cost_tl,
-                        hs_rate_tl=hs_rate_tl,
+                        unit_cost_eur=unit_cost_eur,
+                        hs_rate_eur=hs_rate_eur,
                         user=request.user,
                         notes=notes_text,
                     )
@@ -833,8 +855,8 @@ def gold_purchase_add(request):
                                     piece=1,
                                     gram=record.gram,
                                     price_hs=ledger_amount_hs,
-                                    unit_price=unit_cost_tl,
-                                    amount=unit_cost_tl,
+                                    unit_price=unit_cost_eur,
+                                    amount=unit_cost_eur,
                                     is_status='COMPLETED',
                                     is_deleted=False,
                                 )
@@ -863,7 +885,19 @@ def gold_purchases_index(request):
     suppliers = Suppliers.objects.filter(is_deleted=False, store=store)
 
     DEC18_6 = DecimalField(max_digits=18, decimal_places=6)
-    has_expr = Cast(F('product__buy_price_hs'), DEC18_6)
+    # FAZ 44 — 1.05 EŞİK KURALI:
+    # Products.buy_price_hs iki çağdan veri tutuyor:
+    #   - Legacy gold_purchases formundan giriş: TOPLAM HS (örn. 10.575)
+    #   - Perakende alış akışı (retail_views.py:1355) üzerine yazımı: BİRİM HS (örn. 0.705)
+    # Saf altın fraksiyonu ≤ 1.000 olduğundan 1.05 üstü değer kesinlikle legacy
+    # toplamdır → doğrudan toplanır. 1.05 ve altı birim demektir → gram ile çarpılır.
+    buy_price_cast = Cast(F('product__buy_price_hs'), DEC18_6)
+    gram_cast = Cast(F('product__gram'), DEC18_6)
+    has_expr = Case(
+        When(product__buy_price_hs__gt=Decimal('1.05'), then=buy_price_cast),
+        default=ExpressionWrapper(buy_price_cast * gram_cast, output_field=DEC18_6),
+        output_field=DEC18_6,
+    )
     zero_dec = Value(Decimal('0'), output_field=DEC18_6)
 
     base_qs = GoldPurchases.objects.filter(is_deleted=False, store=store)
@@ -977,7 +1011,7 @@ def get_all(request):
             'product__is_completed',
             # FAZ DIA-DT (2026-04-28): DIAMOND-specific fields for material-aware DataTable
             'product__material_type',
-            'product__sale_price_tl',
+            'product__sale_price_eur',
             'product__diamond_detail__sale_price',
             'product__diamond_detail__sale_currency',
             'product__diamond_detail__carat_weight',
@@ -1044,15 +1078,15 @@ def delete(request):
                             piece = int(proc.piece or 0)
                             gram = Decimal(str(proc.gram or 0))
                             if piece > 0 or gram > 0:
-                                _hs_rate_tl = Decimal('0')
+                                _hs_rate_eur = Decimal('0')
                                 try:
                                     _hs_data = PriceService.get_price('GOLD_24K')
-                                    _hs_rate_tl = Decimal(str(_hs_data.get('buy_tl', Decimal('0'))))
+                                    _hs_rate_eur = Decimal(str(_hs_data.get('buy_tl', Decimal('0'))))
                                 except Exception:
                                     pass
                                 snap = StockSnapshot.objects.filter(product=product, store=store).first()
                                 u_hs = snap.weighted_avg_cost_hs if snap else Decimal('0')
-                                u_tl = snap.weighted_avg_cost_tl if snap else Decimal('0')
+                                u_tl = snap.weighted_avg_cost_eur if snap else Decimal('0')
                                 try:
                                     StockService.record_exit(
                                         product=product, store=store,
@@ -1060,8 +1094,8 @@ def delete(request):
                                         reason=StockLedger.Reason.RETURN_OUT,
                                         ref_type='cancel_gold_purchase',
                                         ref_id=f"cancel_{proc.process_no}",
-                                        unit_cost_hs=u_hs, unit_cost_tl=u_tl,
-                                        hs_rate_tl=_hs_rate_tl,
+                                        unit_cost_hs=u_hs, unit_cost_eur=u_tl,
+                                        hs_rate_eur=_hs_rate_eur,
                                         user=request.user,
                                         notes=f"Barkodlu ürün silme: {product.barcode}",
                                     )
@@ -1090,10 +1124,10 @@ def delete(request):
                         if product.gram and product.gram > 0:
                             snap = StockSnapshot.objects.filter(product=product, store=store).first()
                             if snap and snap.stock_gram > 0:
-                                _hs_rate_tl = Decimal('0')
+                                _hs_rate_eur = Decimal('0')
                                 try:
                                     _hs_data = PriceService.get_price('GOLD_24K')
-                                    _hs_rate_tl = Decimal(str(_hs_data.get('buy_tl', Decimal('0'))))
+                                    _hs_rate_eur = Decimal(str(_hs_data.get('buy_tl', Decimal('0'))))
                                 except Exception:
                                     pass
                                 try:
@@ -1105,8 +1139,8 @@ def delete(request):
                                         ref_type='cancel_gold_purchase',
                                         ref_id=f"gp_delete_{gp.id}",
                                         unit_cost_hs=snap.weighted_avg_cost_hs,
-                                        unit_cost_tl=snap.weighted_avg_cost_tl,
-                                        hs_rate_tl=_hs_rate_tl,
+                                        unit_cost_eur=snap.weighted_avg_cost_eur,
+                                        hs_rate_eur=_hs_rate_eur,
                                         user=request.user,
                                         notes=f"Barkodlu ürün silme (stok düşümü): {product.barcode}",
                                     )
@@ -1158,7 +1192,14 @@ def gold_purchases_stats(request):
     # Bu fonksiyon index.html içinde JS ile çağrılıyor
     store = request.user.store
     DEC18_6 = DecimalField(max_digits=18, decimal_places=6)
-    has_expr = Cast(F('product__buy_price_hs'), DEC18_6)
+    # FAZ 44 — 1.05 EŞİK KURALI (gold_purchases_index ile aynı SSOT).
+    buy_price_cast = Cast(F('product__buy_price_hs'), DEC18_6)
+    gram_cast = Cast(F('product__gram'), DEC18_6)
+    has_expr = Case(
+        When(product__buy_price_hs__gt=Decimal('1.05'), then=buy_price_cast),
+        default=ExpressionWrapper(buy_price_cast * gram_cast, output_field=DEC18_6),
+        output_field=DEC18_6,
+    )
     zero_dec = Value(Decimal('0'), output_field=DEC18_6)
     base_qs = GoldPurchases.objects.filter(is_deleted=False, store=store)
 
@@ -2215,8 +2256,16 @@ def _build_detailed_report_rows(store):
         / Value(Decimal('1000'), output_field=DEC18_6),
         output_field=DEC18_6,
     )
-    # Maliyet (Has cinsinden) = buy_price_hs
-    maliyet_expr = Cast(F('product__buy_price_hs'), DEC18_6)
+    # FAZ 44 — 1.05 EŞİK KURALI:
+    # Maliyet (Has cinsinden) = buy_price_hs (legacy total) VEYA buy_price_hs × gram (new unit)
+    # 1.05 üstü değer legacy toplamdır → doğrudan kullan.
+    # 1.05 ve altı birim demektir → gram ile çarp.
+    buy_price_cast = Cast(F('product__buy_price_hs'), DEC18_6)
+    maliyet_expr = Case(
+        When(product__buy_price_hs__gt=Decimal('1.05'), then=buy_price_cast),
+        default=ExpressionWrapper(buy_price_cast * gram_expr, output_field=DEC18_6),
+        output_field=DEC18_6,
+    )
 
     rows = (
         base_qs
@@ -2565,11 +2614,11 @@ def multi_material_product_add(request):
             record.description = request.POST.get('description') or ''
 
             # Satış/Alış TL karşılıkları (opsiyonel; döviz × kur önceden hesaplanmışsa)
-            record.sale_price_tl = parse_decimal_locale(
-                request.POST.get('sale_price_tl'), default="0.00"
+            record.sale_price_eur = parse_decimal_locale(
+                request.POST.get('sale_price_eur'), default="0.00"
             )
-            record.buy_price_tl = parse_decimal_locale(
-                request.POST.get('buy_price_tl'), default="0.00"
+            record.buy_price_eur = parse_decimal_locale(
+                request.POST.get('buy_price_eur'), default="0.00"
             )
 
             # WATCH/DIAMOND için price_currency döviz olarak saklanır
@@ -2756,8 +2805,8 @@ def multi_material_product_add(request):
                 ref_type=ref_type,
                 ref_id=f"gold_purchase_{gp_record.id}",
                 unit_cost_hs=Decimal('0.0000'),
-                unit_cost_tl=(record.buy_price_tl or Decimal('0')),
-                hs_rate_tl=Decimal('0.0000'),
+                unit_cost_eur=(record.buy_price_eur or Decimal('0')),
+                hs_rate_eur=Decimal('0.0000'),
                 user=request.user,
                 notes=notes_text,
             )
@@ -2767,7 +2816,7 @@ def multi_material_product_add(request):
             if process_ledger and supplier_id:
                 try:
                     supplier = Suppliers.objects.get(id=supplier_id)
-                    buy_tl = record.buy_price_tl or Decimal('0')
+                    buy_tl = record.buy_price_eur or Decimal('0')
 
                     if buy_tl > 0:
                         gp_process_no = generate_process_no()

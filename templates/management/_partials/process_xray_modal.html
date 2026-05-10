@@ -1,0 +1,419 @@
+{% comment %}
+══════════════════════════════════════════════════════════════════════════════
+FAZ 40 — İŞLEM RÖNTGEN MODALI (Reusable Partial)
+──────────────────────────────────────────────────────────────────────────────
+KULLANIM:
+  base.html footer sonrasında {% include 'management/_partials/process_xray_modal.html' %}
+  Tüm sayfalarda otomatik aktif olur.
+
+  Tetikleme — herhangi bir element üzerinde:
+    <span class="js-open-process-modal" data-process-no="P12345">P12345</span>
+
+  Geriye dönük uyumluluk için "open-process-modal" class'ı da dinlenir.
+
+ENDPOINT:
+  GET /process/detail-modal-json/<process_no>/
+
+DEPENDENCIES:
+  - jQuery (plugins.bundle.js)
+  - Bootstrap 5 modal
+  - Font Awesome ikonlar
+══════════════════════════════════════════════════════════════════════════════
+{% endcomment %}
+
+<style>
+    /* FAZ 64 — Hardcoded renkler CSS değişkenlere bağlandı (light/dark uyumlu).
+       Modal header'ı bilinçli olarak koyu lacivert kalıyor — markaya özgü hero
+       görünümü; sadece body içeriği temaya saygılı hale getirildi. */
+    #processXrayModal .px-section-title {
+        font-size: .8rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .5px; color: var(--bs-gray-700); margin-bottom: .65rem;
+        display: flex; align-items: center; gap: .4rem;
+    }
+    #processXrayModal .px-product-card {
+        background: var(--bs-gray-100); border: 1px solid var(--bs-border-color); border-radius: 12px;
+        padding: 1rem; height: 100%;
+    }
+    #processXrayModal .px-product-img {
+        width: 100%; aspect-ratio: 1; object-fit: cover;
+        border-radius: 10px; background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+    }
+    #processXrayModal .px-fin-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: .5rem 0; border-bottom: 1px dashed var(--bs-border-color);
+    }
+    #processXrayModal .px-fin-row:last-child { border-bottom: none; }
+    #processXrayModal .px-fin-label { color: var(--bs-gray-700); font-size: .85rem; font-weight: 500; }
+    #processXrayModal .px-fin-value { font-weight: 700; font-size: 1rem; color: var(--bs-card-title-color, var(--bs-body-color)); }
+    #processXrayModal .px-fin-value.profit-pos { color: var(--bs-success); }
+    #processXrayModal .px-fin-value.profit-neg { color: var(--bs-danger); }
+    #processXrayModal .px-fin-value.muted { color: var(--bs-gray-500); font-style: italic; font-weight: 500; }
+    /* Modal header'ı (koyu lacivert hero) içinde kullanılan pill — beyaz tonlar zemin koyu olduğu için bilinçli korundu */
+    #processXrayModal .px-meta-pill {
+        display: inline-flex; align-items: center; gap: .35rem;
+        background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); color: black;
+        padding: .2rem .55rem; border-radius: 999px; font-size: .75rem;
+        font-weight: 600; margin-right: .35rem; margin-top: .25rem;
+    }
+    #processXrayModal .px-meta-pill i { color: var(--bs-text-warning) !important; }
+    #processXrayModal .modal-header {
+        background: #1e293b; color: #fff; border-radius: calc(.475rem - 1px) calc(.475rem - 1px) 0 0;
+        border-bottom: none; padding: 1rem 1.25rem .85rem;
+    }
+    #processXrayModal .px-process-no-hero {
+        font-family: 'Courier New', monospace; font-size: 1.35rem; font-weight: 800;
+        letter-spacing: 1.5px; color: #fff; line-height: 1;
+    }
+    #processXrayModal .px-header-sub {
+        display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: .5rem;
+    }
+    #processXrayModal .px-tx-badge {
+        font-size: .75rem; font-weight: 700; padding: .3rem .65rem;
+        border-radius: 6px; letter-spacing: .3px;
+    }
+    #processXrayModal .px-item-divider {
+        border-top: 2px dashed var(--bs-border-color); margin: 1.25rem 0;
+    }
+    /* Trigger görsel ipucu — herhangi bir element üzerinde process_no badge */
+    .js-open-process-modal { cursor: pointer; }
+    .js-open-process-modal:hover { opacity: .85; }
+</style>
+
+<div class="modal fade" id="processXrayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-magnifying-glass-chart fs-2" style="color:#93c5fd;"></i>
+                        <div>
+                            <div class="text-white-50 fs-9 fw-semibold text-uppercase mb-1" style="letter-spacing:.8px;">İşlem Röntgeni</div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span id="pxProcessNo" class="px-process-no-hero">—</span>
+                                <span id="pxStatusBadge" class="px-tx-badge bg-light text-secondary">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="pxMetaBar" class="d-none px-header-sub">
+                        <span class="px-meta-pill"><i class="fa-solid fa-store"></i><span id="pxMetaStore"></span></span>
+                        <span class="px-meta-pill"><i class="fa-solid fa-user"></i><span id="pxMetaCustomer"></span></span>
+                        <span class="px-meta-pill"><i class="fa-solid fa-calendar"></i><span id="pxMetaDate"></span></span>
+                        <span class="px-meta-pill"><i class="fa-solid fa-tag"></i><span id="pxMetaProcType"></span></span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-3" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div id="pxLoader" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="text-muted small mt-3">İşlem detayı yükleniyor…</div>
+                </div>
+
+                <div id="pxError" class="d-none alert alert-danger py-3 px-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <span id="pxErrorMsg">İşlem detayı yüklenemedi.</span>
+                </div>
+
+                <div id="pxLegacyAlert" class="d-none alert alert-warning py-2 px-3 mb-3">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <span class="fw-semibold">Eski kayıt:</span>
+                    Bu işlem maliyet (WAC) verisi sisteme işlenmeden önce oluşturulmuş.
+                    Kârlılık hesabı yapılamamıştır.
+                </div>
+
+                <div id="pxItemsContainer" class="d-none"></div>
+
+                <div id="pxEmpty" class="d-none text-center text-muted py-5">
+                    <i class="fa-solid fa-inbox fs-2 d-block mb-3 opacity-50"></i>
+                    Bu işleme bağlı satır bulunamadı.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="pxOpenFullPage" class="btn btn-sm btn-light-primary">
+                    <i class="fa-solid fa-up-right-from-square me-1"></i> Tam Sayfa Detay
+                </a>
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i> Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // Idempotent guard — partial birden fazla render edilse bile handler tek kez bağlanır
+    if (window.__processXrayInit) return;
+    window.__processXrayInit = true;
+
+    function fmtTL(v) {
+        if (v === null || v === undefined || isNaN(v)) return '—';
+        return Number(v).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₺';
+    }
+    function fmtHS(v, decimals) {
+        if (v === null || v === undefined || isNaN(v)) return '—';
+        const d = (decimals === undefined ? 4 : decimals);
+        return Number(v).toLocaleString('tr-TR', {minimumFractionDigits: d, maximumFractionDigits: d}) + ' HS';
+    }
+    function fmtPct(v) {
+        if (v === null || v === undefined || isNaN(v)) return '—';
+        return '%' + Number(v).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    function statusBadge(status, isCanceled) {
+        if (isCanceled) return {cls: 'bg-light-danger text-danger', text: 'İPTAL EDİLDİ'};
+        const map = {
+            'COMPLETED':  {cls: 'bg-light-success text-success', text: 'TAMAMLANDI'},
+            'PENDING':    {cls: 'bg-light-warning text-warning', text: 'BEKLİYOR'},
+            'IN_PROGRESS':{cls: 'bg-light-info text-info', text: 'AKTİF'},
+            'OPEN_BINDING':{cls: 'bg-light-primary text-primary', text: 'AÇIK BAĞLAMA'},
+            'WAITING_STOCK':{cls: 'bg-light-warning text-warning', text: 'STOK BEKLİYOR'},
+            'CANCELED':   {cls: 'bg-light-danger text-danger', text: 'İPTAL'}
+        };
+        return map[status] || {cls: 'bg-light text-secondary', text: status || '—'};
+    }
+    function txClass(txType) {
+        const map = {
+            'SALE': 'bg-light-danger text-danger',
+            'PURCHASE': 'bg-light-success text-success',
+            'RETURN': 'bg-light-warning text-warning',
+            'STOCK_IN': 'bg-light-info text-info',
+            'ORDER_IN': 'bg-light-info text-info',
+            'PAYMENT': 'bg-light-primary text-primary'
+        };
+        return map[txType] || 'bg-light text-secondary';
+    }
+
+    function renderItem(it, idx) {
+        const prod = it.product || {};
+        const emp = it.employee || {};
+        const fin = it.financials || {};
+        const dq = it.data_quality || {};
+
+        const imgSrc = (prod.image_url && prod.image_url.length > 0)
+            ? prod.image_url
+            : '/static/management/media/svg/files/placeholder.svg';
+
+        const productName = prod.name || 'Nakit / Diğer';
+        const karat = prod.karat_label || '';
+        const milyem = (prod.milyem ? prod.milyem + ' M' : '');
+        const barcode = prod.barcode || '';
+        const jewelryType = prod.jewelry_type || '';
+        const empName = emp.full_name || 'Sistem / Bilinmiyor';
+        const _txCls = txClass(it.transaction_type);
+
+        let profitClass = 'muted';
+        let profitTxt = '—';
+        if (fin.gross_profit_hs !== null && fin.gross_profit_hs !== undefined) {
+            profitClass = fin.gross_profit_hs >= 0 ? 'profit-pos' : 'profit-neg';
+            profitTxt = fmtHS(fin.gross_profit_hs);
+        }
+
+        const wacSourceLabel = {
+            'LEDGER': '<span class="badge bg-light-success text-success fs-9 ms-1" title="StockLedger SSOT">✓ Mühürlü</span>',
+            'PROCESS_COST': '<span class="badge bg-light-warning text-warning fs-9 ms-1" title="Process.cost_amount_hs">⚠ Türetilmiş</span>',
+            'UNAVAILABLE': '<span class="badge bg-light-danger text-danger fs-9 ms-1" title="Veri yok">— Yok</span>'
+        }[fin.historical_wac_source] || '';
+
+        const anomalyBadge = dq.wac_anomaly
+            ? '<span class="badge bg-light-danger text-danger fs-9 ms-1" title="WAC > 1.05 — anomali">⚠ Anomali</span>'
+            : '';
+
+        const profitRow = it.is_entry
+            ? '<div class="px-fin-row"><span class="px-fin-label">İşlem Tipi</span><span class="px-fin-value muted">Giriş işlemi (kâr hesaplanmaz)</span></div>'
+            : (
+                '<div class="px-fin-row">' +
+                    '<span class="px-fin-label">Brüt Kâr (HS)</span>' +
+                    '<span class="px-fin-value ' + profitClass + '">' + profitTxt + '</span>' +
+                '</div>' +
+                '<div class="px-fin-row">' +
+                    '<span class="px-fin-label">Kâr Marjı</span>' +
+                    '<span class="px-fin-value ' + profitClass + '">' + fmtPct(fin.profit_margin_pct) + '</span>' +
+                '</div>'
+            );
+
+        const divider = (idx > 0) ? '<div class="px-item-divider"></div>' : '';
+
+        return divider +
+            '<div class="row g-3">' +
+                '<div class="col-md-5">' +
+                    '<div class="px-product-card">' +
+                        '<img src="' + imgSrc + '" class="px-product-img mb-3" ' +
+                             'onerror="this.onerror=null;this.src=\'/static/management/media/svg/files/placeholder.svg\';" ' +
+                             'alt="' + productName + '">' +
+                        '<div class="fw-bold fs-5 text-gray-900">' + productName + '</div>' +
+                        (jewelryType ? '<div class="text-muted small">' + jewelryType + '</div>' : '') +
+                        '<div class="mt-2">' +
+                            (karat ? '<span class="px-meta-pill"><i class="fa-solid fa-gem"></i>' + karat + '</span>' : '') +
+                            (milyem ? '<span class="px-meta-pill"><i class="fa-solid fa-percent"></i>' + milyem + '</span>' : '') +
+                            (barcode ? '<span class="px-meta-pill"><i class="fa-solid fa-barcode"></i>' + barcode + '</span>' : '') +
+                        '</div>' +
+                        '<div class="mt-3 pt-3 border-top">' +
+                            '<div class="text-muted fs-9 mb-1">MİKTAR</div>' +
+                            '<div class="fw-bold fs-5 text-primary">' + (it.qty.display || '—') + '</div>' +
+                        '</div>' +
+                        '<div class="mt-2">' +
+                            '<span class="px-tx-badge ' + _txCls + '">' + (it.transaction_type_label || '—') + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-7">' +
+                    '<div class="px-section-title">' +
+                        '<i class="fa-solid fa-coins text-warning"></i> Finansal Özet' +
+                    '</div>' +
+                    '<div class="bg-white border rounded p-3 mb-3">' +
+                        '<div class="px-fin-row">' +
+                            '<span class="px-fin-label">Satış Tutarı (TL)</span>' +
+                            '<span class="px-fin-value">' + fmtTL(fin.sale_price_eur) + '</span>' +
+                        '</div>' +
+                        '<div class="px-fin-row">' +
+                            '<span class="px-fin-label">Satış Has (Toplam)</span>' +
+                            '<span class="px-fin-value">' + fmtHS(fin.sale_total_hs, 3) + '</span>' +
+                        '</div>' +
+                        '<div class="px-fin-row">' +
+                            '<span class="px-fin-label">Birim Maliyet (WAC)' + wacSourceLabel + anomalyBadge + '</span>' +
+                            '<span class="px-fin-value ' + (dq.has_wac ? '' : 'muted') + '">' +
+                                (fin.historical_wac_hs !== null ? fmtHS(fin.historical_wac_hs) : 'Veri yok') +
+                            '</span>' +
+                        '</div>' +
+                        '<div class="px-fin-row">' +
+                            '<span class="px-fin-label">Toplam Maliyet (HS)</span>' +
+                            '<span class="px-fin-value ' + (dq.has_wac ? '' : 'muted') + '">' +
+                                (fin.cost_total_hs !== null ? fmtHS(fin.cost_total_hs, 3) : 'Veri yok') +
+                            '</span>' +
+                        '</div>' +
+                        profitRow +
+                    '</div>' +
+
+                    '<div class="px-section-title">' +
+                        '<i class="fa-solid fa-user-tie text-info"></i> Personel' +
+                    '</div>' +
+                    '<div class="bg-white border rounded p-3">' +
+                        '<div class="d-flex align-items-center">' +
+                            '<div class="symbol symbol-40px me-3">' +
+                                '<div class="symbol-label bg-light-info">' +
+                                    '<i class="fa-solid fa-user text-info"></i>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div>' +
+                                '<div class="fw-bold text-gray-900">' + empName + '</div>' +
+                                (emp.username ? '<div class="text-muted fs-8">' + emp.username + '</div>' : '') +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+    }
+
+    function openModal(processNo) {
+        if (!processNo) return;
+
+        const $loader = $('#pxLoader');
+        const $err = $('#pxError');
+        const $errMsg = $('#pxErrorMsg');
+        const $legacy = $('#pxLegacyAlert');
+        const $meta = $('#pxMetaBar');
+        const $items = $('#pxItemsContainer');
+        const $empty = $('#pxEmpty');
+
+        $loader.removeClass('d-none');
+        $err.addClass('d-none');
+        $legacy.addClass('d-none');
+        $meta.addClass('d-none');
+        $items.addClass('d-none').empty();
+        $empty.addClass('d-none');
+        $('#pxProcessNo').text(processNo);
+        $('#pxStatusBadge').attr('class', 'px-tx-badge bg-light text-secondary').text('—');
+        $('#pxOpenFullPage').attr('href', '/process/detail/' + encodeURIComponent(processNo) + '/');
+
+        $('#processXrayModal').modal('show');
+
+        $.ajax({
+            url: '/process/detail-modal-json/' + encodeURIComponent(processNo) + '/',
+            method: 'GET',
+            dataType: 'json'
+        }).done(function (data) {
+            $loader.addClass('d-none');
+            if (!data || !data.result) {
+                $errMsg.text((data && data.error_msg) || 'İşlem detayı yüklenemedi.');
+                $err.removeClass('d-none');
+                return;
+            }
+
+            const sb = statusBadge(data.status, data.is_canceled);
+            $('#pxStatusBadge').attr('class', 'px-tx-badge ' + sb.cls).text(sb.text);
+
+            $('#pxMetaStore').text(data.store_name || '—');
+            $('#pxMetaCustomer').text(data.customer_name || '—');
+            let dt = '—';
+            if (data.date) {
+                try {
+                    const d = new Date(data.date);
+                    dt = d.toLocaleDateString('tr-TR') + ' ' +
+                         d.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+                } catch (e) { dt = data.date; }
+            }
+            $('#pxMetaDate').text(dt);
+            const procTypeMap = {'RETAIL':'Perakende','WHOLESALE':'Toptan','FAST_PROCESS':'Hızlı İşlem'};
+            $('#pxMetaProcType').text(procTypeMap[data.process_type] || data.process_type || '—');
+            $meta.removeClass('d-none');
+
+            if (!data.items || data.items.length === 0) {
+                $empty.removeClass('d-none');
+                return;
+            }
+
+            const anyLegacy = data.items.some(function (i) {
+                return i && i.data_quality && i.data_quality.is_legacy;
+            });
+            if (anyLegacy) $legacy.removeClass('d-none');
+
+            let html = '';
+            data.items.forEach(function (it, idx) {
+                html += renderItem(it, idx);
+            });
+            $items.html(html).removeClass('d-none');
+        }).fail(function (xhr) {
+            $loader.addClass('d-none');
+            let msg = 'İşlem detayı yüklenemedi.';
+            // Backend defensive katmanı JSON döndürür — error_msg'i kullan
+            try {
+                if (xhr && xhr.responseJSON && xhr.responseJSON.error_msg) {
+                    msg = xhr.responseJSON.error_msg;
+                    if (xhr.responseJSON.debug) {
+                        msg += ' (' + xhr.responseJSON.debug + ')';
+                    }
+                } else if (xhr && xhr.status === 404) {
+                    msg = 'Bu işlem numarasına ait kayıt bulunamadı.';
+                } else if (xhr && xhr.status === 403) {
+                    msg = 'Bu işlemi görüntüleme yetkiniz yok.';
+                } else if (xhr && xhr.status === 0) {
+                    msg = 'Sunucuya ulaşılamadı (bağlantı hatası).';
+                }
+            } catch (e) {}
+            $errMsg.text(msg);
+            $err.removeClass('d-none');
+        });
+    }
+
+    // jQuery hazır olunca delegated handler bağla
+    function bindHandlers() {
+        if (typeof window.jQuery === 'undefined') {
+            // jQuery henüz yüklenmediyse bekle
+            setTimeout(bindHandlers, 50);
+            return;
+        }
+        // Hem yeni standart class (.js-open-process-modal) hem geriye dönük (.open-process-modal)
+        jQuery(document).on('click.processXray', '.js-open-process-modal, .open-process-modal', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const pn = jQuery(this).data('process-no') || jQuery(this).attr('data-process-no');
+            if (pn) openModal(String(pn));
+        });
+    }
+    bindHandlers();
+
+    // Programatik API — başka JS'ten çağrılabilir
+    window.openProcessXray = openModal;
+})();
+</script>

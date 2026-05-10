@@ -693,11 +693,11 @@
                                                     </a>
                                                 </li>
                                             </ul>
-                                            {# ─────────── FAZ E UI FIX v2 (2026-04-23) ─────────── #}
-                                            {# Materyal Tipi filtre tab'ları — DataGrid artık tüm   #}
-                                            {# material_type'ları görüntüler. Tümü (default) = eski  #}
-                                            {# davranış (regression yok). Pırlanta/Saat seçildiğinde #}
-                                            {# goldRateTabs gizlenir (ayar filtresi anlamsız).       #}
+                                            <!-- ─────────── FAZ E UI FIX v2 (2026-04-23) ─────────── -->
+                                            <!-- Materyal Tipi filtre tab'ları — DataGrid artık tüm   -->
+                                            <!-- material_type'ları görüntüler. Tümü (default) = eski  -->
+                                            <!-- davranış (regression yok). Pırlanta/Saat seçildiğinde -->
+                                            <!-- goldRateTabs gizlenir (ayar filtresi anlamsız).       -->
                                             <ul class="nav nav-pills mb-3" id="materialFilterTabs" role="tablist">
                                                 <li class="nav-item">
                                                     <a class="nav-link active btn btn-active-light-dark fw-bold px-3 me-2"
@@ -1057,11 +1057,11 @@
                 </div>
                 <div class="modal-body">
 
-                    {# ═══════════════════════════════════════════════════════════════════ #}
-                    {# PIVOT FAZ E (2026-04-23): 3'lü Tab Navigasyonu                     #}
-                    {# Altın (Mevcut) | Pırlanta (DiamondDetail+Stones) | Saat (Watch)    #}
-                    {# Altın tab'ı mevcut akışa dokunmaz; Pırlanta/Saat AJAX batch entry. #}
-                    {# ═══════════════════════════════════════════════════════════════════ #}
+                    <!-- ═══════════════════════════════════════════════════════════════════ -->
+                    <!-- PIVOT FAZ E (2026-04-23): 3'lü Tab Navigasyonu                     -->
+                    <!-- Altın (Mevcut) | Pırlanta (DiamondDetail+Stones) | Saat (Watch)    -->
+                    <!-- Altın tab'ı mevcut akışa dokunmaz; Pırlanta/Saat AJAX batch entry. -->
+                    <!-- ═══════════════════════════════════════════════════════════════════ -->
                     <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 fw-bold mb-5"
                         id="materialTypeTabs" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -1089,9 +1089,9 @@
 
                     <div class="tab-content" id="materialTypeTabContent">
 
-                    {# ─────────────────────── ALTIN TAB ─────────────────────── #}
-                    {# Mevcut akış aynen korunuyor: addGoldPurchaseForm, template pills, #}
-                    {# btnSavePurchase, btnSaveAndPrint (modal-footer'da) — DOKUNULMADI. #}
+                    <!-- ─────────────────────── ALTIN TAB ─────────────────────── -->
+                    <!-- Mevcut akış aynen korunuyor: addGoldPurchaseForm, template pills, -->
+                    <!-- btnSavePurchase, btnSaveAndPrint (modal-footer'da) — DOKUNULMADI. -->
                     <div class="tab-pane fade show active" id="tab-pane-gold"
                          role="tabpanel" aria-labelledby="tab-link-gold">
 
@@ -1330,19 +1330,19 @@
                     </form>
 
                     </div>
-                    {# ─────────────────────── /ALTIN TAB ────────────────────── #}
+                    <!-- ─────────────────────── /ALTIN TAB ────────────────────── -->
 
 
-                    {# ═══════════════════════════ PIRLANTA TAB ═══════════════════════════ #}
-                    {# AJAX endpoint: /gold-purchases/multi-material-add                    #}
-                    {# material_type=DIAMOND hidden input. DiamondDetail + DiamondStone(s). #}
-                    {# Çoklu taş tablosu dinamik (D1 default; "Taş Ekle" ile D2+).          #}
-                    {# ═════════════════════════════════════════════════════════════════════ #}
+                    <!-- ═══════════════════════════ PIRLANTA TAB ═══════════════════════════ -->
+                    <!-- AJAX endpoint: /gold-purchases/multi-material-add                    -->
+                    <!-- material_type=DIAMOND hidden input. DiamondDetail + DiamondStone(s). -->
+                    <!-- Çoklu taş tablosu dinamik (D1 default; "Taş Ekle" ile D2+).          -->
+                    <!-- ═════════════════════════════════════════════════════════════════════ -->
                     <div class="tab-pane fade" id="tab-pane-diamond"
                          role="tabpanel" aria-labelledby="tab-link-diamond">
 
-                    {# FAZ E UI FIX (2026-04-23): Pırlanta şablon pill'leri —             #}
-                    {# material_type='DIAMOND' ile filtreli. Altın şablonları görünmez.   #}
+                    <!-- FAZ E UI FIX (2026-04-23): Pırlanta şablon pill'leri —             -->
+                    <!-- material_type='DIAMOND' ile filtreli. Altın şablonları görünmez.   -->
                     <div id="templatePillsDiamond" class="template-pill-container border-bottom mb-3 pb-2">
                         {% for t in diamond_templates %}
                         <button type="button" class="btn btn-sm btn-outline-info btn-template-pill-diamond"
@@ -1368,13 +1368,13 @@
                           enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
                         <input type="hidden" name="material_type" value="DIAMOND">
-                        {# R-04 (2026-04-28): JS Kâr % auto-calc'ı bu hidden alanı doldurur. #}
-                        <input type="hidden" name="sale_price_tl" id="dia_sale_price_tl" value="0">
+                        <!-- R-04 (2026-04-28): JS Kâr % auto-calc'ı bu hidden alanı doldurur. -->
+                        <input type="hidden" name="sale_price_eur" id="dia_sale_price_eur" value="0">
 
-                        {# ─────── 1. Temel + Tedarikçi + Resim/Kamera ─────── #}
-                        {# FAZ E UI FIX (2026-04-23): Altın formundaki image-input + #}
-                        {# camera-trigger widget'ı Pırlanta formuna da eklendi. Backend #}
-                        {# multi_material_add zaten request.FILES.get('image') okuyor. #}
+                        <!-- ─────── 1. Temel + Tedarikçi + Resim/Kamera ─────── -->
+                        <!-- FAZ E UI FIX (2026-04-23): Altın formundaki image-input + -->
+                        <!-- camera-trigger widget'ı Pırlanta formuna da eklendi. Backend -->
+                        <!-- multi_material_add zaten request.FILES.get('image') okuyor. -->
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="image-input image-input-empty image-input-outline image-input-placeholder mb-3"
@@ -1410,11 +1410,11 @@
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        {# FAZ E UI FIX v2 (2026-04-23): Altın formundaki pattern ile #}
-                                        {# tam uyumlu "Takı Tipi + Kategori Yönet" layout. "+" butonu #}
-                                        {# Altın formundaki #btnManageCategories ile aynı #categoryModal'ı #}
-                                        {# açar — JS tarafında click handler #}
-                                        {# btnManageCategoriesDiamond için eklendi. #}
+                                        <!-- FAZ E UI FIX v2 (2026-04-23): Altın formundaki pattern ile -->
+                                        <!-- tam uyumlu "Takı Tipi + Kategori Yönet" layout. "+" butonu -->
+                                        <!-- Altın formundaki #btnManageCategories ile aynı #categoryModal'ı -->
+                                        <!-- açar — JS tarafında click handler -->
+                                        <!-- btnManageCategoriesDiamond için eklendi. -->
                                         <div class="d-flex align-items-start gap-1 mb-3">
                                             <div class="form-floating flex-grow-1">
                                                 <select class="form-select" name="jewelry_type" id="dia_jewelry_type">
@@ -1440,10 +1440,10 @@
                             </div>
                         </div>
 
-                        {# ─────── 2. Montür Altını (Bilgi amaçlı; Has hesabına EKLENMEZ) ─────── #}
-                        {# R-03 (2026-04-28): Montür Metali "Gelişmiş Bilgiler" accordion'una         #}
-                        {# taşındı (default GOLD_YELLOW backend tarafında uygulanır). Vitrin'de       #}
-                        {# yalnızca Ayar + Gram kalır — Pusula sadeliği.                              #}
+                        <!-- ─────── 2. Montür Altını (Bilgi amaçlı; Has hesabına EKLENMEZ) ─────── -->
+                        <!-- R-03 (2026-04-28): Montür Metali "Gelişmiş Bilgiler" accordion'una         -->
+                        <!-- taşındı (default GOLD_YELLOW backend tarafında uygulanır). Vitrin'de       -->
+                        <!-- yalnızca Ayar + Gram kalır — Pusula sadeliği.                              -->
                         <div class="border rounded p-3 mb-4 bg-light-warning">
                             <h6 class="mb-3 text-warning fw-bold">
                                 <i class="fa-solid fa-ring me-2"></i> Montür Altını
@@ -1473,11 +1473,11 @@
                             </div>
                         </div>
 
-                        {# ─────── 3. Satış Fiyatı (Döviz bazlı) ─────── #}
-                        {# R-04 (2026-04-28): Kâr % alanı eklendi. JS, buy_price_tl × (1+kar/100) #}
-                        {# ile sale_price_tl türetir; FX endpoint'inden seçili para biriminin     #}
-                        {# kurunu çekerek sale_price'ı (döviz) otomatik doldurur. Pusula tarzı    #}
-                        {# tek tıkla fiyatlama akışı.                                              #}
+                        <!-- ─────── 3. Satış Fiyatı (Döviz bazlı) ─────── -->
+                        <!-- R-04 (2026-04-28): Kâr % alanı eklendi. JS, buy_price_eur × (1+kar/100) -->
+                        <!-- ile sale_price_eur türetir; FX endpoint'inden seçili para biriminin     -->
+                        <!-- kurunu çekerek sale_price'ı (döviz) otomatik doldurur. Pusula tarzı    -->
+                        <!-- tek tıkla fiyatlama akışı.                                              -->
                         <div class="border rounded p-3 mb-4 bg-light-success">
                             <h6 class="mb-3 text-success fw-bold">
                                 <i class="fa-solid fa-tag me-2"></i> Satış Fiyatı
@@ -1486,9 +1486,9 @@
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" name="buy_price_tl"
-                                               id="dia_buy_price_tl" placeholder="0,00" value="0">
-                                        <label for="dia_buy_price_tl">Alış TL (Maliyet)</label>
+                                        <input type="text" class="form-control" name="buy_price_eur"
+                                               id="dia_buy_price_eur" placeholder="0,00" value="0">
+                                        <label for="dia_buy_price_eur">Alış TL (Maliyet)</label>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -1525,10 +1525,10 @@
                             </small>
                         </div>
 
-                        {# ─────── 3.5 Gelişmiş Bilgiler (Accordion — opsiyonel) ─────── #}
-                        {# P-07 (2026-04-27): Üretici Referans Kodu (DiamondDetail.supplier_ref). #}
-                        {# Örn: R2 etiketinde görülen "RAI5.61-27" gibi üretici tarafı kodlar.    #}
-                        {# Accordion başlığı yan rozet ile dolu alan sayısını gösterir.           #}
+                        <!-- ─────── 3.5 Gelişmiş Bilgiler (Accordion — opsiyonel) ─────── -->
+                        <!-- P-07 (2026-04-27): Üretici Referans Kodu (DiamondDetail.supplier_ref). -->
+                        <!-- Örn: R2 etiketinde görülen "RAI5.61-27" gibi üretici tarafı kodlar.    -->
+                        <!-- Accordion başlığı yan rozet ile dolu alan sayısını gösterir.           -->
                         <div class="accordion mb-4" id="diamondAdvancedAccordion">
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="diamondAdvancedHeading">
@@ -1619,12 +1619,12 @@
                             </div>
                         </div>
 
-                        {# ─────── 4. Çoklu Taş Tablosu (D1 default; "Taş Ekle" ile D2+) ─────── #}
-                        {# BÖLÜM 1-2 UI FIX (2026-04-27): Vitrin / Gelişmiş sütun ayrımı.        #}
-                        {# Default'ta yalnızca Vitrin sütunlar görünür (Rol, Sıra, Karat, Renk,  #}
-                        {# Berraklık). Şekil / Kesim / Sertifika Lab / Sertifika No "gelişmiş"  #}
-                        {# sütunlardır; üstteki toggle ile açılır. Tercih localStorage'da       #}
-                        {# saklanır. Backend mantığı değişmedi: input name="stone_*[]" aynı.    #}
+                        <!-- ─────── 4. Çoklu Taş Tablosu (D1 default; "Taş Ekle" ile D2+) ─────── -->
+                        <!-- BÖLÜM 1-2 UI FIX (2026-04-27): Vitrin / Gelişmiş sütun ayrımı.        -->
+                        <!-- Default'ta yalnızca Vitrin sütunlar görünür (Rol, Sıra, Karat, Renk,  -->
+                        <!-- Berraklık). Şekil / Kesim / Sertifika Lab / Sertifika No "gelişmiş"  -->
+                        <!-- sütunlardır; üstteki toggle ile açılır. Tercih localStorage'da       -->
+                        <!-- saklanır. Backend mantığı değişmedi: input name="stone_*[]" aynı.    -->
                         <div class="border rounded p-3 mb-4">
                             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                                 <h6 class="mb-0 text-primary fw-bold">
@@ -1644,17 +1644,17 @@
                                     </button>
                                 </div>
                             </div>
-                            {# FAZ E UI FIX (2026-04-23): Kolon genişlikleri,          #}
-                            {# form-select/form-control içeriğini kesmeyecek şekilde    #}
-                            {# artırıldı (60-115 → 70-180). table-responsive wrapper    #}
-                            {# toplam ~1000px'i yatay scroll ile yönetiyor.             #}
+                            <!-- FAZ E UI FIX (2026-04-23): Kolon genişlikleri,          -->
+                            <!-- form-select/form-control içeriğini kesmeyecek şekilde    -->
+                            <!-- artırıldı (60-115 → 70-180). table-responsive wrapper    -->
+                            <!-- toplam ~1000px'i yatay scroll ile yönetiyor.             -->
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered align-middle mb-0 stones-table hide-advanced" id="stonesTable">
                                     <thead class="bg-light">
                                         <tr class="fw-bold fs-8">
-                                            {# R-07/R-08 (2026-04-28): "Tür" yeni vitrin sütunu (Pırlanta/Zümrüt/Yakut...). #}
-                                            {# Eski "Rol" ve "Sıra" sütunları col-advanced'a alındı — Rol backend tarafında  #}
-                                            {# stone_type+pozisyondan otomatik türetilir.                                     #}
+                                            <!-- R-07/R-08 (2026-04-28): "Tür" yeni vitrin sütunu (Pırlanta/Zümrüt/Yakut...). -->
+                                            <!-- Eski "Rol" ve "Sıra" sütunları col-advanced'a alındı — Rol backend tarafında  -->
+                                            <!-- stone_type+pozisyondan otomatik türetilir.                                     -->
                                             <th style="min-width:130px;">Tür</th>
                                             <th class="col-advanced" style="min-width:110px;">Rol</th>
                                             <th class="col-advanced" style="min-width:70px;">Sıra</th>
@@ -1669,7 +1669,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="stonesTableBody">
-                                        {# JS tarafından dinamik eklenir; default 1 satır D1 #}
+                                        <!-- JS tarafından dinamik eklenir; default 1 satır D1 -->
                                     </tbody>
                                 </table>
                             </div>
@@ -1683,8 +1683,8 @@
                             </small>
                         </div>
 
-                        {# ─────── 5. Tedarikçi Carisine İşle Toggle ─────── #}
-                        {# Tedarikçi seçilmemişse toggle disabled. Mevcut altın akışıyla aynı UX. #}
+                        <!-- ─────── 5. Tedarikçi Carisine İşle Toggle ─────── -->
+                        <!-- Tedarikçi seçilmemişse toggle disabled. Mevcut altın akışıyla aynı UX. -->
                         <div class="border-top pt-3 mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox"
@@ -1699,8 +1699,8 @@
                                 <div class="alert alert-info mb-0 mt-2 py-2 d-flex align-items-center">
                                     <i class="fa-solid fa-circle-info me-2"></i>
                                     <small>
-                                        {# FAZ E UI FIX (2026-04-23): Ham fonksiyon adı yerine  #}
-                                        {# dinamik seçili döviz etiketi gösterilir.             #}
+                                        <!-- FAZ E UI FIX (2026-04-23): Ham fonksiyon adı yerine  -->
+                                        <!-- dinamik seçili döviz etiketi gösterilir.             -->
                                         Pırlantanın <strong>Alış TL Karşılığı</strong> seçili tedarikçinin carisine
                                         <strong class="text-info" id="dia_ledger_currency_label">USD</strong>
                                         cinsinden <strong>borç</strong> olarak işlenecektir.
@@ -1709,7 +1709,7 @@
                             </div>
                         </div>
 
-                        {# FAZ E UI FIX (2026-04-23): Pırlanta Şablon Olarak Kaydet  #}
+                        <!-- FAZ E UI FIX (2026-04-23): Pırlanta Şablon Olarak Kaydet  -->
                         <div class="border-top pt-3 mb-3">
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="saveAsTemplateDiamond">
@@ -1730,13 +1730,13 @@
                             </div>
                         </div>
 
-                        {# FAZ E UI FIX (2026-04-23): Inline İptal/Kaydet butonları kaldırıldı.  #}
-                        {# Global modal-footer butonları (btnSavePurchase / btnSaveAndPrint)    #}
-                        {# tab-aware dispatch ile bu formu da submit eder. Yedek (fallback)     #}
-                        {# submit tetikleyicisi olarak gizli bir submit butonu bırakıldı:       #}
-                        {# requestSubmit() desteklemeyen eski tarayıcılarda form içinde bir     #}
-                        {# submit kontrolü bulunması gerekiyor. Görsel olarak kullanıcıya       #}
-                        {# görünmez (sr-only + display:none).                                   #}
+                        <!-- FAZ E UI FIX (2026-04-23): Inline İptal/Kaydet butonları kaldırıldı.  -->
+                        <!-- Global modal-footer butonları (btnSavePurchase / btnSaveAndPrint)    -->
+                        <!-- tab-aware dispatch ile bu formu da submit eder. Yedek (fallback)     -->
+                        <!-- submit tetikleyicisi olarak gizli bir submit butonu bırakıldı:       -->
+                        <!-- requestSubmit() desteklemeyen eski tarayıcılarda form içinde bir     -->
+                        <!-- submit kontrolü bulunması gerekiyor. Görsel olarak kullanıcıya       -->
+                        <!-- görünmez (sr-only + display:none).                                   -->
                         <button type="submit" id="btnSaveDiamond"
                                 class="visually-hidden" tabindex="-1"
                                 aria-hidden="true" style="display:none;">
@@ -1745,18 +1745,18 @@
                     </form>
 
                     </div>
-                    {# ═══════════════════════════ /PIRLANTA TAB ══════════════════════════ #}
+                    <!-- ═══════════════════════════ /PIRLANTA TAB ══════════════════════════ -->
 
 
-                    {# ═══════════════════════════ SAAT TAB ════════════════════════════════ #}
-                    {# AJAX endpoint: /gold-purchases/multi-material-add                     #}
-                    {# material_type=WATCH hidden input. WatchDetail.                        #}
-                    {# ═════════════════════════════════════════════════════════════════════ #}
+                    <!-- ═══════════════════════════ SAAT TAB ════════════════════════════════ -->
+                    <!-- AJAX endpoint: /gold-purchases/multi-material-add                     -->
+                    <!-- material_type=WATCH hidden input. WatchDetail.                        -->
+                    <!-- ═════════════════════════════════════════════════════════════════════ -->
                     <div class="tab-pane fade" id="tab-pane-watch"
                          role="tabpanel" aria-labelledby="tab-link-watch">
 
-                    {# FAZ E UI FIX (2026-04-23): Saat şablon pill'leri —                #}
-                    {# material_type='WATCH' ile filtreli.                               #}
+                    <!-- FAZ E UI FIX (2026-04-23): Saat şablon pill'leri —                -->
+                    <!-- material_type='WATCH' ile filtreli.                               -->
                     <div id="templatePillsWatch" class="template-pill-container border-bottom mb-3 pb-2">
                         {% for t in watch_templates %}
                         <button type="button" class="btn btn-sm btn-outline-primary btn-template-pill-watch"
@@ -1783,9 +1783,9 @@
                         <input type="hidden" name="material_type" value="WATCH">
                         <input type="hidden" name="jewelry_type" value="Saat">
 
-                        {# ─────── 1. Tedarikçi + Stok + Resim/Kamera ─────── #}
-                        {# FAZ E UI FIX (2026-04-23): Altın formundaki image-input + #}
-                        {# camera-trigger widget'ı Saat formuna da eklendi.           #}
+                        <!-- ─────── 1. Tedarikçi + Stok + Resim/Kamera ─────── -->
+                        <!-- FAZ E UI FIX (2026-04-23): Altın formundaki image-input + -->
+                        <!-- camera-trigger widget'ı Saat formuna da eklendi.           -->
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="image-input image-input-empty image-input-outline image-input-placeholder mb-3"
@@ -1846,7 +1846,7 @@
                             </div>
                         </div>
 
-                        {# ─────── 2. Marka / Model / Referans / Seri ─────── #}
+                        <!-- ─────── 2. Marka / Model / Referans / Seri ─────── -->
                         <div class="border rounded p-3 mb-4 bg-light-primary">
                             <h6 class="mb-3 text-primary fw-bold">
                                 <i class="fa-solid fa-clock me-2"></i> Saat Kimliği
@@ -1883,7 +1883,7 @@
                             </div>
                         </div>
 
-                        {# ─────── 3. Mekanik / Fiziksel Özellikler ─────── #}
+                        <!-- ─────── 3. Mekanik / Fiziksel Özellikler ─────── -->
                         <div class="border rounded p-3 mb-4">
                             <h6 class="mb-3 text-dark fw-bold">
                                 <i class="fa-solid fa-gears me-2"></i> Mekanik / Fiziksel
@@ -1952,7 +1952,7 @@
                             </div>
                         </div>
 
-                        {# ─────── 4. Satış Fiyatı (Döviz bazlı) ─────── #}
+                        <!-- ─────── 4. Satış Fiyatı (Döviz bazlı) ─────── -->
                         <div class="border rounded p-3 mb-4 bg-light-success">
                             <h6 class="mb-3 text-success fw-bold">
                                 <i class="fa-solid fa-tag me-2"></i> Satış Fiyatı
@@ -1979,16 +1979,16 @@
                                 </div>
                                 <div class="col-md-5">
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" name="buy_price_tl"
-                                               id="wat_buy_price_tl" placeholder="0,00" value="0">
-                                        <label for="wat_buy_price_tl">Alış TL Karşılığı (Maliyet)</label>
+                                        <input type="text" class="form-control" name="buy_price_eur"
+                                               id="wat_buy_price_eur" placeholder="0,00" value="0">
+                                        <label for="wat_buy_price_eur">Alış TL Karşılığı (Maliyet)</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {# ─────── 5. Tedarikçi Carisine İşle Toggle ─────── #}
-                        {# Tedarikçi seçilmemişse toggle disabled. Mevcut altın akışıyla aynı UX. #}
+                        <!-- ─────── 5. Tedarikçi Carisine İşle Toggle ─────── -->
+                        <!-- Tedarikçi seçilmemişse toggle disabled. Mevcut altın akışıyla aynı UX. -->
                         <div class="border-top pt-3 mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox"
@@ -2003,8 +2003,8 @@
                                 <div class="alert alert-info mb-0 mt-2 py-2 d-flex align-items-center">
                                     <i class="fa-solid fa-circle-info me-2"></i>
                                     <small>
-                                        {# FAZ E UI FIX (2026-04-23): Ham fonksiyon adı yerine  #}
-                                        {# dinamik seçili döviz etiketi gösterilir.             #}
+                                        <!-- FAZ E UI FIX (2026-04-23): Ham fonksiyon adı yerine  -->
+                                        <!-- dinamik seçili döviz etiketi gösterilir.             -->
                                         Saatin <strong>Alış TL Karşılığı</strong> seçili tedarikçinin carisine
                                         <strong class="text-info" id="wat_ledger_currency_label">USD</strong>
                                         cinsinden <strong>borç</strong> olarak işlenecektir.
@@ -2013,7 +2013,7 @@
                             </div>
                         </div>
 
-                        {# FAZ E UI FIX (2026-04-23): Saat Şablon Olarak Kaydet  #}
+                        <!-- FAZ E UI FIX (2026-04-23): Saat Şablon Olarak Kaydet  -->
                         <div class="border-top pt-3 mb-3">
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="saveAsTemplateWatch">
@@ -2034,9 +2034,9 @@
                             </div>
                         </div>
 
-                        {# FAZ E UI FIX (2026-04-23): Inline İptal/Kaydet butonları kaldırıldı.  #}
-                        {# Global modal-footer butonları (btnSavePurchase) tab-aware dispatch   #}
-                        {# ile bu formu da submit eder. Yedek (fallback) gizli submit butonu:   #}
+                        <!-- FAZ E UI FIX (2026-04-23): Inline İptal/Kaydet butonları kaldırıldı.  -->
+                        <!-- Global modal-footer butonları (btnSavePurchase) tab-aware dispatch   -->
+                        <!-- ile bu formu da submit eder. Yedek (fallback) gizli submit butonu:   -->
                         <button type="submit" id="btnSaveWatch"
                                 class="visually-hidden" tabindex="-1"
                                 aria-hidden="true" style="display:none;">
@@ -2045,10 +2045,10 @@
                     </form>
 
                     </div>
-                    {# ═══════════════════════════ /SAAT TAB ═══════════════════════════════ #}
+                    <!-- ═══════════════════════════ /SAAT TAB ═══════════════════════════════ -->
 
                     </div>
-                    {# /tab-content #}
+                    <!-- /tab-content -->
                 </div>
                 <div class="modal-footer d-flex justify-content-end flex-nowrap gap-2" id="goldModalFooter">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
@@ -2847,7 +2847,7 @@
                                         if (p && parseFloat(p) > 0) {
                                             return parseFloat(p).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + sym;
                                         }
-                                        var tl = r['product__sale_price_tl'];
+                                        var tl = r['product__sale_price_eur'];
                                         if (tl && parseFloat(tl) > 0) {
                                             return parseFloat(tl).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₺';
                                         }
@@ -4048,11 +4048,11 @@
     </script>
 
 
-    {# ═══════════════════════════════════════════════════════════════════════════ #}
-    {# PIVOT FAZ E (2026-04-23): Çoklu Maden Tab + Pırlanta/Saat AJAX Batch Entry #}
-    {# Backend endpoint: /gold-purchases/multi-material-add                        #}
-    {# Bu blok mevcut Altın akışına HİÇ DOKUNMAZ; sadece yeni tab'ları yönetir.   #}
-    {# ═══════════════════════════════════════════════════════════════════════════ #}
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- PIVOT FAZ E (2026-04-23): Çoklu Maden Tab + Pırlanta/Saat AJAX Batch Entry -->
+    <!-- Backend endpoint: /gold-purchases/multi-material-add                        -->
+    <!-- Bu blok mevcut Altın akışına HİÇ DOKUNMAZ; sadece yeni tab'ları yönetir.   -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
     <script>
     (function () {
         'use strict';
@@ -4476,18 +4476,18 @@
         })();
 
         // R-04 (2026-04-28): Pırlanta Kâr % FX auto-calc.
-        // Formül: sale_price_tl = buy_price_tl × (1 + kar/100)
-        //         sale_price (döviz) = sale_price_tl / fx_rate (TRY ise = sale_price_tl)
+        // Formül: sale_price_eur = buy_price_eur × (1 + kar/100)
+        //         sale_price (döviz) = sale_price_eur / fx_rate (TRY ise = sale_price_eur)
         // FX kurları /products/get-fx-rates endpoint'inden lazy-fetch + cache'lenir.
         // Kullanıcı sale_price'ı manuel düzenlerse (focus'a alıp yazarsa) auto-calc
-        // sessizleşir — _saleManual flag set edilir; sıfırlama: profit veya buy_price_tl
+        // sessizleşir — _saleManual flag set edilir; sıfırlama: profit veya buy_price_eur
         // değişimi flag'i temizler.
         (function _initDiamondProfitAutoCalc() {
-            var buyEl   = document.getElementById('dia_buy_price_tl');
+            var buyEl   = document.getElementById('dia_buy_price_eur');
             var profEl  = document.getElementById('dia_profit');
             var curEl   = document.getElementById('dia_sale_currency');
             var saleEl  = document.getElementById('dia_sale_price');
-            var saleTlEl = document.getElementById('dia_sale_price_tl');
+            var saleTlEl = document.getElementById('dia_sale_price_eur');
             var indEl   = document.getElementById('dia_fx_indicator');
             if (!buyEl || !profEl || !curEl || !saleEl || !saleTlEl) return;
 
@@ -4671,7 +4671,7 @@
 
             // Saat için yaygın sayı alanlarını normalize et
             normalizeFormDataNumbers(fd, [
-                'sale_price', 'buy_price_tl', 'watch_case_diameter'
+                'sale_price', 'buy_price_eur', 'watch_case_diameter'
             ]);
 
             fetch('/gold-purchases/multi-material-add', {
@@ -4833,7 +4833,7 @@
 
                 // Tekil sayı alanlarını normalize et
                 normalizeFormDataNumbers(fd, [
-                    'mount_gram', 'sale_price', 'buy_price_tl'
+                    'mount_gram', 'sale_price', 'buy_price_eur'
                 ]);
 
                 // Tekrarlı taş alanları
@@ -5098,12 +5098,12 @@
         // watch_reference_no eklendi (kritik kimlik alanları; eski şemada
         // eksikti, şablon uygulandığında model adı boş kalıyordu).
         var DIAMOND_TEMPLATE_FIELDS = [
-            'sale_currency', 'sale_price', 'buy_price_tl',
+            'sale_currency', 'sale_price', 'buy_price_eur',
             'mount_metal', 'mount_karat', 'mount_gram',
         ];
 
         var WATCH_TEMPLATE_FIELDS = [
-            'sale_currency', 'sale_price', 'buy_price_tl',
+            'sale_currency', 'sale_price', 'buy_price_eur',
             'watch_condition', 'watch_brand', 'watch_model_name',
             'watch_reference_no', 'watch_movement_type',
             'watch_case_material', 'watch_case_diameter',

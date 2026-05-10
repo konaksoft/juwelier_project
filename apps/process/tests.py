@@ -70,8 +70,8 @@ class POSCommissionBalanceTest(TestCase):
         # Has Altın ürünü (fiyat referansı)
         self.has_product = Products.objects.create(
             name='Has Altın 24 Ayar',
-            sale_price_tl=Decimal('3500.00'),
-            buy_price_tl=Decimal('3400.00'),
+            sale_price_eur=Decimal('3500.00'),
+            buy_price_eur=Decimal('3400.00'),
             sale_price_hs=Decimal('1.000'),
             buy_price_hs=Decimal('1.000'),
             is_gram_bullion=True,
@@ -81,8 +81,8 @@ class POSCommissionBalanceTest(TestCase):
         # Test ürünü (satılacak ürün)
         self.product = Products.objects.create(
             name='Test Altın Bilezik',
-            sale_price_tl=Decimal('10000.00'),
-            buy_price_tl=Decimal('8000.00'),
+            sale_price_eur=Decimal('10000.00'),
+            buy_price_eur=Decimal('8000.00'),
             sale_price_hs=Decimal('2.857'),
             buy_price_hs=Decimal('2.353'),
             is_gram_bullion=False,
@@ -184,8 +184,8 @@ class POSCommissionBalanceTest(TestCase):
                 payment_type='MANUAL',
                 pos_mode='',
                 customer=self.customer,
-                hs_rate_sale_tl=Decimal('3500.00'),
-                hs_rate_buy_tl=Decimal('3400.00'),
+                hs_rate_sale_eur=Decimal('3500.00'),
+                hs_rate_buy_eur=Decimal('3400.00'),
                 user=self.user,
             )
 
@@ -266,8 +266,8 @@ class POSCommissionBalanceTest(TestCase):
                 payment_type='MANUAL',
                 pos_mode='',
                 customer=self.customer,
-                hs_rate_sale_tl=Decimal('3500.00'),
-                hs_rate_buy_tl=Decimal('3400.00'),
+                hs_rate_sale_eur=Decimal('3500.00'),
+                hs_rate_buy_eur=Decimal('3400.00'),
                 user=self.user,
             )
 
@@ -334,8 +334,8 @@ class POSCommissionBalanceTest(TestCase):
                 payment_type='CASH',
                 pos_mode='',
                 customer=self.customer,
-                hs_rate_sale_tl=Decimal('3500.00'),
-                hs_rate_buy_tl=Decimal('3400.00'),
+                hs_rate_sale_eur=Decimal('3500.00'),
+                hs_rate_buy_eur=Decimal('3400.00'),
                 user=self.user,
             )
 

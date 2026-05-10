@@ -28,12 +28,12 @@
         <div class="card card-flush w-lg-650px py-5">
             <div class="card-body py-15 py-lg-20">
 
-                {# Başlık (reason veya mesajlardan gelen tonlamaya göre) #}
+                <!-- Başlık (reason veya mesajlardan gelen tonlamaya göre) -->
                 <h1 class="fw-bolder fs-2qx {{ title_class|default:'text-danger' }} mb-4">
                     {{ error_title|default:"Erişim Engellendi" }}
                 </h1>
 
-                {# Özet açıklama (reason varsa özel; yoksa ilk mesaj) #}
+                <!-- Özet açıklama (reason varsa özel; yoksa ilk mesaj) -->
                 <div class="fw-semibold fs-6 text-gray-600 mb-7">
                     {% if error_summary %}
                         {{ error_summary }}

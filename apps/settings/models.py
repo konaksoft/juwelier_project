@@ -7,6 +7,52 @@ from apps.stores.models import Stores
 class StoreConfiguration(models.Model):
     store = models.OneToOneField(Stores, on_delete=models.CASCADE, related_name='config')
 
+    # --- 0. DİL & BÖLGESEL AYARLAR (juwelier_plus port) ---
+    LANGUAGE_CHOICES = [
+        ('de', 'Almanca (Deutsch)'),
+        ('en', 'İngilizce (English)'),
+        ('tr', 'Türkçe'),
+    ]
+    language_code = models.CharField(
+        max_length=5,
+        choices=LANGUAGE_CHOICES,
+        default='tr',
+        verbose_name='Mağaza Dili',
+        help_text='Bu mağazanın tüm kullanıcıları için uygulama dilini zorlar.',
+    )
+
+    # --- 0a. DİNAMİK SPOT FİYATLANDIRMA TABANIS (juwelier_plus port) ---
+    BASE_SPOT_CURRENCY_CHOICES = [
+        ('USD', 'ABD Doları (USD)'),
+        ('EUR', 'Euro (EUR)'),
+        ('GBP', 'Sterlin (GBP)'),
+        ('CAD', 'Kanada Doları (CAD)'),
+        ('AUD', 'Avustralya Doları (AUD)'),
+        ('JPY', 'Japon Yeni (JPY)'),
+        ('CHF', 'İsviçre Frangı (CHF)'),
+    ]
+    base_spot_currency = models.CharField(
+        max_length=3,
+        choices=BASE_SPOT_CURRENCY_CHOICES,
+        default='EUR',
+        verbose_name='Spot Fiyat Taban Para Birimi',
+        help_text='Dinamik spot fiyat ekranında kullanılacak para birimi. Mevcut işlem kayıtlarını etkilemez.',
+    )
+
+    BASE_SPOT_UNIT_CHOICES = [
+        ('OZ', 'Troy Ons (oz)'),
+        ('GRAM', 'Gram (g)'),
+        ('KILO', 'Kilogram (kg)'),
+        ('TOLA', 'Tola'),
+    ]
+    base_spot_unit = models.CharField(
+        max_length=5,
+        choices=BASE_SPOT_UNIT_CHOICES,
+        default='OZ',
+        verbose_name='Spot Fiyat Taban Birimi',
+        help_text='Canlı spot fiyat okurken kullanılacak ağırlık birimi.',
+    )
+
     # --- 1. FİNANSAL AYARLAR ---
     price_margin_percent = models.DecimalField(
         max_digits=5, decimal_places=2, default=Decimal('0.00'),
@@ -19,6 +65,32 @@ class StoreConfiguration(models.Model):
         verbose_name="Manuel Has Hesabı Kullan"
     )
 
+    # --- T3 (2026-04-29): Manuel Kur Ayarı (Döviz İçin) ---
+    # Açıkken `get_product_details` view'ı is_currency=True ürünler için
+    # API tabanlı global Products.buy_price_eur / sale_price_eur yerine
+    # `manual_currency_rates` JSONField'ından mağazaya özel TL kurunu okur.
+    # Yapı: { "<product_uuid>": {"buy_tl": "45.20", "sell_tl": "46.50"} }
+    # Kapatıldığında API kuru otomatik geri devreye girer (fallback).
+    # Per-store izolasyon: aynı sistemdeki iki mağaza farklı kur kullanabilir.
+    use_manual_currency_rate = models.BooleanField(
+        default=False,
+        verbose_name="Manuel Kur Ayarı (Döviz)",
+        help_text=(
+            "Açıkken döviz ürünleri (USDTRY, EURTRY vb.) için API kurları "
+            "yerine manuel girilen TL kurları kullanılır. Kapatınca API kuru "
+            "otomatik devreye girer."
+        ),
+    )
+    manual_currency_rates = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Manuel Kur Override'ları",
+        help_text=(
+            "Döviz ürünleri için per-store TL kur override'ları. "
+            "Format: {\"<product_uuid>\": {\"buy_tl\": \"45.20\", \"sell_tl\": \"46.50\"}}"
+        ),
+    )
+
     active_pricing_chamber = models.ForeignKey(
         'chambers.Chambers',
         on_delete=models.SET_NULL,
@@ -28,10 +100,7 @@ class StoreConfiguration(models.Model):
         verbose_name="Referans Fiyat Derneği"
     )
 
-    # --- 2. YASAL / UYUMLULUK (MASAK) ---
-    enforce_cash_limit = models.BooleanField(default=True, verbose_name="Kısıtlama: 30.000 TL Üzeri Nakit Yasak")
-
-    # --- FAZ 18: ONAYLI KASA (Safe Approval) ---
+    # --- 2. ONAYLI KASA (Safe Approval) ---
     # Açıldığında tüm Hızlı İşlem / Perakende Payment kayıtları is_approved=False
     # olarak kaydedilir. Bakiye hesaplamalarına dahil edilmez. Yönetici onayı
     # gerekir. Kapalıysa (default) doğrudan is_approved=True kaydedilir.
@@ -44,15 +113,7 @@ class StoreConfiguration(models.Model):
         ),
     )
 
-    # 36.000 TL üzeri Müşteri Seçimi Zorunluluğu (Fatura Limiti)
-    enforce_invoice_customer = models.BooleanField(default=False,
-                                                   verbose_name="Zorunluluk: 36.000 TL Üzeri Müşteri Seçimi")
-
-    # 185.000 TL üzeri Kimlik/TCKN Zorunluluğu (MASAK)
-    enforce_masak_identity = models.BooleanField(default=False,
-                                                 verbose_name="Zorunluluk: 185.000 TL Üzeri Kimlik Bilgisi")
-
-    # --- MÜŞTERİ ZORUNLULUK AYARLARI (Validasyon Senkronizasyonu Fazı) ---
+    # --- MÜŞTERİ ZORUNLULUK AYARLARI ---
     # Tutar bağımsız müşteri seçimi zorunluluğu. Hızlı İşlem ve Perakende
     # ekranlarında Nakit/Kart/Havale butonlarına basıldığında müşteri seçili
     # değilse hem frontend hem backend tarafında işlem reddedilir.
@@ -102,6 +163,53 @@ class StoreConfiguration(models.Model):
 
     # Atölyelere veya yöneticilere gönderilen toplu raporlar
     notify_email_reports = models.BooleanField(default=True, verbose_name="E-posta: Rapor Bildirimleri")
+
+    # ─────────────────────────────────────────────────────────────
+    # FAZ 38 — CARİ DEFTER PARA BİRİMİ TERCİHİ
+    # ─────────────────────────────────────────────────────────────
+    # Bazı kuyumcular borcu Has (gram) cinsinden tutmak ister; mevcut
+    # davranış (HS modu): satışta gram sabit, kur dalgalandıkça TL
+    # karşılığı değişir. Diğerleri ise borcun TL cinsinden sabit
+    # kalmasını ister; bu durumda satıştaki TL tutar borç olarak
+    # yazılır, gram karşılığı bilgi amaçlı gösterilir.
+    #
+    # Servis katmanı (LedgerService.write_debt) bu alanı okuyup yazım
+    # davranışını ayarlar. Tahsilat/önizleme ekranları da seçim'e
+    # göre TL veya HS'i birincil göstergeye çıkarır.
+    DEBT_MODE_HS = 'HS'
+    DEBT_MODE_EUR = 'EUR'
+    DEBT_MODE_CHOICES = [
+        (DEBT_MODE_HS, 'Has (gram) — borç gram cinsinden sabit'),
+        (DEBT_MODE_EUR, 'EUR — borç Euro cinsinden sabit'),
+    ]
+    debt_currency_mode = models.CharField(
+        max_length=4,
+        choices=DEBT_MODE_CHOICES,
+        default=DEBT_MODE_HS,
+        verbose_name='Cari Borç Birim Modu',
+        help_text=(
+            'HS: Borç gram cinsinden sabit. '
+            'EUR: Borç Euro cinsinden sabit (kur dalgalandıkça gram '
+            'karşılığı değişir).'
+        ),
+    )
+
+    # ─────────────────────────────────────────────────────────────
+    # FAZ 38 — TAHSİLAT EKRANI: FAZLA TAHSİLATI VARSAYILAN OLARAK KABUL ET
+    # ─────────────────────────────────────────────────────────────
+    # Tahsilat modalında kullanıcı, müşterinin borcundan fazla tutar
+    # girdiğinde "Fazla Tahsilatı Kabul Et" toggle'ını açıyordu. Bazı
+    # mağazalar bu işlemi her seferde manuel açmak istemiyor; mağaza
+    # ayarından varsayılan davranış kontrol edilir. Toggle UI'da
+    # kalır ama varsayılan değer bu alandan gelir.
+    allow_overpayment_default = models.BooleanField(
+        default=False,
+        verbose_name='Tahsilat: Fazla Tahsilatı Varsayılan Kabul Et',
+        help_text=(
+            'Tahsilat ekranında "Fazla Tahsilatı Kabul Et" toggle\'ı '
+            'varsayılan olarak açık gelsin. Kullanıcı yine kapatabilir.'
+        ),
+    )
 
     # --- SY-01: BANKA → 24 AYAR ALTIN FATURASI ---
     default_24k_product = models.ForeignKey(

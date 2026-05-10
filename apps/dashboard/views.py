@@ -185,7 +185,7 @@ def get_summary_data(request):
         # FAZ R-1: Yeni KPI alanları (frontend güncellendiğinde kullanılacak)
         'daily_gross_profit': str(kpi['total_gross_profit']),
         'daily_net_profit': str(kpi['total_net_profit']),
-        'stock_value_tl': str(kpi['stock_value_tl']),
+        'stock_value_eur': str(kpi['stock_value_eur']),
         'net_cash_flow': str(kpi['net_cash_flow']),
         'transaction_count': kpi['transaction_count'],
         'unique_customers': kpi['unique_customers'],
@@ -232,15 +232,59 @@ def get_assets_summary(request):
     return JsonResponse(payload)
 
 
+# ============================================================================
+# FAZ 26 (2026-05-01): Patron Odaklı Dashboard — TAB 1 Endpoint
+# ============================================================================
+# Yeni 3 sekmeli dashboard yapısının ilk sekmesini ("Mağaza Varlıkları ve
+# Stok") besleyen tek-shot AJAX endpoint'i. Mevcut /assets-summary/ endpoint'i
+# (multi_material_cards.js, mağaza KPI dashboard vb.) tarafından
+# kullanıldığından korunur; bu yeni endpoint AYRI bir route olarak eklenir.
+#
+# Cache stratejisi:
+#   Redis 5 dk TTL. Stok ve tedarikçi cari değiştiğinde davetkar invalidasyon
+#   gerekirse: cache.delete(f"dashboard_assets_v2:{store.id}").
+#
+# Yetki:
+#   index_view ile aynı role gate'ine bağlanır (DASHBOARD_INDEX_VIEW).
+# ============================================================================
+
+@role_required('DASHBOARD_INDEX_VIEW')
+@login_required(login_url='login')
+def assets_v2_view(request):
+    """
+    TAB 1 — Mağaza Varlıkları ve Stok için tek-shot JSON.
+
+    Dönen şema (bkz. services.get_tab1_assets_data docstring):
+        net_summary, kasa, banka_pos_toplam_try, stok_kirilimlari,
+        tedarikci_borclari, generated_at.
+    """
+    from django.core.cache import cache as redis_cache
+    from apps.dashboard.services import get_tab1_assets_data
+
+    store = request.user.store
+    if not store:
+        return JsonResponse(get_tab1_assets_data(None))
+
+    cache_key = f"dashboard_assets_v2:{store.id}"
+    # FAZ 26.3: ?refresh=1 query string'i ile cache bypass — Yenile butonu
+    # kullanıcının taze veri görmesini garanti etsin.
+    force_refresh = request.GET.get('refresh') in ('1', 'true', 'True')
+    payload = None if force_refresh else redis_cache.get(cache_key)
+    if not payload:
+        payload = get_tab1_assets_data(store)
+        redis_cache.set(cache_key, payload, timeout=300)  # 5 dk
+    return JsonResponse(payload)
+
+
 @login_required(login_url='login')
 def get_top_customers_by_sales(request):
     store = request.user.store
     top_customers = Process.objects.filter(transaction_type='SALE', store=store, customer__is_deleted=False,
                                            customer__isnull=False).values('customer__first_name',
                                                                           'customer__last_name').annotate(
-        total_sales_tl=Sum('amount')).order_by('-total_sales_tl')[:5]
+        total_sales_eur=Sum('amount')).order_by('-total_sales_eur')[:5]
     customer_names = [f"{c['customer__first_name']} {c['customer__last_name']}" for c in top_customers]
-    total_sales_values = [float(c['total_sales_tl']) for c in top_customers]
+    total_sales_values = [float(c['total_sales_eur']) for c in top_customers]
     return JsonResponse({
         'customer_names': customer_names,
         'total_sales_values': total_sales_values
@@ -368,8 +412,8 @@ def generate_report(request):
         "authorized_person": (f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username),
         "period_days": period_days,
 
-        "sum_total_sales_tl": fmt_tr(total_sales, 2),
-        "sum_total_purchases_tl": fmt_tr(total_purchases, 2),
+        "sum_total_sales_eur": fmt_tr(total_sales, 2),
+        "sum_total_purchases_eur": fmt_tr(total_purchases, 2),
         "sum_total_sales_has": fmt_tr(total_sale_has, 3),
         "sum_net_total_tl": fmt_tr(net_total, 2),
         "is_net_negative": net_total < 0,
@@ -595,8 +639,8 @@ def generate_currency_report(request):
         "branch_name": getattr(store, "branch_name", getattr(store, "name", "-")),
         "authorized_person": full_name(request.user),
         "period_days": period_days,
-        "sum_total_sales_tl": fmt_tr(total_sell_tl, 2),
-        "sum_total_purchases_tl": fmt_tr(total_buy_tl, 2),
+        "sum_total_sales_eur": fmt_tr(total_sell_tl, 2),
+        "sum_total_purchases_eur": fmt_tr(total_buy_tl, 2),
         "sum_net_total_tl": fmt_tr(net_tl, 2),
         "is_net_negative": (net_tl < 0),
         "rows": rows,
@@ -828,11 +872,11 @@ def generate_current_stock_report(request):
             store=store,
         )
     )
-    total_sales_tl = D(process_qs.filter(transaction_type='SALE').aggregate(s=Sum('amount'))['s'])
-    total_purchases_tl = D(process_qs.filter(
+    total_sales_eur = D(process_qs.filter(transaction_type='SALE').aggregate(s=Sum('amount'))['s'])
+    total_purchases_eur = D(process_qs.filter(
         transaction_type__in=['PURCHASE', 'RETURN']
     ).aggregate(s=Sum('amount'))['s'])
-    net_total_tl = total_sales_tl - total_purchases_tl
+    net_total_tl = total_sales_eur - total_purchases_eur
 
     # ═══════════════════════════════════════════════════════════════
     # 4. STOK HAREKETLERİ — StockLedger (Immutable Ledger)
@@ -1051,8 +1095,8 @@ def generate_current_stock_report(request):
         'store_id': store_id_text,
         'rows': grouped_rows,
         'is_preview': request.GET.get('preview') == '1',
-        'sum_total_sales_tl': fmt_tr(total_sales_tl),
-        'sum_total_purchases_tl': fmt_tr(total_purchases_tl),
+        'sum_total_sales_eur': fmt_tr(total_sales_eur),
+        'sum_total_purchases_eur': fmt_tr(total_purchases_eur),
         'sum_net_total_tl': fmt_tr(net_total_tl),
         'is_net_negative': net_total_tl < 0,
     }
@@ -1157,8 +1201,8 @@ def generate_bank_balance_report(request):
         "authorized_person": (f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username),
         "period_days": period_days,
 
-        "sum_total_sales_tl": fmt_tr(total_in, 2),
-        "sum_total_purchases_tl": fmt_tr(total_out, 2),
+        "sum_total_sales_eur": fmt_tr(total_in, 2),
+        "sum_total_purchases_eur": fmt_tr(total_out, 2),
         "sum_net_total_tl": fmt_tr(net_total_tl, 2),
         "is_net_negative": (net_total_tl < 0),
 
@@ -1274,11 +1318,11 @@ def generate_profit_report(request):
         # ── Güncel Has Altın kuru (rapor sonundaki TL karşılığı için) ──
         hs_product = Products.objects.filter(
             name__icontains='Has Altın'
-        ).only('sale_price_tl', 'buy_price_tl').first()
+        ).only('sale_price_eur', 'buy_price_eur').first()
 
         guncel_has_kur = Decimal('0.00')
-        if hs_product and hs_product.sale_price_tl:
-            guncel_has_kur = Decimal(str(hs_product.sale_price_tl))
+        if hs_product and hs_product.sale_price_eur:
+            guncel_has_kur = Decimal(str(hs_product.sale_price_eur))
 
         # ── StockSnapshot cache: weighted_avg_cost_hs ─────────
         # Tek sorgu ile sayfadaki tüm ürünlerin ortalama maliyet Has'ını çek
@@ -1317,8 +1361,19 @@ def generate_profit_report(request):
             birim_maliyet_has = inv_map.get(p.product_id, Decimal('0.000'))
 
             # Fallback: weighted yoksa ürün kartından al
+            # FAZ 44 — 1.05 EŞİK KURALI:
+            # Products.buy_price_hs iki çağdan veriyi karışık tutuyor (gold_purchases
+            # form girişi TOPLAM, retail_views.py:1355 üzerine yazımı BİRİM). Burada
+            # birim maliyet bekliyoruz; 1.05 üzerindeki değer legacy toplam demektir.
             if birim_maliyet_has <= Decimal('0') and p.product:
-                birim_maliyet_has = Decimal(str(p.product.buy_price_hs or 0))
+                raw_buy = Decimal(str(p.product.buy_price_hs or 0))
+                prod_gram = Decimal(str(getattr(p.product, 'gram', 0) or 0))
+                if raw_buy > Decimal('1.05') and prod_gram > Decimal('0'):
+                    birim_maliyet_has = (raw_buy / prod_gram).quantize(
+                        Decimal('0.0001'), rounding=ROUND_HALF_UP
+                    )
+                else:
+                    birim_maliyet_has = raw_buy
 
             maliyet_has_toplam = (birim_maliyet_has * qty_val).quantize(
                 Decimal('0.001'), rounding=ROUND_HALF_UP
@@ -1425,6 +1480,21 @@ def generate_profit_report(request):
         report_title = "Barkodlu Ürün Satış Kâr Raporu"
         template_name = "management/dashboard/profit_report_barcode.html"
 
+    # ════════════════════════════════════════════════════════════════════
+    # FAZ 31 / BUG-5 — TÜM KATEGORİLER KÂR RAPORU (2026-05-01)
+    # ════════════════════════════════════════════════════════════════════
+    # Önceki davranış: Desteklenmeyen her type için base_qs.none() →
+    #                  kullanıcı "Tümü" istediğinde boş rapor görüyordu.
+    # Yeni davranış:   type='all' tüm SALE/ORDER_IN satırlarını birleşik
+    #                  rapor olarak listeler (kategori filtresi yok).
+    #                  Mevcut tipler (ziynet/altin/bilezik/hurda/barkod)
+    #                  hiç değişmedi; eski URL'ler etkilenmez.
+    # ════════════════════════════════════════════════════════════════════
+    elif report_type == 'all':
+        processes = base_qs
+        report_title = "Tüm Kategoriler Kâr Raporu"
+        template_name = "management/dashboard/profit_report.html"
+
     else:
         processes = base_qs.none()
 
@@ -1440,27 +1510,36 @@ def generate_profit_report(request):
 
         if gross_profit == Decimal('0') and sale_amount > Decimal('0'):
             maliyet_tl = Decimal('0')
-            if getattr(p, 'cost_amount_tl', 0) and p.cost_amount_tl > 0:
-                maliyet_tl = Decimal(str(p.cost_amount_tl))
+            if getattr(p, 'cost_amount_eur', 0) and p.cost_amount_eur > 0:
+                maliyet_tl = Decimal(str(p.cost_amount_eur))
             elif p.product and getattr(p.product, 'buy_price_hs', 0) > 0:
-                kur = getattr(p, 'hs_rate_buy_tl', 0)
+                kur = getattr(p, 'hs_rate_buy_eur', 0)
                 if not kur or kur == 0:
-                    kur = getattr(p, 'hs_rate_sale_tl', 0)
+                    kur = getattr(p, 'hs_rate_sale_eur', 0)
                 if kur and Decimal(str(kur)) > Decimal('0'):
-                    maliyet_tl = Decimal(str(p.product.buy_price_hs)) * Decimal(str(kur))
+                    # FAZ 44 — 1.05 EŞİK KURALI:
+                    # Products.buy_price_hs gold_purchases/perakende karışık tutuyor.
+                    #   - 1.05 üzeri  → legacy TOPLAM HS (× kur = toplam TL)
+                    #   - 1.05 ve altı → BİRİM HS (× kur × qty = toplam TL)
+                    raw_buy = Decimal(str(p.product.buy_price_hs))
+                    qty_for_cost = Decimal(p.piece) if (p.piece and p.piece > 0) else Decimal(p.gram or 0)
+                    if raw_buy > Decimal('1.05'):
+                        maliyet_tl = raw_buy * Decimal(str(kur))
+                    elif qty_for_cost > Decimal('0'):
+                        maliyet_tl = raw_buy * Decimal(str(kur)) * qty_for_cost
             if maliyet_tl > Decimal('0'):
                 gross_profit = sale_amount - maliyet_tl
 
         try:
-            cost_amount_tl = (
-                Decimal(str(p.cost_amount_tl))
-                if getattr(p, 'cost_amount_tl', None)
+            cost_amount_eur = (
+                Decimal(str(p.cost_amount_eur))
+                if getattr(p, 'cost_amount_eur', None)
                 else Decimal('0')
             )
         except (InvalidOperation, ValueError, TypeError):
-            cost_amount_tl = Decimal('0')
-        if cost_amount_tl == 0:
-            cost_amount_tl = sale_amount - gross_profit
+            cost_amount_eur = Decimal('0')
+        if cost_amount_eur == 0:
+            cost_amount_eur = sale_amount - gross_profit
 
         try:
             cost_amount_hs = (
@@ -1471,13 +1550,13 @@ def generate_profit_report(request):
         except (InvalidOperation, ValueError, TypeError):
             cost_amount_hs = Decimal('0')
 
-        if cost_amount_hs == Decimal('0') and cost_amount_tl > Decimal('0'):
-            kur = getattr(p, 'hs_rate_buy_tl', 0)
+        if cost_amount_hs == Decimal('0') and cost_amount_eur > Decimal('0'):
+            kur = getattr(p, 'hs_rate_buy_eur', 0)
             if not kur or kur == 0:
-                kur = getattr(p, 'hs_rate_sale_tl', 0)
+                kur = getattr(p, 'hs_rate_sale_eur', 0)
             if kur and Decimal(str(kur)) > Decimal('0'):
                 cost_amount_hs = (
-                        cost_amount_tl / Decimal(str(kur))
+                        cost_amount_eur / Decimal(str(kur))
                 ).quantize(Decimal('0.001'))
 
         try:
@@ -1492,12 +1571,12 @@ def generate_profit_report(request):
         unit_label = "Ad" if p.piece > 0 else "Gr"
         qty_display = f"{fmt_tr(qty_val, 0 if p.piece > 0 else 2)} {unit_label}"
 
-        unit_cost = (cost_amount_tl / qty_val) if qty_val > 0 else Decimal('0')
+        unit_cost = (cost_amount_eur / qty_val) if qty_val > 0 else Decimal('0')
         unit_cost_hs = (cost_amount_hs / qty_val) if qty_val > 0 else Decimal('0')
         unit_sell_hs = (sell_hs / qty_val) if qty_val > 0 else Decimal('0')
 
         total_revenue += sale_amount
-        total_cost += cost_amount_tl
+        total_cost += cost_amount_eur
         total_profit += gross_profit
 
         rows.append({
@@ -1794,7 +1873,7 @@ def api_inventory_value(request):
             total_gram=Sum('stock_gram'),
             total_pieces=Sum('stock_pieces'),
             total_wac_tl=Sum(
-                F('stock_gram') * F('weighted_avg_cost_tl'),
+                F('stock_gram') * F('weighted_avg_cost_eur'),
                 output_field=DecimalField(),
             ),
             total_wac_hs=Sum(
@@ -1883,7 +1962,7 @@ def api_employee_performance(request):
         last = row.get('employee__last_name', '') or ''
         name = f"{first} {last}".strip() or 'Bilinmeyen'
         avg_sale = (
-            (row['total_sales_tl'] / row['total_sale_count']).quantize(Decimal('0.01'))
+            (row['total_sales_eur'] / row['total_sale_count']).quantize(Decimal('0.01'))
             if row['total_sale_count'] > 0 else Decimal('0')
         )
 
@@ -1891,11 +1970,11 @@ def api_employee_performance(request):
             'employee_id': str(row['employee_id']),
             'name': name,
             'sale_count': row['total_sale_count'],
-            'total_sales_tl': str(row['total_sales_tl']),
+            'total_sales_eur': str(row['total_sales_eur']),
             'total_sales_hs': str(row['total_sales_hs']),
             'total_gross_profit': str(row['total_gross_profit']),
             'purchase_count': row['total_purchase_count'],
-            'total_purchases_tl': str(row['total_purchases_tl']),
+            'total_purchases_eur': str(row['total_purchases_eur']),
             'transaction_count': row['total_transaction_count'],
             'avg_sale_tl': str(avg_sale),
         })
@@ -1931,11 +2010,11 @@ def api_supplier_ledger(request):
             )
             .values('supplier_id', 'supplier__company_name')
             .annotate(
-                total_purchases_tl=Coalesce(Sum('amount'), Decimal('0'), output_field=DecimalField()),
+                total_purchases_eur=Coalesce(Sum('amount'), Decimal('0'), output_field=DecimalField()),
                 total_purchases_hs=Coalesce(Sum('price_hs'), Decimal('0'), output_field=DecimalField()),
                 purchase_count=Count('id'),
             )
-            .order_by('-total_purchases_tl')
+            .order_by('-total_purchases_eur')
         )
 
         suppliers = []
@@ -1943,7 +2022,7 @@ def api_supplier_ledger(request):
             suppliers.append({
                 'supplier_id': str(row['supplier_id']),
                 'company_name': row['supplier__company_name'] or '-',
-                'total_purchases_tl': str(row['total_purchases_tl']),
+                'total_purchases_eur': str(row['total_purchases_eur']),
                 'total_purchases_hs': str(row['total_purchases_hs']),
                 'purchase_count': row['purchase_count'],
             })
@@ -1993,17 +2072,17 @@ def api_supplier_ledger(request):
             'process_no': p['process_no'] or '-',
             'date': p['date'].strftime('%d/%m/%Y %H:%M') if p['date'] else '-',
             'transaction_type': p['transaction_type'],
-            'amount_tl': str(amt),
+            'amount_eur': str(amt),
             'amount_hs': str(p['price_hs'] or Decimal('0')),
             'product': p['product__name'] or '-',
-            'cumulative_balance_tl': str(cumulative_tl),
+            'cumulative_balance_eur': str(cumulative_tl),
         })
 
     return JsonResponse({
         'supplier_id': supplier_id,
         'period': f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}",
         'movements': movements,
-        'final_balance_tl': str(cumulative_tl),
+        'final_balance_eur': str(cumulative_tl),
     })
 
 
@@ -2039,15 +2118,15 @@ def api_dashboard_kpi(request):
     weekly_data = (
         DailyStoreReport.objects
         .filter(store=store, report_date__gte=week_start, report_date__lte=today)
-        .values('report_date', 'total_sales_tl', 'total_purchases_tl', 'total_gross_profit')
+        .values('report_date', 'total_sales_eur', 'total_purchases_eur', 'total_gross_profit')
         .order_by('report_date')
     )
     weekly_trend = []
     for row in weekly_data:
         weekly_trend.append({
             'date': row['report_date'].strftime('%d/%m'),
-            'sales': str(row['total_sales_tl']),
-            'purchases': str(row['total_purchases_tl']),
+            'sales': str(row['total_sales_eur']),
+            'purchases': str(row['total_purchases_eur']),
             'profit': str(row['total_gross_profit']),
         })
 
@@ -2080,7 +2159,7 @@ def api_dashboard_kpi(request):
         employee_list.append({
             'name': f"{first} {last}".strip() or 'Bilinmeyen',
             'sale_count': emp['total_sale_count'],
-            'total_sales_tl': str(emp['total_sales_tl']),
+            'total_sales_eur': str(emp['total_sales_eur']),
             'total_gross_profit': str(emp['total_gross_profit']),
         })
 
@@ -2106,9 +2185,9 @@ def api_dashboard_kpi(request):
     return JsonResponse({
         # Bugünkü KPI
         'today': {
-            'total_sales_tl': str(kpi['total_sales_tl']),
+            'total_sales_eur': str(kpi['total_sales_eur']),
             'total_sales_hs': str(kpi['total_sales_hs']),
-            'total_purchases_tl': str(kpi['total_purchases_tl']),
+            'total_purchases_eur': str(kpi['total_purchases_eur']),
             'total_purchases_hs': str(kpi['total_purchases_hs']),
             'total_gross_profit': str(kpi['total_gross_profit']),
             'total_net_profit': str(kpi['total_net_profit']),
@@ -2121,7 +2200,7 @@ def api_dashboard_kpi(request):
         },
         # Stok
         'stock': {
-            'value_tl': str(kpi['stock_value_tl']),
+            'value_tl': str(kpi['stock_value_eur']),
             'value_hs': str(kpi['stock_value_hs']),
             'has_kur_sell': has_kur_sell,
             'has_kur_buy': has_kur_buy,

@@ -1,5 +1,5 @@
 """
-WSGI config for jewelery_project project.
+WSGI config for juwelier_project project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

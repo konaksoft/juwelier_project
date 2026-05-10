@@ -4,26 +4,31 @@
 {% block header %}
     <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
     <style>
-        /* --- KUYUM PLUS: DARK & GOLD CONCEPT --- */
+        /* ════════════════════════════════════════════════════════════════ */
+        /* FAZ 32 — STANDART METRONIC LIGHT THEME (2026-05-01)              */
+        /* ════════════════════════════════════════════════════════════════ */
+        /* Önceki "Dark & Gold" konsept tamamen kaldırıldı; projenin diğer  */
+        /* sayfalarıyla (customers/detail.html, products/index.html vb.)   */
+        /* uyumlu light theme uygulandı. Sınıf isimleri korundu — HTML     */
+        /* body ve JS handler'ları dokunulmadı; sadece görsel paleti       */
+        /* değiştirildi.                                                    */
+        /* ════════════════════════════════════════════════════════════════ */
         :root {
-            --bg-dark-gradient: linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
-            --card-bg: linear-gradient(135deg, rgba(26, 37, 58, .90), rgba(34, 49, 74, .90));
-            --accent-gold: #FFD700;
-            --accent-gold-hover: #FFB400;
-            --text-primary: #ffffff;
-            --text-muted: #a1a5b7;
-            --border-gold-subtle: rgba(255, 215, 0, .15);
-            --danger-red: #ff4d4f;
-            --success-green: #28c76f;
-        }
-
-        body, .app-main, .wrapper {
-            background: var(--bg-dark-gradient) !important;
-            color: var(--text-primary);
-        }
-
-        .supplier-detail-container {
-            padding: 1.5rem;
+            --kp-page-bg: #f9fafc;
+            --kp-card-bg: #ffffff;
+            --kp-card-border: #e9eef5;
+            --kp-text-primary: #1f2a3a;
+            --kp-text-muted: #6c757d;
+            --kp-text-soft: #8a94a6;
+            --kp-accent: #1661c1;
+            --kp-accent-soft: rgba(0, 123, 255, .08);
+            --kp-warning: #ffc107;
+            --kp-warning-soft: rgba(255, 193, 7, .12);
+            --kp-success: #28a745;
+            --kp-success-soft: rgba(40, 167, 69, .12);
+            --kp-danger: #dc3545;
+            --kp-danger-soft: rgba(220, 53, 69, .12);
+            --kp-row-hover: rgba(0, 123, 255, .03);
         }
 
         /* FAZ 11 / UX-06 — Primary CTA buton (Cariyi Düzelt) */
@@ -32,19 +37,18 @@
         }
         .primary-cta-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 28px rgba(255, 180, 0, 0.55) !important;
+            box-shadow: 0 10px 24px rgba(255, 180, 0, 0.32) !important;
         }
         .primary-cta-button:active {
             transform: translateY(0);
         }
 
-        /* ORTAK KART YAPISI */
+        /* ORTAK KART YAPISI — standart Metronic .card pattern */
         .kp-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-gold-subtle);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(12px);
+            background: var(--kp-card-bg);
+            border: 1px solid var(--kp-card-border);
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(18, 38, 63, 0.05);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
             position: relative;
@@ -53,19 +57,18 @@
 
         /* KPI KARTLARI */
         .kpi-card {
-            background: rgba(15, 27, 43, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+            border: 1px solid var(--kp-card-border);
             border-radius: 12px;
             padding: 1.25rem;
             height: 100%;
-            transition: all 0.3s ease;
+            transition: transform .18s ease, box-shadow .18s ease;
             position: relative;
         }
 
         .kpi-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--accent-gold);
-            background: rgba(255, 215, 0, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 38, 63, 0.08);
         }
 
         .kpi-icon {
@@ -75,59 +78,487 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin-bottom: 0.75rem;
         }
 
         .kpi-label {
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            font-weight: 600;
+            color: var(--kp-text-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
         }
 
         .kpi-value {
-            color: var(--text-primary);
-            font-size: 1.35rem;
-            font-weight: 700;
+            color: var(--kp-text-primary);
+            font-size: 1.3rem;
+            font-weight: 800;
             margin-top: 0.25rem;
         }
 
         .kpi-sub {
             font-size: 0.75rem;
             margin-top: 0.25rem;
-            opacity: 0.8;
+            color: var(--kp-text-soft);
         }
 
-        /* BAKİYE KARTLARI */
+        /* ════════════════════════════════════════════════════════════════ */
+        /* FAZ 2 / KARAR-01 — KARAR ŞERİDİ (Decision Strip) — LIGHT THEME   */
+        /* ════════════════════════════════════════════════════════════════ */
+        .karar-strip {
+            padding: 1.25rem 1.5rem;
+        }
+
+        .karar-net-label {
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            color: var(--kp-text-soft);
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .karar-net-block {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            border-left: 4px solid;
+            height: 100%;
+            min-height: 110px;
+            background: #fafbff;
+        }
+
+        .karar-net-receivable {
+            background: rgba(40, 167, 69, 0.06);
+            border-left-color: var(--kp-success);
+        }
+
+        .karar-net-payable {
+            background: rgba(255, 193, 7, 0.08);
+            border-left-color: var(--kp-warning);
+        }
+
+        .karar-net-balanced {
+            background: #f6f8fb;
+            border-left-color: #c9d2e0;
+        }
+
+        .karar-net-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--kp-text-primary);
+            line-height: 1.1;
+        }
+
+        .karar-net-unit {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--kp-text-muted);
+            margin-left: 0.25rem;
+        }
+
+        .karar-net-sub {
+            font-size: 0.72rem;
+            color: var(--kp-text-soft);
+            margin-top: 0.35rem;
+        }
+
+        .karar-net-direction-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            background: #ffffff;
+            color: var(--kp-text-primary);
+            white-space: nowrap;
+            border: 1px solid var(--kp-card-border);
+        }
+
+        .karar-net-receivable .karar-net-direction-badge { color: #1f8d3d; border-color: rgba(40,167,69,.25); }
+        .karar-net-payable    .karar-net-direction-badge { color: #946800; border-color: rgba(255,193,7,.35); }
+        .karar-net-balanced   .karar-net-direction-badge { color: var(--kp-text-muted); }
+
+        .karar-pills-block,
+        .karar-side-block {
+            padding: 1rem 1.1rem;
+            border-radius: 10px;
+            background: #fafbff;
+            border: 1px solid var(--kp-card-border);
+            min-height: 110px;
+        }
+
+        .karar-pill {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.4rem;
+            padding: 0.32rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border: 1px solid;
+            line-height: 1.1;
+        }
+
+        .karar-pill-receivable {
+            background: var(--kp-success-soft);
+            color: #1f8d3d;
+            border-color: rgba(40, 167, 69, 0.25);
+        }
+
+        .karar-pill-payable {
+            background: var(--kp-warning-soft);
+            color: #946800;
+            border-color: rgba(255, 193, 7, 0.35);
+        }
+
+        .karar-pill-currency {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+
+        .karar-pill-amount {
+            font-size: 0.85rem;
+        }
+
+        .karar-relative-date {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--kp-text-primary);
+            margin-top: 0.2rem;
+        }
+
+        .karar-relative-date-empty {
+            font-size: 0.85rem;
+            color: var(--kp-text-soft);
+            font-style: italic;
+            margin-top: 0.2rem;
+        }
+
+        .karar-open-badge {
+            background: var(--kp-danger-soft);
+            color: var(--kp-danger);
+            border: 1px solid rgba(220, 53, 69, 0.25);
+            padding: 0.4rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* ════════════════════════════════════════════════════════════════ */
+        /* FAZ 2 / KARAR-02 — ANALİTİK PANEL                                */
+        /* ════════════════════════════════════════════════════════════════ */
+        /* 2-kolonlu yapı:                                                  */
+        /*   Sol: İş Bağlamı — hacim trendleri, milyem, kategori             */
+        /*   Sağ: İletişim & İlişki — telefon, e-posta, vergi, lokasyon, not */
+        .analitik-panel {
+            padding: 1.25rem 1.5rem;
+        }
+
+        .analitik-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--kp-text-soft);
+            margin-bottom: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--kp-card-border);
+        }
+
+        .analitik-stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .analitik-stat-cell {
+            background: #fafbff;
+            border: 1px solid var(--kp-card-border);
+            border-radius: 8px;
+            padding: 0.7rem 0.85rem;
+        }
+
+        .analitik-stat-cell.warn {
+            background: var(--kp-warning-soft);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .analitik-stat-label {
+            font-size: 0.7rem;
+            color: var(--kp-text-muted);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .analitik-stat-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--kp-text-primary);
+            margin-top: 0.2rem;
+            line-height: 1.1;
+        }
+
+        .analitik-stat-value-warn {
+            color: #946800;
+        }
+
+        .analitik-stat-sub {
+            font-size: 0.7rem;
+            color: var(--kp-text-soft);
+            margin-top: 0.15rem;
+        }
+
+        .analitik-stat-unit {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--kp-text-muted);
+            margin-left: 0.2rem;
+        }
+
+        .analitik-contact-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid var(--kp-card-border);
+            font-size: 0.85rem;
+        }
+
+        .analitik-contact-row:last-child {
+            border-bottom: none;
+        }
+
+        .analitik-contact-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--kp-accent-soft);
+            color: var(--kp-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.85rem;
+        }
+
+        .analitik-contact-label {
+            font-size: 0.7rem;
+            color: var(--kp-text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+
+        .analitik-contact-value {
+            color: var(--kp-text-primary);
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .analitik-contact-value a {
+            color: var(--kp-accent);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(22, 97, 193, 0.4);
+        }
+
+        .analitik-contact-value a:hover {
+            color: #0d4a99;
+        }
+
+        .analitik-contact-value-empty {
+            color: var(--kp-text-soft);
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .analitik-pinned-note {
+            background: var(--kp-accent-soft);
+            border: 1px dashed rgba(22, 97, 193, 0.3);
+            border-radius: 8px;
+            padding: 0.7rem 0.85rem;
+            margin-top: 0.85rem;
+        }
+
+        .analitik-pinned-note-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--kp-accent);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .analitik-pinned-note-body {
+            font-size: 0.8rem;
+            color: var(--kp-text-muted);
+            font-style: italic;
+        }
+
+        /* ════════════════════════════════════════════════════════════════ */
+        /* FAZ 2 / KARAR-04 — İŞLEM DETAY MODALI — LIGHT THEME              */
+        /* ════════════════════════════════════════════════════════════════ */
+        .pdm-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--kp-accent);
+            margin-bottom: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--kp-card-border);
+        }
+
+        .pdm-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .pdm-meta-cell {
+            background: #fafbff;
+            border: 1px solid var(--kp-card-border);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .pdm-meta-label {
+            font-size: 0.65rem;
+            color: var(--kp-text-muted);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .pdm-meta-value {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--kp-text-primary);
+            margin-top: 0.15rem;
+            word-break: break-word;
+        }
+
+        .pdm-table {
+            width: 100%;
+            font-size: 0.8rem;
+            color: var(--kp-text-primary);
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .pdm-table thead th {
+            background: #f6f8fb;
+            color: var(--kp-text-muted);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.55rem 0.7rem;
+            border-bottom: 1px solid var(--kp-card-border);
+            text-align: left;
+        }
+
+        .pdm-table tbody td {
+            padding: 0.55rem 0.7rem;
+            border-bottom: 1px solid var(--kp-card-border);
+            vertical-align: top;
+        }
+
+        .pdm-table tbody tr.pdm-row-closed {
+            opacity: 0.55;
+        }
+
+        .pdm-table tbody tr.pdm-row-closed td {
+            text-decoration: line-through;
+            text-decoration-color: var(--kp-text-soft);
+        }
+
+        .pdm-pill {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            border: 1px solid;
+        }
+
+        .pdm-pill-active {
+            background: var(--kp-success-soft);
+            color: #1f8d3d;
+            border-color: rgba(40, 167, 69, 0.25);
+        }
+
+        .pdm-pill-closed {
+            background: #f6f8fb;
+            color: var(--kp-text-soft);
+            border-color: var(--kp-card-border);
+        }
+
+        .pdm-pill-adj {
+            background: var(--kp-warning-soft);
+            color: #946800;
+            border-color: rgba(255, 193, 7, 0.35);
+        }
+
+        .pdm-pill-entry {
+            background: var(--kp-danger-soft);
+            color: var(--kp-danger);
+            border-color: rgba(220, 53, 69, 0.25);
+        }
+
+        .pdm-pill-exit {
+            background: var(--kp-success-soft);
+            color: #1f8d3d;
+            border-color: rgba(40, 167, 69, 0.25);
+        }
+
+        /* BAKİYE KARTLARI — LIGHT THEME */
         .balance-card {
-            background: rgba(0, 0, 0, 0.2);
+            background: #fafbff;
             border-radius: 12px;
             padding: 0.8rem;
             text-align: center;
-            border: 1px solid transparent;
+            border: 1px solid var(--kp-card-border);
         }
 
         .balance-card:hover {
-            border-color: var(--border-gold-subtle);
+            border-color: var(--kp-accent);
+            box-shadow: 0 4px 12px rgba(18, 38, 63, 0.05);
         }
 
         .balance-currency {
-            color: var(--accent-gold);
+            color: var(--kp-text-muted);
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
         .balance-net {
             font-size: 1.1rem;
-            font-weight: 700;
+            font-weight: 800;
             margin-top: 5px;
+            color: var(--kp-text-primary);
         }
 
-        /* SEKMELER (Metronic Override) */
+        /* SEKMELER (Metronic Override) — LIGHT */
         .nav-line-tabs .nav-item .nav-link {
-            color: var(--text-muted);
+            color: var(--kp-text-muted);
             border-bottom: 2px solid transparent;
             padding-bottom: 1rem;
             font-size: 1rem;
@@ -136,23 +567,24 @@
 
         .nav-line-tabs .nav-item .nav-link.active,
         .nav-line-tabs .nav-item .nav-link:hover {
-            color: var(--accent-gold);
-            border-bottom-color: var(--accent-gold);
+            color: var(--kp-accent);
+            border-bottom-color: var(--kp-accent);
         }
 
-        /* TABLO TASARIMI */
+        /* TABLO TASARIMI — LIGHT */
         .table.ops-table thead th {
-            color: var(--accent-gold);
+            color: var(--kp-text-muted);
             text-transform: uppercase;
-            font-size: 0.8rem;
-            border-bottom: 1px solid var(--border-gold-subtle);
+            font-size: 0.78rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--kp-card-border);
             padding-bottom: 1rem;
         }
 
         .table.ops-table tbody td {
-            color: var(--text-primary);
+            color: var(--kp-text-primary);
             padding: 1rem 0.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px dashed var(--kp-card-border);
             vertical-align: middle;
         }
 
@@ -161,50 +593,260 @@
         }
 
         .table.ops-table tbody tr:hover {
-            background: rgba(255, 215, 0, 0.02);
+            background: var(--kp-row-hover);
         }
 
-        /* BANKA KARTI */
+        /* BANKA KARTI — LIGHT */
         .bank-card {
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 3px solid var(--accent-gold);
+            background: #fafbff;
+            border-left: 3px solid var(--kp-accent);
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-top: 1px solid var(--kp-card-border);
+            border-right: 1px solid var(--kp-card-border);
+            border-bottom: 1px solid var(--kp-card-border);
         }
 
         .iban-text {
             font-family: monospace;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             letter-spacing: 1px;
-            color: #fff;
+            color: var(--kp-text-primary);
         }
 
-        /* RENK SINIFLARI */
-        .text-pos {
-            color: var(--success-green) !important;
-        }
+        /* RENK SINIFLARI — LIGHT theme uyumlu */
+        .text-pos { color: #1f8d3d !important; }
+        .text-neg { color: var(--kp-danger) !important; }
+        .text-gold { color: #946800 !important; }
 
-        .text-neg {
-            color: var(--danger-red) !important;
-        }
-
-        .text-gold {
-            color: var(--accent-gold) !important;
-        }
-
-        /* PLASIYER BÖLÜMÜ */
+        /* PLASIYER BÖLÜMÜ — LIGHT */
         .plasiyer-box {
-            background: rgba(255, 255, 255, 0.03);
+            background: #fafbff;
             border-radius: 12px;
             padding: 0.75rem 1rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border: 1px dashed #d8dee8;
+        }
+
+        /* FAZ 32 — Adjustment Modal mod kartları (radio seçim) — LIGHT */
+        .adj-mode-card {
+            background: #fafbff;
+            border: 1px solid var(--kp-card-border);
+            cursor: pointer;
+            transition: border-color .15s ease, background .15s ease, transform .12s ease;
+            position: relative;
+        }
+        .adj-mode-card:hover {
+            border-color: var(--kp-accent);
+            background: var(--kp-accent-soft);
+            transform: translateY(-1px);
+        }
+        .adj-mode-card .form-check-input:checked ~ span,
+        .adj-mode-card:has(.form-check-input:checked) {
+            border-color: var(--kp-accent);
+            background: var(--kp-accent-soft);
+        }
+
+        /* ════════════════════════════════════════════════════════════════ */
+        /* FAZ 52 — MODERN MODAL ALTYAPISI (Cari Düzelt + Açılış Carisi)     */
+        /* ════════════════════════════════════════════════════════════════ */
+        /* Müşteri "Cari Hesap İşlemi" (debtCollectionModal) modalindeki     */
+        /* hero-header + hafif gradient arka plan + ferah iç boşluk          */
+        /* desenini tedarikçi tarafına da getiriyor. Önceki dark/karanlık    */
+        /* hissi tamamen kaldırıldı.                                          */
+        /* ════════════════════════════════════════════════════════════════ */
+        .kp-modal-content {
+            border: 1px solid var(--kp-card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 24px 48px rgba(18, 38, 63, 0.18);
+        }
+
+        .kp-modal-header {
+            background: linear-gradient(135deg, #f5f9ff 0%, #ffffff 100%);
+            border-bottom: 1px solid var(--kp-card-border);
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .kp-modal-header .kp-modal-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            flex: 0 0 auto;
+        }
+        .kp-modal-header .kp-modal-icon.icon-warning {
+            background: var(--kp-warning-soft);
+            color: #946800;
+        }
+        .kp-modal-header .kp-modal-icon.icon-primary {
+            background: var(--kp-accent-soft);
+            color: var(--kp-accent);
+        }
+        .kp-modal-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            color: var(--kp-text-primary);
+            font-weight: 800;
+        }
+        .kp-modal-header .kp-modal-sub {
+            font-size: 0.82rem;
+            color: var(--kp-text-muted);
+            margin-top: 2px;
+        }
+
+        .kp-modal-body {
+            background: #fbfcfe;
+            padding: 1.5rem;
+        }
+        .kp-modal-footer {
+            background: #ffffff;
+            border-top: 1px solid var(--kp-card-border);
+            padding: 0.9rem 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        /* Bakiye kartı — modal içi */
+        .kp-bal-card {
+            background: #ffffff;
+            border: 1px solid var(--kp-card-border);
+            border-radius: 10px;
+            padding: 0.7rem 0.85rem;
+            transition: border-color .15s ease, transform .12s ease;
+        }
+        .kp-bal-card:hover {
+            border-color: var(--kp-accent);
+            transform: translateY(-1px);
+        }
+        .kp-bal-currency {
+            font-weight: 800;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            color: var(--kp-text-soft);
+            text-transform: uppercase;
+        }
+        .kp-bal-net {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--kp-text-primary);
+            margin-top: 2px;
+            line-height: 1.1;
+        }
+        .kp-bal-status {
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        /* OB modal — entry satırı */
+        .ob-entry-row {
+            background: #ffffff;
+            border: 1px solid var(--kp-card-border);
+            border-radius: 12px;
+            padding: 0.85rem 0.95rem;
+            margin-bottom: 0.6rem;
+            position: relative;
+            transition: border-color .15s ease;
+        }
+        .ob-entry-row:hover {
+            border-color: var(--kp-accent);
+        }
+        .ob-entry-row .ob-row-remove {
+            position: absolute;
+            top: 0.45rem;
+            right: 0.55rem;
+            background: transparent;
+            border: 0;
+            color: var(--kp-text-soft);
+            font-size: 0.95rem;
+            line-height: 1;
+            padding: 4px 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background .12s ease, color .12s ease;
+        }
+        .ob-entry-row .ob-row-remove:hover {
+            background: var(--kp-danger-soft);
+            color: var(--kp-danger);
+        }
+        .ob-direction-pill {
+            display: inline-flex; gap: 0.35rem; align-items: center;
+            padding: 0.28rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: 1px solid;
+            cursor: pointer;
+            user-select: none;
+            transition: all .12s ease;
+        }
+        .ob-direction-pill.is-rec {
+            background: var(--kp-success-soft);
+            color: #1f8d3d;
+            border-color: rgba(40,167,69,.25);
+        }
+        .ob-direction-pill.is-pay {
+            background: var(--kp-warning-soft);
+            color: #946800;
+            border-color: rgba(255,193,7,.35);
+        }
+        .ob-direction-pill.is-muted {
+            background: #f6f8fb;
+            color: var(--kp-text-soft);
+            border-color: var(--kp-card-border);
+        }
+
+        /* Açılış / Düzeltme bilgi şeritleri (modal başında) */
+        .kp-info-strip {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            background: var(--kp-accent-soft);
+            border: 1px dashed rgba(22, 97, 193, .25);
+            border-radius: 10px;
+            padding: 0.75rem 0.95rem;
+            color: var(--kp-text-primary);
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+        .kp-info-strip i {
+            color: var(--kp-accent);
+            font-size: 1.1rem;
+            margin-top: 1px;
+        }
+        .kp-info-strip.warn {
+            background: var(--kp-warning-soft);
+            border-color: rgba(255,193,7,.35);
+        }
+        .kp-info-strip.warn i { color: #946800; }
+
+        /* Action buton — Açılış Carisi Gir CTA */
+        .opening-balance-cta {
+            border: 1px dashed rgba(22, 97, 193, .35);
+            background: var(--kp-accent-soft);
+            color: var(--kp-accent);
+            font-weight: 700;
+            transition: all .15s ease;
+        }
+        .opening-balance-cta:hover {
+            background: var(--kp-accent);
+            color: #ffffff;
+            border-color: var(--kp-accent);
+            box-shadow: 0 6px 16px rgba(22, 97, 193, .25);
+        }
+        .opening-balance-cta:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
         }
     </style>
 {% endblock header %}
@@ -223,7 +865,7 @@
                         </div>
                     </div>
                     <div>
-                        <h1 class="text-white fw-bolder mb-1">{{ record.company_name }}</h1>
+                        <h1 class="text-gray-900 fw-bolder mb-1">{{ record.company_name }}</h1>
                         <div class="d-flex flex-wrap gap-3 fs-7 fw-bold text-muted">
                             <span class="d-flex align-items-center"><i
                                     class="bi bi-geo-alt me-1"></i> {{ record.city.name|default:"-" }}</span>
@@ -244,7 +886,7 @@
                     </div>
                     <div>
                         <div class="fs-8 text-muted fw-bold text-uppercase">Plasiyer / Çantacı</div>
-                        <div class="fs-6 fw-bolder text-white">{{ record.person_name|default:"Belirtilmemiş" }} {{ record.person_surname }}</div>
+                        <div class="fs-6 fw-bolder text-gray-900">{{ record.person_name|default:"Belirtilmemiş" }} {{ record.person_surname }}</div>
                     </div>
                     {% if record.phone %}
                         <a href="tel:{{ record.phone }}" class="btn btn-icon btn-sm btn-active-color-primary"
@@ -255,11 +897,24 @@
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap align-items-center">
-                    {# ════════════════════════════════════════════════════ #}
-                    {# FAZ 11 / UX-06 — Primary Aksiyon: Cariyi Düzelt      #}
-                    {# Sayfada en belirgin aksiyon — esnaf gözünün hemen   #}
-                    {# bu butona gitmesi hedeflenir.                        #}
-                    {# ════════════════════════════════════════════════════ #}
+                    <!-- ════════════════════════════════════════════════════ -->
+                    <!-- FAZ 52 — Açılış Carisi Gir (tek seferlik aksiyon)    -->
+                    <!-- ════════════════════════════════════════════════════ -->
+                    <button type="button"
+                            id="openingBalanceBtn"
+                            class="btn btn-sm opening-balance-cta d-flex align-items-center"
+                            onclick="showOpeningBalanceModal()"
+                            title="Programa geçişte tedarikçiyle olan tarihsel borç/alacak kalemlerini stok hareketsiz olarak gir (tek seferlik)"
+                            style="padding: 0.55rem 1rem;">
+                        <i class="bi bi-flag fs-5 me-2"></i>
+                        <span class="fs-7">Açılış Carisi Gir</span>
+                    </button>
+
+                    <!-- ════════════════════════════════════════════════════ -->
+                    <!-- FAZ 11 / UX-06 — Primary Aksiyon: Cariyi Düzelt      -->
+                    <!-- Sayfada en belirgin aksiyon — esnaf gözünün hemen   -->
+                    <!-- bu butona gitmesi hedeflenir.                        -->
+                    <!-- ════════════════════════════════════════════════════ -->
                     <button type="button"
                             class="btn btn-warning fw-bolder primary-cta-button d-flex align-items-center"
                             onclick="showAdjustmentModal()"
@@ -283,13 +938,276 @@
             </div>
         </div>
 
-        {# ════════════════════════════════════════════════════════════════ #}
-        {# FAZ 11 / UX-01 + UX-02 — KPI Sadeleştirmesi (2026-04-24)         #}
-        {# Kuyumcu esnafının ihtiyaç duymadığı analitik kartlar (İşlem      #}
-        {# Hacmi, İade Oranı) varsayılan ekrandan kaldırıldı; "Detaylı     #}
-        {# Analiz" collapsible panelinde gizlendi. Esnaf önce bilmek       #}
-        {# istediği iki şeyi görür: Kaç işlem var, son ne zaman temas etmiş.#}
-        {# ════════════════════════════════════════════════════════════════ #}
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- FAZ 2 / KARAR-01 — KARAR ŞERİDİ (Decision Strip) (2026-04-29)    -->
+        <!-- Esnafın sayfayı açar açmaz cevap istediği üç soruyu karşılar:    -->
+        <!--   1. Net Pozisyon: kim kime borçlu, ne kadar (HS dominant)        -->
+        <!--   2. Açık Döviz: HG, TRY, USD vb. açık bakiyeler kompakt pill     -->
+        <!--   3. Son Hareket: "12 gün önce" relative + (Faz 4) açık pozisyon  -->
+        <!-- Server-side render — ilk paint'te flicker yok.                   -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div class="kp-card karar-strip mb-4">
+            <div class="row g-4 align-items-stretch">
+
+                <!-- ─── Sol: Net Pozisyon (HS Dominant) ─── -->
+                <div class="col-12 col-md-5">
+                    <div class="karar-net-block
+                                {% if karar_dominant_direction == 'RECEIVABLE' %}karar-net-receivable
+                                {% elif karar_dominant_direction == 'PAYABLE' %}karar-net-payable
+                                {% else %}karar-net-balanced{% endif %}">
+                        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                            <span class="karar-net-label">
+                                <i class="bi bi-cash-coin me-1"></i> Net Pozisyon
+                            </span>
+                            <span class="karar-net-direction-badge">
+                                {% if karar_dominant_direction == 'RECEIVABLE' %}
+                                    <i class="bi bi-arrow-down-right"></i> Biz Alacaklıyız
+                                {% elif karar_dominant_direction == 'PAYABLE' %}
+                                    <i class="bi bi-arrow-up-left"></i> Biz Borçluyuz
+                                {% else %}
+                                    <i class="bi bi-check2-circle"></i> Dengede
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="karar-net-value">
+                            {{ karar_hs_abs|floatformat:3 }}<span class="karar-net-unit">HS</span>
+                        </div>
+                        <div class="karar-net-sub">Has Altın karşılığı (24 ayar gram)</div>
+                    </div>
+                </div>
+
+                <!-- ─── Orta: Currency Pills (HS dışı açık döviz pozisyonları) ─── -->
+                <div class="col-12 col-md-5">
+                    <div class="karar-pills-block">
+                        <div class="karar-net-label mb-2">
+                            <i class="bi bi-globe me-1"></i> Açık Döviz Pozisyonları
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for p in karar_currency_pills %}
+                                <span class="karar-pill {% if p.direction == 'RECEIVABLE' %}karar-pill-receivable{% else %}karar-pill-payable{% endif %}"
+                                      title="{% if p.direction == 'RECEIVABLE' %}Biz alacaklıyız{% else %}Biz borçluyuz{% endif %}">
+                                    <span class="karar-pill-currency">{{ p.currency }}</span>
+                                    <span class="karar-pill-amount">
+                                        {% if p.direction == 'RECEIVABLE' %}↑{% else %}↓{% endif %}
+                                        {{ p.abs_net|floatformat:2 }}
+                                    </span>
+                                </span>
+                            {% empty %}
+                                <span class="text-muted fs-9 fst-italic align-self-center">
+                                    HS dışında açık döviz bakiyesi yok.
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─── Sağ: Son Hareket + Açık Pozisyon Uyarısı (Faz 4 placeholder) ─── -->
+                <div class="col-12 col-md-2">
+                    <div class="karar-side-block d-flex flex-column justify-content-between gap-2">
+                        <div>
+                            <div class="karar-net-label">
+                                <i class="bi bi-clock-history me-1"></i> Son Hareket
+                            </div>
+                            {% if karar_relative_last %}
+                                <div class="karar-relative-date">{{ karar_relative_last }}</div>
+                            {% else %}
+                                <div class="karar-relative-date-empty">İşlem yok</div>
+                            {% endif %}
+                        </div>
+                        {% if karar_open_positions and karar_open_positions > 0 %}
+                            <div class="karar-open-badge"
+                                 title="Bu tedarikçide kapatılmamış açıktan bağlama pozisyonu var">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                {{ karar_open_positions }} Açık Pozisyon
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- FAZ 2 / KARAR-02 — ANALİTİK PANEL (2026-04-29)                   -->
+        <!-- Karar Şeridi'nin altında, esnafın bu tedarikçiyle olan iş        -->
+        <!-- ilişkisini "trend" olarak okuduğu panel. 2 kolon:                 -->
+        <!--   Sol: İş Bağlamı — son 30/90 gün hacim, ortalama milyem,         -->
+        <!--         bu ay top kategori, iade oranı uyarısı                    -->
+        <!--   Sağ: İletişim & İlişki — telefon (tel:), e-posta (mailto:),     -->
+        <!--         vergi, lokasyon + Faz 3 için sabit not placeholder        -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div class="kp-card analitik-panel mb-4">
+            <div class="row g-4">
+
+                <!-- ─── Sol: İş Bağlamı ─── -->
+                <div class="col-12 col-lg-7">
+                    <div class="analitik-section-title">
+                        <i class="bi bi-graph-up text-gold"></i> İş Bağlamı
+                    </div>
+
+                    <div class="analitik-stat-grid">
+
+                        <!-- Son 30 gün hacim -->
+                        <div class="analitik-stat-cell">
+                            <div class="analitik-stat-label">Son 30 Gün Hacmi</div>
+                            <div class="analitik-stat-value">
+                                {{ analitik_volume_30|floatformat:2 }}<span class="analitik-stat-unit">gr</span>
+                            </div>
+                            <div class="analitik-stat-sub">Toptan + Barkodlu Alımlar</div>
+                        </div>
+
+                        <!-- Son 90 gün hacim -->
+                        <div class="analitik-stat-cell">
+                            <div class="analitik-stat-label">Son 90 Gün Hacmi</div>
+                            <div class="analitik-stat-value">
+                                {{ analitik_volume_90|floatformat:2 }}<span class="analitik-stat-unit">gr</span>
+                            </div>
+                            <div class="analitik-stat-sub">Çeyrek dönem trend göstergesi</div>
+                        </div>
+
+                        <!-- Ortalama milyem -->
+                        <div class="analitik-stat-cell">
+                            <div class="analitik-stat-label">Ortalama Milyem</div>
+                            {% if analitik_avg_mileage %}
+                                <div class="analitik-stat-value">
+                                    {{ analitik_avg_mileage|floatformat:1 }}<span class="analitik-stat-unit">/1000</span>
+                                </div>
+                                <div class="analitik-stat-sub">Barkodlu alım kalite ortalaması</div>
+                            {% else %}
+                                <div class="analitik-stat-value text-muted opacity-50">—</div>
+                                <div class="analitik-stat-sub">Yeterli veri yok</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- İade oranı (yüksekse uyarılı) -->
+                        <div class="analitik-stat-cell {% if analitik_return_rate_high %}warn{% endif %}">
+                            <div class="analitik-stat-label">İade / Tamir Oranı</div>
+                            <div class="analitik-stat-value {% if analitik_return_rate_high %}analitik-stat-value-warn{% endif %}">
+                                %{{ kpi_return_rate }}
+                            </div>
+                            <div class="analitik-stat-sub">
+                                {% if analitik_return_rate_high %}
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Ortalamanın üstünde
+                                {% else %}
+                                    Normal seviye
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Bu ay top kategori — full satır -->
+                        <div class="analitik-stat-cell" style="grid-column: 1 / -1;">
+                            <div class="analitik-stat-label">Bu Ay En Çok Alınan Kategori</div>
+                            {% if analitik_top_category_name %}
+                                <div class="analitik-stat-value">
+                                    {{ analitik_top_category_name }}
+                                    <span class="analitik-stat-unit">
+                                        ({{ analitik_top_category_gram|floatformat:2 }} gr)
+                                    </span>
+                                </div>
+                                <div class="analitik-stat-sub">Toptan/Stok girişi gram bazında</div>
+                            {% else %}
+                                <div class="analitik-stat-value text-muted opacity-50">—</div>
+                                <div class="analitik-stat-sub">Bu ay kategorize alım yok</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─── Sağ: İletişim & İlişki ─── -->
+                <div class="col-12 col-lg-5">
+                    <div class="analitik-section-title">
+                        <i class="bi bi-person-lines-fill text-gold"></i> İletişim & İlişki
+                    </div>
+
+                    <div>
+                        <!-- Telefon — tıklanabilir -->
+                        <div class="analitik-contact-row">
+                            <div class="analitik-contact-icon"><i class="bi bi-telephone-fill"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="analitik-contact-label">Telefon</div>
+                                <div class="analitik-contact-value">
+                                    {% if record.phone %}
+                                        <a href="tel:{{ record.phone }}">{{ record.phone }}</a>
+                                    {% else %}
+                                        <span class="analitik-contact-value-empty">Belirtilmemiş</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- E-posta — tıklanabilir -->
+                        <div class="analitik-contact-row">
+                            <div class="analitik-contact-icon"><i class="bi bi-envelope-fill"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="analitik-contact-label">E-posta</div>
+                                <div class="analitik-contact-value">
+                                    {% if record.email %}
+                                        <a href="mailto:{{ record.email }}">{{ record.email }}</a>
+                                    {% else %}
+                                        <span class="analitik-contact-value-empty">Belirtilmemiş</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vergi -->
+                        <div class="analitik-contact-row">
+                            <div class="analitik-contact-icon"><i class="bi bi-receipt-cutoff"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="analitik-contact-label">VKN / TCKN</div>
+                                <div class="analitik-contact-value">
+                                    {% if record.tax_number %}
+                                        {{ record.tax_number }}
+                                        {% if record.tax_office %}
+                                            <small class="text-muted ms-1">/ {{ record.tax_office.name }}</small>
+                                        {% endif %}
+                                        {% if record.is_einvoice_user %}
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 ms-1"
+                                                  style="font-size: 0.62rem;">e-Fatura</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="analitik-contact-value-empty">Belirtilmemiş</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lokasyon -->
+                        <div class="analitik-contact-row">
+                            <div class="analitik-contact-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="analitik-contact-label">Lokasyon</div>
+                                <div class="analitik-contact-value">
+                                    {% if record.city or record.district %}
+                                        {{ record.full_location_string }}
+                                    {% else %}
+                                        <span class="analitik-contact-value-empty">Belirtilmemiş</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sabit Not Placeholder — Faz 3 (SupplierNote) ile aktive olacak -->
+                    <div class="analitik-pinned-note">
+                        <div class="analitik-pinned-note-title">
+                            <i class="bi bi-pin-angle-fill"></i> Sabit Not
+                        </div>
+                        <div class="analitik-pinned-note-body">
+                            Henüz tedarikçiye özel not eklenmedi.
+                            <span class="opacity-50">(Faz 3'te aktive olacak: cari notları, hatırlatıcılar, risk etiketleri.)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- FAZ 11 / UX-01 + UX-02 — KPI Sadeleştirmesi (2026-04-24)         -->
+        <!-- Kuyumcu esnafının ihtiyaç duymadığı analitik kartlar (İşlem      -->
+        <!-- Hacmi, İade Oranı) varsayılan ekrandan kaldırıldı; "Detaylı     -->
+        <!-- Analiz" collapsible panelinde gizlendi. Esnaf önce bilmek       -->
+        <!-- istediği iki şeyi görür: Kaç işlem var, son ne zaman temas etmiş.-->
+        <!-- ════════════════════════════════════════════════════════════════ -->
         <div class="row g-4 mb-3">
             <div class="col-12 col-md-6">
                 <div class="kpi-card">
@@ -297,7 +1215,7 @@
                         <i class="bi bi-receipt"></i>
                     </div>
                     <div class="kpi-label">Toplam İşlem</div>
-                    <div class="kpi-value text-white">{{ kpi_total_tx }}</div>
+                    <div class="kpi-value text-gray-900">{{ kpi_total_tx }}</div>
                     <div class="kpi-sub text-muted">Adet Kayıt</div>
                 </div>
             </div>
@@ -308,22 +1226,22 @@
                         <i class="bi bi-clock-history"></i>
                     </div>
                     <div class="kpi-label">Son Hareket</div>
-                    {# FAZ 11 / SYNC-04: Standart TR format (gg.aa.yyyy) #}
-                    <div class="kpi-value text-white fs-3 mt-1">
+                    <!-- FAZ 11 / SYNC-04: Standart TR format (gg.aa.yyyy) -->
+                    <div class="kpi-value text-gray-900 fs-3 mt-1">
                         {% if kpi_last_date %}
                             {{ kpi_last_date|date:"d.m.Y" }}
                         {% else %}
                             -
                         {% endif %}
                     </div>
-                    <div class="kpi-sub text-white opacity-50">
+                    <div class="kpi-sub text-gray-900 opacity-50">
                         {% if kpi_last_date %}{{ kpi_last_date|time:"H:i" }}{% else %}İşlem Yok{% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
-        {# Detaylı Analiz — varsayılan kapalı, isteyen açar #}
+        <!-- Detaylı Analiz — varsayılan kapalı, isteyen açar -->
         <div class="mb-6">
             <button class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-bold"
                     type="button" data-bs-toggle="collapse" data-bs-target="#detailedAnalysis"
@@ -339,7 +1257,7 @@
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
                             <div class="kpi-label">Toplam İşlem Hacmi</div>
-                            <div class="kpi-value text-white">{{ kpi_volume_gram|floatformat:2 }}
+                            <div class="kpi-value text-gray-900">{{ kpi_volume_gram|floatformat:2 }}
                                 <small class="fs-6 text-muted">Gr</small>
                             </div>
                             <div class="kpi-sub text-success"><i class="bi bi-caret-up-fill"></i> Toptan + Barkodlu</div>
@@ -351,7 +1269,7 @@
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </div>
                             <div class="kpi-label">İade / Tamir Oranı</div>
-                            <div class="kpi-value text-white">% {{ kpi_return_rate }}</div>
+                            <div class="kpi-value text-gray-900">% {{ kpi_return_rate }}</div>
                             <div class="kpi-sub {% if kpi_return_rate > 5 %}text-danger{% else %}text-muted{% endif %}">
                                 {% if kpi_return_rate > 5 %}Ortalamanın Üstünde{% else %}Normal Seviye{% endif %}
                             </div>
@@ -361,67 +1279,64 @@
             </div>
         </div>
 
-        {# ════════════════════════════════════════════════════════════════ #}
-        {# FAZ 11 / UX-03 — Metal / Nakit Bakiye Ayrımı (2026-04-24)        #}
-        {# Bakiyeler iki kategoriye ayrıldı:                                #}
-        {#   • Metal (HS, HG) — Has Altın / Has Gümüş gram bazlı            #}
-        {#   • Nakit & Döviz (TRY, USD, EUR, GBP, CAD, QAR) — fiat bazlı    #}
-        {# Boş kategori gizlenir; esnaf yalnızca ilgili bakiyeleri görür.   #}
-        {# ════════════════════════════════════════════════════════════════ #}
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- FAZ 11 / UX-03 — Metal / Nakit Bakiye Ayrımı (2026-04-24)        -->
+        <!-- Bakiyeler iki kategoriye ayrıldı:                                -->
+        <!--   • Metal (HS, HG) — Has Altın / Has Gümüş gram bazlı            -->
+        <!--   • Nakit & Döviz (TRY, USD, EUR, GBP, CAD, QAR) — fiat bazlı    -->
+        <!-- Boş kategori gizlenir; esnaf yalnızca ilgili bakiyeleri görür.   -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
         <div class="kp-card">
             <div class="d-flex align-items-center mb-4 pb-2 border-bottom border-secondary border-opacity-25">
                 <i class="bi bi-wallet2 text-gold fs-3 me-2"></i>
-                <h3 class="card-title text-white fw-bold mb-0">Finansal Durum & Bakiyeler</h3>
+                <h3 class="card-title text-gray-900 fw-bold mb-0">Finansal Durum & Bakiyeler</h3>
             </div>
 
-            {# Akıllı Özet (CAT-04 ile doldurulacak) — varsayılan gizli #}
+            <!-- Akıllı Özet (CAT-04 ile doldurulacak) — varsayılan gizli -->
             <div id="balanceSmartSummary" class="d-none mb-4">
-                <div class="alert bg-dark border border-warning border-opacity-25 py-2 px-3 mb-0"
-                     style="border-radius: 8px;">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle text-warning fs-5 me-2"></i>
-                        <div id="balanceSmartSummaryText" class="fs-7 text-white"></div>
-                    </div>
+                <div class="alert alert-warning d-flex align-items-center py-2 px-3 mb-0">
+                    <i class="bi bi-info-circle fs-5 me-2"></i>
+                    <div id="balanceSmartSummaryText" class="fs-7"></div>
                 </div>
             </div>
 
-            {# Yükleme spinner'ı — JS dolduracak #}
+            <!-- Yükleme spinner'ı — JS dolduracak -->
             <div id="balanceLoader" class="text-center py-5">
                 <div class="spinner-border text-gold" role="status"></div>
             </div>
 
-            {# Metal Bakiyeleri (HS, HG) #}
+            <!-- Metal Bakiyeleri (HS, HG) -->
             <div id="balanceMetalSection" class="mb-4 d-none">
                 <div class="d-flex align-items-center mb-3">
                     <i class="bi bi-coin text-gold me-2"></i>
-                    <span class="text-white fw-bold fs-6">Metal Bakiyesi</span>
+                    <span class="text-gray-900 fw-bold fs-6">Metal Bakiyesi</span>
                     <span class="text-muted fs-9 ms-2">— Has Altın / Has Gümüş (gram bazlı)</span>
                 </div>
                 <div class="row g-4" id="balanceMetal"></div>
             </div>
 
-            {# Nakit / Döviz Bakiyeleri #}
+            <!-- Nakit / Döviz Bakiyeleri -->
             <div id="balanceFiatSection" class="d-none">
                 <div class="d-flex align-items-center mb-3">
                     <i class="bi bi-cash-stack text-info me-2"></i>
-                    <span class="text-white fw-bold fs-6">Nakit / Döviz Bakiyesi</span>
+                    <span class="text-gray-900 fw-bold fs-6">Nakit / Döviz Bakiyesi</span>
                     <span class="text-muted fs-9 ms-2">— TRY, USD, EUR ve diğer fiat para birimleri</span>
                 </div>
                 <div class="row g-4" id="balanceFiat"></div>
             </div>
 
-            {# Tamamen boş bakiye durumu #}
+            <!-- Tamamen boş bakiye durumu -->
             <div id="balanceEmpty" class="d-none text-center text-muted py-4 fs-7">
                 <i class="bi bi-check-circle-fill text-success me-1"></i>
                 Bu tedarikçiyle aktif bakiye bulunmuyor.
             </div>
 
-            {# Geriye dönük uyumluluk: eski JS bu container'ı arıyorsa boş bırakılır #}
+            <!-- Geriye dönük uyumluluk: eski JS bu container'ı arıyorsa boş bırakılır -->
             <div id="balanceContainer" class="d-none"></div>
         </div>
 
         <div class="kp-card px-0 pt-0 pb-2">
-            <div class="px-6 pt-4 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-10">
+            <div class="px-6 pt-4 border-bottom">
                 <ul class="nav nav-line-tabs nav-stretch fs-6 border-0">
                     <li class="nav-item">
                         <a class="nav-link active" data-bs-toggle="tab" href="#tab_history">
@@ -431,6 +1346,14 @@
                     <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#tab_products">
                             <i class="bi bi-pie-chart me-2"></i> Ürün Analizi
+                        </a>
+                    </li>
+                    <!-- FAZ 2 / KARAR-03 — Notlar Sekmesi Placeholder (Faz 3'te aktive) -->
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tab_notes">
+                            <i class="bi bi-sticky me-2"></i> Notlar
+                            <span class="badge bg-secondary bg-opacity-25 text-muted ms-1"
+                                  style="font-size: 0.6rem;">Yakında</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -444,13 +1367,13 @@
             <div class="tab-content px-6 py-6">
 
                 <div class="tab-pane fade show active" id="tab_history">
-                    {# ════════════════════════════════════════════════════════════════ #}
-                    {# FAZ 11 / UX-04 — Genişletilmiş Filtreler (2026-04-24)             #}
-                    {# Hızlı chip'ler + detaylı panel (Tarih, Kategori, Tutar aralığı). #}
-                    {# Sunucu taraflı filtre — DataTable'a parametre olarak iletilir.    #}
-                    {# ════════════════════════════════════════════════════════════════ #}
+                    <!-- ════════════════════════════════════════════════════════════════ -->
+                    <!-- FAZ 11 / UX-04 — Genişletilmiş Filtreler (2026-04-24)             -->
+                    <!-- Hızlı chip'ler + detaylı panel (Tarih, Kategori, Tutar aralığı). -->
+                    <!-- Sunucu taraflı filtre — DataTable'a parametre olarak iletilir.    -->
+                    <!-- ════════════════════════════════════════════════════════════════ -->
 
-                    {# Hızlı tarih chip'leri #}
+                    <!-- Hızlı tarih chip'leri -->
                     <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
                         <span class="text-muted fs-9 fw-bold me-2">HIZLI:</span>
                         <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 quick-filter"
@@ -471,7 +1394,7 @@
                         </button>
                     </div>
 
-                    {# Detaylı filtre paneli — varsayılan kapalı #}
+                    <!-- Detaylı filtre paneli — varsayılan kapalı -->
                     <div class="collapse mb-3" id="advancedFilters">
                         <div class="p-3 rounded"
                              style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
@@ -479,17 +1402,17 @@
                                 <div class="col-md-3">
                                     <label class="form-label fs-9 text-muted fw-bold">Başlangıç Tarihi</label>
                                     <input type="date" id="fDateFrom"
-                                           class="form-control form-control-sm bg-dark text-white border-secondary">
+                                           class="form-control form-control-sm ">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fs-9 text-muted fw-bold">Bitiş Tarihi</label>
                                     <input type="date" id="fDateTo"
-                                           class="form-control form-control-sm bg-dark text-white border-secondary">
+                                           class="form-control form-control-sm ">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fs-9 text-muted fw-bold">Kategori</label>
                                     <select id="fMaterial"
-                                            class="form-select form-select-sm bg-dark text-white border-secondary">
+                                            class="form-select form-select-sm ">
                                         <option value="">Tüm Kategoriler</option>
                                         <option value="GOLD">Altın</option>
                                         <option value="SCRAP">Hurda</option>
@@ -508,13 +1431,13 @@
                                 <div class="col-md-3">
                                     <label class="form-label fs-9 text-muted fw-bold">Min Tutar</label>
                                     <input type="number" id="fMinAmount" step="0.01" min="0"
-                                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                                           class="form-control form-control-sm "
                                            placeholder="Örn: 100">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fs-9 text-muted fw-bold">Maks Tutar</label>
                                     <input type="number" id="fMaxAmount" step="0.01" min="0"
-                                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                                           class="form-control form-control-sm "
                                            placeholder="Örn: 10000">
                                 </div>
                             </div>
@@ -523,13 +1446,13 @@
 
                     <div class="d-flex justify-content-end gap-2 mb-4">
                         <select id="fType"
-                                class="form-select form-select-sm w-150px bg-dark border-secondary text-white">
+                                class="form-select form-select-sm w-150px ">
                             <option value="">Tüm Türler</option>
                             <option value="ENTRY">Giriş (Borç)</option>
                             <option value="EXIT">Çıkış (Alacak)</option>
                         </select>
                         <select id="fCur"
-                                class="form-select form-select-sm w-100px bg-dark border-secondary text-white">
+                                class="form-select form-select-sm w-100px ">
                             <option value="">Döviz</option>
                             <option value="HS">HS</option>
                             <option value="TRY">TRY</option>
@@ -573,7 +1496,7 @@
                                     {% for p in top_products %}
                                         <tr>
                                             <td>
-                                                <span class="text-white fw-bolder d-block fs-6">{{ p.product__name }}</span>
+                                                <span class="text-gray-900 fw-bolder d-block fs-6">{{ p.product__name }}</span>
                                                 {% if p.product__category__name %}
                                                     <span class="text-muted fs-8">{{ p.product__category__name }}</span>
                                                 {% endif %}
@@ -608,6 +1531,84 @@
                     </div>
                 </div>
 
+                <!-- ════════════════════════════════════════════════════════════════ -->
+                <!-- FAZ 2 / KARAR-03 — NOTLAR SEKMESI (Faz 3'te aktive olacak)      -->
+                <!-- Faz 3'te SupplierNote modeli + view + permission eklendiğinde,  -->
+                <!-- bu sekme cari notları, hatırlatıcılar ve risk etiketleri için   -->
+                <!-- zaman çizelgesi (timeline) görünümünde aktive olacak.            -->
+                <!-- ════════════════════════════════════════════════════════════════ -->
+                <div class="tab-pane fade" id="tab_notes">
+                    <div class="row g-4">
+                        <!-- Sol: Not Akışı (Timeline) Placeholder -->
+                        <div class="col-12 col-lg-8">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h5 class="text-gray-900 fw-bolder mb-0">
+                                    <i class="bi bi-sticky-fill text-gold me-2"></i> Not Akışı
+                                </h5>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning disabled"
+                                        title="Faz 3'te aktive olacak">
+                                    <i class="bi bi-plus-lg me-1"></i> Yeni Not
+                                </button>
+                            </div>
+                            <div class="text-center text-muted fs-7 py-8 rounded"
+                                 style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.08);">
+                                <i class="bi bi-pin-angle fs-2 d-block mb-3 opacity-50"></i>
+                                <div class="fw-bold text-gray-900 opacity-75 mb-2">Henüz not yok</div>
+                                <div class="opacity-75">
+                                    Bu tedarikçiye özel notlar, hatırlatıcılar ve risk etiketleri<br>
+                                    Faz 3'te (Supplier CRM modülü) aktive olacak.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sağ: Not Tipleri & Hatırlatıcı Önizleme -->
+                        <div class="col-12 col-lg-4">
+                            <h6 class="text-muted text-uppercase fs-9 fw-bolder mb-3">
+                                <i class="bi bi-tags me-1"></i> Not Kategorileri
+                            </h6>
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded"
+                                     style="background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.04);">
+                                    <span class="text-gray-900 fs-8">
+                                        <i class="bi bi-chat-left-text text-info me-2"></i> Genel Not
+                                    </span>
+                                    <span class="text-muted fs-9">—</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded"
+                                     style="background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.04);">
+                                    <span class="text-gray-900 fs-8">
+                                        <i class="bi bi-credit-card text-success me-2"></i> Ödeme Şartı
+                                    </span>
+                                    <span class="text-muted fs-9">—</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded"
+                                     style="background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.04);">
+                                    <span class="text-gray-900 fs-8">
+                                        <i class="bi bi-shield-exclamation text-warning me-2"></i> Risk Etiketi
+                                    </span>
+                                    <span class="text-muted fs-9">—</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded"
+                                     style="background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.04);">
+                                    <span class="text-gray-900 fs-8">
+                                        <i class="bi bi-bell text-danger me-2"></i> Hatırlatıcı
+                                    </span>
+                                    <span class="text-muted fs-9">—</span>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info d-flex align-items-start mt-4 py-2 px-3 mb-0">
+                                <i class="bi bi-info-circle fs-5 me-2 mt-1"></i>
+                                <div class="fs-9">
+                                    Faz 3 hazır olduğunda; her tedarikçi için kategorize edilmiş notlar,
+                                    açık/kapalı hatırlatıcılar ve listede badge gösterimi devreye girecek.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="tab-pane fade" id="tab_banks">
                     <div class="text-center text-muted fs-6 py-10">
                         <i class="bi bi-info-circle fs-3 d-block mb-3"></i>
@@ -623,12 +1624,10 @@
 
     <div class="modal fade" id="bankModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: #1A253A; border: 1px solid rgba(255,215,0,0.2);">
+            <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title text-white">Banka Hesapları</h5>
-                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
-                        <i class="bi bi-x fs-2 text-white"></i>
-                    </div>
+                    <h5 class="modal-title text-gray-900">Banka Hesapları</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-muted text-center">Kayıtlı banka hesabı yok.</p>
@@ -637,92 +1636,241 @@
         </div>
     </div>
 
-    {# ══════════════════════════════════════════════════════════════════ #}
-    {# FAZ 11 / BL-01 — CARİ SIFIRLAMA / MANUEL DÜZELTME MODAL           #}
-    {# ══════════════════════════════════════════════════════════════════ #}
-    {# Immutable Ledger uyumlu — backend POST /suppliers/adjustment/create #}
-    {# Modal içeriği 3 mod destekler: ALL / BY_CURRENCY / CUSTOM          #}
-    {# ══════════════════════════════════════════════════════════════════ #}
-    <div class="modal fade" id="adjustmentModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content"
-                 style="background: #1A253A; border: 1px solid rgba(255,215,0,0.25);">
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- FAZ 2 / KARAR-04 — İŞLEM DETAY MODALI (2026-04-29)                -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- Process_no badge'ine tıklandığında açılır. Backend endpoint:       -->
+    <!--   GET /suppliers/process-detail?supplier_id=X&process_no=Y         -->
+    <!-- İçerik dinamik render edilir (showProcessDetail fonksiyonu).       -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="processDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
 
-                <div class="modal-header border-0 pb-0">
-                    <div>
-                        <h5 class="modal-title text-white fw-bolder">
-                            <i class="bi bi-sliders2 text-warning me-2"></i>
-                            Tedarikçi Cari Düzeltme (Mutabakat)
+                <div class="modal-header">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <i class="bi bi-receipt fs-3 text-primary"></i>
+                        <h5 class="modal-title text-gray-900 fw-bold mb-0">
+                            İşlem Detayı:
+                            <code id="pdmProcessNo" class="text-primary fs-6 ms-1">—</code>
                         </h5>
-                        <div class="text-muted fs-8 mt-1">
-                            {{ record.company_name }} için cari hesabı sıfırlayın veya belirli bir tutara eşitleyin.
-                        </div>
+                        <span id="pdmAdjBadge" class="pdm-pill pdm-pill-adj d-none ms-2">
+                            <i class="bi bi-sliders2 me-1"></i> MUTABAKAT DÜZELTMESİ
+                        </span>
                     </div>
-                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
-                        <i class="bi bi-x fs-2 text-white"></i>
-                    </div>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal" aria-label="Kapat"></button>
                 </div>
 
                 <div class="modal-body">
-                    {# Uyarı kutusu — Immutable Ledger bilgilendirmesi #}
-                    <div class="alert bg-dark border border-warning border-opacity-25 py-2 px-3 mb-4"
-                         style="border-radius: 8px;">
-                        <div class="d-flex">
-                            <i class="bi bi-info-circle text-warning fs-5 me-2"></i>
-                            <div class="fs-8 text-muted">
-                                Bu işlem mevcut kayıtları <strong class="text-white">silmez</strong>.
-                                Sistem ters yönde bir <strong class="text-warning">Mutabakat Düzeltmesi Fişi (ADJ)</strong>
-                                keser ve cari bakiyeyi hedef tutara eşitler. İşlem izlenebilir ve denetlenebilir.
+                    <!-- Yükleme -->
+                    <div id="pdmLoader" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="text-muted fs-8 mt-3">İşlem detayları yükleniyor…</div>
+                    </div>
+
+                    <!-- Hata -->
+                    <div id="pdmError" class="d-none alert alert-danger py-3 px-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="pdmErrorMsg">İşlem detayı yüklenemedi.</span>
+                    </div>
+
+                    <!-- İçerik — JS ile doldurulur -->
+                    <div id="pdmContent" class="d-none">
+
+                        <!-- 1) Mal Hareketi (Process satırları) -->
+                        <div id="pdmProcessSection" class="mb-4 d-none">
+                            <div class="pdm-section-title">
+                                <i class="bi bi-box-seam"></i> Mal Hareketi (Fiş İçeriği)
                             </div>
+                            <div class="table-responsive">
+                                <table class="pdm-table" id="pdmProcessTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Tarih</th>
+                                            <th>Tip</th>
+                                            <th>Ürün</th>
+                                            <th class="text-end">Adet</th>
+                                            <th class="text-end">Gram</th>
+                                            <th class="text-end">Milyem</th>
+                                            <th class="text-end">HS</th>
+                                            <th class="text-end">Tutar (₺)</th>
+                                            <th>Çalışan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pdmProcessTbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 2) Cari Hareketi (SupplierLedger) -->
+                        <div id="pdmLedgerSection" class="mb-4 d-none">
+                            <div class="pdm-section-title">
+                                <i class="bi bi-journal-text"></i> Cari Hareketleri (Ledger)
+                                <span class="ms-auto text-muted fs-9 opacity-75 fw-normal text-lowercase"
+                                      id="pdmLedgerSubInfo"></span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="pdm-table" id="pdmLedgerTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Tarih</th>
+                                            <th>Yön</th>
+                                            <th>Birim</th>
+                                            <th class="text-end">Tutar (Güncel)</th>
+                                            <th class="text-end">Don. Kur (TL)</th>
+                                            <th>Açıklama</th>
+                                            <th>Durum</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pdmLedgerTbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="text-muted fs-9 mt-2 fst-italic">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Üzeri çizili satırlar FIFO ile karşılığı kapatılmış (is_active=False)
+                                immutable ledger kayıtlarıdır.
+                            </div>
+                        </div>
+
+                        <!-- 3) Para Birimi Bazlı Aktif Net Özet -->
+                        <div id="pdmSummarySection" class="mb-2 d-none">
+                            <div class="pdm-section-title">
+                                <i class="bi bi-calculator"></i> Aktif Net Etki (Para Birimi Bazında)
+                            </div>
+                            <div class="pdm-meta-grid" id="pdmSummaryGrid"></div>
+                        </div>
+
+                        <!-- 4) Veri Yok Durumu -->
+                        <div id="pdmEmpty" class="d-none text-center text-muted py-5 fs-7">
+                            <i class="bi bi-inbox fs-2 d-block mb-3 opacity-50"></i>
+                            Bu fiş numarasına bağlı kayıt bulunamadı.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-light-primary"
+                            id="pdmCopyBtn" onclick="copyProcessNoFromModal()">
+                        <i class="bi bi-clipboard me-1"></i> Fiş No Kopyala
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light"
+                            data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Kapat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- FAZ 11 / BL-01 + FAZ 52 — CARİ DÜZELTME (MUTABAKAT) MODAL          -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- Immutable Ledger uyumlu — backend POST /suppliers/adjustment/create -->
+    <!-- 3 mod: ALL / BY_CURRENCY / CUSTOM. FAZ 52'de modern light theme.    -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="adjustmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content kp-modal-content">
+
+                <!-- Hero Header -->
+                <div class="kp-modal-header">
+                    <div class="kp-modal-icon icon-warning">
+                        <i class="bi bi-sliders2"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3>Cari Düzeltme (Mutabakat)</h3>
+                        <div class="kp-modal-sub">
+                            <strong>{{ record.company_name }}</strong> için cari hesabı sıfırla
+                            ya da belirli bir tutara eşitle.
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="kp-modal-body">
+
+                    <!-- Bilgi Şeridi — Immutable Ledger garantisi -->
+                    <div class="kp-info-strip warn mb-4">
+                        <i class="bi bi-shield-check"></i>
+                        <div>
+                            Bu işlem mevcut kayıtları <strong>silmez</strong>. Sistem ters yönde
+                            bir <strong>Mutabakat Düzeltmesi Fişi (ADJ-…)</strong> keser ve cari
+                            bakiyeyi hedef tutara eşitler. Tüm değişiklik denetlenebilir kalır.
                         </div>
                     </div>
 
-                    {# Mevcut Bakiye Özeti — loadAdjustmentBalances() dolduracak #}
+                    <!-- Mevcut Bakiye Özeti -->
                     <div class="mb-4">
-                        <div class="fs-8 fw-bold text-muted text-uppercase mb-2">Mevcut Cari Durum</div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fs-8 fw-bolder text-uppercase text-gray-700">
+                                Mevcut Cari Durum
+                            </span>
+                            <button type="button"
+                                    class="btn btn-sm btn-light-primary py-1 px-2 fs-9"
+                                    onclick="loadAdjustmentBalances()"
+                                    title="Bakiyeleri yenile">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
                         <div id="adjBalanceSummary" class="row g-2">
                             <div class="col-12 text-center text-muted fs-8 py-3">Yükleniyor...</div>
                         </div>
                     </div>
 
-                    {# Ana Form #}
+                    <!-- Ana Form -->
                     <form id="adjustmentForm" autocomplete="off">
                         {% csrf_token %}
 
-                        {# Mod Seçici (radio) #}
-                        <div class="mb-3">
-                            <div class="fs-8 fw-bold text-muted text-uppercase mb-2">İşlem Türü</div>
+                        <!-- Mod Seçici (radio cards) -->
+                        <div class="mb-4">
+                            <div class="fs-8 fw-bolder text-uppercase text-gray-700 mb-2">
+                                İşlem Türü
+                            </div>
                             <div class="d-flex flex-column gap-2">
-                                <label class="form-check text-white p-3 rounded"
-                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                                <label class="form-check adj-mode-card p-3 rounded">
                                     <input class="form-check-input me-2" type="radio" name="adj_mode" value="ALL"
                                            checked>
-                                    <span class="fw-bold">Tüm Para Birimlerini Sıfırla</span>
-                                    <span class="d-block fs-9 text-muted ms-4">Mevcut tüm bakiyeler (HS, TRY, USD vb.) sıfırlanır — tam mutabakat.</span>
+                                    <span class="fw-bolder text-gray-900">
+                                        <i class="bi bi-grid-3x3-gap me-1 text-primary"></i>
+                                        Tüm Para Birimlerini Sıfırla
+                                    </span>
+                                    <span class="d-block fs-9 text-muted ms-4 mt-1">
+                                        Mevcut tüm bakiyeler (HS, TRY, USD vb.) sıfırlanır — tam mutabakat.
+                                    </span>
                                 </label>
 
-                                <label class="form-check text-white p-3 rounded"
-                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                                <label class="form-check adj-mode-card p-3 rounded">
                                     <input class="form-check-input me-2" type="radio" name="adj_mode"
                                            value="BY_CURRENCY">
-                                    <span class="fw-bold">Belirli Bir Para Birimini Sıfırla</span>
-                                    <span class="d-block fs-9 text-muted ms-4">Sadece seçilen para biriminin bakiyesi sıfırlanır; diğerleri korunur.</span>
+                                    <span class="fw-bolder text-gray-900">
+                                        <i class="bi bi-coin me-1 text-primary"></i>
+                                        Belirli Bir Para Birimini Sıfırla
+                                    </span>
+                                    <span class="d-block fs-9 text-muted ms-4 mt-1">
+                                        Sadece seçilen para biriminin bakiyesi sıfırlanır; diğerleri korunur.
+                                    </span>
                                 </label>
 
-                                <label class="form-check text-white p-3 rounded"
-                                       style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                                <label class="form-check adj-mode-card p-3 rounded">
                                     <input class="form-check-input me-2" type="radio" name="adj_mode" value="CUSTOM">
-                                    <span class="fw-bold">Özel Tutara Eşitle</span>
-                                    <span class="d-block fs-9 text-muted ms-4">Belirli bir para biriminin net bakiyesini girdiğiniz tutara eşitler.</span>
+                                    <span class="fw-bolder text-gray-900">
+                                        <i class="bi bi-bullseye me-1 text-primary"></i>
+                                        Özel Tutara Eşitle
+                                    </span>
+                                    <span class="d-block fs-9 text-muted ms-4 mt-1">
+                                        Belirli bir para biriminin net bakiyesini girdiğiniz tutara eşitler.
+                                    </span>
                                 </label>
                             </div>
                         </div>
 
-                        {# Currency Seçimi — BY_CURRENCY ve CUSTOM için #}
+                        <!-- Currency Seçimi — BY_CURRENCY ve CUSTOM için -->
                         <div class="row g-3 mb-3" id="adjCurrencyGroup" style="display: none;">
                             <div class="col-md-6">
-                                <label class="form-label text-white fs-8 fw-bold">Para Birimi</label>
-                                <select class="form-select form-select-sm bg-dark text-white border-secondary"
+                                <label class="form-label fs-8 fw-bolder text-gray-700">Para Birimi</label>
+                                <select class="form-select form-select-solid"
                                         id="adjCurrency" name="adj_currency">
                                     <option value="">-- Seçiniz --</option>
                                     <option value="HS">HS — Has Altın</option>
@@ -736,9 +1884,11 @@
                                 </select>
                             </div>
                             <div class="col-md-6" id="adjTargetGroup" style="display: none;">
-                                <label class="form-label text-white fs-8 fw-bold">Hedef Net Bakiye</label>
+                                <label class="form-label fs-8 fw-bolder text-gray-700">
+                                    Hedef Net Bakiye
+                                </label>
                                 <input type="text"
-                                       class="form-control form-control-sm bg-dark text-white border-secondary"
+                                       class="form-control form-control-solid"
                                        id="adjTargetAmount" name="adj_target_amount"
                                        placeholder="Örn: 1.500,50 veya 0"
                                        inputmode="decimal">
@@ -748,12 +1898,12 @@
                             </div>
                         </div>
 
-                        {# Açıklama (Zorunlu) #}
-                        <div class="mb-3">
-                            <label class="form-label text-white fs-8 fw-bold">
+                        <!-- Açıklama (Zorunlu) -->
+                        <div class="mb-2">
+                            <label class="form-label fs-8 fw-bolder text-gray-700">
                                 Açıklama <span class="text-danger">*</span>
                             </label>
-                            <textarea class="form-control form-control-sm bg-dark text-white border-secondary"
+                            <textarea class="form-control form-control-solid"
                                       id="adjDescription" name="adj_description" rows="2"
                                       minlength="3" maxlength="500" required
                                       placeholder="Örn: Telefonla mutabık kalındı, kalan kuruşlar silindi."></textarea>
@@ -764,14 +1914,128 @@
                     </form>
                 </div>
 
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                <!-- Footer -->
+                <div class="kp-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         İptal
                     </button>
-                    <button type="button" class="btn btn-sm btn-warning fw-bold" id="adjSubmitBtn"
+                    <button type="button" class="btn btn-warning fw-bolder" id="adjSubmitBtn"
                             onclick="submitAdjustment()">
                         <i class="bi bi-check2-circle me-1"></i>
                         <span class="btn-label">Düzeltmeyi Uygula</span>
+                        <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- FAZ 52 — TEDARİKÇİ AÇILIŞ CARİSİ MODALI                             -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- Tek seferlik kayıt — backend POST /suppliers/opening-balance/create -->
+    <!-- Multi-currency: her satır currency + yön + tutar (+ opsiyonel kur). -->
+    <!-- 'OB-' prefix sayesinde FIFO setoff'tan muaf, tarihsel denge kalemi. -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="openingBalanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content kp-modal-content">
+
+                <!-- Hero Header -->
+                <div class="kp-modal-header">
+                    <div class="kp-modal-icon icon-primary">
+                        <i class="bi bi-flag"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3>Açılış Carisi (İlk Bakiye)</h3>
+                        <div class="kp-modal-sub">
+                            Programa geçişte <strong>{{ record.company_name }}</strong> ile olan
+                            tarihsel borç/alacak kalemlerini stok hareketsiz olarak girin.
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="kp-modal-body">
+
+                    <!-- Bilgi şeridi — tek seferlik aksiyon vurgusu -->
+                    <div class="kp-info-strip mb-3" id="obInfoStrip">
+                        <i class="bi bi-info-circle"></i>
+                        <div>
+                            Bu işlem <strong>tek seferlik</strong>tir ve mağaza programı yeni
+                            kullanmaya başladığında girilmelidir. Yazılan kayıtlar
+                            <strong>OB-…</strong> fişi ile etiketlenir; normal alış-satış akışı
+                            bu satırı kendiliğinden kapatmaz. Mutabakat sonrası değişiklik
+                            için <strong>"Cariyi Düzelt"</strong> akışını kullanın.
+                        </div>
+                    </div>
+
+                    <!-- Daha önce girilmişse uyarı (JS doldurur) -->
+                    <div class="kp-info-strip warn mb-3 d-none" id="obAlreadyExistsStrip">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <div>
+                            Bu tedarikçi için açılış carisi daha önce girilmiş
+                            (<code id="obExistingProcessNo">—</code>).
+                            Yeni bir açılış kaydı eklenemez. Mevcut bakiyeyi değiştirmek için
+                            <strong>"Cariyi Düzelt"</strong> butonunu kullanın.
+                        </div>
+                    </div>
+
+                    <form id="openingBalanceForm" autocomplete="off">
+                        {% csrf_token %}
+
+                        <!-- Açıklama (Zorunlu) -->
+                        <div class="mb-3">
+                            <label class="form-label fs-8 fw-bolder text-gray-700">
+                                Açıklama / Referans <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control form-control-solid"
+                                      id="obDescription" rows="2" minlength="3" maxlength="500"
+                                      placeholder="Örn: 02.05.2026 mutabakat tutanağı uyarınca açılış bakiyesi."></textarea>
+                            <div class="form-text text-muted fs-9">
+                                Denetim için zorunludur (en az 3 karakter). Mutabakat tutanağı,
+                                tarihi veya referans kodu yazmanız önerilir.
+                            </div>
+                        </div>
+
+                        <!-- Açılış Satırları -->
+                        <div class="mb-2 d-flex justify-content-between align-items-center">
+                            <span class="fs-8 fw-bolder text-uppercase text-gray-700">
+                                Açılış Satırları
+                            </span>
+                            <button type="button"
+                                    class="btn btn-sm btn-light-primary fw-bold"
+                                    id="obAddRowBtn"
+                                    onclick="addOpeningBalanceRow()">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Satır Ekle
+                            </button>
+                        </div>
+
+                        <div id="obEntriesContainer">
+                            <!-- JS dinamik satır ekler/çıkarır -->
+                        </div>
+
+                        <div class="text-muted fs-9 mt-2" id="obHint">
+                            Her para birimi için ayrı satır ekleyin. <strong>Yön</strong>
+                            seçimi belirler: <span class="text-success fw-bold">Biz alacaklıyız</span>
+                            (tedarikçide alacağımız var) ya da
+                            <span class="text-warning fw-bold">Biz borçluyuz</span>
+                            (tedarikçiye borcumuz var). Tutarı 0'dan büyük girin.
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="kp-modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        İptal
+                    </button>
+                    <button type="button" class="btn btn-primary fw-bolder" id="obSubmitBtn"
+                            onclick="submitOpeningBalance()">
+                        <i class="bi bi-flag-fill me-1"></i>
+                        <span class="btn-label">Açılış Carisini Kaydet</span>
                         <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
                     </button>
                 </div>
@@ -788,6 +2052,22 @@
         const SUPPLIER_ID = "{{ record.id }}";
         const URL_BALANCES = "{% url 'suppliers:get-balances-all' %}";
         const URL_HISTORY = "{% url 'suppliers:get-supplier-process-history' %}";
+        const URL_OPENING_BALANCE_CREATE = "{% url 'suppliers:opening-balance-create' %}";
+        const URL_OPENING_BALANCE_STATUS = "{% url 'suppliers:opening-balance-status' %}";
+
+        // FAZ 52 — Açılış carisi modal state
+        const OB_CURRENCIES = [
+            {code: 'HS',  label: 'HS — Has Altın (gr)',  isMetal: true},
+            {code: 'HG',  label: 'HG — Has Gümüş (gr)',  isMetal: true},
+            {code: 'TRY', label: 'TRY — Türk Lirası',    isMetal: false},
+            {code: 'USD', label: 'USD — Amerikan Doları', isMetal: false},
+            {code: 'EUR', label: 'EUR — Euro',           isMetal: false},
+            {code: 'GBP', label: 'GBP — İngiliz Sterlini', isMetal: false},
+            {code: 'CAD', label: 'CAD — Kanada Doları',  isMetal: false},
+            {code: 'QAR', label: 'QAR — Katar Riyali',   isMetal: false},
+        ];
+        let _obRowSeq = 0;
+        let _obAlreadyExists = false;
 
         // Türkçe Sayı Formatı
         const fmt = (n, d = 2) => new Intl.NumberFormat('tr-TR', {
@@ -952,19 +2232,23 @@
                 columns: [
                     {
                         data: 'date',
-                        render: d => `<span class="text-white fw-bold fs-7">${d}</span>`
+                        render: d => `<span class="text-gray-900 fw-bold fs-7">${d}</span>`
                     },
                     {
                         data: 'process_no',
                         render: function (d) {
-                            // FAZ 11 / SYNC-03: Tıklanabilir + kopyalanabilir badge
+                            // FAZ 2 / KARAR-04: Tıklayınca işlem detay modalını açar.
+                            // İçindeki kopyala ikonu stopPropagation ile bağımsız çalışır.
                             if (!d) return '-';
                             const safe = String(d).replace(/'/g, "\\'");
                             return `<span class="badge badge-light-dark font-monospace fs-8 opacity-75" ` +
                                    `style="cursor:pointer;" ` +
-                                   `title="Kopyalamak için tıklayın — Toptan ekranındaki fiş no ile eşleştirebilirsiniz" ` +
-                                   `onclick="copyToClipboard('${safe}')">${d} ` +
-                                   `<i class="bi bi-clipboard fs-9 ms-1 opacity-50"></i></span>`;
+                                   `title="İşlem detayını görüntüle (kopyalamak için ikona tıklayın)" ` +
+                                   `onclick="showProcessDetail('${safe}')">${d} ` +
+                                   `<i class="bi bi-clipboard fs-9 ms-1 opacity-50" ` +
+                                   `   style="cursor:copy;" ` +
+                                   `   title="Fiş No Kopyala" ` +
+                                   `   onclick="event.stopPropagation(); copyToClipboard('${safe}'); return false;"></i></span>`;
                         }
                     },
                     {
@@ -993,7 +2277,7 @@
                             const badge = lbl
                                 ? `<span class="badge ${badgeClass} fs-9 me-1">${lbl}</span>`
                                 : '';
-                            return `${badge}<span class="text-white">${d || '-'}</span>`;
+                            return `${badge}<span class="text-gray-900">${d || '-'}</span>`;
                         }
                     },
                     {
@@ -1012,12 +2296,12 @@
                     {
                         data: 'amount_paid_hs',
                         className: 'text-end',
-                        render: d => d > 0 ? `<span class="text-white fw-bolder">${fmt(d, 2)}</span> <span class="text-muted fs-9">HS</span>` : '-'
+                        render: d => d > 0 ? `<span class="text-gray-900 fw-bolder">${fmt(d, 2)}</span> <span class="text-muted fs-9">HS</span>` : '-'
                     },
                     {
                         data: 'amount_paid_tl',
                         className: 'text-end',
-                        render: d => d > 0 ? `<span class="text-white fw-bolder">${fmt(d, 2)}</span> <span class="text-muted fs-9">₺</span>` : '-'
+                        render: d => d > 0 ? `<span class="text-gray-900 fw-bolder">${fmt(d, 2)}</span> <span class="text-muted fs-9">₺</span>` : '-'
                     }
                 ],
                 language: {
@@ -1064,9 +2348,519 @@
                 Swal.fire({
                     toast: true, position: 'top-end', icon: 'success',
                     title: 'Kopyalandı', showConfirmButton: false, timer: 1500,
-                    background: '#1A253A', color: '#fff'
+                                    });
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // FAZ 2 / KARAR-04 — İŞLEM DETAY MODALI
+        // ══════════════════════════════════════════════════════════════════
+        // process_no badge'ine tıklandığında çağrılır. Backend'den fişin
+        // tüm Process satırları + bağlı SupplierLedger satırları + para
+        // birimi bazlı net özet alınır ve modalda render edilir.
+
+        const URL_PROCESS_DETAIL = "{% url 'suppliers:process-detail' %}";
+        let _pdmCurrentProcessNo = null;  // Footer "Fiş No Kopyala" butonu için
+
+        function _pdmHtmlEscape(s) {
+            // XSS koruması — backend'den gelen string'leri DOM'a basarken
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function _pdmFormatNum(v, dec) {
+            const n = Number(v);
+            if (!isFinite(n) || isNaN(n)) return '-';
+            return n.toLocaleString('tr-TR', {
+                minimumFractionDigits: dec, maximumFractionDigits: dec
+            });
+        }
+
+        function showProcessDetail(processNo) {
+            if (!processNo) return;
+            _pdmCurrentProcessNo = processNo;
+
+            // Modalı reset et — her açılış temiz başlasın
+            $('#pdmProcessNo').text(processNo);
+            $('#pdmAdjBadge').addClass('d-none');
+            $('#pdmLoader').removeClass('d-none');
+            $('#pdmError').addClass('d-none');
+            $('#pdmContent').addClass('d-none');
+            $('#pdmProcessSection').addClass('d-none');
+            $('#pdmLedgerSection').addClass('d-none');
+            $('#pdmSummarySection').addClass('d-none');
+            $('#pdmEmpty').addClass('d-none');
+            $('#pdmProcessTbody').empty();
+            $('#pdmLedgerTbody').empty();
+            $('#pdmSummaryGrid').empty();
+
+            $('#processDetailModal').modal('show');
+
+            $.getJSON(URL_PROCESS_DETAIL, {
+                supplier_id: SUPPLIER_ID,
+                process_no: processNo
+            }).done(function (res) {
+                $('#pdmLoader').addClass('d-none');
+
+                if (!res || !res.result) {
+                    $('#pdmErrorMsg').text((res && res.error_msg) || 'Bilinmeyen hata.');
+                    $('#pdmError').removeClass('d-none');
+                    return;
+                }
+
+                $('#pdmContent').removeClass('d-none');
+
+                // ADJ badge
+                if (res.is_adjustment) {
+                    $('#pdmAdjBadge').removeClass('d-none');
+                }
+
+                // Boş veri durumu
+                if ((!res.process_rows || res.process_rows.length === 0) &&
+                    (!res.ledger_rows || res.ledger_rows.length === 0)) {
+                    $('#pdmEmpty').removeClass('d-none');
+                    return;
+                }
+
+                // ─── Process satırları (Mal Hareketi) ───
+                if (res.process_rows && res.process_rows.length > 0) {
+                    const $tb = $('#pdmProcessTbody');
+                    res.process_rows.forEach(p => {
+                        const txClass = ['PURCHASE','STOCK_IN','ORDER_IN','ENTRY']
+                                        .includes(p.transaction_type)
+                                        ? 'pdm-pill-entry' : 'pdm-pill-exit';
+                        $tb.append(`
+                            <tr>
+                                <td><span class="text-muted fs-9">${_pdmHtmlEscape(p.date)}</span></td>
+                                <td><span class="pdm-pill ${txClass}">${_pdmHtmlEscape(p.transaction_label)}</span></td>
+                                <td>
+                                    <div>${_pdmHtmlEscape(p.product_name)}</div>
+                                    ${p.product_category ? `<div class="text-muted fs-9">${_pdmHtmlEscape(p.product_category)}</div>` : ''}
+                                </td>
+                                <td class="text-end">${_pdmFormatNum(p.piece, 0)}</td>
+                                <td class="text-end text-gold fw-bold">${_pdmFormatNum(p.gram, 3)}</td>
+                                <td class="text-end">${_pdmHtmlEscape(p.process_mileage)}</td>
+                                <td class="text-end">${_pdmFormatNum(p.price_hs, 3)}</td>
+                                <td class="text-end">${_pdmFormatNum(p.amount_eur, 2)}</td>
+                                <td><span class="text-muted fs-9">${_pdmHtmlEscape(p.employee_name)}</span></td>
+                            </tr>
+                        `);
+                    });
+                    $('#pdmProcessSection').removeClass('d-none');
+                }
+
+                // ─── Ledger satırları (Cari Hareketleri) ───
+                if (res.ledger_rows && res.ledger_rows.length > 0) {
+                    const $tb = $('#pdmLedgerTbody');
+                    res.ledger_rows.forEach(l => {
+                        const dirPill = l.transaction_type === 'ENTRY'
+                                        ? 'pdm-pill-entry' : 'pdm-pill-exit';
+                        const statusPill = l.is_active
+                                        ? 'pdm-pill-active' : 'pdm-pill-closed';
+                        const statusLabel = l.is_active ? 'AKTİF' : 'KAPANDI';
+                        const rowClass = l.is_active ? '' : 'pdm-row-closed';
+                        const fxRate = l.exchange_rate_eur
+                                       ? _pdmFormatNum(l.exchange_rate_eur, 4)
+                                       : '<span class="text-muted">—</span>';
+                        const adjMark = l.is_adjustment_row
+                                        ? '<span class="pdm-pill pdm-pill-adj ms-1" style="font-size: 0.6rem;">ADJ</span>'
+                                        : '';
+                        $tb.append(`
+                            <tr class="${rowClass}">
+                                <td><span class="text-muted fs-9">${_pdmHtmlEscape(l.created_on)}</span></td>
+                                <td><span class="pdm-pill ${dirPill}">${_pdmHtmlEscape(l.transaction_label)}</span></td>
+                                <td class="text-gold fw-bold">${_pdmHtmlEscape(l.currency)}</td>
+                                <td class="text-end fw-bolder">${_pdmFormatNum(l.amount_value, 3)}</td>
+                                <td class="text-end">${fxRate}</td>
+                                <td><span class="text-muted fs-9">${_pdmHtmlEscape(l.description)}${adjMark}</span></td>
+                                <td><span class="pdm-pill ${statusPill}">${statusLabel}</span></td>
+                            </tr>
+                        `);
+                    });
+                    $('#pdmLedgerSubInfo').text(
+                        `${res.summary.active_count} aktif · ${res.summary.closed_count} kapandı`
+                    );
+                    $('#pdmLedgerSection').removeClass('d-none');
+                }
+
+                // ─── Para Birimi Bazlı Aktif Net Özet ───
+                if (res.summary && res.summary.currencies && res.summary.currencies.length > 0) {
+                    const $g = $('#pdmSummaryGrid');
+                    res.summary.currencies.forEach(c => {
+                        let dirText = 'Dengede', dirColor = 'text-muted';
+                        if (c.direction === 'RECEIVABLE') {
+                            dirText = 'Biz Alacaklıyız'; dirColor = 'text-success';
+                        } else if (c.direction === 'PAYABLE') {
+                            dirText = 'Biz Borçluyuz'; dirColor = 'text-warning';
+                        }
+                        $g.append(`
+                            <div class="pdm-meta-cell">
+                                <div class="pdm-meta-label">${_pdmHtmlEscape(c.currency)} Net</div>
+                                <div class="pdm-meta-value">${_pdmFormatNum(c.net, 3)}</div>
+                                <div class="fs-9 ${dirColor} fw-bold mt-1">${dirText}</div>
+                            </div>
+                        `);
+                    });
+                    $('#pdmSummarySection').removeClass('d-none');
+                }
+            }).fail(function (xhr) {
+                $('#pdmLoader').addClass('d-none');
+                const r = xhr.responseJSON || {};
+                $('#pdmErrorMsg').text(r.error_msg || 'Sunucu hatası — detay alınamadı.');
+                $('#pdmError').removeClass('d-none');
+            });
+        }
+
+        function copyProcessNoFromModal() {
+            if (_pdmCurrentProcessNo) copyToClipboard(_pdmCurrentProcessNo);
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // FAZ 52 — AÇILIŞ CARİSİ (OPENING BALANCE) MODAL & SUBMIT
+        // ══════════════════════════════════════════════════════════════════
+        // İlk açılış: programa geçişte tedarikçi ile olan tarihsel
+        // bakiyeler stok hareketsiz olarak ledger'a yazılır.
+        //   - Idempotent: tedarikçi başına yalnızca BİR KEZ.
+        //   - Multi-currency: dinamik satır ekle/çıkar.
+        //   - Açılış kaydı 'OB-' prefix'i ile etiketlenir; book_supplier_tx
+        //     içindeki FIFO setoff filtresi tarafından muaf tutulur.
+        // ══════════════════════════════════════════════════════════════════
+
+        function _obCurrencyOptions(selected) {
+            return OB_CURRENCIES.map(c =>
+                `<option value="${c.code}"${selected === c.code ? ' selected' : ''}>${c.label}</option>`
+            ).join('');
+        }
+
+        function _obIsMetal(code) {
+            const cur = OB_CURRENCIES.find(c => c.code === code);
+            return cur ? cur.isMetal : false;
+        }
+
+        function addOpeningBalanceRow(presetCurrency) {
+            if (_obAlreadyExists) return;
+            _obRowSeq += 1;
+            const rowId = `obRow-${_obRowSeq}`;
+            const cur = presetCurrency || 'HS';
+            const html = `
+                <div class="ob-entry-row" id="${rowId}" data-row-id="${_obRowSeq}">
+                    <button type="button" class="ob-row-remove"
+                            onclick="removeOpeningBalanceRow('${rowId}')"
+                            title="Bu satırı kaldır">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fs-9 fw-bolder text-gray-700 mb-1">
+                                Para Birimi
+                            </label>
+                            <select class="form-select form-select-sm ob-currency"
+                                    onchange="onObCurrencyChange('${rowId}')">
+                                ${_obCurrencyOptions(cur)}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fs-9 fw-bolder text-gray-700 mb-1">
+                                Yön
+                            </label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="ob-direction-pill is-rec ob-pill-rec"
+                                      data-direction="RECEIVABLE"
+                                      onclick="onObDirectionClick('${rowId}','RECEIVABLE')">
+                                    <i class="bi bi-arrow-down-left-circle"></i>
+                                    Biz Alacaklıyız
+                                </span>
+                                <span class="ob-direction-pill is-muted ob-pill-pay"
+                                      data-direction="PAYABLE"
+                                      onclick="onObDirectionClick('${rowId}','PAYABLE')">
+                                    <i class="bi bi-arrow-up-right-circle"></i>
+                                    Biz Borçluyuz
+                                </span>
+                            </div>
+                            <input type="hidden" class="ob-direction" value="RECEIVABLE">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fs-9 fw-bolder text-gray-700 mb-1">
+                                Tutar
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-sm ob-amount"
+                                   placeholder="Örn: 50,000"
+                                   inputmode="decimal">
+                        </div>
+                        <div class="col-md-12 ob-rate-group" style="display:none;">
+                            <label class="form-label fs-9 fw-bolder text-gray-700 mb-1">
+                                <i class="bi bi-currency-exchange me-1"></i>
+                                Açılış Anındaki TL Kuru
+                                <span class="text-muted fw-normal">(opsiyonel — 1 birim = X ₺)</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-sm ob-rate"
+                                   placeholder="Örn: 32,50"
+                                   inputmode="decimal">
+                            <div class="form-text text-muted fs-9">
+                                Doluysa raporlamada tarihsel TL eşdeğer hesabı yapılır.
+                                HS/HG (gram) için boş bırakılabilir.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#obEntriesContainer').append(html);
+            // Currency-uyumlu kur alanı görünürlüğü
+            onObCurrencyChange(rowId);
+        }
+
+        function removeOpeningBalanceRow(rowId) {
+            $(`#${rowId}`).remove();
+            // En az bir satır kalsın
+            if ($('#obEntriesContainer').children().length === 0) {
+                addOpeningBalanceRow();
+            }
+        }
+
+        function onObCurrencyChange(rowId) {
+            const $row = $(`#${rowId}`);
+            const cur = $row.find('.ob-currency').val();
+            const isMetal = _obIsMetal(cur);
+            // Metal (HS/HG) -> kur alanı gizli; fiat -> görünür.
+            if (isMetal) {
+                $row.find('.ob-rate-group').hide();
+                $row.find('.ob-rate').val('');
+            } else {
+                $row.find('.ob-rate-group').show();
+            }
+        }
+
+        function onObDirectionClick(rowId, direction) {
+            const $row = $(`#${rowId}`);
+            $row.find('.ob-direction').val(direction);
+            const $rec = $row.find('.ob-pill-rec');
+            const $pay = $row.find('.ob-pill-pay');
+            if (direction === 'RECEIVABLE') {
+                $rec.removeClass('is-muted').addClass('is-rec');
+                $pay.removeClass('is-pay').addClass('is-muted');
+            } else {
+                $pay.removeClass('is-muted').addClass('is-pay');
+                $rec.removeClass('is-rec').addClass('is-muted');
+            }
+        }
+
+        function _obParseDecimal(raw) {
+            if (raw == null) return null;
+            let txt = String(raw).trim();
+            if (!txt) return null;
+            if (txt.indexOf('.') >= 0 && txt.indexOf(',') >= 0) {
+                txt = txt.replace(/\./g, '').replace(',', '.');
+            } else if (txt.indexOf(',') >= 0) {
+                txt = txt.replace(',', '.');
+            }
+            const n = parseFloat(txt);
+            return isNaN(n) ? null : n;
+        }
+
+        function _resetOpeningBalanceForm() {
+            $('#openingBalanceForm')[0].reset();
+            $('#obEntriesContainer').empty();
+            _obRowSeq = 0;
+            $('#obSubmitBtn').prop('disabled', false);
+            $('#obSubmitBtn .spinner-border').addClass('d-none');
+            $('#obSubmitBtn .btn-label').text('Açılış Carisini Kaydet');
+            $('#obAlreadyExistsStrip').addClass('d-none');
+            $('#obInfoStrip').removeClass('d-none');
+            _obAlreadyExists = false;
+        }
+
+        function showOpeningBalanceModal() {
+            _resetOpeningBalanceForm();
+            // Önce idempotent durumunu kontrol et
+            $.getJSON(URL_OPENING_BALANCE_STATUS, {supplier_id: SUPPLIER_ID})
+                .done(function (res) {
+                    if (res && res.exists) {
+                        _obAlreadyExists = true;
+                        $('#obExistingProcessNo').text(res.process_no || '—');
+                        $('#obAlreadyExistsStrip').removeClass('d-none');
+                        $('#obInfoStrip').addClass('d-none');
+                        $('#obSubmitBtn').prop('disabled', true);
+                        $('#obAddRowBtn').prop('disabled', true);
+                        $('#obDescription').prop('disabled', true);
+                    } else {
+                        _obAlreadyExists = false;
+                        $('#obSubmitBtn').prop('disabled', false);
+                        $('#obAddRowBtn').prop('disabled', false);
+                        $('#obDescription').prop('disabled', false);
+                        addOpeningBalanceRow();
+                    }
+                    $('#openingBalanceModal').modal('show');
+                })
+                .fail(function () {
+                    // Status alınamasa bile modal açılsın; backend zaten
+                    // 409 ile koruma sağlar.
+                    addOpeningBalanceRow();
+                    $('#openingBalanceModal').modal('show');
+                });
+        }
+
+        function _collectOpeningBalanceEntries() {
+            const out = [];
+            $('#obEntriesContainer').children('.ob-entry-row').each(function () {
+                const $r = $(this);
+                const currency = ($r.find('.ob-currency').val() || '').trim().toUpperCase();
+                const direction = ($r.find('.ob-direction').val() || '').trim().toUpperCase();
+                const amount = _obParseDecimal($r.find('.ob-amount').val());
+                const rateRaw = $r.find('.ob-rate').val();
+                const rate = rateRaw ? _obParseDecimal(rateRaw) : null;
+                if (!currency || !direction || !amount || amount <= 0) return;
+                out.push({
+                    currency:         currency,
+                    direction:        direction,
+                    amount:           String(amount),
+                    exchange_rate_eur: rate ? String(rate) : null,
                 });
             });
+            return out;
+        }
+
+        function submitOpeningBalance() {
+            if (_obAlreadyExists) return;
+
+            const description = ($('#obDescription').val() || '').trim();
+            if (description.length < 3) {
+                Swal.fire({
+                    icon: 'warning', title: 'Açıklama zorunludur',
+                    text: 'En az 3 karakter uzunluğunda bir açıklama girin.',
+                });
+                return;
+            }
+
+            const entries = _collectOpeningBalanceEntries();
+            if (entries.length === 0) {
+                Swal.fire({
+                    icon: 'warning', title: 'Satır gerekli',
+                    text: 'En az bir geçerli satır ekleyin (currency + yön + tutar).',
+                });
+                return;
+            }
+
+            // Aynı currency tekrarı engeli (kullanıcıyı uyar)
+            const seen = {};
+            const dup = [];
+            entries.forEach(e => {
+                if (seen[e.currency]) dup.push(e.currency);
+                seen[e.currency] = true;
+            });
+            if (dup.length > 0) {
+                Swal.fire({
+                    icon: 'warning', title: 'Çift para birimi',
+                    text: `Aynı para birimini birden fazla kez girdiniz: ${dup.join(', ')}. ` +
+                          `Tek satırda toplayın.`,
+                });
+                return;
+            }
+
+            // Onay
+            const summaryHtml = entries.map(e => {
+                const dirLabel = e.direction === 'RECEIVABLE'
+                    ? '<span class="text-success fw-bold">Alacak</span>'
+                    : '<span class="text-warning fw-bold">Borç</span>';
+                return `<div class="d-flex justify-content-between border-bottom py-1">
+                            <span>${e.currency}</span>
+                            <span>${dirLabel}</span>
+                            <span class="fw-bolder">${fmt(parseFloat(e.amount), 3)}</span>
+                        </div>`;
+            }).join('');
+
+            Swal.fire({
+                title: 'Açılış Carisini Kaydet?',
+                html: `Aşağıdaki ${entries.length} satır <strong>OB-…</strong> fişi olarak ` +
+                      `kaydedilecek. Bu işlem <strong>tek seferlik</strong>tir.` +
+                      `<div class="text-start mt-3" style="font-size:0.85rem;">${summaryHtml}</div>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Kaydet',
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: '#1661c1',
+                cancelButtonColor: '#6c757d',
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                $('#obSubmitBtn').prop('disabled', true);
+                $('#obSubmitBtn .spinner-border').removeClass('d-none');
+                $('#obSubmitBtn .btn-label').text('Kaydediliyor...');
+
+                const payload = {
+                    'csrfmiddlewaretoken':
+                        $('#openingBalanceForm [name=csrfmiddlewaretoken]').val(),
+                    'supplier_id': SUPPLIER_ID,
+                    'description': description,
+                    'entries': JSON.stringify(entries),
+                };
+
+                $.post(URL_OPENING_BALANCE_CREATE, payload)
+                    .done(function (res) {
+                        if (res && res.result) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Açılış Carisi Kaydedildi',
+                                html: `Fiş No: <code class="text-primary">${res.process_no}</code><br>` +
+                                      `${res.entries_count || 0} satır yazıldı.`,
+                                confirmButtonColor: '#28c76f',
+                            }).then(function () {
+                                $('#openingBalanceModal').modal('hide');
+                                loadBalances();
+                                if (table) table.ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error', title: 'Hata',
+                                text: (res && res.error_msg) || 'Bilinmeyen hata.',
+                            });
+                        }
+                    })
+                    .fail(function (xhr) {
+                        const r = xhr.responseJSON || {};
+                        if (xhr.status === 409 && r.error_code === 'OB_ALREADY_EXISTS') {
+                            $('#openingBalanceModal').modal('hide');
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Zaten Girilmiş',
+                                html: r.error_msg || 'Bu tedarikçi için açılış carisi mevcut.',
+                                confirmButtonColor: '#FFB400',
+                            });
+                            return;
+                        }
+                        Swal.fire({
+                            icon: 'error', title: 'İşlem Başarısız',
+                            text: r.error_msg || 'Sunucu hatası. Lütfen tekrar deneyin.',
+                        });
+                    })
+                    .always(function () {
+                        $('#obSubmitBtn').prop('disabled', _obAlreadyExists);
+                        $('#obSubmitBtn .spinner-border').addClass('d-none');
+                        $('#obSubmitBtn .btn-label').text('Açılış Carisini Kaydet');
+                    });
+            });
+        }
+
+        // Sayfa yüklendiğinde "Açılış Carisi Gir" CTA'sının görünümünü
+        // mevcut duruma göre ayarla — daha önce girilmişse mavi outline yerine
+        // gri "kayıtlı" rozeti ile bilgilendir.
+        function initOpeningBalanceCtaState() {
+            $.getJSON(URL_OPENING_BALANCE_STATUS, {supplier_id: SUPPLIER_ID})
+                .done(function (res) {
+                    if (res && res.exists) {
+                        const $btn = $('#openingBalanceBtn');
+                        $btn.html(
+                            '<i class="bi bi-flag-fill fs-5 me-2"></i>' +
+                            '<span class="fs-7">Açılış Carisi Kayıtlı</span>'
+                        );
+                        $btn.attr('title',
+                            'Bu tedarikçi için açılış carisi daha önce girilmiş. ' +
+                            'Tıklayarak fiş bilgisini görebilirsiniz.');
+                    }
+                });
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -1074,6 +2868,17 @@
         // ══════════════════════════════════════════════════════════════════
 
         const URL_ADJUSTMENT_CREATE = "{% url 'suppliers:adjustment-create' %}";
+
+        // ─────────────────────────────────────────────────────────────────
+        // FAZ 11 / BL-01-HARDEN-03 — Frontend Optimistic Balance Snapshot
+        // ─────────────────────────────────────────────────────────────────
+        // Modal açıldığında o anki bakiye değerlerini bu objede tutarız
+        // (örn. {"HS": "100.000", "TRY": "5000.00"}). Submit anında JSON
+        // olarak `expected_balance` POST parametresiyle backend'e gönderilir;
+        // backend tarafı (HARDEN-03 yaması) bunu lock alındıktan sonra
+        // gerçek bakiyeyle karşılaştırır. Fark varsa 409 Conflict döner ve
+        // kullanıcıya "bakiye değişti, sayfa yenileniyor" mesajı gösterilir.
+        let adjustmentBalanceSnapshot = {};
 
         // Modal'ı aç — her açılışta bakiye panelini yeniden doldurur.
         function showAdjustmentModal() {
@@ -1101,6 +2906,23 @@
             $.getJSON(URL_BALANCES, {supplier_id: SUPPLIER_ID})
                 .done(function (res) {
                     container.empty();
+
+                    // ── HARDEN-03: Snapshot'ı taze veri ile yenile ──
+                    // API yanıtındaki TÜM para birimleri snapshot'a yazılır
+                    // (sadece UI'da gösterilen filtrelenmiş satırlar değil).
+                    // Backend tarafında strict eşleşme aranır; eksik bir
+                    // currency (örn. 0 bakiyeli) görünmüyor diye gönderilmezse
+                    // o currency için doğrulama yapılmaz — bu kasıtlı.
+                    // Number → String dönüşümü Decimal precision sorunu
+                    // yaşamamak için res.data'daki orijinal değer kullanılır.
+                    adjustmentBalanceSnapshot = {};
+                    (res.data || []).forEach(item => {
+                        const cur = String(item.currency || '').toUpperCase();
+                        if (!cur) return;
+                        // net değerini string olarak sakla; backend Decimal
+                        // parse edecek. Sayısal olarak 0 ise de saklanır.
+                        adjustmentBalanceSnapshot[cur] = String(item.net);
+                    });
 
                     const rows = (res.data || []).filter(
                         r => Math.abs(r.receivable) >= 0.01 || Math.abs(r.payable) >= 0.01
@@ -1167,24 +2989,21 @@
                 Swal.fire({
                     icon: 'warning', title: 'Açıklama zorunludur',
                     text: 'En az 3 karakter uzunluğunda bir açıklama girin.',
-                    background: '#1A253A', color: '#fff'
-                });
+                                    });
                 return;
             }
             if ((mode === 'BY_CURRENCY' || mode === 'CUSTOM') && !currency) {
                 Swal.fire({
                     icon: 'warning', title: 'Para birimi seçilmedi',
                     text: 'Lütfen bir para birimi seçin.',
-                    background: '#1A253A', color: '#fff'
-                });
+                                    });
                 return;
             }
             if (mode === 'CUSTOM' && !targetAmount) {
                 Swal.fire({
                     icon: 'warning', title: 'Hedef tutar eksik',
                     text: 'Özel tutar modunda hedef net bakiye girilmelidir.',
-                    background: '#1A253A', color: '#fff'
-                });
+                                    });
                 return;
             }
 
@@ -1203,8 +3022,7 @@
                 showCancelButton: true,
                 confirmButtonText: 'Evet, Uygula',
                 cancelButtonText: 'Vazgeç',
-                background: '#1A253A', color: '#fff',
-                confirmButtonColor: '#FFB400',
+                                confirmButtonColor: '#FFB400',
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (!result.isConfirmed) return;
@@ -1223,6 +3041,33 @@
                     'description': description
                 };
 
+                // ── HARDEN-03: expected_balance snapshot ekle ──
+                // Mode bazlı seçim:
+                //   ALL         → tüm para birimleri (komple snapshot)
+                //   BY_CURRENCY → sadece seçilen currency
+                //   CUSTOM      → sadece seçilen currency
+                // Snapshot boşsa parametre gönderilmez; backend doğrulama
+                // atlanır ve eski davranış aynen çalışır (defensive).
+                try {
+                    let expectedToSend = {};
+                    if (mode === 'ALL') {
+                        expectedToSend = adjustmentBalanceSnapshot || {};
+                    } else if (currency) {
+                        const k = currency.toUpperCase();
+                        if (adjustmentBalanceSnapshot && adjustmentBalanceSnapshot[k] !== undefined) {
+                            expectedToSend[k] = adjustmentBalanceSnapshot[k];
+                        }
+                    }
+                    if (Object.keys(expectedToSend).length > 0) {
+                        payload.expected_balance = JSON.stringify(expectedToSend);
+                    }
+                } catch (e) {
+                    // Snapshot serialize hatası iş akışını durdurmaz; yalnızca
+                    // optimistic doğrulama atlanır. Backend lock + atomic
+                    // yine de güvende.
+                    console.warn('expected_balance snapshot serialize hatası:', e);
+                }
+
                 $.post(URL_ADJUSTMENT_CREATE, payload)
                     .done(function (res) {
                         if (res && res.result) {
@@ -1231,8 +3076,7 @@
                                 title: 'Düzeltme Uygulandı',
                                 html: `Fiş No: <code class="text-warning">${res.process_no}</code><br>` +
                                       `${res.entries_count || 0} para birimi için kayıt açıldı.`,
-                                background: '#1A253A', color: '#fff',
-                                confirmButtonColor: '#28c76f'
+                                                                confirmButtonColor: '#28c76f'
                             }).then(() => {
                                 $('#adjustmentModal').modal('hide');
                                 // Sayfayı yenilemeden bakiye ve tabloyu tazele
@@ -1243,18 +3087,57 @@
                             Swal.fire({
                                 icon: 'error', title: 'Hata',
                                 text: (res && res.error_msg) || 'Bilinmeyen hata.',
-                                background: '#1A253A', color: '#fff'
-                            });
+                                                            });
                         }
                     })
                     .fail(function (xhr) {
-                        const msg = (xhr.responseJSON && xhr.responseJSON.error_msg) ||
+                        const r = xhr.responseJSON || {};
+
+                        // ── HARDEN-03: 409 Conflict — bakiye değişti ──
+                        // Backend, expected_balance ile gerçek bakiye arasında
+                        // fark tespit ettiğinde bu yanıtı döner. Modalı kapat,
+                        // kullanıcıyı bilgilendir, sayfayı otomatik yenile.
+                        if (xhr.status === 409 && r.error_code === 'BALANCE_CHANGED') {
+                            // Mismatch detaylarını okunaklı tabloya çevir.
+                            let mismatchHtml = '';
+                            if (Array.isArray(r.mismatches) && r.mismatches.length) {
+                                mismatchHtml =
+                                    '<div class="mt-3" style="font-size:0.85rem;">' +
+                                    '<table class="table table-sm table-bordered mb-0">' +
+                                    '<thead><tr><th>Birim</th><th>Beklenen</th><th>Güncel</th></tr></thead><tbody>';
+                                r.mismatches.forEach(m => {
+                                    mismatchHtml +=
+                                        `<tr><td>${m.currency}</td>` +
+                                        `<td class="text-warning">${m.expected}</td>` +
+                                        `<td class="text-info">${m.actual}</td></tr>`;
+                                });
+                                mismatchHtml += '</tbody></table></div>';
+                            }
+                            $('#adjustmentModal').modal('hide');
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Bakiye Değişti',
+                                html: (r.error_msg ||
+                                       'Bakiye, modal açıldıktan sonra değişti.') +
+                                      mismatchHtml +
+                                      '<br><small class="text-muted">Sayfa otomatik yenileniyor…</small>',
+                                                                confirmButtonColor: '#FFB400',
+                                timer: 4000,
+                                timerProgressBar: true,
+                                showConfirmButton: true,
+                                confirmButtonText: 'Şimdi Yenile'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                            return;
+                        }
+
+                        const msg = r.error_msg ||
                             'Sunucu hatası. Lütfen tekrar deneyin.';
                         Swal.fire({
                             icon: 'error', title: 'İşlem Başarısız',
                             text: msg,
-                            background: '#1A253A', color: '#fff'
-                        });
+                                                    });
                     })
                     .always(function () {
                         $('#adjSubmitBtn').prop('disabled', false);
@@ -1300,6 +3183,7 @@
         $(document).ready(function () {
             loadBalances();
             initHistoryTable();
+            initOpeningBalanceCtaState();
 
             // Filtre Değişikliklerini Dinle
             $('#fType, #fCur, #fMaterial, #fDateFrom, #fDateTo').on('change', function () {

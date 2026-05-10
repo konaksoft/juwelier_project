@@ -22,11 +22,23 @@ urlpatterns = [
     path('download-report/<uuid:record_id>', download_supplier_report, name='download-report'),
 
     # Çantacı Modülü
+    # FAZ 32 — `cantaci-islem-ekle` endpoint'i kaldırıldı.
+    # Çantacı işlemleri artık tamamen Toptan (Wholesale) modülü üzerinden
+    # yürütülür; izole SupplierLedger.create() yazımı tek seferlik veri
+    # bütünlüğü riski oluşturuyordu (StockLedger ve auto_setoff bypass).
     path('cantaci/<uuid:record_id>', cantaci_detail_view, name='cantaci-detail'),
     path('cantaci/hareketler', cantaci_hareketler, name='cantaci-hareketler'),
-    path('cantaci/islem-ekle', cantaci_islem_ekle, name='cantaci-islem-ekle'),
     path('cantaci/export/<uuid:record_id>', cantaci_export, name='cantaci-export'),
 
     # FAZ 11 / BL-01 — Cari Sıfırlama / Manuel Düzeltme (Adjustment Entry)
     path('adjustment/create', supplier_adjustment_create, name='adjustment-create'),
+
+    # FAZ 52 — Tedarikçi Açılış Carisi (Opening Balance)
+    path('opening-balance/create', supplier_opening_balance_create,
+         name='opening-balance-create'),
+    path('opening-balance/status', supplier_opening_balance_status,
+         name='opening-balance-status'),
+
+    # FAZ 2 / KARAR-04 — İşlem Detay Modal Endpoint
+    path('process-detail', supplier_process_detail, name='process-detail'),
 ]

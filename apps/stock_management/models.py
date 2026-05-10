@@ -85,6 +85,33 @@ class StockSnapshot(models.Model):
         help_text='Mevcut gram stok. Hurda, bilezik, kulce icin.'
     )
 
+    # --- FAZ 48.1: Emanet Havuzu (Mağaza stoğundan ayrı) ---
+    # Müşterilerin emanet bıraktığı stok miktarı. Bu alan SATIŞ akışlarında
+    # (Hızlı İşlem, Perakende, Toptan, Hurdalar, Bilezikler sayfaları)
+    # KESİNLİKLE GÖSTERİLMEZ ve hesaba katılmaz. Sadece /custody/ Emanet
+    # Yönetimi ekranında görünür. Emanet stoğunu mağaza stoğuna almak için
+    # CustodyToStockService.transfer() kullanılır (atomik: custody_gram düşer,
+    # stock_gram artar; tıpkı bir Hurda/Ziynet alımı gibi WAC güncellenir).
+    custody_gram = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        default=Decimal('0.0000'),
+        verbose_name='Emanet Stok (Gram)',
+        help_text=(
+            'Müşteri emaneti gram stok. Mağaza satılabilir stoğunun PARÇASI DEĞİLDİR. '
+            'Sadece Emanet Yönetimi ekranında görünür.'
+        )
+    )
+
+    custody_pieces = models.IntegerField(
+        default=0,
+        verbose_name='Emanet Stok (Adet)',
+        help_text=(
+            'Müşteri emaneti adet stok. Mağaza satılabilir stoğunun PARÇASI DEĞİLDİR. '
+            'Sadece Emanet Yönetimi ekranında görünür.'
+        )
+    )
+
     # --- Agirlikli Ortalama Maliyet (WAC) ---
     weighted_avg_cost_hs = models.DecimalField(
         max_digits=12,
@@ -94,7 +121,7 @@ class StockSnapshot(models.Model):
         help_text='Agirlikli ortalama alis maliyeti (Has Altin cinsinden)'
     )
 
-    weighted_avg_cost_tl = models.DecimalField(
+    weighted_avg_cost_eur = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=Decimal('0.00'),
@@ -190,6 +217,15 @@ class StockSnapshot(models.Model):
                 condition=Q(stock_pieces__gte=0),
                 name='stock_snapshot_no_negative_pieces'
             ),
+            # FAZ 48.1 — Emanet havuzu da negatife düşemez
+            CheckConstraint(
+                condition=Q(custody_gram__gte=Decimal('0.0000')),
+                name='stock_snapshot_no_negative_custody_gram'
+            ),
+            CheckConstraint(
+                condition=Q(custody_pieces__gte=0),
+                name='stock_snapshot_no_negative_custody_pieces'
+            ),
         ]
 
         indexes = [
@@ -215,13 +251,18 @@ class StockSnapshot(models.Model):
 
     @property
     def total_value_hs(self) -> Decimal:
-        """Toplam stok degeri Has cinsinden (WAC * miktar)."""
+        """Toplam (mağaza) stok degeri Has cinsinden (WAC * miktar). Emanet HARİÇ."""
         return (self.stock_gram * self.weighted_avg_cost_hs).quantize(Decimal('0.0001'))
 
     @property
     def total_value_tl(self) -> Decimal:
-        """Toplam stok degeri TL cinsinden (WAC * miktar)."""
-        return (self.stock_gram * self.weighted_avg_cost_tl).quantize(Decimal('0.01'))
+        """Toplam (mağaza) stok degeri TL cinsinden (WAC * miktar). Emanet HARİÇ."""
+        return (self.stock_gram * self.weighted_avg_cost_eur).quantize(Decimal('0.01'))
+
+    @property
+    def has_custody(self) -> bool:
+        """FAZ 48.1 — Bu üründe aktif emanet stoğu var mı?"""
+        return (self.custody_gram > Decimal('0.0000')) or (self.custody_pieces > 0)
 
 
 # ============================================================================
@@ -275,6 +316,19 @@ class StockLedger(models.Model):
         REPAIR_OUT = 'REPAIR_OUT', 'Tamir Cikis'
         CUSTODY_IN = 'CUSTODY_IN', 'Emanet Alındı (Giriş)'
         CUSTODY_OUT = 'CUSTODY_OUT', 'Emanet Teslim (Çıkış)'
+        # FAZ 24 — GEREKSİNİM-2: Emanetten serbest stoğa transfer.
+        # Stok sayısı değişmez; reason "emanet havuzu"ndan "serbest havuz"a
+        # geçişi denetim olarak işaretler. Müşterinin cari hesabına
+        # eşdeğer Has borcu yazılır (CustomerLedger).
+        CUSTODY_TO_STOCK = 'CUSTODY_2_STK', 'Emanet → Serbest Stok'
+        # FAZ 49 — Müşteri ürün/hurda ile borcunu öder (PAYMENT_IN) veya
+        # mağaza müşteriye ürün vererek alacağı kapatır (PAYMENT_OUT).
+        # SALE/PURCHASE'tan AYRI tutulur ki ciro/satış raporlarını şişirmesin.
+        # Stok efekti: PAYMENT_IN → stock_gram artar (WAC güncellenir,
+        # PURCHASE gibi); PAYMENT_OUT → stock_gram azalır (SALE gibi
+        # değil — fiyatlandırma müşteri ile karşılıklı kararlaştırılır).
+        PAYMENT_IN = 'PAYMENT_IN', 'Ürün ile Tahsilat (Müşteriden Alındı)'
+        PAYMENT_OUT = 'PAYMENT_OUT', 'Ürün ile Ödeme (Müşteriye Verildi)'
 
     id = models.UUIDField(
         primary_key=True,
@@ -336,7 +390,7 @@ class StockLedger(models.Model):
         help_text='Islem anindaki birim Has maliyeti. Cikislarda WAC muhurlenir.'
     )
 
-    unit_cost_tl = models.DecimalField(
+    unit_cost_eur = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=Decimal('0.00'),
@@ -344,7 +398,7 @@ class StockLedger(models.Model):
         help_text='Islem anindaki birim TL maliyeti.'
     )
 
-    hs_rate_tl = models.DecimalField(
+    hs_rate_eur = models.DecimalField(
         max_digits=14,
         decimal_places=4,
         default=Decimal('0.0000'),
@@ -469,7 +523,7 @@ class StockLedger(models.Model):
     @property
     def total_cost_tl(self) -> Decimal:
         """Toplam islem degeri TL cinsinden."""
-        return (self.quantity_gram * self.unit_cost_tl).quantize(Decimal('0.01'))
+        return (self.quantity_gram * self.unit_cost_eur).quantize(Decimal('0.01'))
 
     def save(self, *args, **kwargs):
         """
@@ -796,14 +850,14 @@ class PriceQuote(models.Model):
     )
 
     # --- Fiyat degerleri ---
-    buy_price_tl = models.DecimalField(
+    buy_price_eur = models.DecimalField(
         max_digits=15,
         decimal_places=4,
         verbose_name='Alis (TL)',
         help_text='Alis fiyati TL cinsinden'
     )
 
-    sell_price_tl = models.DecimalField(
+    sell_price_eur = models.DecimalField(
         max_digits=15,
         decimal_places=4,
         verbose_name='Satis (TL)',
@@ -827,7 +881,7 @@ class PriceQuote(models.Model):
     )
 
     # --- Spread ve degisim ---
-    spread_tl = models.DecimalField(
+    spread_eur = models.DecimalField(
         max_digits=12,
         decimal_places=4,
         default=Decimal('0.0000'),
@@ -894,15 +948,15 @@ class PriceQuote(models.Model):
     def __str__(self):
         return (
             f"{self.get_metal_type_display()} | "
-            f"Alis: {self.buy_price_tl} TL | "
-            f"Satis: {self.sell_price_tl} TL | "
+            f"Alis: {self.buy_price_eur} TL | "
+            f"Satis: {self.sell_price_eur} TL | "
             f"{self.provider.name} @ {self.quoted_at}"
         )
 
     def save(self, *args, **kwargs):
         """Spread otomatik hesaplama."""
-        if self.sell_price_tl and self.buy_price_tl:
-            self.spread_tl = self.sell_price_tl - self.buy_price_tl
+        if self.sell_price_eur and self.buy_price_eur:
+            self.spread_eur = self.sell_price_eur - self.buy_price_eur
         super().save(*args, **kwargs)
 
 

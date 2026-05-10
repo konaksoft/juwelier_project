@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from celery.schedules import crontab  # FAZ E — yedekleme zamanlaması için
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
@@ -51,18 +52,20 @@ INSTALLED_APPS = [
     'apps.dashboard', 'apps.accounts', 'apps.customers', 'apps.roles', 'apps.activity_logs',
     'apps.suppliers', 'apps.products', 'apps.gold_purchases', 'apps.scraps',
     'apps.inventories', 'apps.definitions.categories', 'apps.transactions_board',
-    'apps.definitions.locations', 'apps.masak',
+    'apps.definitions.locations',
     'apps.definitions.sms_profiles', 'apps.definitions.email_profiles', 'apps.definitions.brands',
     'apps.stores', 'apps.definitions.currencies', 'apps.definitions.contracts', 'apps.definitions.rates',
     'apps.crm.packages',
     'apps.process', 'apps.repairs', 'apps.workshops', 'apps.counts', 'apps.custody',
     'apps.contact_forms', 'apps.whatsapp', "apps.settings.apps.SettingsConfig", "apps.bracelets", "django_celery_beat",
-    'apps.crm.leads', 'apps.invoices', 'rest_framework',
+    'apps.crm.leads', 'rest_framework',
     'rest_framework.authtoken', 'apps.testimonials',
-    'apps.orders', 'apps.pavo', 'apps.crm.proposals', 'apps.crm.devices', 'apps.backups', 'apps.live_board',
+    'apps.orders', 'apps.crm.proposals', 'apps.crm.devices', 'apps.backups', 'apps.live_board',
     'apps.supports', 'apps.chambers',
     'apps.banking',
     'apps.stock_management.apps.StockManagementConfig',
+    # FAZ 45 — Çoklu Şube Transfer Altyapısı (DORMANT, sadece şema)
+    'apps.store_transfers.apps.StoreTransfersConfig',
 ]
 
 REST_FRAMEWORK = {
@@ -90,6 +93,31 @@ PAVO_SOURCE_FINGERPRINT = os.getenv('PAVO_SOURCE_FINGERPRINT', 'KP-FP')
 PAVO_DISPLAY_LAYOUT = os.getenv('PAVO_DISPLAY_LAYOUT', 'KuyumPlus')
 PAVO_VERIFY_SSL = str(os.getenv('PAVO_VERIFY_SSL', 'true')).strip().lower() in ('1', 'true', 'yes', 'on')
 
+# FAZ 30 — Pavo timeout ve durum eşikleri (frontend + backend ortak SSOT)
+# Backend HTTP timeout (saniye): cihaza giden /CompleteSale, /JewellerySale gibi
+# çağrılar için. 30 sn — kullanıcının kart sokması ve PIN girmesi için yeterli süre.
+PAVO_LOCAL_TIMEOUT = int(os.getenv('PAVO_LOCAL_TIMEOUT', '30'))
+
+# Frontend bekleme süresi (saniye): WebView bridge üzerinden POS yanıtı için.
+# Hızlı İşlem ve Perakende artık aynı değer; kart okuma + onay süresi 120sn.
+PAVO_FRONTEND_TIMEOUT_SECONDS = int(os.getenv('PAVO_FRONTEND_TIMEOUT_SECONDS', '120'))
+
+# Pair (eşleştirme) timeout: cihaz hazırsa 5 sn yeterli; yavaş ağda 15 sn'e kadar
+# çıkılabilir. Bu değer sayfa açılışındaki ilk pair için kullanılır.
+PAVO_PAIR_TIMEOUT_SECONDS = int(os.getenv('PAVO_PAIR_TIMEOUT_SECONDS', '15'))
+
+# Heartbeat (bağlantı durumu sorgulama) aralığı (saniye). Sayfada en az bir
+# işlem yapıldığında periyodik kontrol; idle sayfalarda batarya yormaması
+# için yüksek tutuldu.
+PAVO_HEARTBEAT_INTERVAL_SECONDS = int(os.getenv('PAVO_HEARTBEAT_INTERVAL_SECONDS', '45'))
+
+# Pavo SaleStatus — başarı sayılan StatusId set'i.
+# 4 = DocumentPending (mali fiş hazır, basılmayı bekliyor) — ana başarı kodu.
+# 5 = DocumentPrinted, 6 = SaleCompleted, 22 = SaleFinalized — başarı sayılır.
+# Diğer kodlar (Cancelled/Suspended/Aborted) başarısız sayılır.
+# PAVO_DOCUMENT.TXT:835-870 referansından.
+PAVO_SUCCESS_STATUS_IDS = [4, 5, 6, 22]
+
 NETGSM_USERCODE = env_str('NETGSM_USERCODE', '')
 NETGSM_PASSWORD = env_str('NETGSM_PASSWORD', '')
 NETGSM_HEADER = env_str('NETGSM_HEADER', '')
@@ -105,7 +133,9 @@ APP_DOMAIN = env_str('APP_DOMAIN', 'http://127.0.0.1:8000')
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware', 'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.settings.middleware.StoreLanguageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -119,7 +149,7 @@ TEMPLATES = [{
         'django.template.context_processors.debug', 'django.template.context_processors.request',
         'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages',
         'apps.roles.context_processors.get_user_permissions',
-        "apps.pavo.context_processors.pavo_terminal", "apps.supports.context_processors.support_notifications"
+        "apps.supports.context_processors.support_notifications"
         # BURAYI EKLE
 
     ]},
@@ -134,15 +164,35 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 
 CELERY_BEAT_SCHEDULE = {
-    'check_esurec_statuses': {
-        'task': 'invoices.check_esurec_statuses',
-        'schedule': timedelta(minutes=5),
-    },
     'update_products_from_api': {
         'task': 'products.update_products_from_api',
         'schedule': timedelta(seconds=15),
     },
+
+    # ==== FAZ E — Yedekleme Otomasyonu ====
+    # Karar 2 (Onaylı): Otomatik yedeklerde include_media=False (DB-only).
+    # Haftada 1 kez full (media dahil).
+    'backups_cleanup_old': {
+        'task': 'backups.cleanup_old_backups',
+        # Her gün 02:00 — yedek alma öncesi temizlik
+        'schedule': crontab(hour=2, minute=0),
+    },
+    'backups_daily_db': {
+        'task': 'backups.daily_db_backup_all_companies',
+        # Her gün 03:00 — DB-only ZIP
+        'schedule': crontab(hour=3, minute=0),
+    },
+    'backups_weekly_full': {
+        'task': 'backups.weekly_full_backup_all_companies',
+        # Her Pazar 04:00 — DB + media full ZIP
+        'schedule': crontab(hour=4, minute=0, day_of_week=0),
+    },
 }
+
+# FAZ E — Yedekleme Retention Politikası (.env override edilebilir)
+BACKUP_DAILY_RETENTION_DAYS = env_int('BACKUP_DAILY_RETENTION_DAYS', 7)
+BACKUP_WEEKLY_RETENTION_DAYS = env_int('BACKUP_WEEKLY_RETENTION_DAYS', 30)
+BACKUP_MIN_KEEP = env_int('BACKUP_MIN_KEEP', 3)
 
 # --- e-Süreç Entegrasyon Ayarları ---
 ESUREC_BASE_URL = env_str('ESUREC_BASE_URL', '')
@@ -190,6 +240,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'tr'
+LANGUAGES = [
+    ('tr', 'Türkçe'),
+    ('de', 'Deutsch'),
+    ('en', 'English'),
+]
 TIME_ZONE = 'Europe/Istanbul'
 USE_I18N = True
 USE_L10N = True
@@ -219,5 +274,33 @@ SUPPORT_EMAILS = ['konakyunus@hotmail.com']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# ----------------------------------------------------------------------------
+# FAZ 60.2 — Chunked Upload Ayarları
+# ----------------------------------------------------------------------------
+# Smart Restore büyük paketleri (özellikle ZIP+media) Cloudflare 100 MB body
+# limitini aşmadan parça parça yükler. Aşağıdaki ayarlar sunucu tarafı
+# güvenlik kapakları (override edilmek istenirse env üzerinden değiştirilir).
+#
+# BACKUP_CHUNKED_TEMP_ROOT — geçici parça dosyalarının kök dizini.
+#   Default: BASE_DIR/_chunked_uploads
+# BACKUP_CHUNK_MAX_SIZE_MB — tek bir chunk için server-side hard limit.
+#   Default: 10 MB (client tarafı 5 MB gönderir; bol marj).
+# BACKUP_TOTAL_MAX_SIZE_MB — toplam paket boyutu üst limit.
+#   Default: 5120 MB (5 GB).
+BACKUP_CHUNKED_TEMP_ROOT = env_str('BACKUP_CHUNKED_TEMP_ROOT', '') or os.path.join(BASE_DIR, '_chunked_uploads')
+BACKUP_CHUNK_MAX_SIZE_MB = env_int('BACKUP_CHUNK_MAX_SIZE_MB', 10)
+BACKUP_TOTAL_MAX_SIZE_MB = env_int('BACKUP_TOTAL_MAX_SIZE_MB', 5120)
+
+# Django default upload handler'ları zaten 2.5 MB üstünü diske yazıyor;
+# chunked endpoint'lerinde bu sınır aktif (her chunk <10 MB → bellek-içi OK).
+DATA_UPLOAD_MAX_MEMORY_SIZE = env_int(
+    'DATA_UPLOAD_MAX_MEMORY_SIZE',
+    BACKUP_CHUNK_MAX_SIZE_MB * 1024 * 1024 + 1024 * 1024,  # chunk + form alanları
+)
+FILE_UPLOAD_MAX_MEMORY_SIZE = env_int(
+    'FILE_UPLOAD_MAX_MEMORY_SIZE',
+    BACKUP_CHUNK_MAX_SIZE_MB * 1024 * 1024,
+)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

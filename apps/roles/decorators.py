@@ -76,6 +76,9 @@ MAIN_PAGE_TO_ABC_MAP = {
     # ── Emanet ──
     'CUSTODY_CUSTODY_INDEX':                     'ABC1544D',
 
+    # ── FAZ 46: Şubeler Arası Transfer ──
+    'STORE_TRANSFERS_INDEX':                     'ABC1545D',
+
     # ── Atölyeler ──
     'WORKSHOPS_WORKSHOPS_VIEW':                  'ABC1012D',
 

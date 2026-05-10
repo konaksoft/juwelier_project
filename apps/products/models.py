@@ -110,7 +110,6 @@ class Products(models.Model):
     )
 
     workmanship_type = models.BooleanField(default=True, null=True, blank=True)
-    gold_dry = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.000000'), blank=True, null=True)
     gold_rate = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.000000'), blank=True, null=True)
     product_mileage = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal('0.0000'), blank=True, null=True)
     labor_mileage = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal('0.0000'), blank=True, null=True)
@@ -120,11 +119,11 @@ class Products(models.Model):
 
     sale_price_hs = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'), blank=True,
                                         null=True)
-    sale_price_tl = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), blank=True,
+    sale_price_eur = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), blank=True,
                                         null=True)
     product_hs = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'), blank=True, null=True)
     buy_price_hs = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'), blank=True, null=True)
-    buy_price_tl = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
+    buy_price_eur = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
 
     gram = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'), blank=True, null=True)
     profit = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'), blank=True, null=True)
@@ -160,6 +159,23 @@ class Products(models.Model):
         ),
     )
 
+    # --- T2 (2026-04-29): Özel Ürün Sıralaması ---
+    # Mevcut `order` alanı CharField olduğu için lexicographic sıralama yapıyordu
+    # ("10" < "9" gibi). Yeni `display_order` IntegerField, hem Product Index
+    # tablosunda hem de Hızlı/Perakende işlem ekranlarında ürün sıralamasını
+    # sayısal olarak ve kullanıcı tarafından özelleştirilebilir hale getirir.
+    # Per-store izolasyon: Products zaten `store` FK içerir; her mağaza kendi
+    # ürün listesinde bağımsız sıralayabilir. db_index sayesinde order_by hızlı.
+    display_order = models.IntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="Görünüm Sırası",
+        help_text=(
+            "Ürün listelerinde gösterim sıralaması (artan). 0 default. "
+            "UI'dan drag-drop ile güncellenir."
+        ),
+    )
+
     def __str__(self):
         return self.name
 
@@ -168,8 +184,8 @@ class Products(models.Model):
         m = Decimal(getattr(store, 'price_margin_percent', 0) or 0) / Decimal('100')
         return (base * (Decimal('1') + m)).quantize(Decimal('0.001'))
 
-    def sale_price_tl_for(self, store) -> Decimal:
-        base = self.sale_price_tl or Decimal('0')
+    def sale_price_eur_for(self, store) -> Decimal:
+        base = self.sale_price_eur or Decimal('0')
         m = Decimal(getattr(store, 'price_margin_percent', 0) or 0) / Decimal('100')
         return (base * (Decimal('1') + m)).quantize(Decimal('0.01'))
 
@@ -238,7 +254,6 @@ class Products(models.Model):
         # beklenmedik payload'lari tolere etmek icin.
         if self.material_type in (MaterialType.WATCH, MaterialType.DIAMOND):
             self.gram = Decimal('0.000')
-            self.gold_dry = Decimal('0.000000')
             self.gold_rate = Decimal('0.000000')
             self.product_mileage = Decimal('0.0000')
             self.labor_mileage = Decimal('0.0000')
@@ -247,7 +262,7 @@ class Products(models.Model):
             self.sale_price_hs = Decimal('0.000')
             # piece_labor ve fixed_labor_amount WATCH/DIAMOND icin
             # ANLAMLIDIR - dokunulmaz. Fiyatlandirmasi adet bazlidir.
-            # sale_price_tl / buy_price_tl DA DOKUNULMAZ - urun TL/USD
+            # sale_price_eur / buy_price_eur DA DOKUNULMAZ - urun TL/USD
             # cinsinden degerlidir (PIVOT: sale_currency × kur = TL).
 
         # --- Kural 3: NEGATIF GRAM KORUMASI ---
@@ -255,7 +270,7 @@ class Products(models.Model):
             raise ValidationError({'gram': "Gram negatif olamaz."})
 
         # --- Kural 4: Negatif fiyat koruması ---
-        for field_name in ('sale_price_tl', 'buy_price_tl',
+        for field_name in ('sale_price_eur', 'buy_price_eur',
                            'sale_price_hs', 'buy_price_hs'):
             val = getattr(self, field_name, None)
             if val is not None and val < Decimal('0'):

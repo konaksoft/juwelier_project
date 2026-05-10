@@ -239,7 +239,7 @@
                 <tr>
                     <td>{{ it.product_name }}</td>
                     <td>{{ it.qty_str }}</td>
-                    <td class="num">{{ it.amount_tl }}</td>
+                    <td class="num">{{ it.amount_eur }}</td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -300,10 +300,10 @@
                 <td style="border:none;">Ödenen</td>
                 <td style="border:none; text-align:right;">{{ summary.paid_tl }} TL</td>
             </tr>
-            {% if summary.balance_tl_raw > 0 %}
+            {% if summary.balance_eur_raw > 0 %}
                 <tr>
                     <td style="border:none;">Kalan</td>
-                    <td style="border:none; text-align:right; font-weight:bold;">{{ summary.balance_tl }} TL</td>
+                    <td style="border:none; text-align:right; font-weight:bold;">{{ summary.balance_eur }} TL</td>
                 </tr>
             {% endif %}
             {% if summary.net_hs and summary.net_hs != "0,000" %}

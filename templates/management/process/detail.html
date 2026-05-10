@@ -1,674 +1,779 @@
+{% extends 'management/base.html' %}
 {% load static %}
-<!doctype html>
-<html lang="tr">
-<head>
-    <meta charset="utf-8">
-    <title>{{ title }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <link rel="icon" href="{% static 'theme/img/new_logo/1.png' %}">
-
-    <style>
-        /* --- TEMEL DEĞİŞKENLER (Koyu Tema - fast_index Uyumlu) --- */
-        :root {
-            --bg-body: #0F172A; /* Çok koyu lacivert */
-            --bg-card: #1E293B; /* Kart arka planı */
-            --bg-header: #0F172A;
-
-            --text-primary: #F8FAFC; /* Parlak Beyaz */
-            --text-secondary: #94A3B8; /* Gri-Mavi */
-            --text-muted: #64748B; /* Sönük Gri */
-
-            --accent-gold: #FFCD02; /* Altın Sarısı */
-            --accent-gold-hover: #E6B800;
-
-            --border-color: rgba(255, 255, 255, 0.08); /* İnce şeffaf kenarlık */
-
-            /* Durum Renkleri (Daha Canlı) */
-            --success: #10B981;
-            --danger: #EF4444;
-            --warning: #F59E0B;
-            --info: #3B82F6;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-body);
-            background-image: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
-            color: var(--text-primary);
-            font-size: 14px;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-            transition: 0.2s;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 24px 16px;
-        }
-
-        /* --- ÜST BAR (TOPBAR) --- */
-        .topbar {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            padding: 16px 24px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .brand img {
-            height: 48px;
-            width: auto;
-        }
-
-        .brand-text h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: -0.02em;
-        }
-
-        .brand-text p {
-            margin: 2px 0 0;
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        /* --- BUTONLAR (Okunabilirlik Artırıldı) --- */
-        .actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s ease;
-        }
-
-        /* Geri Dön Butonu - Daha Belirgin */
-        .btn-secondary {
-            background-color: rgba(255, 255, 255, 0.1); /* Biraz daha opak */
-            color: #fff; /* Tam beyaz yazı */
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .btn-secondary:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        /* Yazdır Butonu - Altın */
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
-            color: #0F1B2B; /* Koyu lacivert yazı (Kontrast için) */
-            box-shadow: 0 4px 10px rgba(255, 205, 2, 0.2);
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 15px rgba(255, 205, 2, 0.3);
-        }
-
-        /* --- KARTLAR --- */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-title i {
-            color: var(--accent-gold);
-        }
-
-        /* --- BİLGİ GRID --- */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 24px;
-        }
-
-        .info-item label {
-            display: block;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-item div {
-            font-size: 15px;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .info-item .sub {
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        /* --- KPI KARTLARI --- */
-        .kpi-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .kpi-card {
-            background: linear-gradient(160deg, #1E293B 0%, #111827 100%);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: var(--accent-gold);
-            opacity: 0.5;
-        }
-
-        .kpi-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        .kpi-value {
-            font-size: 24px;
-            font-weight: 800;
-            color: #fff;
-            margin: 8px 0 4px 0;
-            letter-spacing: -0.5px;
-        }
-
-        .kpi-sub {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        /* --- TABLOLAR --- */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        thead th {
-            text-align: left;
-            padding: 12px 16px;
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        tbody td {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
-            vertical-align: middle;
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        tbody tr:hover {
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        .text-end {
-            text-align: right;
-        }
-
-        .font-mono {
-            font-family: 'ui-monospace', 'SFMono-Regular', monospace;
-        }
-
-        /* --- ROZETLER (BADGES) - Okunabilirlik Düzeltildi --- */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            line-height: 1;
-        }
-
-        /* Arka plan biraz şeffaf, yazı rengi parlak */
-        .bg-success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34D399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .bg-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #F87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .bg-warning {
-            background: rgba(245, 158, 11, 0.2);
-            color: #FBBF24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-
-        .bg-info {
-            background: rgba(59, 130, 246, 0.2);
-            color: #60A5FA;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-
-        /* --- FOOTER --- */
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-            color: var(--text-muted);
-            font-size: 12px;
-        }
-
-        /* --- RESPONSIVE --- */
-        @media (max-width: 768px) {
-            .topbar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-
-            .actions {
-                width: 100%;
-            }
-
-            .actions .btn {
-                flex: 1;
-                justify-content: center;
-            }
-
-            .kpi-row {
-                grid-template-columns: 1fr;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* --- PRINT --- */
-        @media print {
-            body {
-                background: #fff;
-                color: #000;
-            }
-
-            .topbar, .actions {
-                display: none !important;
-            }
-
-            .card, .kpi-card {
-                background: #fff;
-                border: 1px solid #ddd;
-                box-shadow: none;
-                break-inside: avoid;
-            }
-
-            .info-val, .kpi-value, h1, h2, h3 {
-                color: #000 !important;
-            }
-
-            .badge {
-                border: 1px solid #000;
-                color: #000 !important;
-                background: transparent !important;
-            }
-
-            thead th {
-                color: #000;
-                border-bottom: 2px solid #000;
-            }
-
-            tbody td {
-                border-bottom: 1px solid #ccc;
-                color: #000;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-
-    <div class="topbar">
-        <div class="brand">
-            <a href="{% url 'accounts:profile' %}">
-                <img src="{% static 'theme/img/new_logo/1.png' %}" alt="Logo">
-            </a>
-            <div class="brand-text">
-                <h1>İşlem Özeti</h1>
-                <p>Belge No: #{{ process_no }} | Tarih: {{ date }}</p>
-            </div>
-        </div>
-        <div class="actions">
-            <a href="javascript:history.back()" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Geri Dön
-            </a>
-            <a href="javascript:window.print()" class="btn btn-primary">
-                <i class="bi bi-printer"></i> Yazdır
-            </a>
-        </div>
-    </div>
-
-    <div class="kpi-row">
-        <div class="kpi-card">
-            <div class="kpi-label">NET İŞLEM TUTARI</div>
-            <div class="kpi-value">{{ summary.net_total }} ₺</div>
-            <div class="kpi-sub">
-                Satış: {{ summary.total_sales }} ₺ <span style="margin:0 4px; color:var(--text-muted)">|</span>
-                Alış: {{ summary.total_purchases }} ₺
-            </div>
-            <div class="kpi-sub" style="margin-top: 4px;">
-                Has Karşılığı: <span style="color:var(--accent-gold); font-weight:600;">{{ summary.net_hs }} Gr</span>
-            </div>
-        </div>
-
-        <div class="kpi-card">
-            <div class="kpi-label">TAHSİLAT / ÖDEME</div>
-            <div class="kpi-value text-success" style="color: var(--success) !important;">{{ summary.paid_total }} ₺
-            </div>
-            <div class="kpi-sub">
-                {% if summary.paid_in != "0,00" %}
-                    <i class="bi bi-arrow-down-left"></i> Giriş: {{ summary.paid_in }}
-                {% endif %}
-                {% if summary.paid_out != "0,00" %}
-                    <span style="margin-left:8px;">
-                        <i class="bi bi-arrow-up-right"></i> Çıkış: {{ summary.paid_out }}
-                    </span>
-                {% endif %}
-                {% if summary.paid_in == "0,00" and summary.paid_out == "0,00" %}
-                    Henüz ödeme yok (Cari)
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="kpi-card"
-             style="border-color: {% if summary.balance_raw > 0 %}var(--danger){% elif summary.balance_raw < 0 %}var(--info){% else %}var(--success){% endif %}">
-            <div class="kpi-label">KALAN BAKİYE</div>
-            <div class="kpi-value"
-                 style="color: {% if summary.balance_raw > 0 %}var(--danger){% elif summary.balance_raw < 0 %}var(--info){% else %}var(--success){% endif %} !important;">
-                {{ summary.balance }} ₺
-            </div>
-            <div class="kpi-sub">
-                {% if summary.balance_raw != 0 %}
-                    Has: <strong>{{ summary.balance_hs }} Gr</strong>
-                    <span class="badge {{ balance_badge.class }}" style="margin-left:8px; font-size:10px;">
-                        {{ balance_badge.text }}
-                    </span>
-                {% else %}
-                    <span class="badge bg-success" style="font-size:10px;"><i
-                            class="bi bi-check2"></i> Hesap Kapandı</span>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="bi bi-person-vcard"></i> Taraf Bilgileri</div>
-        </div>
-        <div class="info-grid">
-            <div class="info-item">
-                <label>Müşteri</label>
-                <div>
-                    {% if customer %}
-                        {{ customer.first_name }} {{ customer.last_name }}
-                    {% else %}
-                        <span style="color:var(--text-muted); font-style: italic;">Misafir Müşteri</span>
+{% block header %}{% endblock header %}
+
+{% block body %}
+<style>
+    /* ─── Hero Şerit ───────────────────────────────────────────── */
+    .pd-hero {
+        background: #1e293b;
+        border-radius: 16px;
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 20px rgba(15,23,42,.18);
+    }
+    .pd-process-no {
+        font-family: 'Courier New', monospace;
+        font-size: 1.9rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: #fff;
+        line-height: 1;
+    }
+    .pd-hero-sub {
+        font-size: .78rem;
+        color: rgba(255,255,255,.5);
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        margin-bottom: .35rem;
+    }
+    .pd-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        background: rgba(255,255,255,.1);
+        border: 1px solid rgba(255,255,255,.15);
+        color: #cbd5e1;
+        padding: .25rem .65rem;
+        border-radius: 999px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+    .pd-meta-chip i { color: #93c5fd; }
+
+    /* ─── KPI Kartları ─────────────────────────────────────────── */
+    .pd-kpi {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 14px;
+        padding: 1.2rem 1.4rem;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+    }
+    .pd-kpi::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 4px; height: 100%;
+        border-radius: 14px 0 0 14px;
+    }
+    .pd-kpi.kpi-blue::after   { background: #3b82f6; }
+    .pd-kpi.kpi-green::after  { background: #10b981; }
+    .pd-kpi.kpi-red::after    { background: #ef4444; }
+    .pd-kpi.kpi-amber::after  { background: #f59e0b; }
+    .pd-kpi.kpi-slate::after  { background: #64748b; }
+    .pd-kpi-label {
+        font-size: .7rem;
+        color: #94a3b8;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        margin-bottom: .4rem;
+    }
+    .pd-kpi-value {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+    .pd-kpi-sub {
+        font-size: .78rem;
+        color: #64748b;
+        margin-top: .35rem;
+    }
+
+    /* ─── Ürün Kartı ───────────────────────────────────────────── */
+    .pd-item-card {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .pd-item-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e9ecef;
+        padding: .85rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+    }
+    .pd-item-img {
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        flex-shrink: 0;
+    }
+    .pd-item-img-placeholder {
+        width: 72px;
+        height: 72px;
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        background: #f1f5f9;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 1.5rem;
+    }
+    .pd-item-body { padding: 1.25rem; }
+
+    .pd-fin-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: .5rem 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+    .pd-fin-row:last-child { border-bottom: none; }
+    .pd-fin-label { color: #64748b; font-size: .83rem; }
+    .pd-fin-value { font-weight: 700; color: #0f172a; font-size: .95rem; }
+    .pd-fin-value.profit-pos { color: #198754; }
+    .pd-fin-value.profit-neg { color: #dc3545; }
+    .pd-fin-value.muted-val  { color: #94a3b8; font-weight: 500; font-style: italic; }
+
+    .pd-section-lbl {
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #475569;
+        margin-bottom: .6rem;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    /* ─── Ödeme Tablosu ────────────────────────────────────────── */
+    .pd-pay-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ─── Emanet Banner ────────────────────────────────────────── */
+    .pd-custody-banner {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+    }
+
+    /* ─── Print ────────────────────────────────────────────────── */
+    @media print {
+        .pd-hero { background: #1e293b !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-radius: 0; }
+        .pd-hero .pd-process-no { color: #fff !important; }
+        .pd-no-print { display: none !important; }
+        .pd-kpi, .pd-item-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+        .pd-kpi::after { display: none; }
+        .pd-fin-value, .pd-kpi-value { color: #000 !important; }
+        body { background: #fff !important; }
+    }
+</style>
+
+<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+<div class="app-content flex-column-fluid" id="kt_app_content">
+<div class="container-fluid px-4 py-6" id="kt_app_content_container" style="max-width: 1200px; margin: 0 auto;">
+
+    {# ═══ HERO ŞERIT ════════════════════════════════════════════════════ #}
+    <div class="pd-hero">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            {# Sol: process_no + durum #}
+            <div>
+                <div class="pd-hero-sub">İşlem Detayı</div>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <span class="pd-process-no">{{ process_no }}</span>
+                    <span class="badge {{ status_cls }} fs-7 fw-bold px-3 py-2">{{ status_text }}</span>
+                    <span class="badge bg-light-primary text-primary fs-8 fw-semibold px-2 py-1">{{ process_type_label }}</span>
+                    {% if is_canceled %}
+                        <span class="badge bg-light-danger text-danger fs-8 px-2 py-1"><i class="fa-solid fa-ban me-1"></i>İptal Edildi</span>
                     {% endif %}
                 </div>
-                {% if customer.phone %}
-                    <div class="sub">{{ customer.phone }}</div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <span class="pd-meta-chip"><i class="fa-solid fa-calendar-day"></i> {{ date }}</span>
+                    {% if customer %}
+                        <span class="pd-meta-chip"><i class="fa-solid fa-user"></i> {{ customer.first_name }} {{ customer.last_name }}</span>
+                    {% else %}
+                        <span class="pd-meta-chip"><i class="fa-solid fa-user-slash"></i> Misafir Müşteri</span>
+                    {% endif %}
+                    <span class="pd-meta-chip"><i class="fa-solid fa-user-tie"></i> {{ employee_name }}</span>
+                    <span class="pd-meta-chip"><i class="fa-solid fa-store"></i> {{ store_name }}</span>
+                </div>
+            </div>
+            {# Sağ: Aksiyon butonları #}
+            <div class="d-flex gap-2 align-items-start flex-wrap pd-no-print">
+                <button type="button"
+                        class="btn btn-sm fw-semibold"
+                        style="background:#25D366;color:#fff;"
+                        onclick="ppShareWhatsApp()"
+                        title="Müşteriye WhatsApp ile gönder">
+                    <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp Gönder
+                </button>
+                {% if customer %}
+                    <a href="{% url 'customers:cari-detail-page' customer.id %}" class="btn btn-sm btn-light-primary fw-semibold">
+                        <i class="fa-solid fa-user me-1"></i> Müşteri Cari
+                    </a>
+                {% endif %}
+                <a href="javascript:history.back()" class="btn btn-sm btn-light fw-semibold">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Geri Dön
+                </a>
+                <button onclick="window.print()" class="btn btn-sm btn-light-warning fw-semibold">
+                    <i class="fa-solid fa-print me-1"></i> Yazdır
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# Eski kayıt uyarısı #}
+    {% if any_legacy %}
+        <div class="alert alert-warning d-flex align-items-center gap-3 py-3 mb-4 pd-no-print">
+            <i class="fa-solid fa-triangle-exclamation fs-4"></i>
+            <div>
+                <strong>Eski Kayıt:</strong> Bu işlemdeki bir veya daha fazla kalem, maliyet (WAC) verisi sisteme
+                kaydedilmeden önce oluşturulmuş. Kârlılık hesabı eksik olabilir.
+            </div>
+        </div>
+    {% endif %}
+
+    {# ═══ KPI SATIRI ══════════════════════════════════════════════════ #}
+    <div class="row g-4 mb-5">
+        {# Net İşlem #}
+        <div class="col-6 col-xl-3">
+            <div class="pd-kpi kpi-blue">
+                <div class="pd-kpi-label"><i class="fa-solid fa-receipt me-1"></i> Net İşlem</div>
+                <div class="pd-kpi-value">{{ summary.net_total }} ₺</div>
+                <div class="pd-kpi-sub">
+                    <span class="text-success me-2"><i class="fa-solid fa-arrow-up-right"></i> {{ summary.total_sales }} ₺</span>
+                    <span class="text-danger"><i class="fa-solid fa-arrow-down-left"></i> {{ summary.total_purchases }} ₺</span>
+                </div>
+                <div class="pd-kpi-sub mt-1 text-warning fw-semibold">Has: {{ summary.net_hs }} Gr</div>
+            </div>
+        </div>
+        {# Tahsilat #}
+        <div class="col-6 col-xl-3">
+            <div class="pd-kpi kpi-green">
+                <div class="pd-kpi-label"><i class="fa-solid fa-hand-holding-dollar me-1"></i> Tahsilat</div>
+                <div class="pd-kpi-value text-success">{{ summary.paid_total }} ₺</div>
+                <div class="pd-kpi-sub">
+                    {% if summary.paid_in and summary.paid_in != "0,00" %}
+                        <span class="text-success me-2"><i class="fa-solid fa-plus"></i> {{ summary.paid_in }}</span>
+                    {% endif %}
+                    {% if summary.paid_out and summary.paid_out != "0,00" %}
+                        <span class="text-danger"><i class="fa-solid fa-minus"></i> {{ summary.paid_out }}</span>
+                    {% endif %}
+                    {% if not payments %}
+                        <span class="text-muted fst-italic">Cari (ödeme yok)</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {# Kalan Bakiye #}
+        <div class="col-6 col-xl-3">
+            <div class="pd-kpi {% if summary.balance_raw > 0 %}kpi-red{% elif summary.balance_raw < 0 %}kpi-amber{% else %}kpi-green{% endif %}">
+                <div class="pd-kpi-label"><i class="fa-solid fa-scale-balanced me-1"></i> Kalan Bakiye</div>
+                <div class="pd-kpi-value {% if summary.balance_raw > 0 %}text-danger{% elif summary.balance_raw < 0 %}text-warning{% else %}text-success{% endif %}">
+                    {{ summary.balance }} ₺
+                </div>
+                <div class="pd-kpi-sub">
+                    <span class="badge {{ balance_state.cls }} fs-9 fw-semibold">
+                        <i class="{{ balance_state.icon }} me-1"></i>{{ balance_state.text }}
+                    </span>
+                    {% if summary.balance_raw != 0 %}
+                        <span class="ms-2">{{ summary.balance_hs }} Gr</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {# Toplam Kâr #}
+        <div class="col-6 col-xl-3">
+            <div class="pd-kpi kpi-slate">
+                <div class="pd-kpi-label"><i class="fa-solid fa-chart-line me-1"></i> Net Kâr (HS)</div>
+                {% if total_profit_hs %}
+                    <div class="pd-kpi-value {{ profit_cls }}">
+                        {% if total_profit_hs_raw >= 0 %}+{% endif %}{{ total_profit_hs }}
+                    </div>
+                    <div class="pd-kpi-sub">Tarihsel WAC bazlı</div>
+                {% else %}
+                    <div class="pd-kpi-value text-muted" style="font-size:1rem;">Hesaplanamadı</div>
+                    <div class="pd-kpi-sub">Maliyet verisi eksik</div>
                 {% endif %}
             </div>
+        </div>
+    </div>
 
-            <div class="info-item">
-                <label>Personel</label>
-                <div style="color: var(--accent-gold);">{{ employee }}</div>
-            </div>
+    {# ═══ İŞLEM KALEMLERİ ════════════════════════════════════════════ #}
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-header border-0 bg-white pt-5 pb-4">
+            <h4 class="card-title fw-bold mb-0">
+                <i class="fa-solid fa-gem text-primary me-2"></i>İşlem Kalemleri
+                <span class="badge badge-light-primary ms-2 fs-8">{{ items|length }} kalem</span>
+            </h4>
+        </div>
+        <div class="card-body pt-0">
+            {% if items %}
+                {% for item in items %}
+                    {% if not forloop.first %}
+                        <div class="separator separator-dashed my-4"></div>
+                    {% endif %}
+                    <div class="pd-item-card">
+                        {# Kalem başlık satırı #}
+                        <div class="pd-item-header">
+                            {% if item.product and item.product.image_url %}
+                                <img src="{{ item.product.image_url }}"
+                                     class="pd-item-img"
+                                     onerror="this.onerror=null;this.src='{% static "management/media/svg/files/placeholder.svg" %}';"
+                                     alt="{{ item.product.name }}">
+                            {% else %}
+                                <div class="pd-item-img-placeholder">
+                                    <i class="fa-solid fa-gem"></i>
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                    {# İşlem tipi rozeti #}
+                                    {% if item.is_entry %}
+                                        <span class="badge badge-light-success fw-bold fs-8">
+                                            <i class="fa-solid fa-arrow-down me-1"></i>{{ item.transaction_type_label }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-light-danger fw-bold fs-8">
+                                            <i class="fa-solid fa-arrow-up me-1"></i>{{ item.transaction_type_label }}
+                                        </span>
+                                    {% endif %}
+                                    {# Ürün adı #}
+                                    <span class="fw-bold fs-5 text-gray-900">
+                                        {% if item.product %}{{ item.product.name }}{% else %}Nakit / Diğer{% endif %}
+                                    </span>
+                                    {# Kategori #}
+                                    {% if item.product and item.product.category %}
+                                        <span class="badge badge-light-info fs-9">{{ item.product.category }}</span>
+                                    {% endif %}
+                                </div>
+                                {# Meta rozetler #}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% if item.product.jewelry_type %}
+                                        <span class="badge badge-light-primary fs-9">
+                                            <i class="fa-solid fa-tag me-1"></i>{{ item.product.jewelry_type }}
+                                        </span>
+                                    {% endif %}
+                                    {% if item.product.karat_label %}
+                                        <span class="badge badge-light-warning fs-9">
+                                            <i class="fa-solid fa-medal me-1"></i>{{ item.product.karat_label }}
+                                            {% if item.product.milyem %}<span class="opacity-75 ms-1">({{ item.product.milyem }} M)</span>{% endif %}
+                                        </span>
+                                    {% endif %}
+                                    {% if item.product.barcode %}
+                                        <span class="badge badge-light-dark fs-9" style="font-family:monospace;">
+                                            <i class="fa-solid fa-barcode me-1"></i>{{ item.product.barcode }}
+                                        </span>
+                                    {% endif %}
+                                    {# Miktar #}
+                                    <span class="badge bg-light text-dark border fs-9 fw-bold">
+                                        <i class="fa-solid fa-weight-hanging me-1 text-muted"></i>{{ item.qty.display }}
+                                    </span>
+                                </div>
+                            </div>
+                            {# Personel (sağ üst) #}
+                            {% if item.employee %}
+                                <div class="text-end d-none d-md-block">
+                                    <div class="text-muted fs-9 mb-1">Personel</div>
+                                    <div class="fw-semibold text-gray-700 fs-8">{{ item.employee.full_name }}</div>
+                                    {% if item.employee.username %}
+                                        <div class="text-muted fs-9">@{{ item.employee.username }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
 
-            <div class="info-item">
-                <label>İşlem Tarihi</label>
-                <div class="font-mono">{{ date }}</div>
-            </div>
+                        {# Kalem finansal detaylar #}
+                        <div class="pd-item-body">
+                            <div class="row g-4">
+                                {# Sol: Finansal özet #}
+                                <div class="col-md-7">
+                                    <div class="pd-section-lbl">
+                                        <i class="fa-solid fa-coins text-warning"></i> Finansal Özet
+                                    </div>
+                                    <div class="bg-light rounded-3 p-3">
+                                        <div class="pd-fin-row">
+                                            <span class="pd-fin-label">
+                                                {% if item.is_entry %}Alış{% else %}Satış{% endif %} Tutarı (TL)
+                                            </span>
+                                            <span class="pd-fin-value">
+                                                {{ item.financials.sale_price_eur|floatformat:2 }} ₺
+                                            </span>
+                                        </div>
+                                        <div class="pd-fin-row">
+                                            <span class="pd-fin-label">
+                                                {% if item.is_entry %}Alış{% else %}Satış{% endif %} Hası (Toplam)
+                                            </span>
+                                            <span class="pd-fin-value">
+                                                {{ item.financials.sale_total_hs|floatformat:4 }} HS
+                                            </span>
+                                        </div>
+                                        {# WAC #}
+                                        <div class="pd-fin-row">
+                                            <span class="pd-fin-label">
+                                                Birim Maliyet (WAC)
+                                                {% if item.financials.historical_wac_source == 'LEDGER' %}
+                                                    <span class="badge bg-light-success text-success fs-9 ms-1" title="StockLedger SSOT">✓ Mühürlü</span>
+                                                {% elif item.financials.historical_wac_source == 'PROCESS_COST' %}
+                                                    <span class="badge bg-light-warning text-warning fs-9 ms-1" title="Türetilmiş">⚠ Türetilmiş</span>
+                                                {% else %}
+                                                    <span class="badge bg-light-danger text-danger fs-9 ms-1">— Yok</span>
+                                                {% endif %}
+                                                {% if item.data_quality.wac_anomaly %}
+                                                    <span class="badge bg-light-danger text-danger fs-9 ms-1">⚠ Anomali</span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="pd-fin-value {% if not item.data_quality.has_wac %}muted-val{% endif %}">
+                                                {% if item.financials.historical_wac_hs %}
+                                                    {{ item.financials.historical_wac_hs|floatformat:4 }} HS
+                                                {% else %}
+                                                    Veri yok
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        <div class="pd-fin-row">
+                                            <span class="pd-fin-label">Toplam Maliyet (HS)</span>
+                                            <span class="pd-fin-value {% if not item.data_quality.has_wac %}muted-val{% endif %}">
+                                                {% if item.financials.cost_total_hs %}
+                                                    {{ item.financials.cost_total_hs|floatformat:4 }} HS
+                                                {% else %}
+                                                    Veri yok
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        {# Kâr / Giriş notu #}
+                                        {% if item.is_entry %}
+                                            <div class="pd-fin-row">
+                                                <span class="pd-fin-label">Kâr Durumu</span>
+                                                <span class="pd-fin-value muted-val">Giriş işlemi</span>
+                                            </div>
+                                        {% else %}
+                                            <div class="pd-fin-row">
+                                                <span class="pd-fin-label">Brüt Kâr (HS)</span>
+                                                <span class="pd-fin-value {% if item.financials.gross_profit_hs != None %}{% if item.financials.gross_profit_hs >= 0 %}profit-pos{% else %}profit-neg{% endif %}{% else %}muted-val{% endif %}">
+                                                    {% if item.financials.gross_profit_hs != None %}
+                                                        {% if item.financials.gross_profit_hs >= 0 %}+{% endif %}{{ item.financials.gross_profit_hs|floatformat:4 }} HS
+                                                    {% else %}
+                                                        Hesaplanamadı
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="pd-fin-row">
+                                                <span class="pd-fin-label">Kâr Marjı</span>
+                                                <span class="pd-fin-value {% if item.financials.profit_margin_pct != None %}{% if item.financials.profit_margin_pct >= 0 %}profit-pos{% else %}profit-neg{% endif %}{% else %}muted-val{% endif %}">
+                                                    {% if item.financials.profit_margin_pct != None %}
+                                                        %{{ item.financials.profit_margin_pct|floatformat:2 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
 
-            {% if has_partial_payment %}
-                <div class="info-item">
-                    <label>Ödeme Tipi</label>
-                    <div style="color: var(--warning);">Parçalı / Karma Ödeme</div>
+                                {# Sağ: Personel + Kâr/Zarar özet kutusu #}
+                                <div class="col-md-5 d-flex flex-column gap-3">
+                                    {# Personel kutusu #}
+                                    {% if item.employee %}
+                                        <div>
+                                            <div class="pd-section-lbl d-md-none">
+                                                <i class="fa-solid fa-user-tie text-info"></i> Personel
+                                            </div>
+                                            <div class="bg-light rounded-3 p-3 d-flex align-items-center gap-3">
+                                                <div class="symbol symbol-40px">
+                                                    <div class="symbol-label bg-light-info">
+                                                        <i class="fa-solid fa-user text-info fs-4"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-gray-800">{{ item.employee.full_name }}</div>
+                                                    {% if item.employee.username %}
+                                                        <div class="text-muted fs-8">@{{ item.employee.username }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {# Kâr / Alış özet kutusu #}
+                                    {% if not item.is_entry and item.financials.gross_profit_hs != None %}
+                                        <div class="rounded-3 p-3 {% if item.financials.gross_profit_hs >= 0 %}bg-light-success border border-success border-dashed{% else %}bg-light-danger border border-danger border-dashed{% endif %}">
+                                            <div class="text-muted fs-9 fw-bold text-uppercase mb-1">
+                                                {% if item.financials.gross_profit_hs >= 0 %}Net Kâr{% else %}Net Zarar{% endif %}
+                                            </div>
+                                            <div class="fs-2 fw-bolder {% if item.financials.gross_profit_hs >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                {% if item.financials.gross_profit_hs >= 0 %}+{% endif %}{{ item.financials.gross_profit_hs|floatformat:4 }}
+                                                <span class="fs-7 fw-semibold opacity-75">HS</span>
+                                            </div>
+                                            {% if item.financials.profit_margin_pct != None %}
+                                                <div class="fs-8 text-muted mt-1">
+                                                    Margin: %{{ item.financials.profit_margin_pct|floatformat:1 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% elif item.is_entry and item.financials.sale_total_hs %}
+                                        <div class="rounded-3 p-3 bg-light-primary border border-primary border-dashed">
+                                            <div class="text-muted fs-9 fw-bold text-uppercase mb-1">Alış Hası</div>
+                                            <div class="fs-2 fw-bolder text-primary">
+                                                {{ item.financials.sale_total_hs|floatformat:4 }}
+                                                <span class="fs-7 fw-semibold opacity-75">HS</span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center text-muted py-10">
+                    <i class="fa-solid fa-inbox fs-2x d-block mb-3 opacity-50"></i>
+                    Bu işleme bağlı kalem bulunamadı.
                 </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="bi bi-box-seam"></i> İşlem Kalemleri</div>
+    {# ═══ ÖDEME HAREKETLERİ ═══════════════════════════════════════════ #}
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-header border-0 bg-white pt-5 pb-4">
+            <h4 class="card-title fw-bold mb-0">
+                <i class="fa-solid fa-wallet text-success me-2"></i>Ödeme Hareketleri
+                {% if payments %}
+                    <span class="badge badge-light-success ms-2 fs-8">{{ payments|length }} hareket</span>
+                {% endif %}
+                {% if has_partial_payment %}
+                    <span class="badge badge-light-warning ms-2 fs-8"><i class="fa-solid fa-layer-group me-1"></i>Parçalı Ödeme</span>
+                {% endif %}
+            </h4>
         </div>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                <tr>
-                    <th width="40%">Ürün / Hizmet</th>
-                    <th width="15%">İşlem Türü</th>
-                    <th width="15%" class="text-end">Miktar</th>
-                    <th width="15%" class="text-end">Birim Fiyat</th>
-                    <th width="15%" class="text-end">Toplam</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for item in items %}
-                    <tr>
-                        <td>
-                            <div style="font-weight: 600; color: #fff;">{{ item.product_name }}</div>
-                            {% if item.is_unique %}
-                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                                    <i class="bi bi-upc-scan"></i> Barkodlu Ürün
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge {{ item.type_code|yesno:'bg-success,bg-danger,bg-warning' }}">
-                                {{ item.type }}
-                            </span>
-                        </td>
-                        <td class="text-end font-mono">{{ item.quantity }}</td>
-                        <td class="text-end font-mono">{{ item.unit_price }} ₺</td>
-                        <td class="text-end font-mono" style="font-weight: 700; color: #fff;">
-                            {{ item.total_price }} ₺
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                            Kayıtlı işlem kalemi bulunamadı.
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title"><i class="bi bi-wallet2"></i> Ödeme Hareketleri</div>
-        </div>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                <tr>
-                    <th width="30%">Ödeme Yöntemi</th>
-                    <th width="20%">Tarih</th>
-                    <th width="30%">Açıklama</th>
-                    <th width="20%" class="text-end">Tutar</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for pay in payments %}
-                    <tr>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                    {% if pay.type_label == 'Nakit' %}
-                                        <i class="fa-solid fa-money-bill text-success"></i>
-                                    {% elif pay.type_label == 'Kredi Kartı' %}
-                                        <i class="fa-regular fa-credit-card text-info"></i>
-                                    {% elif pay.type_label == 'Havale / EFT' %}
-                                        <i class="fa-solid fa-building-columns text-warning"></i>
-                                    {% else %}<i class="fa-solid fa-coins text-muted"></i>{% endif %}
-                                </div>
-                                <span style="font-weight: 600;">{{ pay.type_label }}</span>
-                            </div>
-                        </td>
-                        <td class="font-mono" style="color: var(--text-secondary);">{{ pay.date }}</td>
-                        <td>
-                            {% if pay.is_refund %}
-                                <span class="badge bg-danger">İade / Çıkış</span>
-                            {% else %}
-                                <span class="badge bg-success">Tahsilat</span>
-                            {% endif %}
-
-                            {% if pay.installment %}
-                                <span class="badge bg-info"
-                                      style="margin-left: 6px;">{{ pay.installment }} Taksit</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end font-mono"
-                            style="font-weight: 700; color: {% if pay.is_refund %}var(--danger){% else %}var(--success){% endif %}">
-                            {% if pay.is_refund %}-{% endif %}{{ pay.amount }} ₺
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                            Herhangi bir ödeme kaydı bulunamadı (Veresiye işlem olabilir).
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+        <div class="card-body pt-0">
+            {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-4 mb-0">
+                        <thead>
+                            <tr class="border-0">
+                                <th class="p-0 min-w-200px">Ödeme Yöntemi</th>
+                                <th class="p-0 min-w-140px">Tarih</th>
+                                <th class="p-0 min-w-100px">Tür</th>
+                                <th class="p-0 min-w-120px text-end pe-3">Tutar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pay in payments %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="pd-pay-icon bg-light-{{ pay.color }}">
+                                                <i class="{{ pay.icon }} text-{{ pay.color }}"></i>
+                                            </div>
+                                            <span class="fw-semibold text-gray-800">{{ pay.type_label }}</span>
+                                            {% if pay.installment %}
+                                                <span class="badge badge-light-info fs-9">{{ pay.installment }} Taksit</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-muted fs-8">{{ pay.date }}</td>
+                                    <td>
+                                        {% if pay.is_refund %}
+                                            <span class="badge badge-light-danger fs-8">
+                                                <i class="fa-solid fa-arrow-up me-1"></i>İade / Çıkış
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-light-success fs-8">
+                                                <i class="fa-solid fa-arrow-down me-1"></i>Tahsilat
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <span class="fw-bold fs-6 {% if pay.is_refund %}text-danger{% else %}text-success{% endif %}">
+                                            {% if pay.is_refund %}−{% else %}+{% endif %}{{ pay.amount }} ₺
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-8">
+                    <i class="fa-solid fa-file-invoice-dollar fs-2x d-block mb-3 opacity-50"></i>
+                    <div class="fw-semibold">Ödeme kaydı bulunamadı</div>
+                    <div class="fs-8">Bu işlem tamamen veresiye/cari olabilir.</div>
+                </div>
+            {% endif %}
         </div>
     </div>
 
+    {# ═══ EMANET BİLGİSİ (Koşullu) ══════════════════════════════════ #}
     {% if custody_info %}
-        <div class="card" style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05);">
-            <div class="card-header" style="border-bottom-color: rgba(245, 158, 11, 0.2);">
-                <div class="card-title" style="color: var(--warning);"><i class="bi bi-safe"></i> Emanet Bilgisi</div>
-            </div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>İşlem Türü</label>
-                    <div>{{ custody_info.type }}</div>
-                </div>
-                <div class="info-item">
-                    <label>Emanet Tutarı</label>
-                    <div style="color: var(--warning);">{{ custody_info.amount_hs }} HAS</div>
-                </div>
-                <div class="info-item">
-                    <label>Açıklama</label>
-                    <div>{{ custody_info.desc }}</div>
+        <div class="pd-custody-banner mb-5">
+            <div class="d-flex align-items-center gap-3">
+                <i class="fa-solid fa-safe fs-2 text-warning"></i>
+                <div>
+                    <div class="fw-bold text-gray-800 fs-6">Emanet Bilgisi</div>
+                    <div class="d-flex flex-wrap gap-4 mt-1">
+                        <div>
+                            <span class="text-muted fs-8">Tür:</span>
+                            <span class="fw-semibold ms-1">{{ custody_info.type }}</span>
+                        </div>
+                        <div>
+                            <span class="text-muted fs-8">Tutar:</span>
+                            <span class="fw-bold text-warning ms-1">{{ custody_info.amount_hs }} HS</span>
+                        </div>
+                        {% if custody_info.desc %}
+                            <div>
+                                <span class="text-muted fs-8">Açıklama:</span>
+                                <span class="fw-semibold ms-1">{{ custody_info.desc }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     {% endif %}
 
-    <div class="footer">
-        <p>Bu belge bilgilendirme amaçlıdır. Resmi fatura yerine geçmez.</p>
-        <p>© 2025 KuyumPlus Otomasyon Sistemleri</p>
+    {# ═══ FOOTER ══════════════════════════════════════════════════════ #}
+    <div class="text-center text-muted fs-9 py-4 pd-no-print">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Bu belge bilgilendirme amaçlıdır. Resmi fatura yerine geçmez.
+        <span class="separator separator-vertical mx-3 h-10px"></span>
+        KuyumPlus Otomasyon &copy; 2025
     </div>
 
 </div>
+</div>
+</div>
 
-</body>
-</html>
+{# ═══ WhatsApp Paylaşım Modalı ════════════════════════════════════ #}
+<div class="modal fade pd-no-print" id="ppShareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#25D366;color:#fff;">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp ile Müşteriye Gönder
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light-info py-2 px-3 mb-3">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Müşteri bu linke tıkladığında <strong>oturum açmadan</strong> işlem özetini görebilir.
+                    Maliyet, kâr ve personel bilgileri müşteriye gösterilmez.
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold fs-7">Müşteri Telefonu</label>
+                    <input type="tel" class="form-control" id="ppPhoneInput"
+                           value="{{ customer_phone_clean }}"
+                           placeholder="905551234567 (uluslararası format)"
+                           inputmode="tel">
+                    <div class="form-text">Boş bırakırsan WhatsApp uygulaması alıcı seçtirecek.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold fs-7">Mesaj</label>
+                    <textarea class="form-control" id="ppMsgInput" rows="4">Sayın {% if customer %}{{ customer.first_name }}{% else %}Müşterimiz{% endif %},
+{{ process_no }} numaralı işleminizin özetine aşağıdaki bağlantıdan ulaşabilirsiniz:</textarea>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-semibold fs-7">Paylaşım Linki</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control fs-8" id="ppLinkInput" readonly
+                               style="font-family:monospace;">
+                        <button type="button" class="btn btn-light-primary" onclick="ppCopyLink()">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="form-text" id="ppCopyHint">Linki kopyala veya doğrudan WhatsApp'tan gönder.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn fw-semibold" style="background:#25D366;color:#fff;"
+                        onclick="ppOpenWhatsApp()">
+                    <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp'ta Aç
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // TR locale sayı hydration: data-tr-num + data-tr-dec
+    document.querySelectorAll('[data-tr-num]').forEach(function (el) {
+        var raw = el.getAttribute('data-tr-num');
+        if (!raw) return;
+        var dec = parseInt(el.getAttribute('data-tr-dec') || '2', 10);
+        var n = parseFloat(raw);
+        if (isNaN(n)) return;
+        el.textContent = n.toLocaleString('tr-TR', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+    });
+})();
+
+// ═══ WhatsApp Paylaşımı ═════════════════════════════════════════════
+(function () {
+    var publicUrl = window.location.origin + "{% url 'process:public-detail' public_token %}";
+
+    window.ppShareWhatsApp = function () {
+        var $linkInput = document.getElementById('ppLinkInput');
+        if ($linkInput) $linkInput.value = publicUrl;
+        var modal = new bootstrap.Modal(document.getElementById('ppShareModal'));
+        modal.show();
+    };
+
+    function cleanPhone(raw) {
+        var d = (raw || '').replace(/\D/g, '');
+        if (!d) return '';
+        if (d.length === 10 && d[0] !== '0') return '90' + d;        // 5551234567
+        if (d.length === 11 && d.startsWith('0')) return '90' + d.substring(1); // 0555...
+        return d; // already includes country code
+    }
+
+    window.ppOpenWhatsApp = function () {
+        var phone = cleanPhone(document.getElementById('ppPhoneInput').value);
+        var msg = document.getElementById('ppMsgInput').value || '';
+        var fullMsg = msg + '\n\n' + publicUrl;
+        var url;
+        if (phone) {
+            url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(fullMsg);
+        } else {
+            url = 'https://wa.me/?text=' + encodeURIComponent(fullMsg);
+        }
+        window.open(url, '_blank', 'noopener');
+    };
+
+    window.ppCopyLink = function () {
+        var $input = document.getElementById('ppLinkInput');
+        var $hint = document.getElementById('ppCopyHint');
+        $input.select();
+        $input.setSelectionRange(0, 99999);
+        try {
+            navigator.clipboard.writeText($input.value).then(function () {
+                if ($hint) {
+                    $hint.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i>Link kopyalandı!';
+                    setTimeout(function () {
+                        $hint.textContent = 'Linki kopyala veya doğrudan WhatsApp\'tan gönder.';
+                    }, 2500);
+                }
+            });
+        } catch (e) {
+            document.execCommand('copy');
+        }
+    };
+})();
+</script>
+{% endblock body %}

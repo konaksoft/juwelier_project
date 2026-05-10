@@ -97,8 +97,11 @@ def auto_process_images(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Stores)
-def create_store_config(sender, instance, created, **kwargs):
-    if created:
+def create_store_config(sender, instance, created, raw=False, **kwargs):
+    # raw=True → Django serializer (loaddata / restore) tarafından kaydediliyor.
+    # Bu durumda zaten yedek/fixture içinde StoreConfiguration var; otomatik
+    # üretirsek UNIQUE(store_id) ihlali ile restore patlar.
+    if created and not raw:
         StoreConfiguration.objects.create(store=instance)
 
 

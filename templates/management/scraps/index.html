@@ -149,11 +149,11 @@
 {% endblock header %}
 {% block body %}
 
-    {# ────────────────────────────────────────────────────────────── #}
-    {# ONARIM FAZI 4 / ADIM 4 — Sayfa bağlamı (GOLD veya SILVER)    #}
-    {# view_material_type: scrap_index → 'GOLD', silver_index → 'SILVER' #}
-    {# Tüm AJAX çağrılarına bu sabit eklenir → izolasyon kırılmaz.   #}
-    {# ────────────────────────────────────────────────────────────── #}
+    <!-- ────────────────────────────────────────────────────────────── -->
+    <!-- ONARIM FAZI 4 / ADIM 4 — Sayfa bağlamı (GOLD veya SILVER)    -->
+    <!-- view_material_type: scrap_index → 'GOLD', silver_index → 'SILVER' -->
+    <!-- Tüm AJAX çağrılarına bu sabit eklenir → izolasyon kırılmaz.   -->
+    <!-- ────────────────────────────────────────────────────────────── -->
     <input type="hidden" id="view_material_type" value="{{ view_material_type|default:'GOLD' }}"/>
 
     <div class="app-main flex-column flex-row-fluid" id="kt_app_main"
@@ -230,7 +230,7 @@
                             <div class="col-md-12">
                                 <div class="card ">
                                     <div class="card-body">
-                                        {# ── ALTIN AYAR TAB'LARI: sadece GOLD sayfasında ── #}
+                                        <!-- ── ALTIN AYAR TAB'LARI: sadece GOLD sayfasında ── -->
                                         {% if view_material_type != 'SILVER' %}
                                         <ul class="nav nav-tabs" id="goldRateTabs" role="tablist">
                                             <li class="nav-item">
@@ -262,7 +262,7 @@
                                             </li>
                                         </ul>
                                         {% else %}
-                                        {# ── GÜMÜŞ AYAR TAB'LARI ── #}
+                                        <!-- ── GÜMÜŞ AYAR TAB'LARI ── -->
                                         <ul class="nav nav-tabs" id="goldRateTabs" role="tablist">
                                             <li class="nav-item">
                                                 <a class="nav-link active" data-gold-rate="" href="#"
@@ -298,8 +298,10 @@
                                                         <div class="d-flex toolbar-buttons my-margin1"
                                                              style="gap:.6rem">
                                                             <button type="button"
-                                                                    class="btn btn-light-danger me-3  toolbar-btn-size"
-                                                                    data-bs-toggle="tooltip" id="deleteSelected">
+                                                                    class="btn btn-light-warning me-3  toolbar-btn-size"
+                                                                    data-bs-toggle="tooltip"
+                                                                    title="Seçili havuzu iptal et (silme yerine REVERSAL kaydı oluşturulur)"
+                                                                    id="deleteSelected">
                                                                 <i class="fa-solid fa-trash-can"></i>
                                                             </button>
 
@@ -330,14 +332,18 @@
                                                                 </div>
                                                             </span>
                                                             </th>
-                                                            <th>{% if view_material_type == 'SILVER' %}Gümüş Ayarı{% else %}Altın Ayarı{% endif %}</th>
-                                                            <th>Stok</th>
-                                                            <th>Gram</th>
-                                                            <th>Milyem</th>
-                                                            <th>Maliyet (Hs)</th>
-                                                            <th>Satış (Hs)</th>
-                                                            <th>Tarih</th>
-                                                            <th>Durum</th>
+                                                            <th title="{% if view_material_type == 'SILVER' %}Gümüş ayar sınıfı + havuz tedarikçisi{% else %}Altın ayar sınıfı + havuz tedarikçisi{% endif %}">
+                                                                {% if view_material_type == 'SILVER' %}Gümüş Ayarı{% else %}Altın Ayarı{% endif %}
+                                                            </th>
+                                                            <th title="Havuzun stok durumu (Stokta / Satıldı)">Stok</th>
+                                                            <th title="Havuzdaki güncel gram miktarı">Gram</th>
+                                                            <th title="Havuzun ağırlıklı ortalama milyemi">Milyem</th>
+                                                            <th title="Bu havuzdaki tüm girişlerin ağırlıklı ortalama maliyeti (WAC)">
+                                                                Maliyet (Hs) <i class="fa-solid fa-circle-info" style="font-size:0.7rem;color:#a1a5b7;"></i>
+                                                            </th>
+                                                            <th title="Satış gerçekleştiyse Has cinsinden satış tutarı">Satış (Hs)</th>
+                                                            <th title="Havuzun oluşturulma tarihi">Tarih</th>
+                                                            <th title="Havuzun aktiflik durumu">Durum</th>
                                                             <th class="text-center">İşlem</th>
                                                         </tr>
                                                         </thead>
@@ -368,11 +374,11 @@
                         {% csrf_token %}
                         <input type="hidden" id="scrap_id" name="scrap_id"/>
 
-                        {# ────────────────────────────────────────────────── #}
-                        {# ONARIM FAZI 4 / ADIM 4 — material_type SAYFA BAĞLAMINDAN #}
-                        {# Hidden input olarak gönderilir; kullanıcı seçemez.   #}
-                        {# Altın sayfası → GOLD, Gümüş sayfası → SILVER.        #}
-                        {# ────────────────────────────────────────────────── #}
+                        <!-- ────────────────────────────────────────────────── -->
+                        <!-- ONARIM FAZI 4 / ADIM 4 — material_type SAYFA BAĞLAMINDAN -->
+                        <!-- Hidden input olarak gönderilir; kullanıcı seçemez.   -->
+                        <!-- Altın sayfası → GOLD, Gümüş sayfası → SILVER.        -->
+                        <!-- ────────────────────────────────────────────────── -->
                         <input type="hidden" id="material_type" name="material_type"
                                value="{{ view_material_type|default:'GOLD' }}"/>
 
@@ -574,7 +580,54 @@
                         },
                         {
                             data: "product__name",
-                            render: (data) => `<span style="font-weight: bold; color: rgba(18,53,232,0.93);">${data}</span>`
+                            render: function (data, type, row) {
+                                // UX — Ayar adının altına tedarikçi/havuz tipi etiketi.
+                                // Çoklu kaynaklı havuzda "Karma havuz", tek kaynaklıda
+                                // gerçek tedarikçi adı (veya "Tedarikçisiz") ikincil
+                                // metin olarak gösterilir.
+                                const isMulti = !!row.is_multi_source_pool;
+                                const supplierRaw = (row.primary_supplier_name || '').trim();
+                                let supplierBadgeHtml = '';
+                                if (isMulti) {
+                                    supplierBadgeHtml =
+                                        '<span class="d-block text-warning fst-italic" ' +
+                                        'style="font-size:0.72rem;line-height:1;margin-top:2px;" ' +
+                                        'title="Bu havuza birden fazla farklı alış kaydı eklenmiş.">' +
+                                        '<i class="fa-solid fa-layer-group me-1"></i>Karma havuz' +
+                                        '</span>';
+                                } else if (supplierRaw) {
+                                    const safeName = supplierRaw
+                                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                    supplierBadgeHtml =
+                                        '<span class="d-block text-muted" ' +
+                                        'style="font-size:0.72rem;line-height:1;margin-top:2px;" ' +
+                                        'title="Tedarikçi: ' + safeName + '">' +
+                                        '<i class="fa-solid fa-building me-1"></i>' + safeName +
+                                        '</span>';
+                                } else {
+                                    supplierBadgeHtml =
+                                        '<span class="d-block text-muted fst-italic" ' +
+                                        'style="font-size:0.72rem;line-height:1;margin-top:2px;" ' +
+                                        'title="Tedarikçi atanmamış kayıt (Açılış stoğu veya anonim alış)">' +
+                                        '<i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz' +
+                                        '</span>';
+                                }
+                                // ONARIM FAZI 12 — Ayar adı tıklanabilir link:
+                                // Doğrudan Havuz Detay Sayfasına navigasyon (drill-down).
+                                const poolHref = '/scraps/pool/' + row.id + '/';
+                                return (
+                                    '<div class="d-flex flex-column">' +
+                                    '<a href="' + poolHref + '" ' +
+                                    'style="font-weight:bold;color:rgba(18,53,232,0.93);text-decoration:none;" ' +
+                                    'title="Havuz Detay Sayfasına git" ' +
+                                    'onmouseover="this.style.textDecoration=\'underline\'" ' +
+                                    'onmouseout="this.style.textDecoration=\'none\'">' +
+                                    data +
+                                    '</a>' +
+                                    supplierBadgeHtml +
+                                    '</div>'
+                                );
+                            }
                         },
                         {
                             data: "product__is_completed",
@@ -583,7 +636,25 @@
                                 ? '<span class="badge badge-light-danger">Satıldı</span>'
                                 : '<span class="badge badge-light-success">Stokta</span>'
                         },
-                        {data: "product__gram"},
+                        {
+                            data: "product__gram",
+                            render: function (v, type, row) {
+                                // Stok = mağazanın öz malı.
+                                // Badge yalnız aynı havuzda HÂLÂ müşteri emaneti
+                                // duran kısım için gösterilir. Etiket "Müşteri
+                                // Emaneti" — bu rakam mağazanın değil müşterinin
+                                // alacağına bağlı; "Stoğa Al" ile mahsup edilebilir.
+                                const stockHtml = (v != null) ? String(v) : '0,000';
+                                if (row.has_custody) {
+                                    return stockHtml +
+                                        ' <span class="badge badge-light-warning ms-1" ' +
+                                        'title="Bu havuzda hâlâ müşteri emaneti tutuluyor — Stoğa Al ile mağaza stoğuna alınabilir">' +
+                                        '<i class="fa-solid fa-hand-holding-hand fs-9 me-1"></i>' +
+                                        'Müşteri Emaneti: ' + row.custody_gram + ' gr</span>';
+                                }
+                                return stockHtml;
+                            }
+                        },
                         {data: "product__product_mileage"},
                         {data: "product__buy_price_hs"}, // maliyet (hs)
                         // ---------- YENİ: Satış (Hs) ----------
@@ -637,18 +708,22 @@
                                       <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>` : '';
 
-                                // Havuz detay ikonu — havuz ise daha belirgin "katmanlı" ikon
-                                const poolIcon = isMultiSourcePool ? 'fa-layer-group' : 'fa-circle-info';
+                                // ONARIM FAZI 12 — Havuz Detayı butonu artık MODAL açmaz,
+                                // doğrudan tam sayfa Havuz Detay & Ekstre sayfasına yönlendirir.
+                                // 3 yıllık binlerce satırlık ledger için ölçeklenir; URL bazlı,
+                                // bookmark'lanabilir, multi-tab uyumlu.
+                                const _activeCount = parseInt(row.active_purchase_count || 0, 10) || 0;
                                 const poolTitle = isMultiSourcePool
-                                    ? 'Havuz Detayı (çoklu kaynak — düzenlemek için ilgili işlemi iptal edin)'
-                                    : 'Havuz Detayı';
+                                    ? ('Havuz Detayı — bu havuzda ' + _activeCount + ' farklı alış kaydı var. ' +
+                                       'Tam ekran ekstre + iptal akışı için tıklayın.')
+                                    : 'Havuz Detayı — tam ekran ekstre, filtreler ve iptal akışı.';
                                 const poolBtnClass = isMultiSourcePool ? 'btn-light-warning' : 'btn-light-info';
+                                const poolUrl = '/scraps/pool/' + row.id + '/';
                                 const btnPoolInfo = `
-                                    <a href="#"
-                                       onclick="showPoolContentsModal('${row.id}');return false;"
+                                    <a href="${poolUrl}"
                                        class="btn btn-sm ${poolBtnClass}"
                                        title="${poolTitle}">
-                                      <i class="fa-solid ${poolIcon}"></i>
+                                      <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>`;
 
                                 if (everSoldOrCompleted) {
@@ -684,47 +759,92 @@
 
 
                 // ═══ HAVUZ DETAY MODALI (müşteri gösterimi + silme akışı için) ═══
+                // UX — 4 sütunlu finansal şeffaflık: Kaynak, Gramaj, Birim Hs/gr, Toplam Hs.
+                // İşlem numarası birincil yerine tooltip'e taşındı.
                 function renderPoolContentsHtml(data) {
                     if (!data || !data.sources) return '';
-                    var rows = data.sources.map(function (s) {
-                        var label = s.label || s.supplier_name || 'Tedarikçisiz';
-                        var gramNum = Number(s.gram || 0);
-                        var gramStr = gramNum.toLocaleString('tr-TR', {
+                    var fmt3 = function (v) {
+                        return Number(v || 0).toLocaleString('tr-TR', {
                             minimumFractionDigits: 3, maximumFractionDigits: 3
                         });
-                        var meta = [];
-                        if (s.process_no) meta.push('İşlem: ' + s.process_no);
-                        if (s.date) meta.push(s.date);
-                        var metaStr = meta.length ? meta.join(' · ') : '-';
+                    };
+                    var escapeHtml = function (str) {
+                        return String(str || '').replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;');
+                    };
+                    var rows = data.sources.map(function (s) {
+                        var label = escapeHtml(s.label || s.supplier_name || 'Tedarikçisiz');
+                        var gramStr = fmt3(s.gram);
+                        var unitStr = fmt3(s.price_hs_per_gram);
+                        var totalStr = fmt3(s.price_hs);
+                        var dateLabel = s.date_short || s.date || '';
+                        var procNo = s.process_no || '';
                         var isSupplier = !!s.supplier_id;
+                        var isEstimated = !!s.is_estimated;
                         var chip = isSupplier
-                            ? '<span class="badge badge-light-primary">Tedarikçili</span>'
-                            : '<span class="badge badge-light-secondary">Tedarikçisiz</span>';
+                            ? '<span class="badge badge-light-primary"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                            : '<span class="badge badge-light-secondary"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+                        var estBadge = isEstimated
+                            ? ' <span class="badge badge-light-warning" title="Geçmiş kayıt — değer ağırlıklı ortalama maliyetten tahmin edilmiştir." style="font-size:0.65rem;">~ tahmini</span>'
+                            : '';
+                        var procTitle = procNo
+                            ? ('Sistem referans numarası: ' + escapeHtml(procNo))
+                            : 'Geçmiş kayıt — referans numarası yok';
+                        var metaLine = dateLabel
+                            ? ('<div style="font-size:0.72rem;color:#a1a5b7;margin-top:2px;" ' +
+                               'title="' + procTitle + '">' +
+                               '<i class="fa-regular fa-calendar me-1"></i>' + escapeHtml(dateLabel) +
+                               (procNo ? ' <i class="fa-solid fa-hashtag ms-2 me-1"></i><span style="font-family:monospace;">' + escapeHtml(procNo.slice(-6)) + '</span>' : '') +
+                               '</div>')
+                            : '';
                         return (
-                            '<tr>' +
-                            '<td style="padding:0.4rem;">' + chip + ' <b>' + label + '</b></td>' +
-                            '<td style="padding:0.4rem;text-align:right;"><b>' + gramStr + ' gr</b></td>' +
-                            '<td style="padding:0.4rem;font-size:0.75rem;color:#888;">' + metaStr + '</td>' +
+                            '<tr style="border-bottom:1px solid #f4f4f4;">' +
+                            '<td style="padding:0.6rem 0.4rem;vertical-align:top;">' +
+                            chip + estBadge +
+                            '<div style="font-weight:600;margin-top:4px;">' + label + '</div>' +
+                            metaLine +
+                            '</td>' +
+                            '<td style="padding:0.6rem 0.4rem;text-align:right;vertical-align:top;">' +
+                            '<b>' + gramStr + '</b> <span style="color:#a1a5b7;font-size:0.72rem;">gr</span>' +
+                            '</td>' +
+                            '<td style="padding:0.6rem 0.4rem;text-align:right;vertical-align:top;color:#3f4254;">' +
+                            unitStr + ' <span style="color:#a1a5b7;font-size:0.72rem;">Hs/gr</span>' +
+                            '</td>' +
+                            '<td style="padding:0.6rem 0.4rem;text-align:right;vertical-align:top;">' +
+                            '<b style="color:#181c32;">' + totalStr + '</b> <span style="color:#a1a5b7;font-size:0.72rem;">Hs</span>' +
+                            '</td>' +
                             '</tr>'
                         );
                     }).join('');
-                    var totalGram = Number(data.total_gram || 0).toLocaleString('tr-TR', {
-                        minimumFractionDigits: 3, maximumFractionDigits: 3
-                    });
+                    var totalGram = fmt3(data.total_gram);
+                    var totalPriceHs = fmt3(data.total_price_hs);
+                    var poolWac = fmt3(data.pool_wac_hs_per_gram);
                     return (
-                        '<div style="max-height:320px;overflow-y:auto;">' +
+                        '<div style="max-height:360px;overflow-y:auto;border:1px solid #f4f4f4;border-radius:0.5rem;">' +
                         '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">' +
-                        '<thead><tr style="border-bottom:2px solid #e4e6ef;color:#7e8299;">' +
-                        '<th style="padding:0.4rem;text-align:left;">Kaynak</th>' +
-                        '<th style="padding:0.4rem;text-align:right;">Gramaj</th>' +
-                        '<th style="padding:0.4rem;text-align:left;">Detay</th>' +
+                        '<thead><tr style="background:#f9f9f9;border-bottom:2px solid #e4e6ef;color:#7e8299;">' +
+                        '<th style="padding:0.55rem 0.4rem;text-align:left;font-weight:600;">Kaynak</th>' +
+                        '<th style="padding:0.55rem 0.4rem;text-align:right;font-weight:600;">Gramaj</th>' +
+                        '<th style="padding:0.55rem 0.4rem;text-align:right;font-weight:600;" title="O işlemdeki birim alış maliyeti.">Birim (Hs/gr)</th>' +
+                        '<th style="padding:0.55rem 0.4rem;text-align:right;font-weight:600;" title="O işlemin toplam Has değeri.">Toplam (Hs)</th>' +
                         '</tr></thead>' +
                         '<tbody>' + rows + '</tbody>' +
-                        '<tfoot><tr style="border-top:2px solid #e4e6ef;background:rgba(255,215,0,0.06);">' +
-                        '<td style="padding:0.4rem;"><b>TOPLAM</b></td>' +
-                        '<td style="padding:0.4rem;text-align:right;"><b>' + totalGram + ' gr</b></td>' +
-                        '<td></td></tr></tfoot>' +
-                        '</table></div>'
+                        '<tfoot>' +
+                        '<tr style="border-top:2px solid #e4e6ef;background:rgba(255,215,0,0.06);">' +
+                        '<td style="padding:0.55rem 0.4rem;"><b>TOPLAM</b></td>' +
+                        '<td style="padding:0.55rem 0.4rem;text-align:right;"><b>' + totalGram + ' gr</b></td>' +
+                        '<td style="padding:0.55rem 0.4rem;text-align:right;color:#7e8299;font-style:italic;" title="Havuzun ağırlıklı ortalama birim maliyeti (WAC).">' +
+                        poolWac + ' Hs/gr' +
+                        '</td>' +
+                        '<td style="padding:0.55rem 0.4rem;text-align:right;"><b>' + totalPriceHs + ' Hs</b></td>' +
+                        '</tr>' +
+                        '</tfoot>' +
+                        '</table></div>' +
+                        '<div style="margin-top:0.5rem;font-size:0.72rem;color:#a1a5b7;">' +
+                        '<i class="fa-solid fa-circle-info me-1"></i>' +
+                        '"Birim (Hs/gr)" o işlemdeki alış birim maliyetini, footer\'daki değer havuzun ağırlıklı ortalamasını (WAC) gösterir.' +
+                        '</div>'
                     );
                 }
 
@@ -782,45 +902,173 @@
                     });
                 };
 
+                // ───────────────────────────────────────────────────────────
+                // UX — İptal modalında her satır artık 4 diferansiyatör taşır:
+                //   [Tedarikçili/siz badge] · Tedarikçi adı
+                //   Gram · Birim Hs/gr · Toplam Hs · Tarih
+                // İşlem numarası tooltip'e taşındı (yanlış seçim riskini azaltır).
+                // ───────────────────────────────────────────────────────────
+                var escapeHtml = function (str) {
+                    return String(str || '').replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                };
+                var fmt3 = function (v) {
+                    return Number(v || 0).toLocaleString('tr-TR', {
+                        minimumFractionDigits: 3, maximumFractionDigits: 3
+                    });
+                };
+
+                function renderProcessPickerRow(pr) {
+                    var hasSupplier = !!pr.supplier_id;
+                    var sName = escapeHtml(pr.supplier_name || (hasSupplier ? '-' : 'Tedarikçisiz'));
+                    var chip = hasSupplier
+                        ? '<span class="badge badge-light-primary me-2"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                        : '<span class="badge badge-light-secondary me-2"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+                    var gramStr = fmt3(pr.gram);
+                    var unitStr = fmt3(pr.price_hs_per_gram);
+                    var totalStr = fmt3(pr.price_hs);
+                    var dateLabel = escapeHtml(pr.date_short || pr.date || '-');
+                    var procTitle = pr.process_no
+                        ? ('Sistem referans numarası: ' + escapeHtml(pr.process_no))
+                        : 'Referans numarası yok';
+                    var procTail = pr.process_no
+                        ? ('<span class="ms-2" style="font-family:monospace;font-size:0.7rem;color:#a1a5b7;" ' +
+                           'title="' + procTitle + '">#' + escapeHtml(pr.process_no.slice(-6)) + '</span>')
+                        : '';
+                    return (
+                        '<label class="scrap-proc-row d-flex align-items-start gap-3 border rounded p-3 mb-2" ' +
+                        'style="cursor:pointer;transition:background-color .15s;">' +
+                        '<input type="radio" name="proc_no" value="' + escapeHtml(pr.process_no) + '" ' +
+                        'class="form-check-input mt-1">' +
+                        '<div class="flex-grow-1 text-start">' +
+                        '<div class="d-flex align-items-center flex-wrap mb-1">' +
+                        chip +
+                        '<span class="fw-bold">' + sName + '</span>' +
+                        procTail +
+                        '</div>' +
+                        '<div class="d-flex flex-wrap gap-3" style="font-size:0.78rem;color:#5e6278;">' +
+                        '<span><i class="fa-solid fa-weight-scale me-1 text-muted"></i><b>' + gramStr + '</b> gr</span>' +
+                        '<span><i class="fa-solid fa-tag me-1 text-muted"></i>' + unitStr + ' Hs/gr</span>' +
+                        '<span><i class="fa-solid fa-coins me-1 text-muted"></i><b>' + totalStr + '</b> Hs</span>' +
+                        '<span class="ms-auto"><i class="fa-regular fa-calendar me-1 text-muted"></i>' + dateLabel + '</span>' +
+                        '</div>' +
+                        '</div></label>'
+                    );
+                }
+
+                // Seçilen radyo'nun bulunduğu satırı görsel olarak vurgula.
+                function attachProcRowHighlight() {
+                    var rows = document.querySelectorAll('.scrap-proc-row');
+                    var refresh = function () {
+                        rows.forEach(function (row) {
+                            var input = row.querySelector('input[type="radio"]');
+                            if (input && input.checked) {
+                                row.style.backgroundColor = '#fff3cd';
+                                row.style.borderColor = '#f1c40f';
+                            } else {
+                                row.style.backgroundColor = '';
+                                row.style.borderColor = '';
+                            }
+                        });
+                    };
+                    rows.forEach(function (row) {
+                        var input = row.querySelector('input[type="radio"]');
+                        if (input) input.addEventListener('change', refresh);
+                    });
+                }
+
+                // ───────────────────────────────────────────────────────────
+                // 2-step confirmation: kullanıcı "Seçileni İptal Et"e bastıktan
+                // sonra ARA ONAY ekranı açılır — seçilen işlem ve havuzun yeni
+                // gramajı vurgulanır. Yanlış işlemi silme riskini sıfırlar.
+                // ───────────────────────────────────────────────────────────
+                function confirmCancellation(ids, processes, selectedProcNo, currentTotalGram) {
+                    var pr = processes.find(function (p) { return p.process_no === selectedProcNo; });
+                    if (!pr) {
+                        // Beklenmedik durum — yine de sil
+                        performActualDelete(ids, {selected_process_no: selectedProcNo});
+                        return;
+                    }
+                    var newGram = Math.max(0, Number(currentTotalGram || 0) - Number(pr.gram || 0));
+                    var hasSupplier = !!pr.supplier_id;
+                    var sName = escapeHtml(pr.supplier_name || (hasSupplier ? '-' : 'Tedarikçisiz'));
+                    var chip = hasSupplier
+                        ? '<span class="badge badge-light-primary me-2"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                        : '<span class="badge badge-light-secondary me-2"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+
+                    var summaryHtml =
+                        '<div style="text-align:left;">' +
+                        '<div style="background:#fff3cd;border:1px solid #f1c40f;border-radius:0.5rem;padding:1rem;margin-bottom:1rem;">' +
+                        '<div style="font-size:0.75rem;color:#7e8299;margin-bottom:0.35rem;">İPTAL EDİLECEK İŞLEM</div>' +
+                        '<div class="d-flex align-items-center mb-2">' + chip +
+                        '<span class="fw-bold">' + sName + '</span></div>' +
+                        '<div class="d-flex flex-wrap gap-3" style="font-size:0.85rem;color:#181c32;">' +
+                        '<span><i class="fa-solid fa-weight-scale me-1 text-muted"></i><b>' + fmt3(pr.gram) + '</b> gr</span>' +
+                        '<span><i class="fa-solid fa-tag me-1 text-muted"></i>' + fmt3(pr.price_hs_per_gram) + ' Hs/gr</span>' +
+                        '<span><i class="fa-solid fa-coins me-1 text-muted"></i><b>' + fmt3(pr.price_hs) + '</b> Hs</span>' +
+                        '<span><i class="fa-regular fa-calendar me-1 text-muted"></i>' + escapeHtml(pr.date_short || pr.date || '-') + '</span>' +
+                        '</div></div>' +
+                        '<div style="background:#f8f9fa;border-radius:0.5rem;padding:0.85rem;font-size:0.85rem;">' +
+                        '<i class="fa-solid fa-circle-info me-1 text-info"></i> Bu işlem geri alınamaz. ' +
+                        'Havuz gramajı: <b>' + fmt3(currentTotalGram) + ' gr</b> ' +
+                        '<i class="fa-solid fa-arrow-right mx-1 text-muted"></i> ' +
+                        '<b style="color:#d6336c;">' + fmt3(newGram) + ' gr</b>.' +
+                        '</div></div>';
+
+                    Swal.fire({
+                        title: 'Onaylıyor musunuz?',
+                        html: summaryHtml,
+                        icon: 'warning',
+                        width: 560,
+                        showCancelButton: true,
+                        cancelButtonText: 'Geri Dön',
+                        confirmButtonText: 'Evet, İptal Et',
+                        confirmButtonColor: '#d33',
+                        focusCancel: true,
+                        reverseButtons: true,
+                    }).then(function (res) {
+                        if (res.isConfirmed) {
+                            performActualDelete(ids, {selected_process_no: selectedProcNo});
+                        } else {
+                            // Geri dönerse seçim modalını yeniden aç
+                            showProcessPicker(ids, processes);
+                        }
+                    });
+                }
+
                 var showProcessPicker = function (ids, processes) {
                     $.get("/scraps/get-pool-contents", {'ids[]': ids}, function (contents) {
-                        var poolInfoHtml = (contents && contents.result)
+                        var poolHasInfo = contents && contents.result;
+                        var poolInfoHtml = poolHasInfo
                             ? ('<div style="margin-bottom:1rem;">' +
-                               '<h6 style="margin-bottom:0.5rem;color:#181c32;">Havuz Durumu</h6>' +
+                               '<h6 style="margin-bottom:0.5rem;color:#181c32;font-size:0.9rem;">' +
+                               '<i class="fa-solid fa-layer-group me-1 text-warning"></i>Havuz Durumu' +
+                               '</h6>' +
                                renderPoolContentsHtml(contents) +
                                '</div><hr/>')
                             : '';
+                        var currentTotalGram = poolHasInfo ? contents.total_gram : 0;
 
-                        var rowsHtml = processes.map(function (pr) {
-                            return (
-                                '<label class="d-flex align-items-center gap-3 border rounded p-3 mb-2" ' +
-                                'style="cursor:pointer;">' +
-                                '<input type="radio" name="proc_no" value="' + pr.process_no + '" ' +
-                                'class="form-check-input">' +
-                                '<div class="flex-grow-1 text-start">' +
-                                '<div class="fw-bold">' + pr.supplier_name + '</div>' +
-                                '<div class="text-muted small">' +
-                                'İşlem: ' + (pr.process_no || '-') + ' · ' +
-                                pr.gram.toLocaleString('tr-TR', {maximumFractionDigits: 3}) + ' gr · ' +
-                                pr.date +
-                                '</div></div></label>'
-                            );
-                        }).join('');
+                        var rowsHtml = processes.map(renderProcessPickerRow).join('');
 
                         Swal.fire({
                             title: 'Havuz — İptal Edilecek İşlemi Seçin',
                             html:
                                 poolInfoHtml +
-                                '<div class="text-start mb-3" style="font-size:0.85rem;">Bu havuza <b>' +
-                                processes.length + '</b> farklı alış kaydı eklenmiş. ' +
-                                'Doğrudan silemezsiniz. Lütfen iptal etmek istediğiniz alış ' +
-                                'işlemini seçin — yalnızca o kaynağın gramı havuzdan düşer.</div>' +
+                                '<div class="text-start mb-3" style="font-size:0.85rem;color:#5e6278;">' +
+                                '<i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>' +
+                                'Bu havuza <b>' + processes.length + '</b> farklı alış kaydı eklenmiş. ' +
+                                'Doğrudan silemezsiniz. İptal etmek istediğiniz alış işlemini seçin — ' +
+                                'yalnızca o kaynağın gramı havuzdan düşer.</div>' +
                                 '<div class="scrap-proc-picker">' + rowsHtml + '</div>',
-                            width: 720,
+                            width: 760,
                             showCancelButton: true,
                             cancelButtonText: 'Vazgeç',
                             confirmButtonText: 'Seçileni İptal Et',
+                            confirmButtonColor: '#f1c40f',
                             focusConfirm: false,
+                            didOpen: attachProcRowHighlight,
                             preConfirm: function () {
                                 var selected = document.querySelector('input[name="proc_no"]:checked');
                                 if (!selected) {
@@ -831,36 +1079,26 @@
                             }
                         }).then(function (res) {
                             if (res.isConfirmed && res.value) {
-                                performActualDelete(ids, {selected_process_no: res.value});
+                                // 2-step: ara onay
+                                confirmCancellation(ids, processes, res.value, currentTotalGram);
                             }
                         });
                     }).fail(function () {
-                        // Havuz içeriği alınamazsa, eski modal ile devam et
-                        var rowsHtml = processes.map(function (pr) {
-                            return (
-                                '<label class="d-flex align-items-center gap-3 border rounded p-3 mb-2" ' +
-                                'style="cursor:pointer;">' +
-                                '<input type="radio" name="proc_no" value="' + pr.process_no + '" ' +
-                                'class="form-check-input">' +
-                                '<div class="flex-grow-1 text-start">' +
-                                '<div class="fw-bold">' + pr.supplier_name + '</div>' +
-                                '<div class="text-muted small">' +
-                                'İşlem: ' + (pr.process_no || '-') + ' · ' +
-                                pr.gram.toLocaleString('tr-TR', {maximumFractionDigits: 3}) + ' gr · ' +
-                                pr.date +
-                                '</div></div></label>'
-                            );
-                        }).join('');
+                        // Havuz içeriği alınamazsa, finansal alanları gizleyen sade fallback
+                        var rowsHtml = processes.map(renderProcessPickerRow).join('');
                         Swal.fire({
                             title: 'Havuz — İptal Edilecek İşlemi Seçin',
                             html:
-                                '<div class="text-start mb-3">Bu havuza <b>' +
-                                processes.length + '</b> farklı alış kaydı eklenmiş.</div>' +
+                                '<div class="text-start mb-3">' +
+                                '<i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>' +
+                                'Bu havuza <b>' + processes.length + '</b> farklı alış kaydı eklenmiş.</div>' +
                                 '<div class="scrap-proc-picker">' + rowsHtml + '</div>',
-                            width: 600,
+                            width: 640,
                             showCancelButton: true,
                             cancelButtonText: 'Vazgeç',
                             confirmButtonText: 'Seçileni İptal Et',
+                            confirmButtonColor: '#f1c40f',
+                            didOpen: attachProcRowHighlight,
                             preConfirm: function () {
                                 var selected = document.querySelector('input[name="proc_no"]:checked');
                                 if (!selected) {
@@ -871,7 +1109,7 @@
                             }
                         }).then(function (res) {
                             if (res.isConfirmed && res.value) {
-                                performActualDelete(ids, {selected_process_no: res.value});
+                                confirmCancellation(ids, processes, res.value, 0);
                             }
                         });
                     });
@@ -895,6 +1133,22 @@
                         return;
                     }
 
+                    // UX — Defansif: Çoklu havuz seçiminde backend tek havuz beklediği
+                    // için kullanıcıyı uyar; tek seferde bir havuz seçmesini iste.
+                    if (ids.length > 1) {
+                        Swal.fire({
+                            title: 'Çoklu Havuz Seçimi',
+                            html: '<div style="text-align:left;font-size:0.9rem;">' +
+                                  '<i class="fa-solid fa-circle-info me-1 text-info"></i>' +
+                                  'Çoklu seçimde havuz iptal işlemi desteklenmiyor.<br>' +
+                                  '<span style="color:#7e8299;">Lütfen tek seferde bir havuz seçin — iptal akışı havuz bazlı çalışır.</span>' +
+                                  '</div>',
+                            icon: 'info',
+                            confirmButtonText: 'Anladım',
+                        });
+                        return;
+                    }
+
                     // Önce havuz kaynak analizi
                     $.get("/scraps/get-pool-sources", {
                         'ids[]': ids
@@ -907,18 +1161,61 @@
                             // Seçici modal aç
                             showProcessPicker(ids, data.processes);
                         } else {
-                            // Tek kaynak veya kaynak yok → onay sor ve direkt sil
-                            Swal.fire({
-                                title: 'Emin misiniz?',
-                                text: 'Seçili kayıtlar silinecek ve tedarikçi cariden düşülecek.',
-                                icon: 'warning',
-                                showCancelButton: true,
-                                cancelButtonText: 'Vazgeç',
-                                confirmButtonText: 'Evet, Sil',
-                            }).then(function (res) {
-                                if (res.isConfirmed) {
-                                    performActualDelete(ids, null);
+                            // Tek kaynak veya kaynak yok → finansal özetli ara onay
+                            $.get("/scraps/get-pool-contents", {'ids[]': ids}, function (contents) {
+                                var summaryHtml = '';
+                                if (contents && contents.result && contents.sources && contents.sources.length) {
+                                    var s = contents.sources[0];
+                                    var hasSupplier = !!s.supplier_id;
+                                    var sName = escapeHtml(s.label || s.supplier_name || 'Tedarikçisiz');
+                                    var chip = hasSupplier
+                                        ? '<span class="badge badge-light-primary me-2"><i class="fa-solid fa-building me-1"></i>Tedarikçili</span>'
+                                        : '<span class="badge badge-light-secondary me-2"><i class="fa-solid fa-box-open me-1"></i>Tedarikçisiz</span>';
+                                    summaryHtml =
+                                        '<div style="text-align:left;background:#fff3cd;border:1px solid #f1c40f;border-radius:0.5rem;padding:1rem;margin-bottom:0.5rem;">' +
+                                        '<div style="font-size:0.75rem;color:#7e8299;margin-bottom:0.35rem;">İPTAL EDİLECEK KAYIT</div>' +
+                                        '<div class="d-flex align-items-center mb-2">' + chip +
+                                        '<span class="fw-bold">' + sName + '</span></div>' +
+                                        '<div class="d-flex flex-wrap gap-3" style="font-size:0.85rem;color:#181c32;">' +
+                                        '<span><i class="fa-solid fa-weight-scale me-1 text-muted"></i><b>' + fmt3(s.gram) + '</b> gr</span>' +
+                                        '<span><i class="fa-solid fa-tag me-1 text-muted"></i>' + fmt3(s.price_hs_per_gram) + ' Hs/gr</span>' +
+                                        '<span><i class="fa-solid fa-coins me-1 text-muted"></i><b>' + fmt3(s.price_hs) + '</b> Hs</span>' +
+                                        '</div></div>' +
+                                        '<div style="font-size:0.8rem;color:#5e6278;margin-top:0.5rem;">' +
+                                        '<i class="fa-solid fa-circle-info me-1"></i> Bu kayıt iptal edilecek ve ' +
+                                        (hasSupplier ? 'tedarikçi carisinden düşülecek.' : 'havuzdan kaldırılacak.') +
+                                        '</div>';
                                 }
+                                Swal.fire({
+                                    title: 'Onaylıyor musunuz?',
+                                    html: summaryHtml || 'Seçili kayıt iptal edilecek.',
+                                    icon: 'warning',
+                                    width: 560,
+                                    showCancelButton: true,
+                                    cancelButtonText: 'Vazgeç',
+                                    confirmButtonText: 'Evet, İptal Et',
+                                    confirmButtonColor: '#d33',
+                                    focusCancel: true,
+                                    reverseButtons: true,
+                                }).then(function (res) {
+                                    if (res.isConfirmed) {
+                                        performActualDelete(ids, null);
+                                    }
+                                });
+                            }).fail(function () {
+                                // İçerik alınamazsa basit onay
+                                Swal.fire({
+                                    title: 'Emin misiniz?',
+                                    text: 'Seçili kayıt iptal edilecek ve tedarikçi cariden düşülecek.',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    cancelButtonText: 'Vazgeç',
+                                    confirmButtonText: 'Evet, İptal Et',
+                                }).then(function (res) {
+                                    if (res.isConfirmed) {
+                                        performActualDelete(ids, null);
+                                    }
+                                });
                             });
                         }
                     }).fail(function () {
@@ -1189,7 +1486,7 @@
             $('#scrapForm').removeClass('was-validated');
             $('#scrap_id').val('');
             $('#modalTitle').text('Ekle');
-            $('#buy_price_tl, #total_price_tl, #buy_price_hs').val('');
+            $('#buy_price_eur, #total_price_tl, #buy_price_hs').val('');
             // material_type'ı sayfa bağlamına geri dön (reset üstüne yazılır)
             $('#material_type').val(VIEW_MATERIAL_TYPE);
             // Tedarikçi alanını tekrar göster (yeni kayıt için) ve sıfırla
@@ -1199,7 +1496,7 @@
 
     </script>
 
-    {# FAZ D: Declarative Product Form Modülleri — Hurda formu için #}
+    <!-- FAZ D: Declarative Product Form Modülleri — Hurda formu için -->
     <script src="{% static 'js/modules/product_form/config.js' %}"></script>
     <script src="{% static 'js/modules/product_form/field_groups.js' %}"></script>
     <script src="{% static 'js/modules/product_form/renderer.js' %}"></script>

@@ -1,0 +1,170 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+<title>{{ title }}</title>
+<style>
+    .pending-row { background: #fff8e1; }
+    .pill {
+        display: inline-block;
+        padding: 0.15rem 0.55rem;
+        border-radius: 1rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+    .pill-fx { background: #fff4d6; color: #b88200; }
+    .pill-discount { background: #f3e0ff; color: #7239ea; }
+    .pill-writeoff { background: #f5f5f5; color: #4b5675; }
+    .pill-reversal { background: #ffe2e5; color: #f1416c; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container-xxl py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Cari Onay Bekleyenler</h2>
+            <div class="text-muted small">
+                Eşik üstü kur farkı / iskonto / silme / iptal kayıtları —
+                onaylanana kadar bakiyeye dahil edilmez.
+            </div>
+        </div>
+        <button type="button" class="btn btn-light btn-sm" onclick="loadPending()">
+            <i class="fa-solid fa-rotate"></i> Yenile
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-row-dashed mb-0">
+                    <thead>
+                        <tr class="fw-bold text-muted">
+                            <th>Tarih</th>
+                            <th>Müşteri</th>
+                            <th>Tip</th>
+                            <th class="text-end">Has</th>
+                            <th class="text-end">TL</th>
+                            <th>Açıklama</th>
+                            <th>Yazan</th>
+                            <th class="text-end">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingTbody">
+                        <tr><td colspan="8" class="text-center p-4 text-muted">Yükleniyor…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+
+<script>
+(function () {
+    'use strict';
+
+    function getCsrf() {
+        const m = document.cookie.match(/csrftoken=([^;]+)/);
+        if (m) return m[1];
+        const inp = document.querySelector('input[name=csrfmiddlewaretoken]');
+        return inp ? inp.value : '';
+    }
+    function jget(url) {
+        return fetch(url, {credentials: 'same-origin'})
+            .then(r => r.json().then(j => ({ok: r.ok, body: j})));
+    }
+    function jpost(url, dataObj) {
+        const fd = new FormData();
+        Object.entries(dataObj || {}).forEach(([k, v]) => {
+            if (v !== null && v !== undefined && v !== '') fd.append(k, v);
+        });
+        return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {'X-CSRFToken': getCsrf()},
+            body: fd,
+        }).then(r => r.json().then(j => ({ok: r.ok, body: j})));
+    }
+    function fmtHs(v) {
+        return Number(v || 0).toLocaleString('tr-TR', {
+            minimumFractionDigits: 3, maximumFractionDigits: 3,
+        });
+    }
+    function fmtTl(v) {
+        return Number(v || 0).toLocaleString('tr-TR', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2,
+        });
+    }
+    function pillFor(t) {
+        const m = {
+            'FX_GAIN': ['pill-fx', 'Kur Farkı'],
+            'FX_LOSS': ['pill-fx', 'Kur Karı'],
+            'DISCOUNT': ['pill-discount', 'İskonto'],
+            'WRITEOFF': ['pill-writeoff', 'Silme'],
+            'REVERSAL': ['pill-reversal', 'İPTAL'],
+            'CORRECTION': ['pill-writeoff', 'Düzeltme'],
+        };
+        const [cls, label] = m[t] || ['pill-writeoff', t];
+        return `<span class="pill ${cls}">${label}</span>`;
+    }
+    function escapeHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function loadPending() {
+        jget('/customers/cari/pending-approvals').then(({ok, body}) => {
+            if (!ok || !body.result) return;
+            const tbody = document.getElementById('pendingTbody');
+            if (!body.data.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-success">Onay bekleyen kayıt yok 🎉</td></tr>';
+                return;
+            }
+            tbody.innerHTML = body.data.map(r => {
+                const d = new Date(r.created_on);
+                return `
+                <tr class="pending-row">
+                    <td>${d.toLocaleString('tr-TR')}</td>
+                    <td>
+                        <a href="/customers/${r.customer_id}/cari/">
+                            ${escapeHtml(r.customer_name)}
+                        </a>
+                    </td>
+                    <td>${pillFor(r.transaction_type)}</td>
+                    <td class="text-end">${fmtHs(r.amount_hs)}</td>
+                    <td class="text-end">${fmtTl(r.amount_eur)}</td>
+                    <td>${escapeHtml(r.description)}</td>
+                    <td>${escapeHtml(r.created_by || '-')}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-light-success"
+                                onclick="approveEntry('${r.customer_id}','${r.id}')">
+                            <i class="fa-solid fa-check"></i> Onayla
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        });
+    }
+
+    function approveEntry(customerId, entryId) {
+        if (!confirm('Bu kaydı onaylıyor musunuz?')) return;
+        jpost(`/customers/${customerId}/cari/approve`, {entry_id: entryId})
+            .then(({ok, body}) => {
+                if (!ok || !body.result) {
+                    alert(body.error_msg || 'Onaylanamadı');
+                    return;
+                }
+                loadPending();
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPending);
+    window.loadPending = loadPending;
+    window.approveEntry = approveEntry;
+})();
+</script>
+
+{% endblock %}

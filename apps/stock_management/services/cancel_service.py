@@ -72,6 +72,9 @@ REVERSAL_REASON_MAP = {
     StockLedger.Reason.CUSTODY_OUT:       StockLedger.Reason.CUSTODY_IN,
     StockLedger.Reason.REPAIR_IN:         StockLedger.Reason.REPAIR_OUT,
     StockLedger.Reason.REPAIR_OUT:        StockLedger.Reason.REPAIR_IN,
+    # FAZ 49 — Ürün ile Tahsilat / Ödeme simetrisi
+    StockLedger.Reason.PAYMENT_IN:        StockLedger.Reason.PAYMENT_OUT,
+    StockLedger.Reason.PAYMENT_OUT:       StockLedger.Reason.PAYMENT_IN,
     # INITIAL, SCRAP_MELT icin default fallback: ADJ_MINUS / ADJ_PLUS
 }
 
@@ -257,8 +260,8 @@ def cancel_stock_entry(
                 ref_type=reversal_ref_type,
                 ref_id=str(ref_id),
                 unit_cost_hs=orig.unit_cost_hs,
-                unit_cost_tl=orig.unit_cost_tl,
-                hs_rate_tl=orig.hs_rate_tl,
+                unit_cost_eur=orig.unit_cost_eur,
+                hs_rate_eur=orig.hs_rate_eur,
                 user=user,
                 notes=compound_note,
             )
@@ -273,8 +276,8 @@ def cancel_stock_entry(
                 ref_type=reversal_ref_type,
                 ref_id=str(ref_id),
                 unit_cost_hs=orig.unit_cost_hs,
-                unit_cost_tl=orig.unit_cost_tl,
-                hs_rate_tl=orig.hs_rate_tl,
+                unit_cost_eur=orig.unit_cost_eur,
+                hs_rate_eur=orig.hs_rate_eur,
                 user=user,
                 notes=compound_note,
             )

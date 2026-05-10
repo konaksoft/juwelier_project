@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import F
 from django.db.models.functions import Greatest
+# invoice_process stub — invoices app Juwelier Plus'ta yok
 from apps.process.invoice_process import create_retail_bulk_invoice
 # --- UYGULAMA İÇİ MODELLER ---
 from apps.products.models import Products
@@ -20,7 +21,7 @@ from apps.gold_purchases.models import GoldPurchases
 from apps.scraps.models import Scraps
 from apps.definitions.categories.models import Categories
 from apps.settings.models import StoreConfiguration
-from apps.pavo.models import PavoTerminal, PavoLocalSale  # Pavo Loglama için
+# PavoTerminal, PavoLocalSale kaldırıldı — pavo app Juwelier Plus'ta yok
 
 # --- PROCESS VE PAVO YARDIMCILARI ---
 from apps.process.notifications import trigger_transaction_notifications, fmt_tl
@@ -54,12 +55,7 @@ from apps.bracelets.views import (
 from apps.stock_management.services.stock_service import StockService
 from apps.stock_management.models import StockSnapshot, StockLedger
 from apps.stock_management.services.price_service import PriceService
-# Pavo Process'ten gelen yardımcılar
-from apps.process.pavo_process import (
-    _pavo_extract_data,
-    _pavo_extract_status_id,
-    _pavo_pick_inquiry_fields
-)
+# pavo_process kaldırıldı — pavo app Juwelier Plus'ta yok
 from apps.banking.services import (
     PaymentBankAccountValidator,
     POSCommissionService,
@@ -68,6 +64,26 @@ from apps.banking.services import (
     InsufficientFXBalanceError,
     get_currency_code_from_product,
 )
+
+# --- FAZ 33 + 33.2: Cari ledger SSOT — SATIŞ kuru ile borç yazımı ---
+# Eski kod (FAZ 33 öncesi): doğrudan `CustomerLedger.objects.create()` ile
+# Products.sale_price_eur kullanıyordu — kuru doğru ama audit kontrolleri
+# (created_by, ip_address, user_agent) eksikti.
+#
+# FAZ 33 (deneme): get_current_has_rate() (ALIŞ kuru) + LedgerService
+# sarmalaması — audit doğru ama kur YANLIŞ. Müşteriye satış SATIŞ kuruyla
+# yapılırken (Process.price_hs = total_tl / sale_rate), cari ledger ALIŞ
+# kuruyla yazılınca fiş ↔ cari hesap arası spread farkı oluşuyordu
+# (kullanıcı saha geri bildirimi: cari 14.048 HS, fiş 13.993 HS).
+#
+# FAZ 33.2 (doğru çözüm): Müşteriye satış neyse, cari borç da o olsun.
+# `Products.sale_price_eur` (SATIŞ kuru) tek SSOT olarak kullanılır;
+# `Process.price_hs` ile aynı kuru paylaşan, audit alanları dolu, doğrudan
+# CustomerLedger satırı yazılır. LedgerService.write_debt bypass edilir
+# çünkü o servis hardcoded ALIŞ kuru çağırıyor (write_debt yalnız
+# tahsilat sonrası overpayment / iade gibi ALIŞ kuru istenen senaryolar
+# için uygundur).
+from apps.customers.services.ledger import LedgerService
 
 log = logging.getLogger(__name__)
 
@@ -132,8 +148,9 @@ def _normalize_net_total_to_tl(processes, fallback_abs):
         Decimal: TL cinsinden net_total_abs (her zaman pozitif)
     """
     from decimal import Decimal as _D
-
-    FIAT_FOREIGN = {'USD', 'EUR', 'GBP', 'CAD', 'QAR'}
+    # Faz 13: SSOT — desteklenen tüm yabancı para birimleri (TRY hariç).
+    from apps.banking.services import SUPPORTED_FX_CURRENCIES as _SSOT_FX
+    FIAT_FOREIGN = {c for c in _SSOT_FX if c != 'TRY'}
 
     try:
         total_tl = _D('0.00')
@@ -309,7 +326,9 @@ def _handle_pavo_transaction(raw_pavo, total_amount, pos_reference):
     pavo_data = _pavo_extract_data(pavo_obj)
     pavo_status_id = _pavo_extract_status_id(pavo_data)
 
-    if pavo_status_id != 4:
+    # FAZ 30 — StatusId artık settings.PAVO_SUCCESS_STATUS_IDS'e bakıyor.
+    # Frontend de aynı set'e bakar; backend/frontend uyumsuzluğu giderildi.
+    if not _pavo_is_status_successful(pavo_status_id):
         raise ValidationError('POS ödemesi cihazda tamamlanmadı veya iptal edildi.')
 
     try:
@@ -411,21 +430,21 @@ def add_scrap_to_process(request):
     # FAZ 3: Has Altın fiyatını PriceService'den al (Fallback: Products tablosu)
     try:
         hs_data = PriceService.get_price('GOLD_24K')
-        hs_buy_price_tl = _dec(hs_data.get('buy_tl', Decimal('0')))
+        hs_buy_price_eur = _dec(hs_data.get('buy_tl', Decimal('0')))
     except Exception:
-        hs_buy_price_tl = Decimal('0')
+        hs_buy_price_eur = Decimal('0')
 
     # Formdan gelen manuel TL fiyatlarını ÖNCE oku —
     # böylece has kuru bulunamazsa bile kullanıcının elle girdiği fiyat çalışır.
     manual_unit_price = _dec(request.POST.get('unit_price', 0))
     manual_total_amount = _dec(request.POST.get('total_amount', 0))
 
-    if hs_buy_price_tl <= 0:
-        hs_product = Products.objects.filter(name__icontains='Has Altın').only('buy_price_tl', 'sale_price_tl').first()
+    if hs_buy_price_eur <= 0:
+        hs_product = Products.objects.filter(name__icontains='Has Altın').only('buy_price_eur', 'sale_price_eur').first()
         if hs_product:
-            hs_buy_price_tl = _dec(getattr(hs_product, 'buy_price_tl', 0))
+            hs_buy_price_eur = _dec(getattr(hs_product, 'buy_price_eur', 0))
         # Has kuru hâlâ 0 ise ve kullanıcı manuel fiyat girmemişse reddet
-        if hs_buy_price_tl <= 0 and manual_unit_price <= 0:
+        if hs_buy_price_eur <= 0 and manual_unit_price <= 0:
             return JsonResponse(
                 {'error': True, 'error_msg': 'Has Altın alış fiyatı 0 olamaz. Lütfen Birim Fiyat (TL) alanını manuel girin.'},
                 status=400
@@ -436,14 +455,14 @@ def add_scrap_to_process(request):
     calculated_hs = (gram * product_mileage) / Decimal('1000')
 
     if manual_unit_price > 0:
-        unit_buy_price_tl = manual_unit_price
+        unit_buy_price_eur = manual_unit_price
     else:
-        unit_buy_price_tl = unit_buy_price_hs * hs_buy_price_tl
+        unit_buy_price_eur = unit_buy_price_hs * hs_buy_price_eur
 
     if manual_total_amount > 0:
-        calculated_amount_tl = manual_total_amount
+        calculated_amount_eur = manual_total_amount
     else:
-        calculated_amount_tl = calculated_hs * hs_buy_price_tl
+        calculated_amount_eur = calculated_hs * hs_buy_price_eur
 
     # ----------------------------------------------------------------------
     # R-FAZ 1 — HAVUZ EŞLEŞTİRME (Onarım Fazı 9 ile aynı temel)
@@ -496,9 +515,20 @@ def add_scrap_to_process(request):
         # kalıntısı (StockSnapshot.stock_gram > 0) WAC milyemini bozar.
         # Önce kalıntıyı sıfırla, sonra normal giriş işle.
         scrap_record = Scraps.objects.filter(store=store, product=product).first()
+        # UAT REGRESYON FIX (2026-04-29): `Products.gram` legacy alan olarak
+        # negatif kalabiliyor (örn. eski iptal akışlarından kalan stale veri).
+        # Aktif + silinmemiş havuzlar `was_revival=False` üretiyor ve gram
+        # sıfırlanmıyordu; complete_process'te `prod.save()` çağrısı
+        # ValidationError fırlatıyordu ("Gram negatif olamaz."). Stale negatif
+        # gram tespit edilirse de revival akışına sok → gram=0'a sıfırla.
+        _stale_negative_gram = (
+            getattr(product, 'gram', None) is not None
+            and Decimal(str(product.gram)) < Decimal('0')
+        )
         was_revival = (
             (scrap_record and (scrap_record.is_deleted or scrap_record.is_active is False))
             or product.is_active is False
+            or _stale_negative_gram
         )
 
         if scrap_record:
@@ -579,7 +609,7 @@ def add_scrap_to_process(request):
             is_scrap=True,
             is_active=True,
             is_completed=False,
-            buy_price_tl=unit_buy_price_tl,
+            buy_price_eur=unit_buy_price_eur,
             material_type=scrap_material_type,
         )
         Scraps.objects.create(store=store, product=product, created_by=request.user)
@@ -602,8 +632,8 @@ def add_scrap_to_process(request):
         gram=gram,
         process_mileage=str(product_mileage),
         price_hs=calculated_hs,
-        amount=calculated_amount_tl,  # Kuyumcunun belirlediği toplam TL
-        unit_price=unit_buy_price_tl,  # Kuyumcunun belirlediği birim TL
+        amount=calculated_amount_eur,  # Kuyumcunun belirlediği toplam TL
+        unit_price=unit_buy_price_eur,  # Kuyumcunun belirlediği birim TL
         is_status='IN_PROGRESS',
         waiting_stock=False,
     )
@@ -737,7 +767,7 @@ def add_bracelet_to_retail_process(request):
                     'stock_gram': Decimal('0.000'),
                     'stock_pieces': 0,
                     'weighted_avg_cost_hs': Decimal('0.000'),
-                    'weighted_avg_cost_tl': Decimal('0.00'),
+                    'weighted_avg_cost_eur': Decimal('0.00'),
                 }
             )
 
@@ -766,7 +796,7 @@ def add_bracelet_to_retail_process(request):
                     'stock_gram': Decimal('0.000'),
                     'stock_pieces': 0,
                     'weighted_avg_cost_hs': Decimal('0.000'),
-                    'weighted_avg_cost_tl': Decimal('0.00'),
+                    'weighted_avg_cost_eur': Decimal('0.00'),
                 }
             )
 
@@ -992,12 +1022,12 @@ def add_process(request):
 
     # Fallback: PriceService boş dönerse Products tablosundan oku
     if hs_sale <= 0:
-        hs_product = Products.objects.filter(name__icontains='Has Altın').only('buy_price_tl', 'sale_price_tl').first()
-        if not hs_product or not _dec(getattr(hs_product, 'sale_price_tl', 0)):
+        hs_product = Products.objects.filter(name__icontains='Has Altın').only('buy_price_eur', 'sale_price_eur').first()
+        if not hs_product or not _dec(getattr(hs_product, 'sale_price_eur', 0)):
             return JsonResponse({'error': True, 'error_msg': 'Has Altın ürünü ya da satış fiyatı tanımlı değil.'},
                                 status=500)
-        hs_sale = _dec(hs_product.sale_price_tl)
-        hs_buy = _dec(getattr(hs_product, 'buy_price_tl', None) or hs_sale)
+        hs_sale = _dec(hs_product.sale_price_eur)
+        hs_buy = _dec(getattr(hs_product, 'buy_price_eur', None) or hs_sale)
 
     prod_karat = None
     try:
@@ -1014,8 +1044,8 @@ def add_process(request):
     if customer:
         record.customer = customer
 
-    record.hs_rate_sale_tl = hs_sale
-    record.hs_rate_buy_tl = hs_buy
+    record.hs_rate_sale_eur = hs_sale
+    record.hs_rate_buy_eur = hs_buy
     if prod_karat:
         record.karat = prod_karat
 
@@ -1071,22 +1101,21 @@ def add_process(request):
             price_hs = sale_price_hs * gram
 
         if product.category.name == 'Döviz':
-            # Döviz için özel Has Altın dönüşümü
-            has_gold_product = Products.objects.filter(name__icontains="Has Altın").first()
-            if not has_gold_product:
-                return JsonResponse({'error': True, 'error_msg': 'Has Altın ürünü bulunamadı.'}, status=500)
-
+            # FAZ 54: Döviz için Has Altın dönüşümü — PriceService SSOT
+            # Yukarıda (1019-1035) hesaplanan hs_sale / hs_buy kullanılır;
+            # Products tablosunu ikinci kez sorgulamak SSOT ihlalidir.
             qty_fx = Decimal(piece) if piece else gram
             if operation_type == 'SALE':
-                has_gold_price = _dec(has_gold_product.sale_price_tl)
-                if has_gold_price <= 0:
-                    return JsonResponse({'error': True, 'error_msg': 'Has Altın satış fiyatı tanımlı değil.'}, status=500)
-                price_hs = (_dec(product.buy_price_tl) * qty_fx) / has_gold_price
+                if hs_sale <= 0:
+                    return JsonResponse({'error': True, 'error_msg': 'Has Altın satış kuru tanımlı değil.'}, status=500)
+                price_hs = (_dec(product.buy_price_eur) * qty_fx) / hs_sale
             elif operation_type in ('PURCHASE', 'RETURN'):
-                has_gold_price = _dec(has_gold_product.buy_price_tl)
-                if has_gold_price <= 0:
-                    return JsonResponse({'error': True, 'error_msg': 'Has Altın alış fiyatı tanımlı değil.'}, status=500)
-                price_hs = (_dec(product.sale_price_tl) * qty_fx) / has_gold_price
+                # PriceService sell-only konfigürasyonda hs_buy=0 gelebilir;
+                # son çare olarak hs_sale'e düş (yukarıda > 0 garantili).
+                effective_hs_buy = hs_buy if hs_buy > 0 else hs_sale
+                if effective_hs_buy <= 0:
+                    return JsonResponse({'error': True, 'error_msg': 'Has Altın alış kuru tanımlı değil.'}, status=500)
+                price_hs = (_dec(product.sale_price_eur) * qty_fx) / effective_hs_buy
 
         qty = Decimal(piece) if piece else gram
         goods_amount = (qty * unit_price) if unit_price else Decimal('0')
@@ -1278,8 +1307,8 @@ def complete_process(request):
                 # POS tutarı esas alınıyor mu? Genelde sepet tutarı değişmez ama burada paid_total için kullanacağız.
 
             # R-FAZ 3 NOTU: Kâr hesaplama bloku stok güncelleme döngüsünden
-            # SONRAYA taşındı. Maliyet artık `StockSnapshot.weighted_avg_cost_tl`
-            # üzerinden okunur (Products.buy_price_tl yerine) → güncel WAC ile
+            # SONRAYA taşındı. Maliyet artık `StockSnapshot.weighted_avg_cost_eur`
+            # üzerinden okunur (Products.buy_price_eur yerine) → güncel WAC ile
             # tutarlı.
 
             # 6. STOK VE EMANET
@@ -1296,6 +1325,18 @@ def complete_process(request):
                     # FAZ 3: WAC hesaplaması artık StockService.record_entry() tarafından
                     # otomatik yapılıyor. Burada sadece Products tablosundaki
                     # global fiyat referanslarını güncelliyoruz (geriye dönük uyumluluk).
+                    #
+                    # UAT REGRESYON FIX (2026-04-29): Eski kod `prod.save(update_fields=...)`
+                    # ile yazıyordu. Products.save() override'ı her durumda full_clean()
+                    # tetikliyor → clean() Python instance'ın TÜM alanlarını (özellikle
+                    # `gram`'ı) doğruluyor. Eğer `Products.gram` veritabanında negatif
+                    # kalmışsa (legacy alan; "negatif kalsa bile patlamaz" prensibi
+                    # uygulanan diğer akışların aksine) ValidationError fırlatıyor:
+                    #     {'gram': "Gram negatif olamaz."}
+                    # Çözüm: `Products.objects.filter(id=...).update(...)` ile atomic
+                    # SQL UPDATE — instance dirty olmaz, full_clean() tetiklenmez.
+                    # `update_scrap_pool_weighted_mileage` (scraps/views.py ONARIM
+                    # FAZI 5 / ADIM A) ile tutarlı pattern.
                     is_gram = getattr(prod, 'is_gram_bullion', False)
                     new_qty = _dec(p.gram) if is_gram else _dec(p.piece)
 
@@ -1304,9 +1345,16 @@ def complete_process(request):
                         _snap = StockSnapshot.objects.filter(product=prod, store=store).first()
                         if _snap:
                             # Products tablosundaki referans fiyatları WAC ile güncelle
-                            prod.buy_price_hs = _snap.weighted_avg_cost_hs.quantize(Decimal('0.001'))
-                            prod.buy_price_tl = _snap.weighted_avg_cost_tl.quantize(Decimal('0.01'))
-                            prod.save(update_fields=['buy_price_tl', 'buy_price_hs'])
+                            _new_buy_hs = _snap.weighted_avg_cost_hs.quantize(Decimal('0.001'))
+                            _new_buy_tl = _snap.weighted_avg_cost_eur.quantize(Decimal('0.01'))
+                            Products.objects.filter(id=prod.id).update(
+                                buy_price_hs=_new_buy_hs,
+                                buy_price_eur=_new_buy_tl,
+                            )
+                            # Python instance senkronu (loop'un sonraki adımlarında
+                            # tutarlı okuma için)
+                            prod.buy_price_hs = _new_buy_hs
+                            prod.buy_price_eur = _new_buy_tl
 
                 if (custody_flag and not procs.filter(process_mileage='CUSTODY').exists()) or (
                         p.process_mileage == 'CUSTODY'):
@@ -1323,8 +1371,8 @@ def complete_process(request):
                         _snap_for_custody = StockSnapshot.objects.filter(product=prod, store=store).first()
                         custody_wac_hs = _snap_for_custody.weighted_avg_cost_hs if _snap_for_custody else (
                                     prod.buy_price_hs or Decimal('0'))
-                        custody_wac_tl = _snap_for_custody.weighted_avg_cost_tl if _snap_for_custody else (
-                                    prod.buy_price_tl or Decimal('0'))
+                        custody_wac_tl = _snap_for_custody.weighted_avg_cost_eur if _snap_for_custody else (
+                                    prod.buy_price_eur or Decimal('0'))
 
                         StockService.record_entry(
                             product=prod,
@@ -1335,7 +1383,7 @@ def complete_process(request):
                             ref_type='process_custody',
                             ref_id=str(p.id),
                             unit_cost_hs=custody_wac_hs,  # <--- Artık WAC değerini alıyor
-                            unit_cost_tl=custody_wac_tl,  # <--- Artık WAC değerini alıyor
+                            unit_cost_eur=custody_wac_tl,  # <--- Artık WAC değerini alıyor
                             user=request.user,
                             notes="Satış yapıldı ancak müşteri emanete bıraktı."
                         )
@@ -1390,23 +1438,46 @@ def complete_process(request):
                                         "(process_id=%s): %s", p.id, _hp_err,
                                     )
                             # 2) StockService.record_entry — process_id=p.id ile per-line ref.
+                            # FAZ 15 / WAC FIX: unit_cost_hs = milyem / 1000.
+                            # Önceki sürüm unit_cost_hs geçirmiyordu → StockLedger.unit_cost_hs=0
+                            # yazılıyordu. Kısmi iptalde recalculate_scrap_pool_mileage_after_cancel
+                            # weighted_sum_hs=0 üretip Products.product_mileage'ı sıfırlıyordu.
+                            _hp_unit_cost_hs = (
+                                (_hp_mileage / Decimal('1000')).quantize(Decimal('0.001'))
+                                if _hp_mileage > 0 else Decimal('0.000')
+                            )
                             update_product_stock(prod, mv, p.piece, p.gram, p.waiting_stock,
                                                  request.user, "Perakende", process_no,
+                                                 unit_cost_hs=_hp_unit_cost_hs,
                                                  process_id=p.id)
-                            # 3) R-FAZ 6: legacy Products.gram artırma + buy_price_tl yenileme.
+                            # 3) R-FAZ 6: legacy Products.gram artırma + buy_price_eur yenileme.
                             _hp_unit_buy_tl = _dec(getattr(p, 'unit_price', 0) or 0)
                             if _hp_unit_buy_tl > 0:
                                 Products.objects.filter(id=prod.id).update(
                                     gram=Greatest(F('gram') + _hp_gram, Decimal('0')),
-                                    buy_price_tl=_hp_unit_buy_tl,
+                                    buy_price_eur=_hp_unit_buy_tl,
                                 )
                             else:
                                 Products.objects.filter(id=prod.id).update(
                                     gram=Greatest(F('gram') + _hp_gram, Decimal('0')),
                                 )
                     else:
+                        # Genel dal — bilezik (is_gram_bullion) ve diğer non-scrap, non-unique ürünler.
+                        # FAZ 15 / WAC FIX: ENTRY ise process_mileage'dan unit_cost_hs türet.
+                        # Bilezik havuzunda kısmi iptalde milyem=0 hatasını önler.
+                        _gen_unit_cost_hs = Decimal('0.000')
+                        if mv == 'ENTRY':
+                            try:
+                                _gen_mileage = Decimal(int(_dec(p.process_mileage or 0)))
+                            except (InvalidOperation, ValueError):
+                                _gen_mileage = Decimal('0')
+                            if _gen_mileage > 0:
+                                _gen_unit_cost_hs = (
+                                    _gen_mileage / Decimal('1000')
+                                ).quantize(Decimal('0.001'))
                         update_product_stock(prod, mv, p.piece, p.gram, p.waiting_stock,
                                              request.user, "Perakende", process_no,
+                                             unit_cost_hs=_gen_unit_cost_hs,
                                              process_id=p.id)
 
             # ─────────────────────────────────────────────────
@@ -1443,8 +1514,8 @@ def complete_process(request):
             # ─────────────────────────────────────────────────
             # R-FAZ 3 — KAR HESAPLAMA (Stok güncellemeden SONRA, WAC üzerinden)
             # ─────────────────────────────────────────────────
-            # Maliyet bazı `StockSnapshot.weighted_avg_cost_tl` (per gram veya
-            # per piece). Önceki sürüm `Products.buy_price_tl` okuyordu — bu
+            # Maliyet bazı `StockSnapshot.weighted_avg_cost_eur` (per gram veya
+            # per piece). Önceki sürüm `Products.buy_price_eur` okuyordu — bu
             # son giriş fiyatıdır, ağırlıklı ortalama değildir; ardışık
             # alımlardan sonra kâr çarpıtılıyordu.
             for p in procs:
@@ -1455,11 +1526,11 @@ def complete_process(request):
                     _profit_snap = StockSnapshot.objects.filter(
                         product=p.product, store=store,
                     ).first()
-                    if _profit_snap and _profit_snap.weighted_avg_cost_tl:
-                        purchase_amount_per_unit = _dec(_profit_snap.weighted_avg_cost_tl)
+                    if _profit_snap and _profit_snap.weighted_avg_cost_eur:
+                        purchase_amount_per_unit = _dec(_profit_snap.weighted_avg_cost_eur)
                     else:
-                        # Snapshot yoksa fallback: Products.buy_price_tl
-                        purchase_amount_per_unit = _dec(getattr(p.product, 'buy_price_tl', 0))
+                        # Snapshot yoksa fallback: Products.buy_price_eur
+                        purchase_amount_per_unit = _dec(getattr(p.product, 'buy_price_eur', 0))
 
                     qty = _dec(p.gram) if getattr(p.product, 'is_gram_bullion', False) else _dec(p.piece)
 
@@ -1514,7 +1585,7 @@ def complete_process(request):
                         product=_cp_prod,
                         qty=_cp_qty,
                         unit_price=_cp_rate,
-                        total_amount_tl=_cp_tl,
+                        total_amount_eur=_cp_tl,
                         user=request.user,
                         needs_approval=_needs_approval_fx,
                     )
@@ -1526,7 +1597,7 @@ def complete_process(request):
                         product=_cp_prod,
                         qty=_cp_qty,
                         unit_price=_cp_rate,
-                        total_amount_tl=_cp_tl,
+                        total_amount_eur=_cp_tl,
                         operation_type='PURCHASE',
                         user=request.user,
                         needs_approval=_needs_approval_fx,
@@ -1559,12 +1630,11 @@ def complete_process(request):
                 if _has_physical_purchase:
                     # TAKAS: Döviz kasasından TEK YÖNLÜ ÇIKIŞ
                     # (karşılığında TL değil, fiziksel ürün alındı)
-                    _fx_cur = None
-                    _pn = (_cs_prod.name or '').upper()
-                    for _c in ['USD', 'EUR', 'GBP', 'CAD', 'QAR']:
-                        if _pn.startswith(_c):
-                            _fx_cur = _c
-                            break
+                    # Faz 13: SSOT — get_currency_code_from_product tüm desteklenen
+                    # para birimlerini kapsar (USD/EUR/GBP/CAD/QAR/SAR/CHF/AUD).
+                    # Eskiden bu noktada hardcoded ['USD','EUR','GBP','CAD','QAR']
+                    # listesi vardı; SAR/CHF/AUD takas çıkışı sessizce atlanıyordu.
+                    _fx_cur = get_currency_code_from_product(_cs_prod)
                     if _fx_cur:
                         _fx_acct, _ = _resolve_or_create_cash_account(store, _fx_cur)
                         if _fx_acct:
@@ -1578,6 +1648,7 @@ def complete_process(request):
                                 bank_account=_fx_acct,
                                 reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
                                 is_approved=not _needs_approval_fx,
+                                reference=f'[{_fx_cur}] Takas — Döviz Çıkışı',
                             )
                 else:
                     # SAF DÖVİZ BOZMA: Çift taraflı
@@ -1586,7 +1657,7 @@ def complete_process(request):
                         product=_cs_prod,
                         qty=_cs_qty,
                         unit_price=_cs_rate,
-                        total_amount_tl=_cs_tl,
+                        total_amount_eur=_cs_tl,
                         operation_type='SALE',
                         user=request.user,
                         needs_approval=_needs_approval_fx,
@@ -1764,50 +1835,139 @@ def complete_process(request):
                 _paid_net_of_commission = paid_total - _total_commission_retail
                 balance_diff = abs_total - _paid_net_of_commission
                 if abs(balance_diff) > Decimal('0.01'):
-                    hs_prod = Products.objects.filter(name__icontains='Has Altın').first()
-                    sale_rate = _dec(getattr(hs_prod, 'sale_price_tl', 1)) or Decimal('1')
-                    buy_rate = _dec(getattr(hs_prod, 'buy_price_tl', sale_rate)) or Decimal('1')
-
-                    new_debt_hs = Decimal('0');
+                    # ──────────────────────────────────────────────────────
+                    # FAZ 33.2 — SATIŞ KURU İLE BORÇ YAZIMI (2026-05-01)
+                    # ──────────────────────────────────────────────────────
+                    # FAZ 33 (deneme) borç yazımını `get_current_has_rate()`
+                    # (ALIŞ kuru) + LedgerService.write_debt sarmalamasıyla
+                    # yapıyordu. Saha geri bildirimi: 95.000 TL satışta
+                    # cari ekran 14.048 HS, fiş 13.993 HS gösteriyordu —
+                    # spread farkı kullanıcıyı yanıltıyordu.
+                    #
+                    # Doğru mimari: Müşteriye satış SATIŞ kuruyla yapılırsa
+                    # (Process.price_hs = total_tl / sale_rate), cari borç
+                    # da AYNI kurla yazılmalı. Böylece:
+                    #   • Fiş HS  = Cari borç HS  = 13.993  (tek değer)
+                    #   • amount_eur = balance_diff = 95.000 (TL korunur)
+                    #   • exchange_rate_eur = sale_rate (ledger kendi
+                    #     kurunu saklar, tahsilatta görüntü için kullanılır)
+                    #
+                    # LedgerService.write_debt iç olarak get_current_has_rate
+                    # (ALIŞ) hardcoded çağırdığı için bypass edilir;
+                    # CustomerLedger.objects.create direct kullanılır.
+                    # Audit alanları (created_by, ip_address, user_agent)
+                    # request.META'dan toplanır → manipülasyon koruması
+                    # ve denetim izi LedgerService kullanımıyla aynı.
+                    # ──────────────────────────────────────────────────────
+                    new_debt_hs = Decimal('0')
                     new_credit_hs = Decimal('0')
 
-                    if not is_output:  # SATIŞ
-                        if balance_diff > 0:
-                            new_debt_hs = _dec(balance_diff / sale_rate, '0.001')
-                        elif balance_diff < 0:
-                            new_credit_hs = _dec(abs(balance_diff) / buy_rate, '0.001')
-                    else:  # ALIŞ
-                        if balance_diff > 0:
-                            new_credit_hs = _dec(balance_diff / buy_rate, '0.001')
-                        elif balance_diff < 0:
-                            new_debt_hs = _dec(abs(balance_diff) / sale_rate, '0.001')
+                    # FAZ 33.2: SATIŞ kurunu Products tablosundan oku.
+                    # PriceService önce denenir (Redis + StorePriceCache);
+                    # boş dönerse Products('Has Altın') kaydı fallback
+                    # olarak kullanılır. Bu sıralama add_to_cart_retail
+                    # akışıyla simetriktir → cart-add ile complete-process
+                    # arası kur tutarlılığı korunur.
+                    sale_rate = Decimal('0')
+                    try:
+                        hs_data = PriceService.get_price('GOLD_24K')
+                        if hs_data:
+                            _sell_tl = hs_data.get('sell_tl') or 0
+                            if _sell_tl and Decimal(_sell_tl) > 0:
+                                sale_rate = Decimal(_sell_tl)
+                    except Exception:
+                        sale_rate = Decimal('0')
+                    if sale_rate <= 0:
+                        _hs_prod = (
+                            Products.objects
+                            .filter(name__icontains='Has Altın')
+                            .only('sale_price_eur')
+                            .first()
+                        )
+                        if _hs_prod:
+                            sale_rate = _dec(getattr(_hs_prod, 'sale_price_eur', 0), '0.01')
 
-                    # R-Faz 4: Statik alan mutasyonu (payable_hs/receivable_hs) yerine
-                    # audit-trail'li CustomerLedger satırı yazılır. Netleştirme örtük olarak
-                    # SUM(DEBT) - SUM(CREDIT) ile hesaplanır; iptal yolunda is_active=False
-                    # ile sterilize edilir.
-                    _grp_process_no = (procs[0].process_no if procs else '') or ''
-                    _direction_label = 'PURCHASE' if is_output else 'SALE'
-                    if new_debt_hs > 0:
-                        CustomerLedger.objects.create(
-                            customer=customer,
-                            store=store,
-                            process_no=_grp_process_no,
-                            transaction_type='DEBT',
-                            amount_hs=new_debt_hs,
-                            exchange_rate_tl=sale_rate,
-                            description=f"Perakende {_direction_label} ödeme farkı (müşteri borçlandı) - {_grp_process_no}",
+                    if sale_rate <= 0:
+                        # Kur okunamadı; netleştirme kaydı atlanır
+                        # (eski FAZ 33 davranışıyla aynı fail-safe).
+                        log.error(
+                            f"complete_process: SATIŞ kuru okunamadı, "
+                            f"netleştirme kaydı atlandı. process_no="
+                            f"{procs[0].process_no if procs else '?'}"
                         )
-                    if new_credit_hs > 0:
-                        CustomerLedger.objects.create(
-                            customer=customer,
-                            store=store,
-                            process_no=_grp_process_no,
-                            transaction_type='CREDIT',
-                            amount_hs=new_credit_hs,
-                            exchange_rate_tl=buy_rate,
-                            description=f"Perakende {_direction_label} ödeme farkı (mağaza borçlandı) - {_grp_process_no}",
+                    else:
+                        if not is_output:  # SATIŞ
+                            if balance_diff > 0:
+                                new_debt_hs = _dec(balance_diff / sale_rate, '0.001')
+                            elif balance_diff < 0:
+                                new_credit_hs = _dec(abs(balance_diff) / sale_rate, '0.001')
+                        else:  # ALIŞ
+                            if balance_diff > 0:
+                                new_credit_hs = _dec(balance_diff / sale_rate, '0.001')
+                            elif balance_diff < 0:
+                                new_debt_hs = _dec(abs(balance_diff) / sale_rate, '0.001')
+
+                        _grp_process_no = (procs[0].process_no if procs else '') or ''
+                        _direction_label = 'PURCHASE' if is_output else 'SALE'
+
+                        # Audit context — manipülasyon koruması için
+                        # CustomerLedger.created_by/ip_address/user_agent
+                        # alanları request.META'dan toplanır.
+                        _ip_addr = (
+                            request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+                            or request.META.get('REMOTE_ADDR') or None
                         )
+                        _user_agent = (request.META.get('HTTP_USER_AGENT') or '')[:255]
+
+                        if new_debt_hs > 0:
+                            # FAZ 38 — TL "round-trip" yuvarlama hatası giderildi.
+                            # Eski: _debt_eur = new_debt_hs * sale_rate (HS quantize
+                            # sonrası ters çarpım → satıştaki kesin TL'yi
+                            # ezerek küsurat sapması yaratıyordu, ör. 11.383
+                            # TL → HS quantize → 11.385,49 TL).
+                            # Yeni: balance_diff (gerçek TL) doğrudan saklanır.
+                            _debt_eur = abs(balance_diff).quantize(Decimal('0.01'))
+                            CustomerLedger.objects.create(
+                                customer=customer,
+                                store=store,
+                                transaction_type=CustomerLedger.DEBT,
+                                amount_hs=new_debt_hs,
+                                amount_eur=_debt_eur,
+                                exchange_rate_eur=sale_rate,
+                                currency=CustomerLedger.CURRENCY_HS,
+                                process_no=_grp_process_no,
+                                description=(
+                                    f"Perakende {_direction_label} ödeme farkı "
+                                    f"(müşteri borçlandı) - {_grp_process_no}"
+                                ),
+                                requires_approval=False,
+                                is_approved=True,
+                                created_by=request.user,
+                                ip_address=_ip_addr,
+                                user_agent=_user_agent,
+                            )
+                        if new_credit_hs > 0:
+                            # FAZ 38 — Aynı round-trip yuvarlama düzeltmesi.
+                            _credit_eur = abs(balance_diff).quantize(Decimal('0.01'))
+                            CustomerLedger.objects.create(
+                                customer=customer,
+                                store=store,
+                                transaction_type=CustomerLedger.CREDIT,
+                                amount_hs=new_credit_hs,
+                                amount_eur=_credit_eur,
+                                exchange_rate_eur=sale_rate,
+                                currency=CustomerLedger.CURRENCY_HS,
+                                process_no=_grp_process_no,
+                                description=(
+                                    f"Perakende {_direction_label} ödeme farkı "
+                                    f"(mağaza borçlandı) - {_grp_process_no}"
+                                ),
+                                requires_approval=False,
+                                is_approved=True,
+                                created_by=request.user,
+                                ip_address=_ip_addr,
+                                user_agent=_user_agent,
+                            )
 
             # --- 10. FATURA OLUŞTURMA (YENİ ENTEGRASYON) ---
             generated_invoice = None
@@ -1852,7 +2012,7 @@ def complete_process(request):
             if customer:
                 try:
                     mail_items = [{"product_name": (p.product.name if p.product else "-"),
-                                   "amount_tl": fmt_tl(abs(_dec(p.amount)))} for p in procs]
+                                   "amount_eur": fmt_tl(abs(_dec(p.amount)))} for p in procs]
                     payments_ctx = {
                         "cash": float(cash_amt), "transfer": float(transfer_amt), "credit_card": float(card_amt),
                         "paid_total_tl": float(paid_total), "has_any": bool(paid_total > 0),

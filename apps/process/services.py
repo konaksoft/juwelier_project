@@ -1,4 +1,3 @@
-from apps.invoices.models import *
 from apps.stores.models import *
 
 
@@ -25,13 +24,13 @@ def calculate_process_profit(process: Process, current_buy_price: Decimal = None
 
     # 2. Maliyet Hesabı (Cost)
     # Eğer parametre olarak alış fiyatı gelmişse onu kullan (ekrandaki anlık fiyat),
-    # gelmemişse ürün kartındaki güncel alış fiyatını (buy_price_tl) çek.
+    # gelmemişse ürün kartındaki güncel alış fiyatını (buy_price_eur) çek.
     cost_unit_price = Decimal('0.00')
 
     if current_buy_price is not None:
         cost_unit_price = current_buy_price
     elif process.product:
-        cost_unit_price = process.product.buy_price_tl or Decimal('0.00')
+        cost_unit_price = process.product.buy_price_eur or Decimal('0.00')
 
     total_cost = (qty * cost_unit_price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 

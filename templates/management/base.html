@@ -38,6 +38,7 @@
           type="text/css"/>
     <link href="{% static 'management/plugins/global/plugins.bundle.css' %}" rel="stylesheet" type="text/css"/>
     <link href="{% static 'management/css/style.bundle.css' %}" rel="stylesheet" type="text/css"/>
+    <link href="{% static 'management/css/kp-custom.css' %}" rel="stylesheet" type="text/css"/>
     <style>
         .notification-pulse {
             animation: pulse-animation 2s infinite;
@@ -649,13 +650,13 @@
                 <div class="app-navbar flex-grow-1 justify-content-end" id="kt_app_header_navbar">
                     <div class="app-navbar-item d-flex align-items-stretch flex-lg-grow-1">
                     </div>
-                    {#                    <div class="app-navbar-item d-none d-lg-flex me-2">#}
-                    {#                        <a href="{% url 'invoices:dashboard' %}" target="_blank" rel="noopener"#}
-                    {#                           class="btn btn-light-primary btn-sm d-flex align-items-center gap-2">#}
-                    {#                            <i class="fa-solid fa-file-invoice"></i>#}
-                    {#                            <span class="d-none d-md-inline">Fatura Portalı</span>#}
-                    {#                        </a>#}
-                    {#                    </div>#}
+                    <!--                    <div class="app-navbar-item d-none d-lg-flex me-2">-->
+                    <!--                        <a href="{% url 'invoices:dashboard' %}" target="_blank" rel="noopener"-->
+                    <!--                           class="btn btn-light-primary btn-sm d-flex align-items-center gap-2">-->
+                    <!--                            <i class="fa-solid fa-file-invoice"></i>-->
+                    <!--                            <span class="d-none d-md-inline">Fatura Portalı</span>-->
+                    <!--                        </a>-->
+                    <!--                    </div>-->
                     <div class="app-navbar-item d-flex me-2 kp-live-btn-mobile">
                         <a href="{% url 'live_board:index' %}" target="_blank"
                            class="btn btn-light-warning btn-sm d-flex align-items-center gap-2">
@@ -812,15 +813,23 @@
                         <div id="kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false"
                              class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary px-3 mb-5">
 
-                            {# ========== 1. GRUP: SAYFALAR / İŞLEM EKRANLARI (Order 0-3) ========== #}
+                            <!-- ========== 1. GRUP: SAYFALAR / İŞLEM EKRANLARI (Order 0-3) ========== -->
                             {% if request.user|menu_allowed:'ABC1001D' or request.user|menu_allowed:'ABC1310D' or request.user|menu_allowed:'ABC1030D' or request.user|menu_allowed:'ABC1062D' %}
                                 <div class="menu-item pt-2.25 pb-px mt-4">
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">İşlem Ekranları</span>
                                 </div>
 
+                                <!-- Order 0 -->
+                                {% if request.user|menu_allowed:'ABC1001D' %}
+                                    <div class="menu-item">
+                                        <a href="{% url 'transactions-board:fast-index' %}" class="menu-link">
+                                            <span class="menu-icon"><i class="fa-solid fa-bolt fs-2"></i></span>
+                                            <span class="menu-title">Hızlı İşlem Ekranı</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
 
-
-                                {# Order 1 #}
+                                <!-- Order 1 -->
                                 {% if request.user|menu_allowed:'ABC1310D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'transactions-board:retail-index' %}" class="menu-link">
@@ -830,7 +839,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 2 #}
+                                <!-- Order 2 -->
                                 {% if request.user|menu_allowed:'ABC1030D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'transactions-board:wholesale-index' %}" class="menu-link">
@@ -840,7 +849,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 3 #}
+                                <!-- Order 3 -->
                                 {% if request.user|menu_allowed:'ABC1062D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'transactions-board:operations-index' %}" class="menu-link">
@@ -852,24 +861,24 @@
                                 {% endif %}
                             {% endif %}
 
-                            {# ========== 2. GRUP: ÜRÜN YÖNETİMİ (Order 4-9) ========== #}
+                            <!-- ========== 2. GRUP: ÜRÜN YÖNETİMİ (Order 4-9) ========== -->
                             {% if request.user|menu_allowed:'ABC1003D' or request.user|menu_allowed:'ABC1007D' or request.user|menu_allowed:'ABC1008D' or request.user|menu_allowed:'ABC1908D' or request.user|menu_allowed:'ABC1006D' or request.user|menu_allowed:'ABC1009D' %}
                                 <div class="menu-item pt-2.25 pb-px mt-4">
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Ürün Yönetimi</span>
                                 </div>
 
-                                {# Order 4 #}
+                                <!-- Order 4 -->
                                 {% if request.user|menu_allowed:'ABC1003D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'products:index' %}" class="menu-link">
                                             <span class="menu-icon"><i
                                                     class="fa-solid fa-boxes-stacked fs-2"></i></span>
-                                            <span class="menu-title">Ürünler ve Stok</span>
+                                            <span class="menu-title">Sarrafiye ve Döviz </span>
                                         </a>
                                     </div>
                                 {% endif %}
 
-                                {# Order 5 #}
+                                <!-- Order 5 -->
                                 {% if request.user|menu_allowed:'ABC1007D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'gold-purchases:index' %}" class="menu-link">
@@ -879,7 +888,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 6 #}
+                                <!-- Order 6 -->
                                 {% if request.user|menu_allowed:'ABC1008D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'scraps:index' %}" class="menu-link">
@@ -889,17 +898,17 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 6b — ONARIM FAZI 4 / ADIM 4: Gümüş izole sayfa #}
-                                {% if request.user|menu_allowed:'ABC1008D' %}
-                                    <div class="menu-item">
-                                        <a href="{% url 'scraps:silver_index' %}" class="menu-link">
-                                            <span class="menu-icon"><i class="fa-solid fa-coins fs-2"></i></span>
-                                            <span class="menu-title">Gümüş Yönetimi</span>
-                                        </a>
-                                    </div>
-                                {% endif %}
+                                <!-- Order 6b — ONARIM FAZI 4 / ADIM 4: Gümüş izole sayfa -->
+{#                                {% if request.user|menu_allowed:'ABC1008D' %}#}
+{#                                    <div class="menu-item">#}
+{#                                        <a href="{% url 'scraps:silver_index' %}" class="menu-link">#}
+{#                                            <span class="menu-icon"><i class="fa-solid fa-coins fs-2"></i></span>#}
+{#                                            <span class="menu-title">Gümüş Yönetimi</span>#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                {% endif %}#}
 
-                                {# Order 7 #}
+                                <!-- Order 7 -->
                                 {% if request.user|menu_allowed:'ABC1908D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'bracelets:index' %}" class="menu-link">
@@ -909,7 +918,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 8 #}
+                                <!-- Order 8 -->
                                 {% if request.user|menu_allowed:'ABC1006D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'repairs:index' %}" class="menu-link">
@@ -919,7 +928,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 9 #}
+                                <!-- Order 9 -->
                                 {% if request.user|menu_allowed:'ABC1009D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'counts:index' %}" class="menu-link">
@@ -930,13 +939,13 @@
                                 {% endif %}
                             {% endif %}
 
-                            {# ========== 3. GRUP: CARİ VE RAPORLAMA (Order 10-12) ========== #}
+                            <!-- ========== 3. GRUP: CARİ VE RAPORLAMA (Order 10-12) ========== -->
                             {% if request.user|menu_allowed:'ABC1002D' or request.user|menu_allowed:'ABC1010D' or request.user|menu_allowed:'ABC1706D' or request.user|menu_allowed:'ABC1017D' %}
                                 <div class="menu-item pt-2.25 pb-px mt-4">
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Cari Yönetimi</span>
                                 </div>
 
-                                {# Order 10 #}
+                                <!-- Order 10 -->
                                 {% if request.user|menu_allowed:'ABC1002D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'dashboard:index' %}" class="menu-link">
@@ -946,7 +955,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 11 #}
+                                <!-- Order 11 -->
                                 {% if request.user|menu_allowed:'ABC1010D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'process:index' %}" class="menu-link">
@@ -956,8 +965,8 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 12 #}
-                                {% if request.user|menu_allowed:'ABCD005D' %}
+                                <!-- Order 12 -->
+                                {% if request.user|menu_allowed:'ABC1706D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'invoices:index' %}" class="menu-link">
                                             <span class="menu-icon"><i
@@ -967,7 +976,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 12a — Kasa Yönetimi (İç Kasa) #}
+                                <!-- Order 12a — Kasa Yönetimi (İç Kasa) -->
                                 {% if request.user|menu_allowed:'ABC1017D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'bank-management:index' %}" class="menu-link">
@@ -978,8 +987,8 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 12b — Açık Bankacılık (Mutabakat) #}
-                                {% if request.user|menu_allowed:'ABCD005D' %}
+                                <!-- Order 12b — Açık Bankacılık (Mutabakat) -->
+                                {% if request.user|menu_allowed:'ABC1706D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'banking:index' %}" class="menu-link">
                                             <span class="menu-icon"><i
@@ -990,13 +999,13 @@
                                 {% endif %}
                             {% endif %}
 
-                            {# ========== 4. GRUP: MAĞAZA YÖNETİMİ (Order 13-18) ========== #}
-                            {% if request.user|menu_allowed:'ABC1011D' or request.user|menu_allowed:'ABC1544D' or request.user|menu_allowed:'ABC1012D' or request.user|menu_allowed:'ABC1015D' or request.user|menu_allowed:'ABC1016D' or request.user.store_id %}
+                            <!-- ========== 4. GRUP: MAĞAZA YÖNETİMİ (Order 13-18) ========== -->
+                            {% if request.user|menu_allowed:'ABC1011D' or request.user|menu_allowed:'ABC1544D' or request.user|menu_allowed:'ABC1545D' or request.user|menu_allowed:'ABC1012D' or request.user|menu_allowed:'ABC1015D' or request.user|menu_allowed:'ABC1016D' or request.user.store_id %}
                                 <div class="menu-item pt-2.25 pb-px mt-4">
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Mağaza</span>
                                 </div>
 
-                                {# Order 13 #}
+                                <!-- Order 13 -->
                                 {% if request.user|menu_allowed:'ABC1011D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'suppliers:index' %}" class="menu-link">
@@ -1006,7 +1015,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 14 #}
+                                <!-- Order 14 -->
                                 {% if request.user|menu_allowed:'ABC1544D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'custody:index' %}" class="menu-link">
@@ -1016,7 +1025,17 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 15 #}
+{#                                <!-- Order 14.5 — FAZ 46: Şubeler Arası Transfer -->#}
+{#                                {% if request.user|menu_allowed:'ABC1545D' %}#}
+{#                                    <div class="menu-item">#}
+{#                                        <a href="{% url 'store_transfers:index' %}" class="menu-link">#}
+{#                                            <span class="menu-icon"><i class="fa-solid fa-arrows-left-right fs-2"></i></span>#}
+{#                                            <span class="menu-title">Şubeler Arası Transfer</span>#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                {% endif %}#}
+
+                                <!-- Order 15 -->
                                 {% if request.user|menu_allowed:'ABC1012D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'workshops:index' %}" class="menu-link">
@@ -1026,7 +1045,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 16 #}
+                                <!-- Order 16 -->
                                 {% if request.user|menu_allowed:'ABC1015D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'customers:index' %}" class="menu-link">
@@ -1036,7 +1055,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# Order 17 #}
+                                <!-- Order 17 -->
                                 {% if request.user|menu_allowed:'ABC1016D' %}
                                     <div class="menu-item">
                                         <a href="
@@ -1052,15 +1071,15 @@
 
                             {% endif %}
 
-                            {# ========== ADMIN & CRM (SABİT KISIMLAR) ========== #}
+                            <!-- ========== ADMIN & CRM (SABİT KISIMLAR) ========== -->
 
-                            {# BAŞLIK KONTROLÜ: Kullanıcı Superuser ise VEYA aşağıdaki kodlardan herhangi birine sahipse başlığı göster #}
+                            <!-- BAŞLIK KONTROLÜ: Kullanıcı Superuser ise VEYA aşağıdaki kodlardan herhangi birine sahipse başlığı göster -->
                             {% if request.user.is_superuser or request.user|menu_allowed:'ABC9001D' or request.user|menu_allowed:'ABC9002D' or request.user|menu_allowed:'ABC9003D' or request.user|menu_allowed:'ABC9004D' or request.user|menu_allowed:'ABC9005D' or request.user|menu_allowed:'ABC9006D' or request.user|menu_allowed:'ABC9007D' or request.user|menu_allowed:'ABC9008D' %}
                                 <div class="menu-item pt-2.25 pb-px mt-4">
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Admin Yönetimi</span>
                                 </div>
 
-                                {# 1. Whatsapp Yönetimi (ABC9001D) #}
+                                <!-- 1. Whatsapp Yönetimi (ABC9001D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9001D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'whatsapp:dashboard' %}" class="menu-link">
@@ -1079,7 +1098,7 @@
                                 {% endif %}
 
 
-                                {# 2. Rol Yönetimi (ABC9002D) #}
+                                <!-- 2. Rol Yönetimi (ABC9002D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9002D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'roles:index' %}" class="menu-link">
@@ -1089,7 +1108,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 3. Paket Yönetimi (ABC9003D) #}
+                                <!-- 3. Paket Yönetimi (ABC9003D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9003D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'packages:index' %}" class="menu-link">
@@ -1107,7 +1126,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 4. Cihazlar (ABC9004D) #}
+                                <!-- 4. Cihazlar (ABC9004D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9004D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'devices:index' %}" class="menu-link">
@@ -1117,7 +1136,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 5. Kullanıcılar / Admin (ABC9005D) #}
+                                <!-- 5. Kullanıcılar / Admin (ABC9005D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9005D' %}
                                     <div class="menu-item">
                                         <a class="menu-link" href="{% url 'accounts:staffs-index' %}">
@@ -1127,7 +1146,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 6. Referanslar (ABC9006D) #}
+                                <!-- 6. Referanslar (ABC9006D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9006D' %}
                                     <div class="menu-item">
                                         <a class="menu-link" href="{% url 'testimonials:index' %}">
@@ -1137,7 +1156,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 7. Sözleşmeler (ABC9007D) #}
+                                <!-- 7. Sözleşmeler (ABC9007D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9007D' %}
                                     <div class="menu-item">
                                         <a class="menu-link" href="{% url 'contracts:index' %}">
@@ -1148,8 +1167,8 @@
                                     </div>
                                 {% endif %}
 
-                                {# 8. Siparişler (ABC9008D) #}
-                                {% if request.user.is_superuser or request.user|menu_allowed:'ABCD005D' %}
+                                <!-- 8. Siparişler (ABC9008D) -->
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9008D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'orders:index' %}" class="menu-link">
                                             <span class="menu-icon"><i
@@ -1158,7 +1177,7 @@
                                         </a>
                                     </div>
                                 {% endif %}
-                                {# 8. Siparişler (ABC9008D) #}
+                                <!-- 8. Siparişler (ABC9008D) -->
                                 {% if request.user|menu_allowed:'ABCD005D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'supports:index' %}" class="menu-link">
@@ -1180,15 +1199,14 @@
                             {% endif %}
 
 
-                            {# ========== 6. GRUP: CRM ========== #}
+                            <!-- ========== 6. GRUP: CRM ========== -->
 
-                            {# BAŞLIK KONTROLÜ: Superuser ise VEYA altındaki menülerden en az birine yetkisi varsa #}
+                            <!-- BAŞLIK KONTROLÜ: Superuser ise VEYA altındaki menülerden en az birine yetkisi varsa -->
                             {% if request.user.is_superuser or request.user|menu_allowed:'ABC9010D' or request.user|menu_allowed:'ABC9011D' or request.user|menu_allowed:'ABC9012D' or request.user|menu_allowed:'ABC9013D' %}
                                 <div class="menu-item pt-2.25 pb-px mt-4">
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">CRM</span>
                                 </div>
 
-                                {# ---> GÜNCELLENEN DERNEKLER MENÜSÜ <--- #}
                                 {% if request.user.is_superuser or request.user|menu_allowed:'CHAMBERS_INDEX_VIEW' %}
                                     <div class="menu-item">
                                         <a href="{% url 'chambers:index' %}" class="menu-link">
@@ -1198,7 +1216,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 1. Firmalar (ABC9010D) #}
+                                <!-- 1. Firmalar (ABC9010D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9010D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'stores:index' %}" class="menu-link">
@@ -1208,7 +1226,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 2. Teklifler (ABC9011D) #}
+                                <!-- 2. Teklifler (ABC9011D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9011D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'proposals:index' %}" class="menu-link">
@@ -1219,7 +1237,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 3. Potansiyel Müşteriler (ABC9012D) #}
+                                <!-- 3. Potansiyel Müşteriler (ABC9012D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9012D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'leads:index' %}" class="menu-link">
@@ -1235,7 +1253,7 @@
                                     </div>
                                 {% endif %}
 
-                                {# 4. İletişim (ABC9013D) #}
+                                <!-- 4. İletişim (ABC9013D) -->
                                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9013D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'contact-forms:index' %}" class="menu-link">
@@ -1316,20 +1334,20 @@
             </div>
 
 
-            {#            <div id="kt_app_footer" class="app-footer " style="background-color: transparent;">#}
-            {#                <div class="app-container  container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3 ">#}
-            {#                    <div class="text-gray-900 order-2 order-md-1">#}
-            {#                        <span class="text-muted fw-semibold me-1">2025©</span>#}
-            {#                        <a href="#" target="_blank"#}
-            {#                           class="text-gray-800 text-hover-primary">Kuyum Plus</a>#}
-            {#                    </div>#}
-            {#                    <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">#}
-            {#                        <li class="menu-item"><a href="#" target="_blank"#}
-            {#                                                 class="menu-link px-2">Anasayfa</a>#}
-            {#                        </li>#}
-            {#                    </ul>#}
-            {#                </div>#}
-            {#            </div>#}
+            <!--            <div id="kt_app_footer" class="app-footer " style="background-color: transparent;">-->
+            <!--                <div class="app-container  container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3 ">-->
+            <!--                    <div class="text-gray-900 order-2 order-md-1">-->
+            <!--                        <span class="text-muted fw-semibold me-1">2025©</span>-->
+            <!--                        <a href="#" target="_blank"-->
+            <!--                           class="text-gray-800 text-hover-primary">Kuyum Plus</a>-->
+            <!--                    </div>-->
+            <!--                    <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">-->
+            <!--                        <li class="menu-item"><a href="#" target="_blank"-->
+            <!--                                                 class="menu-link px-2">Anasayfa</a>-->
+            <!--                        </li>-->
+            <!--                    </ul>-->
+            <!--                </div>-->
+            <!--            </div>-->
         </div>
     </div>
 </div>
@@ -1384,6 +1402,20 @@
 
 <script src="{% static 'management/plugins/global/plugins.bundle.js' %}"></script>
 <script src="{% static 'management/js/scripts.bundle.js' %}"></script>
+<script>
+    // FAZ 64 — Select2 Default Tema → Bootstrap5 Tema Yönlendirmesi
+    // Projede 29 yerde theme: 'bootstrap5' belirtilmeden .select2() çağrılıyor.
+    // Default tema hardcoded #fff dropdown ve #5897fb hover renkleri kullanıyor;
+    // dark modda görünüm bozuk. Bu satır jQuery yüklendikten hemen sonra global
+    // varsayılanı bootstrap5'e çekerek tüm çağrıları otomatik düzeltir.
+    (function () {
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+            try {
+                window.jQuery.fn.select2.defaults.set('theme', 'bootstrap5');
+            } catch (e) { /* select2 yoksa sessiz geç */ }
+        }
+    })();
+</script>
 <script src="{% static 'management/plugins/custom/datatables/datatables.bundle.js' %}"></script>
 <script src="{% static 'management/js/widgets.bundle.js' %}"></script>
 <script src="{% static 'management/js/custom/widgets.js' %}"></script>
@@ -1843,7 +1875,52 @@
 </script>
 
 <script>
-    window.__pavoConnected = !!window.__pavoConnected;
+    // ============================================================
+    //  FAZ 30 — Pavo bağlantı durumu kalıcılığı (localStorage + heartbeat)
+    //  Eski bug: __pavoConnected her sayfa yüklemesinde sıfırlanıyordu.
+    //  Çözüm: localStorage'a yaz, sayfa yüklendiğinde geri yükle, heartbeat
+    //  ile periyodik doğrula. Stale durum 5 dakika sonra otomatik geçersiz
+    //  sayılır (TTL).
+    // ============================================================
+    var PAVO_STATE_KEY = "kp.pavo.connection.state";
+    var PAVO_STATE_TTL_MS = 5 * 60 * 1000;
+    var PAVO_HEARTBEAT_MS = (parseInt("{{ PAVO_HEARTBEAT_INTERVAL_SECONDS|default:'45' }}", 10) || 45) * 1000;
+    var PAVO_PAIR_TIMEOUT_MS = (parseInt("{{ PAVO_PAIR_TIMEOUT_SECONDS|default:'15' }}", 10) || 15) * 1000;
+
+    function _pavoLoadState() {
+        try {
+            var raw = window.localStorage.getItem(PAVO_STATE_KEY);
+            if (!raw) return null;
+            var obj = JSON.parse(raw);
+            if (!obj || typeof obj !== "object") return null;
+            // TTL: stale state'i geçersiz say.
+            if (typeof obj.t !== "number" || (Date.now() - obj.t) > PAVO_STATE_TTL_MS) return null;
+            return obj;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function _pavoSaveState(connected) {
+        try {
+            window.localStorage.setItem(PAVO_STATE_KEY, JSON.stringify({
+                c: !!connected,
+                t: Date.now()
+            }));
+        } catch (e) {
+        }
+    }
+
+    function _pavoClearState() {
+        try {
+            window.localStorage.removeItem(PAVO_STATE_KEY);
+        } catch (e) {
+        }
+    }
+
+    // İlk yüklemede localStorage'dan restore et (TTL içindeyse).
+    var _pavoRestored = _pavoLoadState();
+    window.__pavoConnected = _pavoRestored ? !!_pavoRestored.c : !!window.__pavoConnected;
     window.__pavoLastError = window.__pavoLastError || null;
     window.__pavoLastResult = window.__pavoLastResult || null;
 
@@ -1890,10 +1967,72 @@
         } else {
             window.__pavoLastError = null;
         }
+        // FAZ 30 — durumu kalıcılaştır.
+        if (ok) {
+            _pavoSaveState(true);
+        } else {
+            _pavoClearState();
+        }
         try {
             var ev = new CustomEvent("pavoConnectionChanged", {detail: {connected: ok, result: obj}});
             window.dispatchEvent(ev);
         } catch (e2) {
+        }
+    }
+
+    // FAZ 30 — Heartbeat: bağlıyken belirli aralıklarla durumu doğrula.
+    // Native bridge yoksa hiçbir şey yapma (web tarayıcıda kasti). Ayrıca
+    // page hidden iken heartbeat durur, batarya/cpu yormaz.
+    var _pavoHeartbeatTimer = null;
+
+    function _pavoHeartbeatTick() {
+        // Sayfa görünmüyorsa heartbeat atlama (battery friendly).
+        if (typeof document.visibilityState === "string" && document.visibilityState === "hidden") return;
+        if (!window.__pavoConnected) return;
+        // Native köprü yoksa heartbeat anlamsız (web önizleme vb.)
+        if (!pavoHasAndroidBridge() && !pavoHasIosBridge()) return;
+
+        // get_device_info gibi hafif bir Pavo isteği yerine localStorage TTL'i
+        // refresh ediyoruz — gerçek heartbeat native bridge tarafında yapılıyor.
+        // Eğer sayfa açıkken son 5 dk'da hiçbir Pavo işlemi olmadıysa,
+        // backend'in get-device-info endpoint'ine ping atılır (lightweight).
+        try {
+            fetch("/v1/pavo-local/get-device-info/", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {"Content-Type": "application/json", "X-CSRFToken": _pavoCsrfToken()},
+                body: "{}"
+            }).then(function (r) {
+                if (r.ok) {
+                    _pavoSaveState(true);
+                } else {
+                    _pavoSaveState(true);
+                }
+            }).catch(function () {
+                // Heartbeat hatası bağlantıyı koparmaz — sadece log düşülmüyor.
+            });
+        } catch (e) {
+        }
+    }
+
+    function _pavoCsrfToken() {
+        try {
+            var m = document.cookie.match(/csrftoken=([^;]+)/);
+            return m ? m[1] : "";
+        } catch (e) {
+            return "";
+        }
+    }
+
+    function _pavoStartHeartbeat() {
+        if (_pavoHeartbeatTimer) return;
+        _pavoHeartbeatTimer = setInterval(_pavoHeartbeatTick, PAVO_HEARTBEAT_MS);
+    }
+
+    function _pavoStopHeartbeat() {
+        if (_pavoHeartbeatTimer) {
+            clearInterval(_pavoHeartbeatTimer);
+            _pavoHeartbeatTimer = null;
         }
     }
 
@@ -2073,9 +2212,28 @@
                 c = !!e.detail.connected;
             }
             setState(c);
+            // FAZ 30 — bağlantı durumu değiştiğinde heartbeat'i yönet.
+            if (c) {
+                _pavoStartHeartbeat();
+            } else {
+                _pavoStopHeartbeat();
+            }
         });
 
-        setState(window.PavoPos && window.PavoPos.isConnected ? window.PavoPos.isConnected() : false);
+        // FAZ 30 — sayfa açılışında localStorage'dan restore edilmiş durumu uygula.
+        var _initConnected = window.PavoPos && window.PavoPos.isConnected
+            ? window.PavoPos.isConnected() : !!window.__pavoConnected;
+        setState(_initConnected);
+        if (_initConnected) {
+            _pavoStartHeartbeat();
+        }
+
+        // FAZ 30 — sayfa görünür hale geldiğinde heartbeat'i tekrar değerlendir.
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible" && window.__pavoConnected) {
+                _pavoStartHeartbeat();
+            }
+        });
 
         btn.addEventListener("click", function () {
             var connected = btn.dataset.connected === "1";
@@ -2092,14 +2250,14 @@
             if (!connected) {
                 showGlobalLoader("POS bağlantısı kuruluyor...");
 
-                // 15 saniyelik zaman aşımı sayacı oluşturuyoruz
+                // FAZ 30 — Pair timeout settings'ten geliyor (PAVO_PAIR_TIMEOUT_SECONDS).
                 var timeoutPromise = new Promise(function (resolve, reject) {
                     setTimeout(function () {
                         reject({
                             HasError: true,
                             Message: "POS cihazından yanıt alınamadı. Lütfen cihazın açık ve aynı ağda olduğundan emin olun."
                         });
-                    }, 15000);
+                    }, PAVO_PAIR_TIMEOUT_MS);
                 });
 
                 // Gerçek bağlantı isteği ile zaman aşımını yarıştırıyoruz
@@ -2123,6 +2281,8 @@
             } else {
                 window.__pavoConnected = false;
                 window.__pavoLastError = null;
+                _pavoClearState();         // FAZ 30 — kalıcı state'i temizle.
+                _pavoStopHeartbeat();      // FAZ 30 — heartbeat'i durdur.
                 try {
                     var ev = new CustomEvent("pavoConnectionChanged", {detail: {connected: false}});
                     window.dispatchEvent(ev);
@@ -2136,7 +2296,9 @@
     document.addEventListener('DOMContentLoaded', function () {
         const menuData = {
             pages: [
-
+                {% if request.user|menu_allowed:'ABC1001D' %}
+                    {icon: 'fa-bolt', text: 'Hızlı İşlem', url: "{% url 'transactions-board:fast-index' %}"},
+                {% endif %}
                 {% if request.user|menu_allowed:'ABC1310D' %}
                     {icon: 'fa-store', text: 'Perakende', url: "{% url 'transactions-board:retail-index' %}"},
                 {% endif %}
@@ -2154,7 +2316,7 @@
 
             product: [
                 {% if request.user|menu_allowed:'ABC1003D' %}
-                    {icon: 'fa-boxes-stacked', text: 'Stok', url: "{% url 'products:index' %}"},
+                    {icon: 'fa-boxes-stacked', text: 'Sarrafiye & Döviz', url: "{% url 'products:index' %}"},
                 {% endif %}
                 {% if request.user|menu_allowed:'ABC1007D' %}
                     {icon: 'fa-barcode', text: 'Barkodlu', url: "{% url 'gold-purchases:index' %}"},
@@ -2212,7 +2374,7 @@
                         url: "{% if request.user.store_id %}{% url 'stores:store-detail' request.user.store_id %}{% else %}{% url 'stores:index' %}{% endif %}"
                     },
                 {% endif %}
-                {% if request.user.store_id %}
+                {% if request.user|menu_allowed:'ABC1016D'%}
                     {icon: 'fa-shield-halved', text: 'Personel Rolleri', url: "{% url 'stores:store-roles-list' %}"},
                 {% endif %}
             ],
@@ -2524,6 +2686,11 @@
 
 {% block footer %}
 {% endblock footer %}
+
+{# FAZ 40 — Global İşlem Röntgen Modalı (her sayfada erişilebilir) #}
+{% if request.user.is_authenticated %}
+    {% include 'management/_partials/process_xray_modal.html' %}
+{% endif %}
 
 {% if request.user.store_id %}
     <script>

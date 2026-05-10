@@ -1,5 +1,5 @@
 """
-ASGI config for jewelery_project project.
+ASGI config for juwelier_project project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

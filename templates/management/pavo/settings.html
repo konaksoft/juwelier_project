@@ -57,11 +57,17 @@
         <div id="kt_app_content" class="app-content flex-column-fluid">
             <div id="kt_app_content_container" class="container-fluid">
 
-                <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                     <h1 class="fs-3 fw-bold my-0">Pavo Cihaz (REST) Ayarları</h1>
-                    <span id="connStatusPill" class="status-pill status-muted">
-                        <i class="fa-solid fa-circle-question"></i><span>Durum bilinmiyor</span>
-                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <!-- FAZ 30 — Pavo işlem kayıtları sayfasına hızlı erişim -->
+                        <a href="{% url 'pavo:logs' %}" class="btn btn-light-primary btn-sm">
+                            <i class="fa-solid fa-list-check me-1"></i> İşlem Kayıtları
+                        </a>
+                        <span id="connStatusPill" class="status-pill status-muted">
+                            <i class="fa-solid fa-circle-question"></i><span>Durum bilinmiyor</span>
+                        </span>
+                    </div>
                 </div>
 
                 <ul class="nav nav-tabs mb-4" id="pavoRestTabs" role="tablist">

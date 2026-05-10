@@ -2055,12 +2055,10 @@
                                             <label for="orderCheckbox" class="custom-button">
                                                 <i class="fas fa-shopping-cart"></i> Sipariş
                                             </label>
-
-                                            <input type="checkbox" id="custodyCheckbox" name="custody"
-                                                   class="hidden-checkbox">
-                                            <label for="custodyCheckbox" class="custom-button custom-button-2">
-                                                <i class="fa fa-handshake me-1"></i>Emanet
-                                            </label>
+                                            {# FAZ 69 (2026-05-09): Emanet butonu kaldırıldı. #}
+                                            {# Emanet işlemleri ana "Emanet Yönetimi" modülünden yürütülür; #}
+                                            {# perakende sepet üzerinden emanet açılması append-only kuralları #}
+                                            {# ve custody ledger izolasyonu nedeniyle artık desteklenmiyor. #}
                                         </div>
                                     </div>
 
@@ -2081,13 +2079,13 @@
                                 </div>
                                 <input type="hidden" id="operationType" name="operationType" value="SALE"/>
 
-                                {# ─────────────────────────────────────────────────────────── #}
-                                {# FAZ S3 (PIVOT 2026-04-23): METAL FİYAT PANELİ (Altın/Gümüş) #}
-                                {# Mevcut akış DOKUNULMADI; sadece wrapper id'si #metalPricePanel #}
-                                {# WATCH/DIAMOND ürün açıldığında JS bu paneli gizler.           #}
-                                {# ─────────────────────────────────────────────────────────── #}
+                                <!-- ─────────────────────────────────────────────────────────── -->
+                                <!-- FAZ S3 (PIVOT 2026-04-23): METAL FİYAT PANELİ (Altın/Gümüş) -->
+                                <!-- Mevcut akış DOKUNULMADI; sadece wrapper id'si #metalPricePanel -->
+                                <!-- WATCH/DIAMOND ürün açıldığında JS bu paneli gizler.           -->
+                                <!-- ─────────────────────────────────────────────────────────── -->
                                 <div class="row" id="metalPricePanel">
-                                    <div class="col-lg-4 col-md-4 col-4">
+                                    <div class="col-lg-4 col-md-4 col-4" id="retailUnitPriceCol">
                                         <div class="mb-3">
                                             <label for="unit_price" class="form-label">Birim Fiyat:</label>
                                             <input type="number" class="form-control" id="unit_price"
@@ -2095,7 +2093,7 @@
                                                    value="0"/>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 col-md-4 col-4">
+                                    <div class="col-lg-4 col-md-4 col-4" id="retailHasCol">
                                         <div class="mb-3">
                                             <label for="sale_price_hs" class="form-label">Has:</label>
                                             <input type="number" class="form-control" id="sale_price_hs"
@@ -2103,7 +2101,7 @@
                                                    value="0"/>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 col-md-4 col-4">
+                                    <div class="col-lg-4 col-md-4 col-4" id="retailLaborCol">
                                         <div class="mb-3">
                                             <label for="labor_price" class="form-label">İşçilik Tutarı:</label>
                                             <input type="number" class="form-control" id="labor_price"
@@ -2113,13 +2111,13 @@
                                     </div>
                                 </div>
 
-                                {# ─────────────────────────────────────────────────────────── #}
-                                {# FAZ S3 (PIVOT 2026-04-23): DÖVİZ FİYAT PANELİ (Saat/Pırlanta)#}
-                                {# Default GİZLİ (display:none). WATCH/DIAMOND seçilince açılır.#}
-                                {# Formül: fx_unit_price × fx_daily_rate = fx_unit_price_tl    #}
-                                {#         fx_unit_price_tl × piece     = fx_total_tl          #}
-                                {# Form submit'te hidden #unit_price ve #total_price doldurulur. #}
-                                {# ─────────────────────────────────────────────────────────── #}
+                                <!-- ─────────────────────────────────────────────────────────── -->
+                                <!-- FAZ S3 (PIVOT 2026-04-23): DÖVİZ FİYAT PANELİ (Saat/Pırlanta)-->
+                                <!-- Default GİZLİ (display:none). WATCH/DIAMOND seçilince açılır.-->
+                                <!-- Formül: fx_unit_price × fx_daily_rate = fx_unit_price_tl    -->
+                                <!--         fx_unit_price_tl × piece     = fx_total_tl          -->
+                                <!-- Form submit'te hidden #unit_price ve #total_price doldurulur. -->
+                                <!-- ─────────────────────────────────────────────────────────── -->
                                 <div class="row" id="foreignPricePanel" style="display: none;">
                                     <div class="col-12 mb-2">
                                         <small class="text-muted">
@@ -2362,7 +2360,7 @@
 
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <span class="payment-label">Altın / Mal Bedeli</span>
-                                                <span id="payment_amount_tl"
+                                                <span id="payment_amount_eur"
                                                       class="total_amount2 d-inline-block">0.00</span>
                                             </div>
 
@@ -2755,7 +2753,70 @@
         const CASH_LIMIT = 30000;        // Nakit Ödeme Sınırı (Banka Zorunluluğu)
         // const CUSTOMER_REQUIRED_LIMIT = 29700; // Eski limit, yeni INVOICE_LIMIT kullanıldı.
 
-        const POS_TIMEOUT_SECONDS = 60;
+        // FAZ 30 — Pavo timeout ve success status SSOT settings'ten geliyor.
+        // Hızlı İşlem ile aynı değer kullanılıyor (asimetri giderildi).
+        const POS_TIMEOUT_SECONDS = parseInt("{{ PAVO_FRONTEND_TIMEOUT_SECONDS|default:'120' }}", 10) || 120;
+        const PAVO_SUCCESS_STATUS_IDS = (function () {
+            try {
+                const raw = "{{ PAVO_SUCCESS_STATUS_IDS|default:'4,5,6,22' }}";
+                return raw.replace(/[\[\]\s]/g, '').split(',').map(function (s) {
+                    return parseInt(s, 10);
+                }).filter(function (n) {
+                    return !isNaN(n);
+                });
+            } catch (e) {
+                return [4, 5, 6, 22];
+            }
+        })();
+
+        // FAZ 30 — CustomerParty cache (fast_index ile aynı pattern).
+        let _pavoCustomerPartyCache = null;
+        let _pavoCustomerPartyCustomerId = null;
+
+        function pavoFetchCustomerParty(customerId) {
+            const id = String(customerId || '').trim();
+            if (_pavoCustomerPartyCustomerId === id && _pavoCustomerPartyCache) {
+                return Promise.resolve(_pavoCustomerPartyCache);
+            }
+            const url = '/v1/pavo-local/customer-party/' + (id ? ('?customer_id=' + encodeURIComponent(id)) : '');
+            return fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {'Accept': 'application/json'}
+            }).then(function (r) {
+                if (!r.ok && r.status !== 404) throw new Error('http ' + r.status);
+                return r.json();
+            }).then(function (j) {
+                const cp = (j && j.customer_party) ? j.customer_party : pavoAnonymousCustomerParty();
+                _pavoCustomerPartyCache = cp;
+                _pavoCustomerPartyCustomerId = id;
+                return cp;
+            }).catch(function () {
+                return pavoAnonymousCustomerParty();
+            });
+        }
+
+        function pavoAnonymousCustomerParty() {
+            return {
+                CustomerType: 2,
+                FirstName: '', MiddleName: '', FamilyName: '',
+                CompanyName: '', TaxOfficeCode: '', TaxNumber: '',
+                Phone: '', EMail: '',
+                Country: 'Türkiye', City: '', District: '',
+                Neighborhood: '', Address: ''
+            };
+        }
+
+        // FAZ 30 — Müşteri değiştiğinde cache invalidate (DOMContentLoaded sonrası).
+        document.addEventListener('DOMContentLoaded', function () {
+            var cs = document.getElementById('customer_id');
+            if (cs) {
+                cs.addEventListener('change', function () {
+                    _pavoCustomerPartyCache = null;
+                    _pavoCustomerPartyCustomerId = null;
+                });
+            }
+        });
 
         let retailPosTimerId = null;
         let retailPosRemaining = 0;
@@ -2818,6 +2879,8 @@
         }
 
         // --- POS UI ---
+        // FAZ 30 — Timeout sonrası AbortCurrentPayment + LastProcessedSale ile
+        // güvenli recovery. Form otomatik submit edilmez — yanlış kayıt riski yok.
         function showPosWaitingRetail() {
             retailPosRemaining = POS_TIMEOUT_SECONDS;
 
@@ -2837,11 +2900,62 @@
                         if (retailPosRemaining <= 0) {
                             clearInterval(retailPosTimerId);
                             retailPosTimerId = null;
-                            Swal.close();
-                            Swal.fire('Uyarı', 'POS cihazından henüz yanıt alınamadı. İşlem POS cihazında tamamlanmış olabilir, lütfen cihazı ve slipleri kontrol edin.', 'warning');
+                            _pavoRetailTimeoutRecover();
                         }
                     }, 1000);
                 }
+            });
+        }
+
+        function _pavoCsrfRetail() {
+            try {
+                var m = document.cookie.match(/csrftoken=([^;]+)/);
+                if (m) return m[1];
+            } catch (e) {
+            }
+            var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return el ? el.value : '';
+        }
+
+        function _pavoRetailTimeoutRecover() {
+            try {
+                Swal.close();
+            } catch (e) {
+            }
+            var btn = document.getElementById('btnPosPayment');
+            if (btn) btn.disabled = false;
+
+            var hdrs = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': _pavoCsrfRetail()
+            };
+
+            fetch('/v1/pavo-local/abort-current-payment/', {
+                method: 'POST', credentials: 'same-origin', headers: hdrs, body: '{}'
+            }).catch(function () { /* sessizce yut */ });
+
+            fetch('/v1/pavo-local/last-processed-sale/', {
+                method: 'POST', credentials: 'same-origin', headers: hdrs, body: '{}'
+            }).then(function (r) {
+                return r.ok ? r.json() : null;
+            }).then(function (j) {
+                var msg = 'POS yanıtı zaman aşımına uğradı.<br>';
+                if (j && j.Data) {
+                    var data = j.Data || {};
+                    var sid = data.StatusId || data.SaleStatusId || (data.Sale && data.Sale.StatusId) || '-';
+                    msg += '<div class="text-start small"><b>Son işlem:</b> ' +
+                           'StatusId: ' + sid + '<br>' +
+                           'SaleNumber: ' + (data.SaleNumber || '-') + '</div>';
+                }
+                msg += '<br><b>Kayıt oluşturulmadı.</b> Cihazdaki sliplerle kontrol edip ' +
+                       'gerekirse işlemi tekrar başlatın.';
+                Swal.fire({icon: 'warning', title: 'POS Zaman Aşımı', html: msg});
+            }).catch(function () {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'POS Zaman Aşımı',
+                    html: 'POS yanıtı alınamadı. <b>Kayıt oluşturulmadı.</b> Cihazdaki sliplerle kontrol edin.'
+                });
             });
         }
 
@@ -2913,9 +3027,10 @@
             };
         }
 
+        // FAZ 30 — Async: gerçek müşteri verisi backend'den çekiliyor.
         function buildCompleteSalePayloadFromRetail(mediatorId) {
             var ctx = getRetailPosContext();
-            if (!ctx || !ctx.gross || ctx.gross <= 0) return null;
+            if (!ctx || !ctx.gross || ctx.gross <= 0) return Promise.resolve(null);
 
             var items = [{
                 Name: 'Perakende Satış',
@@ -2929,76 +3044,70 @@
                 ReservedText: 'RETAIL_PROCESS'
             }];
 
-            return {
-                Sale: {
-                    RefererApp: 'KuyumPlus',
-                    RefererAppVersion: '1.0.0',
-                    OrderNo: String(ctx.reference),
-                    MainDocumentType: 1,
-                    GrossPrice: ctx.gross,
-                    TotalPrice: ctx.gross,
-                    CurrencyCode: ctx.currency,
-                    ExchangeRate: 1,
-                    SendPhoneNotification: false,
-                    SendEMailNotification: false,
-                    NotificationPhone: '',
-                    NotificationEMail: '',
-                    DocumentNote: '',
-                    ShowCreditCardMenu: false,
-                    SelectedSlots: ['rf', 'icc', 'manual'],
-                    EnableAllTerminalsOnRetry: false,
-                    AllowDismissCardRead: false,
-                    CardReadTimeout: POS_TIMEOUT_SECONDS,
-                    SkipAmountCash: false,
-                    CancelPaymentLater: true,
-                    AskCustomer: false,
-                    SendResponseBeforePrint: false,
-                    TryAgainOnPaymentFailure: false,
-                    ReferOtherMediatorsToRetryPayment: true,
-                    AbandonOptions: {IsVoid: true, EnableRefundMediatorsOnVoidFailure: true},
-                    ContinuePaymentWithCardInserted: true,
-                    HeadUnmaskedCardNumber: 4,
-                    TailUnmaskedCardNumber: 4,
-                    AddedSaleItems: items,
-                    PaymentInformations: [{
-                        Mediator: mediatorId,
-                        Amount: ctx.gross,
+            return pavoFetchCustomerParty(ctx.customerId).then(function (party) {
+                var customerParty = Object.assign({}, party);
+                if (!customerParty.FirstName && !customerParty.FamilyName) {
+                    customerParty.FirstName = ctx.customerFirstName || '';
+                    customerParty.MiddleName = ctx.customerMiddleName || '';
+                    customerParty.FamilyName = ctx.customerFamilyName || '';
+                    customerParty.CompanyName = ctx.customerCompanyName || '';
+                }
+                return {
+                    Sale: {
+                        RefererApp: 'KuyumPlus',
+                        RefererAppVersion: '1.0.0',
+                        OrderNo: String(ctx.reference),
+                        MainDocumentType: 1,
+                        GrossPrice: ctx.gross,
+                        TotalPrice: ctx.gross,
                         CurrencyCode: ctx.currency,
                         ExchangeRate: 1,
-                        ExternalReferenceText: String(ctx.reference)
-                    }],
-                    AllowedPaymentMediators: [{Mediator: 2}, {Mediator: 1}],
-                    ReceiptInformation: {
-                        ReceiptImageEnabled: true,
-                        ReceiptJsonEnabled: false,
-                        ReceiptTextEnabled: false,
-                        ReceiptWidth: '58mm',
-                        PrintCustomerReceipt: true,
-                        PrintCustomerReceiptCopy: true,
-                        PrintMerchantReceipt: true,
-                        EnableExchangeRateField: true
-                    },
-                    CustomerParty: {
-                        CustomerType: 1,
-                        FirstName: ctx.customerFirstName,
-                        MiddleName: ctx.customerMiddleName,
-                        FamilyName: ctx.customerFamilyName,
-                        CompanyName: ctx.customerCompanyName,
-                        TaxOfficeCode: '',
-                        TaxNumber: '11111111111',
-                        Phone: '',
-                        EMail: '',
-                        Country: 'Türkiye',
-                        City: 'Ankara',
-                        District: 'Çankaya',
-                        Neighborhood: '',
-                        Address: ''
-                    },
-                    AdditionalInfo: [],
-                    TopPrintableItems: [],
-                    BottomPrintableItems: []
-                }
-            };
+                        SendPhoneNotification: false,
+                        SendEMailNotification: false,
+                        NotificationPhone: customerParty.Phone || '',
+                        NotificationEMail: customerParty.EMail || '',
+                        DocumentNote: '',
+                        ShowCreditCardMenu: false,
+                        SelectedSlots: ['rf', 'icc', 'manual'],
+                        EnableAllTerminalsOnRetry: false,
+                        AllowDismissCardRead: false,
+                        CardReadTimeout: POS_TIMEOUT_SECONDS,
+                        SkipAmountCash: false,
+                        CancelPaymentLater: true,
+                        AskCustomer: false,
+                        SendResponseBeforePrint: false,
+                        TryAgainOnPaymentFailure: false,
+                        ReferOtherMediatorsToRetryPayment: true,
+                        AbandonOptions: {IsVoid: true, EnableRefundMediatorsOnVoidFailure: true},
+                        ContinuePaymentWithCardInserted: true,
+                        HeadUnmaskedCardNumber: 4,
+                        TailUnmaskedCardNumber: 4,
+                        AddedSaleItems: items,
+                        PaymentInformations: [{
+                            Mediator: mediatorId,
+                            Amount: ctx.gross,
+                            CurrencyCode: ctx.currency,
+                            ExchangeRate: 1,
+                            ExternalReferenceText: String(ctx.reference)
+                        }],
+                        AllowedPaymentMediators: [{Mediator: 2}, {Mediator: 1}],
+                        ReceiptInformation: {
+                            ReceiptImageEnabled: true,
+                            ReceiptJsonEnabled: false,
+                            ReceiptTextEnabled: false,
+                            ReceiptWidth: '58mm',
+                            PrintCustomerReceipt: true,
+                            PrintCustomerReceiptCopy: true,
+                            PrintMerchantReceipt: true,
+                            EnableExchangeRateField: true
+                        },
+                        CustomerParty: customerParty,
+                        AdditionalInfo: [],
+                        TopPrintableItems: [],
+                        BottomPrintableItems: []
+                    }
+                };
+            });
         }
 
         function resolveSaleNumberFromResult(out, fallbackRef) {
@@ -3030,7 +3139,10 @@
             if (statusId == null || statusId === '') return false;
             const sid = Number(statusId);
             if (isNaN(sid)) return false;
-            return sid >= 1 && sid <= 6;
+            // FAZ 30 — Backend ile aynı SSOT (settings.PAVO_SUCCESS_STATUS_IDS).
+            // Eski "1..6 arası" gevşek kontrol kaldırıldı (backend reddi nedeniyle
+            // sessiz failure'a yol açıyordu).
+            return PAVO_SUCCESS_STATUS_IDS.indexOf(sid) !== -1;
         }
 
         function ensureHiddenInput(formEl, name, id) {
@@ -3133,23 +3245,33 @@
             if (modeUpper === 'CASH') mediatorId = 1;
             if (modeUpper === 'TRANSFER') mediatorId = 14;
 
-            var payload = buildCompleteSalePayloadFromRetail(mediatorId);
-            if (!payload) {
-                Swal.fire('Hata', 'POS payload oluşturulamadı.', 'error');
-                return;
-            }
-
-            var completeStr = '';
-            try {
-                completeStr = JSON.stringify(payload);
-            } catch (e) {
-                Swal.fire('Hata', 'POS payload JSON formatına dönüştürülemedi.', 'error');
-                return;
-            }
-
             var btn = document.getElementById('btnPosPayment');
             if (btn) btn.disabled = true;
 
+            // FAZ 30 — payload artık async (gerçek müşteri verisi backend'den).
+            buildCompleteSalePayloadFromRetail(mediatorId).then(function (payload) {
+                if (!payload) {
+                    if (btn) btn.disabled = false;
+                    Swal.fire('Hata', 'POS payload oluşturulamadı.', 'error');
+                    return;
+                }
+
+                var completeStr = '';
+                try {
+                    completeStr = JSON.stringify(payload);
+                } catch (e) {
+                    if (btn) btn.disabled = false;
+                    Swal.fire('Hata', 'POS payload JSON formatına dönüştürülemedi.', 'error');
+                    return;
+                }
+                _retailPosPaymentSubmit(modeUpper, completeStr, btn);
+            }).catch(function (err) {
+                if (btn) btn.disabled = false;
+                Swal.fire('Hata', 'Müşteri bilgileri hazırlanamadı: ' + (err && err.message ? err.message : ''), 'error');
+            });
+        }
+
+        function _retailPosPaymentSubmit(modeUpper, completeStr, btn) {
             showPosWaitingRetail();
 
             window.pavoRetailCallback = function (resultJson) {
@@ -3646,10 +3768,10 @@
                     .toggleClass(' text-success', netTl < 0).toggleClass('text-danger', netTl >= 0);
 
                 const netColor = $('#netTotalTl').hasClass('text-danger') ? 'text-danger' : 'text-success';
-                $('#payment_amount_tl').removeClass('text-danger text-success').addClass(netColor);
+                $('#payment_amount_eur').removeClass('text-danger text-success').addClass(netColor);
                 $('#payment_amount_hs').removeClass('text-danger text-success').addClass(netColor);
 
-                $('#payment_amount_tl').text(KPMoney.fmtMoney(goodsAmountOnly));
+                $('#payment_amount_eur').text(KPMoney.fmtMoney(goodsAmountOnly));
                 $('#payment_labor_tl').text(KPMoney.fmtMoney(totLabor));
                 $('#payment_vat_tl').text(KPMoney.fmtMoney(vatFromLabor));
                 $('#payment_grand_total_tl').text(KPMoney.fmtMoney(grandTotalTl));
@@ -3667,6 +3789,20 @@
                     data: {ids: [id], csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val()},
                     success(data) {
                         if (data.result) {
+                            // FAZ 19 / Bulgu C — Hayalet kayıt savunması:
+                            // Sunucudan başarı geldiğinde DataTable satırlarını
+                            // ANINDA temizle. loadTableData() AJAX'ı tamamlanmadan
+                            // veya silent-fail olduğunda bile kullanıcı silinmiş
+                            // satırı görmesin. KURAL 6: try/catch + null-check.
+                            try {
+                                if (typeof dtIn !== 'undefined' && dtIn) {
+                                    dtIn.clear().draw(false);
+                                }
+                                if (typeof dtOut !== 'undefined' && dtOut) {
+                                    dtOut.clear().draw(false);
+                                }
+                            } catch (e) { /* silent-fail; loadTableData devreye girer */ }
+
                             loadTableData();
                             Swal.fire({
                                 toast: true,
@@ -3999,13 +4135,19 @@
                     Swal.fire('Uyarı', 'Siparişte müşteri zorunlu.', 'warning');
                     return false;
                 }
-                if ((hasCustodyIn || $('#custodyCheckbox').is(':checked')) && !custId) {
+                // FAZ 69 (2026-05-09): #custodyCheckbox kaldırıldı. hasCustodyIn artık
+                // sadece sepetteki mevcut emanet satırlarından (eski kayıtlar / ileride
+                // backend tarafı doldurursa) gelir; UI üzerinden yeni emanet açma yolu
+                // kapatıldı.
+                if (hasCustodyIn && !custId) {
                     Swal.fire('Uyarı', 'Emanette müşteri zorunlu.', 'warning');
                     return false;
                 }
 
                 let formData = new FormData($(this)[0]);
-                formData.append('is_custody', $('#custodyCheckbox').is(':checked') ? 'true' : 'false');
+                // FAZ 69: is_custody artık her zaman 'false'. Backend kontratı korunsun
+                // diye alan gönderilmeye devam ediyor; istenirse ileride büsbütün kaldırılabilir.
+                formData.append('is_custody', 'false');
                 formData.append('process_no', $('#process_no').val());
                 formData.append('cash_status', $('#cash_status').val());
                 if ($('.channel-btn.active').data('channel') !== 'card') formData.delete('installment');
@@ -4116,7 +4258,7 @@
 
             filtered.forEach(p => {
                 // Marj Uygulaması
-                let displaySale = parseFloat(p.sale_price_tl || 0);
+                let displaySale = parseFloat(p.sale_price_eur || 0);
                 if (PRICE_MARGIN_PERCENT > 0 && displaySale > 0) {
                     displaySale = displaySale * (1 + (PRICE_MARGIN_PERCENT / 100));
                 }
@@ -4157,7 +4299,7 @@
                         p.buy_price_hs,
                         p.sale_price_hs,
                         displaySale,
-                        p.buy_price_tl,
+                        p.buy_price_eur,
                         !!p.is_gram_bullion,
                         p.barcode,
                         false,                              // isBracelet (filterProducts listesi bilezik içermez)
@@ -4296,6 +4438,33 @@
 
             let custom_price_hs = custom_sale_price_hs;
 
+            // FAZ 20 (2026-04-30): Döviz ürünlerinde Has ve İşçilik alanları
+            // semantik olarak anlamsız (fiat para, altın karşılığı yok). UI
+            // tarafında kolonları gizle ve Birim Fiyat'ı tam genişliğe al.
+            // ÖNEMLI: Bu blok enforceCustomPrice if/else'inin DIŞINDA olmak zorunda;
+            // aksi hâlde Döviz→Altın/Ziynet (enforceCustomPrice=true) geçişinde
+            // visibility reset edilemez ve Has/İşçilik gizli kalır.
+            // KURAL 6 — defensive DOM (null-check zorunlu).
+            const _isFxCategory = (category_name === 'Döviz');
+            const _retailHasCol = document.getElementById('retailHasCol');
+            const _retailLaborCol = document.getElementById('retailLaborCol');
+            const _retailUnitPriceCol = document.getElementById('retailUnitPriceCol');
+            if (_isFxCategory) {
+                if (_retailHasCol) _retailHasCol.style.display = 'none';
+                if (_retailLaborCol) _retailLaborCol.style.display = 'none';
+                if (_retailUnitPriceCol) {
+                    _retailUnitPriceCol.classList.remove('col-lg-4', 'col-md-4', 'col-4');
+                    _retailUnitPriceCol.classList.add('col-lg-12', 'col-md-12', 'col-12');
+                }
+            } else {
+                if (_retailHasCol) _retailHasCol.style.display = '';
+                if (_retailLaborCol) _retailLaborCol.style.display = '';
+                if (_retailUnitPriceCol) {
+                    _retailUnitPriceCol.classList.remove('col-lg-12', 'col-md-12', 'col-12');
+                    _retailUnitPriceCol.classList.add('col-lg-4', 'col-md-4', 'col-4');
+                }
+            }
+
             // Fiyatları Ayarlama
             if (!enforceCustomPrice) {
                 // ─── YOL 2 (SSOT) HOTFIX (2026-04-27): Döviz ürün fiyat dallanması ───
@@ -4303,7 +4472,7 @@
                 // Has inputlarına TL değerini yazıyoruz ki HS↔TL oranı 1:1 olsun;
                 // böylece recalcAll/unit_price hesabı doğru çalışır. Hızlı İşlem'deki
                 // selectProduct (fast_index.html ~satır 1313) ile birebir simetri.
-                const _isFxRow = (category_name === 'Döviz');
+                const _isFxRow = _isFxCategory;
                 if (_isFxRow) {
                     const _saleTl = Number(salePriceTl) || 0;
                     const _buyTl  = Number(buyPriceTl)  || 0;
@@ -4351,7 +4520,16 @@
                 // Asimetri bug'ı: hsPerGram bloğu sadece #sale_price_hs'i dolduruyordu,
                 // #buy_price_hs için fallback yoktu → "Alış Has gelmiyor" şikayeti.
                 // Fallback zinciri: buyPriceHs → salePriceHs → milyem/1000
-                if (Number(buyPriceHs)) {
+                //
+                // FAZ 48 (2026-05-03): BARKODLU ÖZEL ÖNCELİK — WAC
+                // Mimari kural: barkodlu ALIŞ = maliyet has (WAC) × anlık kur.
+                // Products.buy_price_hs barkodlu için anlamsız (genelde 0); tarihsel
+                // alış maliyeti StockSnapshot.weighted_avg_cost_hs alanındadır
+                // (API alanı: weighted_buy_price_hs). Bu değer fallback'lerin
+                // ÜSTÜNDE olmalı; aksi halde salePriceHs'e düşüp Alış=Satış olur.
+                if (barcode && !isBracelet && _weightedBuyHsNum > 0) {
+                    hsPerGramBuy = _weightedBuyHsNum;
+                } else if (Number(buyPriceHs)) {
                     hsPerGramBuy = Number(buyPriceHs);
                 } else if (Number(salePriceHs)) {
                     hsPerGramBuy = Number(salePriceHs);
@@ -4371,6 +4549,40 @@
                     $('#buy_price_hs').val(0);
                 }
             }
+
+            // FAZ 20 (2026-04-30): SALE↔PURCHASE tab geçişinde görünür Has inputunun
+            // doğru güncellenmesi için final has değerlerini #unit_price data attr'a
+            // sakla. enforceCustomPrice + PURCHASE branch'inde sale_price_hs üzerine
+            // custom_buy_price_hs yazıldığından (line 4343), gerçek SALE has değerini
+            // ORİJİNAL custom_sale_price_hs değişkeninden okumalıyız; aksi hâlde
+            // PURCHASE→SALE geçişinde sale tarafı bozulur. Diğer path'lerde
+            // (Döviz / non-enforced) inputlar zaten doğru final değeri tutar.
+            //
+            // FAZ 48 (2026-05-03): BARKODLU ALIŞ = WAC × ANLIK KUR
+            // ─────────────────────────────────────────────────────────────
+            // Mimari kural: Barkodlu ürünlerde
+            //   - SATIŞ tab → sale_price_hs × anlık kur  (eski davranış korundu)
+            //   - ALIŞ tab  → maliyet has (WAC) × anlık kur  (YENİ)
+            // Eski kodda _buyHsAttr için $('#buy_price_hs').val() okunuyordu;
+            // bu input openPopup içinde salePriceHs fallback'i alıyordu, sonuçta
+            // ALIŞ ≈ SATIŞ oluyordu. Şimdi barkodlu için weighted_buy_price_hs
+            // (StockSnapshot.weighted_avg_cost_hs API alanı) doğrudan kullanılır.
+            // Diğer kategoriler (Hurda, Bilezik, Altın/Ziynet, Döviz) etkilenmez.
+            // ─────────────────────────────────────────────────────────────
+            const _saleHsAttr = enforceCustomPrice
+                ? (Number(custom_sale_price_hs) || 0)
+                : (Number($('#sale_price_hs').val()) || 0);
+            let _buyHsAttr;
+            if (enforceCustomPrice) {
+                _buyHsAttr = Number(custom_buy_price_hs) || 0;
+            } else if (barcode && !isBracelet && _weightedBuyHsNum > 0) {
+                // Barkodlu ürün: ALIŞ HAS = WAC (StockSnapshot.weighted_avg_cost_hs)
+                _buyHsAttr = _weightedBuyHsNum;
+            } else {
+                _buyHsAttr = Number($('#buy_price_hs').val()) || 0;
+            }
+            $('#unit_price').data('sale-price-hs', _saleHsAttr)
+                .data('buy-price-hs', _buyHsAttr);
 
             const rate = Number($('#sale_hs_tl').val()) || 0;
             let unitPrice = enforceCustomPrice
@@ -4419,13 +4631,10 @@
         $(document).on('change click', '#loan_btn,#cash_in_btn,#cash_out_btn,.channel-btn', enforceExclusiveOutInputs);
 
         // --- TAB & OPERATION SELECT ---
-        function selectRetailOperationType(btn, op) {
-            alert()
-            $('.operation-buttons .btn').removeClass('active');
-            $(btn).addClass('active');
-
-            $('#operationType').val(op);
-        }
+        // FAZ 69 (2026-05-09): Eski selectRetailOperationType kopyası KALDIRILDI.
+        // alert() debug kalıntısı + localStorage hattı yok + applyPriceForCurrentOperation
+        // çağırmıyordu. Kanonik versiyon ~satır 4896'da. JS hoisting sırasında ikinci
+        // tanım birinciyi ezdiği için çalışan zaten ikinciydi; bu blok ölü koddu.
 
         $(document).ajaxError((e, x) => Swal.fire('Hata', x.responseJSON?.error_msg || 'İşlem başarısız', 'error'));
     </script>
@@ -4436,13 +4645,10 @@
             }
 
             function toggleOrderAndCustody(hasCustomer) {
-                const $scrap = $('#scrapCheckbox');
-                const $scrapLbl = $('label[for="scrapCheckbox"]');
-                const $order = $('#orderCheckbox');
-                const $orderLbl = $('label[for="orderCheckbox"]');
-                const $custody = $('#custodyCheckbox');
-                const $custodyLbl = $('label[for="custodyCheckbox"]');
-
+                // FAZ 69 (2026-05-09): #custodyCheckbox kaldırıldı, fonksiyon ölü kabuk.
+                // İleride Sipariş için müşteri zorunluluğu UI sinyali eklenirse buraya
+                // yazılacak. Şu an `refreshVerifyState` çağrı zincirini kırmamak için
+                // imza korunuyor.
             }
 
             function refreshVerifyState() {
@@ -4667,18 +4873,93 @@
 
                 if (typeof recalcAll === 'function') recalcAll('unit_price', false);
             }
+
+            // FAZ 20 (2026-04-30): Tab değişiminde görünür #sale_price_hs (Has) inputu
+            // da operasyon tipine göre güncellenir. Önceden yalnızca #unit_price
+            // güncelleniyordu → "ADET" gibi buy≠sale ürünlerde Alış sekmesine
+            // geçilince Has alanı satış değerini göstermeye devam ediyordu.
+            // Data attribute'lar selectProduct/openPopup içinde set edilir; null/undefined
+            // durumunda 0 fallback uygulanır (KURAL 9 — locale & NaN audit).
+            const _storedSaleHs = Number($('#unit_price').data('sale-price-hs')) || 0;
+            const _storedBuyHs = Number($('#unit_price').data('buy-price-hs')) || 0;
+            const _targetHs = (op === 'SALE') ? _storedSaleHs : _storedBuyHs;
+            const _saleHsEl = document.getElementById('sale_price_hs');
+            if (_saleHsEl && document.activeElement !== _saleHsEl) {
+                _saleHsEl.value = (isFinite(_targetHs) ? _targetHs : 0).toFixed(3);
+            }
         }
 
         $(document).on('input', '#sale_hs_tl', applyPriceForCurrentOperation);
 
+        // ─────────────────────────────────────────────────────────────────────
+        // FAZ 69 (2026-05-09): SEKME KISITLAMA — Hurda / Bilezik kategorilerinde
+        // perakende sepetinden Alış / İade yapılması engellenir. Bu kategoriler
+        // sağ üstteki "Hurda/Bilezik Giriş" butonu üzerinden kendi havuz/WAC
+        // mantıklarıyla beslenir; sepet üzerinden giriş stok ve maliyet
+        // bütünlüğünü bozar (kategori 53 + havuz/WAC SSOT).
+        // ─────────────────────────────────────────────────────────────────────
+        const RETAIL_RESTRICTED_OPS = ['PURCHASE', 'RETURN'];
+
+        function _retailIsRestrictedCategoryName(name) {
+            if (!name) return false;
+            const n = String(name).toLocaleLowerCase('tr');
+            return n.indexOf('hurda') >= 0 || n.indexOf('bilezik') >= 0;
+        }
+
+        function _retailGetSelectedCategoryName() {
+            const el = document.querySelector('#categoryList .category-item.selected');
+            return el ? (el.innerText || '').trim() : '';
+        }
+
+        function _retailIsCurrentCategoryRestricted() {
+            return _retailIsRestrictedCategoryName(_retailGetSelectedCategoryName());
+        }
+
+        // Disabled sekmeye programatik dokunulduğunda hangi sekmeye düşeceği:
+        // her zaman SALE (sınıf gereği). Görsel ve state birlikte güncellenir.
+        function applyRetailTabRestriction(restricted) {
+            const $alis = $('.op-btn-alis');
+            const $iade = $('.op-btn-iade');
+            const $satis = $('.op-btn-satis');
+
+            if (restricted) {
+                $alis.add($iade)
+                    .addClass('disabled')
+                    .attr('aria-disabled', 'true')
+                    .attr('tabindex', '-1');
+
+                const cur = ($('#operationType').val() || 'SALE').toUpperCase();
+                if (RETAIL_RESTRICTED_OPS.indexOf(cur) >= 0) {
+                    // Aktif sekme yasaklı — SALE'e zorla.
+                    selectRetailOperationType($satis[0], 'SALE');
+                }
+            } else {
+                $alis.add($iade)
+                    .removeClass('disabled')
+                    .removeAttr('aria-disabled')
+                    .removeAttr('tabindex');
+            }
+        }
+
         function selectRetailOperationType(button, operationType) {
             const op = (operationType || 'SALE').toUpperCase();
 
-            $('.operation-buttons .btn').removeClass('active disabled');
+            // FAZ 69: Hurda/Bilezik seçiliyken Alış/İade'ye geçiş engellenir.
+            // Doğrudan SALE'e yönlendir (kullanıcı tıklamasını sessizce yutmak yerine
+            // tutarlı state için satış sekmesini aktif tutuyoruz).
+            if (RETAIL_RESTRICTED_OPS.indexOf(op) >= 0 && _retailIsCurrentCategoryRestricted()) {
+                button = $('.op-btn-satis')[0] || button;
+                operationType = 'SALE';
+            }
+            const finalOp = (operationType || 'SALE').toUpperCase();
+
+            $('.operation-buttons .btn').removeClass('active');
+            // 'disabled' sınıfı applyRetailTabRestriction tarafından yönetilir;
+            // selectRetailOperationType sadece 'active' yönetir.
             if (button) $(button).addClass('active');
 
-            $('#operationType').val(op);
-            localStorage.setItem('retail.lastOperation', op);
+            $('#operationType').val(finalOp);
+            localStorage.setItem('retail.lastOperation', finalOp);
 
             applyPriceForCurrentOperation();
 
@@ -4687,7 +4968,14 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const last = localStorage.getItem('retail.lastOperation') || 'SALE';
+            // FAZ 69: Eğer ilk açılışta seçili kategori Hurda/Bilezik ise localStorage'da
+            // tutulan PURCHASE/RETURN değeri yok sayılır ve SALE'e düşülür. Aksi halde
+            // applyRetailTabRestriction zaten aktif sekmeyi SALE'e çekecektir; ancak
+            // burada erken müdahale ederek tek-frame görsel takılmayı önlüyoruz.
+            let last = localStorage.getItem('retail.lastOperation') || 'SALE';
+            if (RETAIL_RESTRICTED_OPS.indexOf(last) >= 0 && _retailIsCurrentCategoryRestricted()) {
+                last = 'SALE';
+            }
             const btn =
                 last === 'SALE' ? $('.op-btn-satis')[0] :
                     last === 'PURCHASE' ? $('.op-btn-alis')[0] :
@@ -4761,9 +5049,24 @@
                                 li.innerText = category.name;
                                 li.classList.add('category-item');
 
+                                // FAZ 69: Hurda/Bilezik kategorilerini görsel olarak işaretle
+                                // (CSS'in seçici hedefi, ileride uyarı rozetine zemin).
+                                if (typeof _retailIsRestrictedCategoryName === 'function'
+                                    && _retailIsRestrictedCategoryName(category.name)) {
+                                    li.classList.add('category-restricts-tabs');
+                                }
+
                                 if (index === _targetIndex) {
                                     li.classList.add('selected');
                                     window.loadProducts(category.products);
+                                    // FAZ 69: Default seçili kategori Hurda/Bilezik ise sekme
+                                    // kısıtlamasını başlangıçta uygula. applyRetailTabRestriction
+                                    // o anki #operationType yasaklılarsa SALE'e çeker.
+                                    if (typeof applyRetailTabRestriction === 'function') {
+                                        applyRetailTabRestriction(
+                                            _retailIsRestrictedCategoryName(category.name)
+                                        );
+                                    }
                                 }
 
                                 li.addEventListener('click', function () {
@@ -4771,6 +5074,14 @@
                                     li.classList.add('selected');
                                     window.loadProducts(category.products);
                                     productSearch.value = '';
+
+                                    // FAZ 69: Sekme kısıtlamasını her kategori değişiminde
+                                    // tek noktadan uygula (hem girer hem çıkar).
+                                    if (typeof applyRetailTabRestriction === 'function') {
+                                        applyRetailTabRestriction(
+                                            _retailIsRestrictedCategoryName(category.name)
+                                        );
+                                    }
                                 });
                                 categoryList.appendChild(li);
                             });
@@ -4885,9 +5196,18 @@
 
             function _buildDisplayName(p) {
                 if (p.barcode) return String(p.barcode || '-');
-                // FAZ 6: Hurda → Ayar etiketi göster (gram yerine)
+                // FAZ 18 — CANONICAL NAMING (R-FAZ 9 hizalaması):
+                // Hurda ürünlerin canonical adı (ör. "10 Ayar") backend'de
+                // products.name alanına yazılıyor (extract_scrap_karat_label).
+                // Önceki sürüm `_mileageToAyar(p.product_mileage)` ile DB'deki
+                // canonical etiketi yok sayıp milyemden yeniden türetiyordu;
+                // standart olmayan milyemde (ör. 417) `default` dalına düşüp
+                // "417 Milyem" üretiyordu. Toptan ekranı ise zaten p.name
+                // gösterdiği için "10 Ayar" yazıyordu — tutarsızlık.
+                // Çözüm: önce p.name'i kullan; boşsa eski türetmeye düş.
                 if (_isScrap(p)) {
-                    return _mileageToAyar(p.product_mileage);
+                    const nm = (p.name || '').toString().trim();
+                    return nm || _mileageToAyar(p.product_mileage);
                 }
                 // FAZ 6: Bilezik → sol taraftaki gram tekrarını temizle
                 if (_isBracelet(p)) {
@@ -4978,9 +5298,9 @@
                     } else if (_isScrap(product)) {
                         stockInfo = `${(_sg || 0).toFixed(2)} gr`;
                     } else if (_isBracelet(product)) {
-                        stockInfo = _sg > 100 ? '100+ gr' : `${(_sg || 0).toFixed(2)} gr`;
+                        stockInfo = `${(_sg || 0).toFixed(2)} gr`;
                     } else if (product.is_gram_bullion) {
-                        stockInfo = _sg > 100 ? '100+ gr' : `${(_sg || 0).toFixed(2)} gr`;
+                        stockInfo = `${(_sg || 0).toFixed(2)} gr`;
                     } else if (_isFxCard) {
                         const fxBal = Number(product.fx_balance || 0);
                         const fxCcy = product.fx_currency || '';
@@ -4989,14 +5309,12 @@
                             // SALE bloke etmek backend guard'ın işi.
                             stockInfo = `0.00 ${fxCcy}`;
                             _fxDisable = true;
-                        } else if (fxBal > 10000) {
-                            stockInfo = `10000+ ${fxCcy}`;
                         } else {
                             stockInfo = `${fxBal.toFixed(2)} ${fxCcy}`;
                         }
                     } else {
                         const pc = Number(product.stock_pieces || 0);
-                        stockInfo = pc > 10 ? '10+ adet' : `${pc} adet`;
+                        stockInfo = `${pc} adet`;
                     }
 
                     const li = document.createElement('li');
@@ -5032,8 +5350,8 @@
                             displayName,
                             product.buy_price_hs,
                             product.sale_price_hs,
-                            product.sale_price_tl,
-                            product.buy_price_tl,
+                            product.sale_price_eur,
+                            product.buy_price_eur,
                             !!product.is_gram_bullion,
                             pseudoBarcode,
                             isBrc,
@@ -5282,12 +5600,48 @@
 
         let GLOBAL_HAS_BUY_TL = 0;
 
+        // FAZ 48 (2026-05-03): #sale_hs_tl ANLIK KUR POPULATE
+        // ─────────────────────────────────────────────────────────────────
+        // SORUN: <input type="hidden" id="sale_hs_tl" value="0"/> hiçbir JS
+        // tarafından doldurulmuyordu. applyPriceForCurrentOperation rate olarak
+        // bu değeri kullandığından, barkodlu ALIŞ tab'ında HS×kur=0 sonucu
+        // veriyor → fallback satış fiyatına düşüyor → "Alış fiyatı = Satış
+        // fiyatı" bug'ı.
+        //
+        // ÇÖZÜM: /products/get-has-gold-prices endpoint'inden anlık satış
+        // kurunu çekip #sale_hs_tl alanına yaz. 30 saniyede bir tazele.
+        // Mimari KORUNDU: Manuel Has Modu KAPALI durumda Products.salePriceTl
+        // direkt kullanıldığından, rate yalnızca buy/sale TL=0 fallback'inde
+        // (barkodlu ALIŞ vb.) devreye girer.
+        // ─────────────────────────────────────────────────────────────────
         $(document).ready(function () {
-            $.getJSON('/products/get-has-gold-prices', function (data) {
-                if (data && data.buy_hs_tl) {
-                    GLOBAL_HAS_BUY_TL = parseFloat(data.buy_hs_tl) || 0;
-                }
-            });
+            function loadGoldRates() {
+                $.getJSON('/products/get-has-gold-prices', function (data) {
+                    if (!data) return;
+
+                    // Eski davranışı KORU: GLOBAL_HAS_BUY_TL hurda modal hesabı için
+                    if (data.buy_hs_tl) {
+                        GLOBAL_HAS_BUY_TL = parseFloat(data.buy_hs_tl) || 0;
+                    }
+
+                    // YENİ: #sale_hs_tl anlık satış kuru ile doldur
+                    // (barkodlu ALIŞ ve manuel-has hesaplarında rate olarak okunur)
+                    if (data.sale_hs_tl) {
+                        var rate = parseFloat(data.sale_hs_tl) || 0;
+                        if (rate > 0) {
+                            $('#sale_hs_tl').val(rate);
+                            // Açık popup varsa fiyatı yeniden hesapla
+                            // (rate güncellemesi ALIŞ tab fiyatını yenilemeli)
+                            if (typeof applyPriceForCurrentOperation === 'function') {
+                                try { applyPriceForCurrentOperation(); } catch (e) {}
+                            }
+                        }
+                    }
+                });
+            }
+            loadGoldRates();
+            // Periyodik tazeleme (30 sn) — kur kaymasında ALIŞ yenilensin
+            setInterval(loadGoldRates, 30000);
         });
 
         // Mevcut Hurda Giriş butonuna tıklanınca Modalı aç
@@ -5512,8 +5866,8 @@
                     (x.name || '').toLowerCase().includes('has altın') ||
                     (x.name || '').toLowerCase().includes('has 24')
                 );
-                // Burada p.sale_price_tl, Has Altın'ın TL satış fiyatıdır.
-                if (p) return parseFloat(p.sale_price_tl || 0);
+                // Burada p.sale_price_eur, Has Altın'ın TL satış fiyatıdır.
+                if (p) return parseFloat(p.sale_price_eur || 0);
             }
 
             return 0; // Bulunamazsa 0 döner, hesaplama yapılmaz.
@@ -6392,16 +6746,16 @@
         })
     </script>
 
-    {# ═══════════════════════════════════════════════════════════════════════════ #}
-    {# FAZ S2 + S4 + S5 (PIVOT 2026-04-23): Çoklu Maden Satış Mantığı            #}
-    {# - openPopup wrapper (monkey-patch): WATCH/DIAMOND ise foreign panel açılır #}
-    {# - recalcAllForeign(): döviz × kur = TL hesabı (çift yönlü)                 #}
-    {# - FX rate cache: /products/get-fx-rates 1 kez çekilir, kullanıcı override   #}
-    {# - Form submit interceptor: hidden #unit_price/#total_price/#sale_price_hs   #}
-    {#   alanlarını backend için doldurur (mevcut kontrat aynen)                  #}
-    {# Mevcut metal akışı (GOLD/SILVER) HİÇ DOKUNULMADI — sadece WATCH/DIAMOND'da #}
-    {# branch alınır.                                                              #}
-    {# ═══════════════════════════════════════════════════════════════════════════ #}
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- FAZ S2 + S4 + S5 (PIVOT 2026-04-23): Çoklu Maden Satış Mantığı            -->
+    <!-- - openPopup wrapper (monkey-patch): WATCH/DIAMOND ise foreign panel açılır -->
+    <!-- - recalcAllForeign(): döviz × kur = TL hesabı (çift yönlü)                 -->
+    <!-- - FX rate cache: /products/get-fx-rates 1 kez çekilir, kullanıcı override   -->
+    <!-- - Form submit interceptor: hidden #unit_price/#total_price/#sale_price_hs   -->
+    <!--   alanlarını backend için doldurur (mevcut kontrat aynen)                  -->
+    <!-- Mevcut metal akışı (GOLD/SILVER) HİÇ DOKUNULMADI — sadece WATCH/DIAMOND'da -->
+    <!-- branch alınır.                                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
     <script>
     (function () {
         'use strict';
@@ -6423,7 +6777,7 @@
                 material_type:        mt,
                 sale_currency:        productData.sale_currency || null,
                 sale_price_foreign:   parseFloat(productData.sale_price_foreign || 0),
-                weighted_buy_price_tl: parseFloat(productData.weighted_buy_price_tl || 0),
+                weighted_buy_price_eur: parseFloat(productData.weighted_buy_price_eur || 0),
                 mount_karat:          productData.mount_karat || null,
                 mount_gram:           parseFloat(productData.mount_gram || 0),
                 mount_metal:          productData.mount_metal || null,

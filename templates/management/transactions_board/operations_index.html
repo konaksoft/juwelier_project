@@ -975,9 +975,9 @@
                     ? Number(r.amount).toFixed(2).replace(/\.?0+$/, '')
                     : r.amount;
 
-                const amtTl = (typeof r.amount_tl === 'number')
-                    ? Number(r.amount_tl).toFixed(2).replace(/\.?0+$/, '')
-                    : (r.amount_tl || '0');
+                const amtTl = (typeof r.amount_eur === 'number')
+                    ? Number(r.amount_eur).toFixed(2).replace(/\.?0+$/, '')
+                    : (r.amount_eur || '0');
 
                 const isCanceled = (r.is_status || r.status || '').toString().toUpperCase() === 'CANCELED';
 
@@ -1004,7 +1004,14 @@
                         <td>${qty}</td>
                         <td class="text-end">${amt || '0'}</td>
                         <td class="text-end fw-bold text-success">${amtTl} ₺</td> <td>${r.currency || '-'}</td>
-                        <td>${r.process_no || '-'}</td>
+                        <td>${r.process_no
+                            ? `<span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                     data-process-no="${r.process_no}"
+                                     style="cursor:pointer;letter-spacing:.3px;"
+                                     title="İşlem röntgenini görüntüle">
+                                  <i class="fa-solid fa-magnifying-glass-chart me-1"></i>${r.process_no}
+                               </span>`
+                            : '-'}</td>
                         <td>${actionHtml}</td>
                     </tr>`;
             }).join('');
@@ -1033,7 +1040,14 @@
                     <td>${r.qty || '-'}</td>
                     <td class="text-end">${amt || '0'}</td>
                     <td>${r.currency || '-'}</td>
-                    <td>${r.process_no || '-'}</td>
+                    <td>${r.process_no
+                        ? `<span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                 data-process-no="${r.process_no}"
+                                 style="cursor:pointer;letter-spacing:.3px;"
+                                 title="İşlem röntgenini görüntüle">
+                              <i class="fa-solid fa-magnifying-glass-chart me-1"></i>${r.process_no}
+                           </span>`
+                        : '-'}</td>
                     <td><button class="btn btn-danger btn-sm ${dis}" data-action="cancel-bind" data-id="${r.row_id}" title="${tip}"><i class="bi bi-x-circle me-1"></i>İptal</button></td>
                 </tr>`
             }).join('');

@@ -60,7 +60,7 @@ def fetch_prices_from_providers():
     total_errors = 0
 
     # Oncelikle Has Altin bazini al (ilk basarili saglayicidan)
-    base_has_buy_tl = None
+    base_has_buy_eur = None
     base_has_sell_tl = None
 
     for provider in providers:
@@ -74,17 +74,17 @@ def fetch_prices_from_providers():
                 continue
 
             # Has Altin bazini bul (ilk saglayicidan)
-            if base_has_buy_tl is None:
+            if base_has_buy_eur is None:
                 has_data = _extract_has_altin(response_data)
                 if has_data:
-                    base_has_buy_tl = has_data['buy']
+                    base_has_buy_eur = has_data['buy']
                     base_has_sell_tl = has_data['sell']
 
             # Cevabi isle
             count = PriceService.process_api_response(
                 provider=provider,
                 response_data=response_data,
-                base_has_buy_tl=base_has_buy_tl,
+                base_has_buy_eur=base_has_buy_eur,
                 base_has_sell_tl=base_has_sell_tl,
             )
 
@@ -369,7 +369,7 @@ _METAL_TO_PRODUCT_MAP = {
 def _sync_api_prices_to_products():
     """
     PriceService'ten (Redis/DB) guncel fiyatlari okuyup
-    Products tablosundaki ilgili urunlerin buy_price_tl ve sale_price_tl
+    Products tablosundaki ilgili urunlerin buy_price_eur ve sale_price_eur
     alanlarini gunceller.
 
     Bu fonksiyon fetch_prices_from_providers() task'i icerisinden,
@@ -380,9 +380,18 @@ def _sync_api_prices_to_products():
           urunlerini etkiler. (Simdilik Products global oldugundan
           en az bir magaza API modunda ise guncellenir.)
         - Products.objects.filter(...).update() kullanilir (save() degil).
-        - Sadece buy_price_tl ve sale_price_tl alanlari guncellenir.
+        - Sadece buy_price_eur ve sale_price_eur alanlari guncellenir.
         - 0 veya negatif deger gelirse o urun atlanir (koruma).
         - Hata durumunda son basarili deger Products'ta kalir (sessiz failover).
+
+    T3 (2026-04-29) — Manuel Kur Bypass:
+        - Doviz urunleri (USD/EUR/GBP karsiligi `USDTRY/EURTRY/GBPTRY`) icin
+          tum magazalar `use_manual_currency_rate=True` ise API guncellemesi
+          atlanir. Bu sayede manuel kur degerleri Celery task tarafindan
+          ezilmez. En az bir magaza API modunda kalmissa global Products
+          fiyatlari guncellenmeye devam eder; manuel modda olan magazalar
+          icin override mantigi view katmaninda (get_product_details / get_all)
+          `manual_currency_rates` JSONField'indan okuyarak fallback yapar.
     """
     from apps.stock_management.services.price_service import PriceService
     from apps.products.models import Products
@@ -407,9 +416,25 @@ def _sync_api_prices_to_products():
         logger.info("Tum magazalar manuel modda — Products senkronizasyonu atlanıyor.")
         return
 
+    # T3: Tum magazalar manuel kur modunda mi? (Doviz urunleri icin)
+    total_stores = StoreConfiguration.objects.count()
+    manual_currency_stores = StoreConfiguration.objects.filter(
+        use_manual_currency_rate=True
+    ).count()
+    all_currency_manual = (
+        total_stores > 0 and manual_currency_stores >= total_stores
+    )
+
+    # Doviz metal type listesi (manuel kur bypass kontrolu icin)
+    _CURRENCY_METAL_TYPES = {'USD', 'EUR', 'GBP'}
+
     updated = 0
 
     for metal_type, product_name in _METAL_TO_PRODUCT_MAP.items():
+        # T3: Doviz urunleri icin tum magazalar manuel kur modundaysa atla
+        if metal_type in _CURRENCY_METAL_TYPES and all_currency_manual:
+            continue
+
         try:
             price = PriceService.get_price(metal_type)
 
@@ -421,9 +446,9 @@ def _sync_api_prices_to_products():
 
             update_fields = {}
             if buy_tl > 0:
-                update_fields['buy_price_tl'] = buy_tl
+                update_fields['buy_price_eur'] = buy_tl
             if sell_tl > 0:
-                update_fields['sale_price_tl'] = sell_tl
+                update_fields['sale_price_eur'] = sell_tl
 
             if update_fields:
                 rows = Products.objects.filter(
@@ -447,9 +472,9 @@ def _sync_api_prices_to_products():
         if has_buy > 0 and has_sell > 0:
             gram_fields = {}
             if has_buy > 0:
-                gram_fields['buy_price_tl'] = has_buy
+                gram_fields['buy_price_eur'] = has_buy
             if has_sell > 0:
-                gram_fields['sale_price_tl'] = has_sell
+                gram_fields['sale_price_eur'] = has_sell
 
             rows = Products.objects.filter(
                 name='Gram Altın',
@@ -468,12 +493,12 @@ def _sync_api_prices_to_products():
             provider__is_active=True,
         ).order_by('-quoted_at').first()
 
-        if ons_quote and (ons_quote.buy_price_tl > 0 or ons_quote.sell_price_tl > 0):
+        if ons_quote and (ons_quote.buy_price_eur > 0 or ons_quote.sell_price_eur > 0):
             ons_fields = {}
-            if ons_quote.buy_price_tl > 0:
-                ons_fields['buy_price_tl'] = ons_quote.buy_price_tl
-            if ons_quote.sell_price_tl > 0:
-                ons_fields['sale_price_tl'] = ons_quote.sell_price_tl
+            if ons_quote.buy_price_eur > 0:
+                ons_fields['buy_price_eur'] = ons_quote.buy_price_eur
+            if ons_quote.sell_price_eur > 0:
+                ons_fields['sale_price_eur'] = ons_quote.sell_price_eur
 
             if ons_fields:
                 rows = Products.objects.filter(

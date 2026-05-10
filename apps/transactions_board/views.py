@@ -28,8 +28,8 @@ def _get_common_context(request):
     # NOT: Celery task (update_products_from_api) fiyatlari 'Has Altın 24 Ayar'
     # adli kayda yaziyor. Stale 'Has Altın' kaydini degil, taze kaydi okumaliyiz.
     has_product = Products.objects.filter(name='Has Altın 24 Ayar').first()
-    buy_hs_tl = has_product.buy_price_tl if has_product else 0
-    sale_hs_tl = has_product.sale_price_tl if has_product else 0
+    buy_hs_tl = has_product.buy_price_eur if has_product else 0
+    sale_hs_tl = has_product.sale_price_eur if has_product else 0
 
     # Son işlem numarası
     last_process = Process.objects.filter(store=store, is_status='IN_PROGRESS').first()

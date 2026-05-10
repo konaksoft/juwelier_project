@@ -182,11 +182,11 @@
             <table class="sum-table">
                 <tr>
                     <td class="left">Toplam Satış Tutarı:</td>
-                    <td class="right nowrap">{{ sum_total_sales_tl }} ₺</td>
+                    <td class="right nowrap">{{ sum_total_sales_eur }} ₺</td>
                 </tr>
                 <tr>
                     <td class="left">Toplam Alış/İade Tutarı:</td>
-                    <td class="right nowrap">{{ sum_total_purchases_tl }} ₺</td>
+                    <td class="right nowrap">{{ sum_total_purchases_eur }} ₺</td>
                 </tr>
                 <tr>
                     <td class="left">Toplam Satış Has (gram):</td>
@@ -229,7 +229,14 @@
             <tbody>
             {% for r in rows %}
                 <tr>
-                    <td class="mono nowrap">{{ r.process_no }}</td>
+                    <td class="mono nowrap">
+                        {% if r.process_no %}
+                            <span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                  data-process-no="{{ r.process_no }}"
+                                  style="cursor:pointer;letter-spacing:.3px;"
+                                  title="İşlem röntgenini aç">{{ r.process_no }}</span>
+                        {% else %}-{% endif %}
+                    </td>
                     <td>{{ r.datetime }}</td>
                     <td>{{ r.customer }}</td>
                     <td>{{ r.product }}</td>

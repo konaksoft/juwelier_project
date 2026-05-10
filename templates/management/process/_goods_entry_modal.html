@@ -1,0 +1,260 @@
+{% comment %}
+═════════════════════════════════════════════════════════════════════════
+UAT BULGU 2 (2026-04-29) — Birleşik Mal Girişi Modalı (Reusable Partial)
+═════════════════════════════════════════════════════════════════════════
+Kullanım:
+    {% include "management/process/_goods_entry_modal.html" with
+        modal_id="goodsEntryModal" channel="RETAIL" %}
+    <!-- channel: RETAIL | WHOLESALE | WHOLESALE_MULTI -->
+
+Tasarım — "Progressive Disclosure":
+    [Katman A — SABIT]
+        Mal Tipi (Hurda / Bilezik / Pırlanta) tab seçici
+        Tedarikçi / Tarih (her zaman görünür)
+    [Katman B — DİNAMİK]
+        Seçilen tipe göre dinamik form alanları
+    [Katman C — ÖDEME]
+        Form altında her zaman görünür
+
+Endpoint:
+    POST /process/goods-entry/
+        entry_type = SCRAP | BRACELET (DIAMOND ileride eklenecek)
+        channel    = RETAIL | WHOLESALE | WHOLESALE_MULTI
+        ... + tipe özgü alanlar
+═════════════════════════════════════════════════════════════════════════
+{% endcomment %}
+
+<div class="modal fade" id="{{ modal_id|default:'goodsEntryModal' }}"
+     tabindex="-1" aria-labelledby="goodsEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="goodsEntryModalLabel">
+                    <i class="fa-solid fa-box-archive me-2"></i> Mal Girişi
+                </h5>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="{{ modal_id|default:'goodsEntryModal' }}_form" autocomplete="off">
+                {% csrf_token %}
+                <input type="hidden" name="channel"
+                       value="{{ channel|default:'RETAIL' }}">
+
+                <div class="modal-body">
+                    <!-- ── KATMAN A — Mal Tipi Seçici ── -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted small">
+                            MAL TİPİ
+                        </label>
+                        <div class="btn-group w-100" role="group"
+                             aria-label="Mal Tipi Seçici">
+                            <input type="radio" class="btn-check"
+                                   name="entry_type" id="ge_type_scrap"
+                                   value="SCRAP" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="ge_type_scrap">
+                                <i class="fa-solid fa-recycle me-1"></i> Hurda
+                            </label>
+
+                            <input type="radio" class="btn-check"
+                                   name="entry_type" id="ge_type_bracelet"
+                                   value="BRACELET" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="ge_type_bracelet">
+                                <i class="fa-solid fa-circle me-1"></i> Bilezik
+                            </label>
+
+                            <input type="radio" class="btn-check"
+                                   name="entry_type" id="ge_type_diamond"
+                                   value="DIAMOND" autocomplete="off" disabled>
+                            <label class="btn btn-outline-secondary" for="ge_type_diamond">
+                                <i class="fa-solid fa-gem me-1"></i> Pırlanta
+                                <small class="text-muted">(yakında)</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ── KATMAN A (devamı) — Sabit alanlar ── -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small">Tedarikçi (opsiyonel)</label>
+                            <select name="supplier_id" class="form-select form-select-sm">
+                                <option value="">— Tedarikçisiz —</option>
+                                <!-- Çağıran sayfa supplier listesini context'ten doldurabilir -->
+                                {% for s in suppliers|default_if_none:'' %}
+                                    <option value="{{ s.id }}">{{ s.company_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Tarih</label>
+                            <input type="date" name="entry_date"
+                                   class="form-control form-control-sm">
+                        </div>
+                    </div>
+
+                    <!-- ── KATMAN B — DİNAMİK: HURDA ── -->
+                    <div data-ge-section="SCRAP" class="ge-section">
+                        <div class="card bg-light-warning border-0">
+                            <div class="card-body py-3">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Ayar</label>
+                                        <select name="scrap_name" class="form-select form-select-sm">
+                                            <option value="14 Ayar">14 Ayar</option>
+                                            <option value="18 Ayar">18 Ayar</option>
+                                            <option value="22 Ayar">22 Ayar</option>
+                                            <option value="24 Ayar">24 Ayar</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Gram</label>
+                                        <input type="text" name="gram"
+                                               class="form-control form-control-sm"
+                                               placeholder="0,000">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Milyem</label>
+                                        <input type="number" name="product_mileage"
+                                               class="form-control form-control-sm"
+                                               placeholder="585">
+                                    </div>
+                                </div>
+                                <input type="hidden" name="material_type" value="GOLD">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── KATMAN B — DİNAMİK: BİLEZİK ── -->
+                    <div data-ge-section="BRACELET" class="ge-section" style="display:none">
+                        <div class="card bg-light-info border-0">
+                            <div class="card-body py-3">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Koleksiyon</label>
+                                        <input type="text" name="collection"
+                                               class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Adet</label>
+                                        <input type="number" name="piece"
+                                               class="form-control form-control-sm" min="1" value="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Toplam Gram</label>
+                                        <input type="text" name="gram"
+                                               class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Milyem</label>
+                                        <input type="number" name="product_mileage"
+                                               class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── KATMAN C — Ödeme ── -->
+                    <div class="mt-3">
+                        <label class="form-label small text-muted fw-bold">
+                            ÖDEME (opsiyonel — boşsa açık cariye yazılır)
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <select name="payment_currency" class="form-select form-select-sm">
+                                    <option value="TRY">TL</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="HS">Has</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" name="payment_amount"
+                                       class="form-control form-control-sm"
+                                       placeholder="Tutar">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" name="labor_cost_eur"
+                                       class="form-control form-control-sm"
+                                       placeholder="İşçilik (TL) — UAT Bulgu 3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light"
+                            data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-check me-1"></i> Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var modalId = '{{ modal_id|default:"goodsEntryModal" }}';
+    var modalEl = document.getElementById(modalId);
+    if (!modalEl) return;
+
+    // ── Tip seçicisi → ilgili sekmeyi göster, diğerlerini gizle ──
+    function applySection(type) {
+        modalEl.querySelectorAll('.ge-section').forEach(function (el) {
+            el.style.display = (el.dataset.geSection === type) ? '' : 'none';
+        });
+    }
+    modalEl.querySelectorAll('input[name="entry_type"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+            if (this.checked) applySection(this.value);
+        });
+    });
+
+    // ── Form submit → router endpoint'e POST ──
+    var form = document.getElementById(modalId + '_form');
+    if (!form) return;
+    form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var fd = new FormData(form);
+        // Görünmez sekmelerin alanlarını payload'dan çıkar (kirletmemek için)
+        var activeType = (form.querySelector('input[name="entry_type"]:checked') || {}).value;
+        modalEl.querySelectorAll('.ge-section').forEach(function (sec) {
+            if (sec.dataset.geSection !== activeType) {
+                sec.querySelectorAll('input[name],select[name]').forEach(function (i) {
+                    fd.delete(i.name);
+                });
+            }
+        });
+
+        fetch('/process/goods-entry/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [, ''])[1],
+            },
+            body: fd,
+        })
+        .then(function (r) { return r.json().then(function (j) { return {ok: r.ok, body: j}; }); })
+        .then(function (res) {
+            if (!res.ok || res.body.result === false) {
+                alert(res.body.error_msg || res.body.error || 'Kayıt başarısız');
+                return;
+            }
+            // Başarı: sayfa custom event ile dinler — refresh ya da liste güncelleme
+            modalEl.dispatchEvent(new CustomEvent('goods-entry:success',
+                { bubbles: true, detail: res.body }));
+            try {
+                var inst = bootstrap.Modal.getInstance(modalEl);
+                if (inst) inst.hide();
+            } catch (e) {}
+            form.reset();
+        })
+        .catch(function (err) {
+            alert('Sunucu hatası: ' + err);
+        });
+    });
+})();
+</script>

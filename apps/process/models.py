@@ -17,7 +17,7 @@ class ProcessGroup(models.Model):
     Process ve Payment kayıtları buraya UUID FK ile bağlanarak tam referans bütünlüğü sağlanır.
     Mevcut process_no alanları geriye dönük uyum için korunmaktadır."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    process_no = models.CharField(max_length=15, unique=True)
+    process_no = models.CharField(max_length=20, unique=True)
     store = models.ForeignKey(Stores, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
@@ -45,7 +45,6 @@ class Process(models.Model):
     PROCESS_TYPE_CHOICES = [
         ('RETAIL', 'Perakende'),
         ('WHOLESALE', 'Toptan'),
-        ('FAST_PROCESS', 'Hızlı İşlem'),
     ]
 
     TRANSACTION_TYPE_CHOICES = [
@@ -67,7 +66,7 @@ class Process(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    process_no = models.CharField(max_length=15, null=True, blank=True)
+    process_no = models.CharField(max_length=20, null=True, blank=True)
     process_group = models.ForeignKey(
         ProcessGroup,
         on_delete=models.SET_NULL,
@@ -123,7 +122,7 @@ class Process(models.Model):
     )
 
     # İşlem tamamlandığında mühürlenen maliyet (veri güvenliği için tersten hesaplama yerine)
-    cost_amount_tl = models.DecimalField(
+    cost_amount_eur = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=Decimal('0.00'),
@@ -147,13 +146,54 @@ class Process(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
 
     price_hs = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'), blank=True, null=True)
-    hs_rate_sale_tl = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    hs_rate_buy_tl = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    hs_rate_sale_eur = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    hs_rate_buy_eur = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     karat = models.PositiveSmallIntegerField(null=True, blank=True)
 
     labor_amount = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal('0.00'),
         null=True, blank=True, help_text="Özel matrah kapsamında brüt işçilik toplamı (TL)."
+    )
+
+    # ─────────────────────────────────────────────────────────────────
+    # UAT BULGU 3 (2026-04-29) — ALIM TARAFINDA İŞÇİLİK MALİYETİ
+    # ─────────────────────────────────────────────────────────────────
+    # Aynı havuza giren iki ayrı satırda has/malzeme aynı, ama biri
+    # işçilikli (örn. zincir = has + işçilik), diğeri saf hurda olabilir.
+    # WAC havuz mantığı bozulmadan, satır bazlı maliyet ayrımı yapılır:
+    #   amount_eur   = ödenen toplam TL (mevcut `amount`)
+    #   labor_cost_eur = bu satırın işçilik bileşeni (TL)
+    #   material_cost_tl = amount - labor_cost_eur (raporlama anında türetilir)
+    #
+    # WAC hesaplaması `amount`/`unit_price`/`price_hs` üzerinden devam
+    # eder — bu alan SADECE raporlama için kullanılır, havuza dahil
+    # edilmez. labor_amount alanından farkı: o "özel matrah" satış-tarafı
+    # vergi tabanı; bu ise alış-tarafı maliyet ayrıştırma alanıdır.
+    # ─────────────────────────────────────────────────────────────────
+    labor_cost_eur = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal('0.00'),
+        null=True, blank=True,
+        help_text=(
+            "Alım satırı için işçilik maliyeti (TL). Toplam ödenen tutardan "
+            "(amount) düşülerek saf has/malzeme maliyeti hesaplanır. "
+            "WAC havuzuna dahil edilmez — yalnızca satır-bazlı raporlamada "
+            "kullanılır."
+        ),
+    )
+
+    # FAZ 19 / Bulgu B — Bağımsız İşçilik Milyem Alanı
+    # Toptan/Perakende hurda+bilezik alımlarında çantacı/tedarikçi tarafından
+    # eklenen işçilik milyemi (örn. 100 gr × 585 milyem malzeme + 120 milyem
+    # işçilik = toplam 70.50 has). WAC havuzuna dahil edilmez; yalnızca havuz
+    # detay sayfalarında şeffaflık için raporlama amaçlı saklanır.
+    iscilik_milyem = models.DecimalField(
+        max_digits=6, decimal_places=2, default=Decimal('0.00'),
+        null=True, blank=True,
+        help_text=(
+            "Alım satırına özel işçilik milyemi (örn. 120 = 12 has/100 gr). "
+            "Opsiyonel; WAC hesabına dahil değildir, yalnızca havuz detay "
+            "raporlamasında gösterilir."
+        ),
     )
 
     waiting_stock = models.BooleanField(default=False)
@@ -219,7 +259,7 @@ class Payment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # --- İşlem Bağlantısı (Mevcut) ---
-    process_no = models.CharField(max_length=15, null=True, blank=True)
+    process_no = models.CharField(max_length=20, null=True, blank=True)
     process_group = models.ForeignKey(
         ProcessGroup,
         on_delete=models.SET_NULL,
@@ -428,6 +468,79 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.get_payment_type_display()} – {self.amount}"
+
+    # ────────────────────────────────────────────────────────────────────
+    # FAZ 14 — VALIDASYON (bank_account zorunluluğu + tip uyumu)
+    # ────────────────────────────────────────────────────────────────────
+    #
+    # Mevcut DB şeması: bank_account null=True (geriye uyumluluk için
+    # korunmaktadır; eski kayıtlarda NULL bulunabilir).
+    #
+    # Faz 14'ten itibaren YENİ kayıtlarda bank_account zorunludur ve
+    # payment_type ile bank_account.account_type arasında uyum olmalıdır.
+    # Bu kural full_clean() çağrıldığında uygulanır; CollectionService
+    # bu kontrolü kendisi de yaptığı için ikili güvence sağlanır.
+    #
+    # Çapraz tip uyum tablosu:
+    #   CASH         ↔ account_type=CASH
+    #   CREDIT_CARD  ↔ account_type=POS
+    #   TRANSFER     ↔ account_type=BANK
+    #   COMMISSION   → bank_account opsiyonel (POS bağlamında yazılabilir)
+    #   ADJUSTMENT   → bank_account opsiyonel (açılış bakiyesi)
+
+    PAYMENT_TYPE_TO_ACCOUNT_TYPE = {
+        'CASH':        'CASH',
+        'CREDIT_CARD': 'POS',
+        'TRANSFER':    'BANK',
+    }
+
+    def clean(self):
+        """Payment kaydı yazılmadan önce validasyon (FAZ 14).
+
+        Kurallar:
+          1. payment_type CASH/CREDIT_CARD/TRANSFER ise bank_account zorunlu.
+          2. payment_type ile bank_account.account_type uyumlu olmalı.
+          3. bank_account.is_active=False ise yazım reddedilir.
+
+        COMMISSION ve ADJUSTMENT tiplerinde bank_account opsiyonel kalır
+        (geriye uyumluluk: bakiye açılışları, manuel düzeltmeler).
+        """
+        from django.core.exceptions import ValidationError
+
+        super().clean()
+
+        # İptal edilmiş kayıtlar tekrar valide edilmez (state transition)
+        if self.is_cancelled:
+            return
+
+        expected_account_type = self.PAYMENT_TYPE_TO_ACCOUNT_TYPE.get(self.payment_type)
+
+        if expected_account_type is not None:
+            # 1) Zorunluluk
+            if self.bank_account_id is None:
+                raise ValidationError({
+                    'bank_account': (
+                        f'{self.get_payment_type_display()} ödemesi için '
+                        f'kasa/hesap seçimi zorunludur.'
+                    ),
+                })
+
+            # 2) Tip uyumu
+            actual_account_type = getattr(self.bank_account, 'account_type', None)
+            if actual_account_type != expected_account_type:
+                raise ValidationError({
+                    'bank_account': (
+                        f'{self.get_payment_type_display()} ödemesi için '
+                        f'{expected_account_type} tipinde kasa seçilmelidir; '
+                        f'seçilen kasa tipi: {actual_account_type}.'
+                    ),
+                })
+
+            # 3) Aktiflik
+            if not getattr(self.bank_account, 'is_active', True):
+                raise ValidationError({
+                    'bank_account': 'Seçilen kasa pasif durumdadır.',
+                })
 
     class Meta:
         db_table = 'Payment'

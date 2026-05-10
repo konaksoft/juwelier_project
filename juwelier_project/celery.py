@@ -30,7 +30,7 @@ app.conf.worker_max_tasks_per_child = 100
 # Ayni anda sadece 1 task on-bellege alinir; ani yuk altinda birikmesi engellenir.
 app.conf.worker_prefetch_multiplier = 1
 
-app.autodiscover_tasks(['apps.invoices', 'apps.products', 'apps.dashboard', 'apps.banking', 'apps.stock_management', 'apps.gold_purchases'])
+app.autodiscover_tasks(['apps.invoices', 'apps.products', 'apps.dashboard', 'apps.banking', 'apps.stock_management', 'apps.gold_purchases', 'apps.backups'])
 
 
 # ── Celery Beat Schedule ───────────────────────────────────────────────────
@@ -65,6 +65,12 @@ app.conf.beat_schedule = {
     'dashboard-today-rollup-15min': {
         'task': 'dashboard.compute_today_rollup',
         'schedule': 15 * 60,  # Her 15 dakikada bir (saniye cinsinden)
+        'options': {'queue': 'default'},
+    },
+    # ── FAZ 60.2: Yarım kalan parçalı yüklemeleri günlük temizle ──
+    'backups-cleanup-chunked-uploads-daily': {
+        'task': 'backups.cleanup_chunked_uploads',
+        'schedule': crontab(hour=2, minute=30),  # Her gece 02:30
         'options': {'queue': 'default'},
     },
 }

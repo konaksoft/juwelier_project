@@ -479,11 +479,7 @@
                                                    href="#Ziynet"><i class="fas fa-ring"></i> Ziynet</a>
                                             </li>
 
-                                            <li class="nav-item">
-                                                <a class="nav-link text-active-primary pb-4"
-                                                   data-bs-toggle="tab"
-                                                   href="#Altın"><i class="fas fa-coins"></i> Altın</a>
-                                            </li>
+
 
                                             <li class="nav-item">
                                                 <a class="nav-link text-active-primary pb-4"
@@ -507,6 +503,17 @@
                                                             id='bulkSave-Ziynet'>
                                                         <i class='fa-solid fa-floppy-disk'></i> Toplu Kaydet
                                                     </button>
+
+                                                    <button type='button' class='btn btn-light-primary'
+                                                            data-bs-toggle='modal'
+                                                            data-bs-target='#addModal-Sarrafiye'>
+                                                        <i class='fa-solid fa-plus'></i> Özel Ürün Ekle
+                                                    </button>
+                                                </div>
+                                                <!-- T2 v2 (2026-04-29) — Drag-and-drop bilgi rozeti -->
+                                                <div class='d-flex align-items-center text-muted fs-7'>
+                                                    <i class='fa-solid fa-up-down-left-right me-2'></i>
+                                                    Satırları sürükleyerek sıralayın — değişiklik otomatik kaydedilir.
                                                 </div>
                                             </div>
 
@@ -523,6 +530,11 @@
                                                             </div>
                                                           </span>
                                                         </th>
+                                                        <!-- T2 v2 (2026-04-29) — Drag handle sütunu (numeric input yerine) -->
+                                                        <th class='text-center' style='width:40px'>
+                                                            <i class='fa-solid fa-grip-vertical text-muted'
+                                                               title='Sürükleyerek sırala'></i>
+                                                        </th>
                                                         <th>Resim</th>
                                                         <th>Ürün</th>
                                                         <th>Alış Has</th>
@@ -538,69 +550,38 @@
                                             </div>
                                         </div>
 
-                                        <div class="tab-pane fade" id="Altın" role="tabpanel">
-                                            <div class="d-flex align-items-center justify-content-between mb-4"
-                                                 id="altin-buttons">
-                                                <div class="d-flex gap-2">
-                                                    <button type="button" class="btn btn-light-warning"
-                                                            id="bulkEdit-Altın">
-                                                        <i class="fa-solid fa-pen-to-square"></i> Toplu Düzenle
-                                                    </button>
-                                                    <button type="button" class="btn btn-light-info"
-                                                            id="bulkSave-Altın">
-                                                        <i class="fa-solid fa-floppy-disk"></i> Toplu Kaydet
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div class="table-responsive">
-                                                <table id="datatable-Altın" data-category="Altın"
-                                                       class="table align-middle table-row-dashed fs-6 gy-5">
-                                                    <thead>
-                                                    <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
-                                                        <th class="w-10px pe-2">
-                                                                    <span class="dt-column-title">
-                                                                        <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
-                                                                            <input class="form-check-input"
-                                                                                   type="checkbox"
-                                                                                   id="altin-check-all">
-                                                                        </div>
-                                                                    </span>
-                                                        </th>
-                                                        <th>Resim</th>
-                                                        <th>Ürün</th>
-                                                        <th>Alış Fiyat</th>
-                                                        <th>Satış Fiyat</th>
-                                                        <th>Stok</th>
-                                                        <th>Ort. İşçilik</th>
-                                                        <th class="text-center">İşlem</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody class="text-gray-600 fw-semibold">
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
 
                                         <div class="tab-pane fade" id="Döviz" role="tabpanel">
                                             <div class="table-responsive">
-                                                <!-- DÖVİZ ARAÇ ÇUBUĞU (Toplu Düzenle / Kaydet) – Döviz tablosunun hemen ÜSTÜNE ekle -->
+                                                <!-- UAT V3 P4 (2026-04-29) — Döviz aksiyonları -->
+                                                <!-- - Manuel Kur modu açıksa "Manuel Kurları Kaydet" butonu görünür ve -->
+                                                <!--   Alış/Satış sütunları editable input olur. -->
+                                                <!-- - Drag handle bilgi rozeti (Ziynet ile simetrik). -->
                                                 <div class='d-flex align-items-center justify-content-between mb-4'
                                                      id='doviz-buttons'>
                                                     <div class='d-flex gap-2'>
-                                                        <button type='button' class='btn btn-light-warning'
-                                                                id='bulkEdit-Döviz'>
-                                                            <i class='fa-solid fa-pen-to-square'></i> Toplu Düzenle
-                                                        </button>
-                                                        <button type='button' class='btn btn-light-info'
-                                                                id='bulkSave-Döviz'>
-                                                            <i class='fa-solid fa-floppy-disk'></i> Toplu Kaydet
-                                                        </button>
+                                                        {% if use_manual_currency_rate %}
+                                                            <button type='button' class='btn btn-light-success'
+                                                                    id='saveDovizManualRates'>
+                                                                <i class='fa-solid fa-floppy-disk'></i> Manuel Kurları Kaydet
+                                                            </button>
+                                                            <span class='badge bg-light-success text-success align-self-center'>
+                                                                <i class='fa-solid fa-circle-check me-1'></i> Manuel Kur Modu Açık
+                                                            </span>
+                                                        {% else %}
+                                                            <span class='badge bg-light-warning text-warning align-self-center'>
+                                                                <i class='fa-solid fa-lock me-1'></i>
+                                                                Manuel Kur Modu Kapalı (Mağaza Detay → Manuel Kur Ayarı)
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class='d-flex align-items-center text-muted fs-7'>
+                                                        <i class='fa-solid fa-up-down-left-right me-2'></i>
+                                                        Satırları sürükleyerek sıralayın — değişiklik otomatik kaydedilir.
                                                     </div>
                                                 </div>
                                                 <table id="datatable-Döviz" data-category="Döviz"
                                                        class="table align-middle table-row-dashed fs-6 gy-5">
-                                                    <!-- DÖVİZ THEAD – checkbox ve 'İşlem' başlığı eklendi -->
                                                     <thead>
                                                     <tr class='text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0'>
                                                         <th class='w-10px pe-2'>
@@ -611,12 +592,16 @@
                                                         </div>
                                                       </span>
                                                         </th>
+                                                        <!-- UAT V3 P4 — Drag handle sütunu -->
+                                                        <th class='text-center' style='width:40px'>
+                                                            <i class='fa-solid fa-grip-vertical text-muted'
+                                                               title='Sürükleyerek sırala'></i>
+                                                        </th>
                                                         <th>Resim</th>
                                                         <th>Ürün</th>
                                                         <th>Alış Fiyatı</th>
                                                         <th>Satış Fiyatı</th>
                                                         <th>Stok</th>
-                                                        <th class='text-center'>İşlem</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody class="text-gray-600 fw-semibold">
@@ -735,21 +720,9 @@
             </div>
         </div>
     </div>
-    <div class="modal fade" tabindex="-1" id="addModal-Altın">
-        <div class="modal-dialog modal-dialog-centered mw-1000px">
-            <div class="modal-content" style="padding: 25px;">
-                <div class="modal-header">
-                    <h3 class="modal-title"><i class="fa-solid fa-coins me-2"></i> Yeni Altın Ürünü Ekle</h3>
-                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"
-                         aria-label="Kapat">
-                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span
-                                class="path2"></span></i>
-                    </div>
-                </div>
-                <form id="add-form-Altın" class="form" method="post" autocomplete="off" data-toggle="validator"
-                      enctype="multipart/form-data" role="form">
-                    {% csrf_token %}
-                    <input type="hidden" name="record_id" id="record_id">
+
+    {% comment %}
+    <div class="modal fade" tabindex="-1" id="addModal-Altın-removed">
 
                     <div class="modal-body">
                         <div class="row mb-3">
@@ -980,10 +953,6 @@
                             </div>
                         </div>
 
-                        {# PIVOT FAZ E (2026-04-23): WATCH_SPECIFIC ve DIAMOND_SPECIFIC blokları #}
-                        {# kaldırıldı. Saat ve Pırlanta artık gold_purchases/index.html 3'lü     #}
-                        {# tab yapısı üzerinden /gold-purchases/multi-material-add'a gider.     #}
-
                         <div class="row">
                             <div class="col-12">
                                 <div class="d-md-flex align-items-center mt-3">
@@ -1004,6 +973,254 @@
             </div>
         </div>
     </div>
+    {% endcomment %}
+
+    <div class="modal fade" tabindex="-1" id="addModal-Sarrafiye">
+        <div class="modal-dialog modal-dialog-centered mw-700px">
+            <div class="modal-content" style="padding: 25px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="fa-solid fa-circle-plus me-2"></i> Yeni Özel Sarrafiye Ürünü
+                    </h3>
+                    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2"
+                         data-bs-dismiss="modal" aria-label="Kapat">
+                        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                    </div>
+                </div>
+                <form id="add-form-Sarrafiye" class="form" method="post" autocomplete="off"
+                      enctype="multipart/form-data" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" name="record_id" value="">
+                    <input type="hidden" name="category_id" id="sarrafiye_category_id"
+                           value="{% for c in categories %}{% if c.name == 'Ziynet' %}{{ c.id }}{% endif %}{% endfor %}">
+                    <!-- T1 (2026-04-29) — Adet/Gram Bazlı tipine göre dinamik set edilir -->
+                    <input type="hidden" name="is_gram_bullion" id="sarrafiye_is_gram_bullion" value="on">
+
+                    <div class="modal-body">
+                        <!-- ───────────────────────────────────────────────────── -->
+                        <!-- T1 (2026-04-29) — Ürün Tipi Seçici                    -->
+                        <!-- Gram Bazlı: 1gr Çekili, 5gr Çekili gibi gramaj ürünler -->
+                        <!-- Adet Bazlı: Reşat Altın, Cumhuriyet gibi sabit ağırlıklı tek parçalar -->
+                        <!-- Tip değişimine göre `gram` (Birim Ağırlık) alanı görünür/gizlenir -->
+                        <!-- ───────────────────────────────────────────────────── -->
+                        <div class="row mb-3 mt-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold mb-2">
+                                    <i class="fa-solid fa-shapes me-2"></i> Ürün Tipi
+                                </label>
+                                <div class="btn-group w-100" role="group" aria-label="Ürün Tipi">
+                                    <input type="radio" class="btn-check sarrafiye-type-radio"
+                                           name="sarrafiye_type" id="sarrafiye_type_gram"
+                                           value="gram" checked>
+                                    <label class="btn btn-outline-primary" for="sarrafiye_type_gram">
+                                        <i class="fa-solid fa-weight-scale me-2"></i> Gram Bazlı
+                                        <small class="d-block text-muted fs-8">Çekili gram ürünleri</small>
+                                    </label>
+
+                                    <input type="radio" class="btn-check sarrafiye-type-radio"
+                                           name="sarrafiye_type" id="sarrafiye_type_piece"
+                                           value="piece">
+                                    <label class="btn btn-outline-primary" for="sarrafiye_type_piece">
+                                        <i class="fa-solid fa-coins me-2"></i> Adet Bazlı
+                                        <small class="d-block text-muted fs-8">Reşat, Cumhuriyet vb.</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="sarrafiye_name"
+                                           name="name" required placeholder="Ürün Adı"/>
+                                    <label for="sarrafiye_name">
+                                        <i class="fa-solid fa-tag me-2"></i> Ürün Adı (örn. 1gr Çekili / Reşat)
+                                    </label>
+                                    <div class="invalid-feedback">Ürün adı zorunludur.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- UAT V3 P2 (2026-04-29) — Görsel yükleme -->
+                        <!-- product_add view'ı zaten request.FILES.get('image') ile dosyayı -->
+                        <!-- yakalıyor, process_image() çağırıyor. Form enctype="multipart/form-data" -->
+                        <!-- olduğu için yeni input otomatik desteklenir. Backend değişikliği yok. -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="sarrafiye_image" class="form-label fw-semibold">
+                                    <i class="fa-solid fa-image me-2"></i> Ürün Görseli (opsiyonel)
+                                </label>
+                                <input type="file" class="form-control" id="sarrafiye_image"
+                                       name="image" accept="image/*"/>
+                                <div class="form-text">
+                                    PNG/JPG önerilir. Otomatik boyutlandırma yapılır.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" step="0.001" min="0" class="form-control"
+                                           id="sarrafiye_buy_price_hs" name="buy_price_hs"
+                                           placeholder="Alış Has"/>
+                                    <label for="sarrafiye_buy_price_hs">
+                                        <i class="fa-solid fa-arrow-down-long me-2"></i> Alış Has
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" step="0.001" min="0" class="form-control"
+                                           id="sarrafiye_sale_price_hs" name="sale_price_hs"
+                                           required placeholder="Satış Has"/>
+                                    <label for="sarrafiye_sale_price_hs">
+                                        <i class="fa-solid fa-arrow-up-long me-2"></i> Satış Has
+                                    </label>
+                                    <div class="invalid-feedback">Satış has değeri zorunludur.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ───────────────────────────────────────────────────── -->
+                        <!-- Milyem (Dual Layer): preset dropdown + serbest override input -->
+                        <!-- Dropdown'dan değer seçilince override input otomatik dolar; -->
+                        <!-- kullanıcı override input'a manuel değer girerse o değer -->
+                        <!-- baz alınır. Form submit'te override input'taki değer -->
+                        <!-- `product_mileage` POST alanına yazılır.                   -->
+                        <!-- ───────────────────────────────────────────────────── -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="sarrafiye_mileage_preset">
+                                        <option value="1000" selected>24 Ayar / 1000</option>
+                                        <option value="999">24 Ayar / 999</option>
+                                        <option value="995">24 Ayar / 995</option>
+                                        <option value="916.6">22 Ayar (Reşat) / 916.6</option>
+                                        <option value="875">21 Ayar / 875</option>
+                                        <option value="750">18 Ayar / 750</option>
+                                        <option value="585">14 Ayar / 585</option>
+                                        <option value="333">8 Ayar / 333</option>
+                                        <option value="custom">Diğer (manuel gir)</option>
+                                    </select>
+                                    <label for="sarrafiye_mileage_preset">
+                                        <i class="fa-solid fa-gem me-2"></i> Milyem Ön Seçim
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" step="0.0001" min="0" max="1000"
+                                           class="form-control" id="sarrafiye_product_mileage"
+                                           name="product_mileage" value="1000" required
+                                           placeholder="Milyem (0-1000)"/>
+                                    <label for="sarrafiye_product_mileage">
+                                        <i class="fa-solid fa-pen-to-square me-2"></i> Milyem Değeri
+                                    </label>
+                                    <div class="invalid-feedback">Milyem zorunludur (0-1000 arası).</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ───────────────────────────────────────────────────── -->
+                        <!-- Adet Bazlı ürünlerde Birim Ağırlık (gram) alanı zorunludur. -->
+                        <!-- Reşat ~ 7.216g, Cumhuriyet ~ 7.216g, Ata ~ 7.216g vb.       -->
+                        <!-- Gram Bazlı ürünlerde bu alan tamamen gizlidir.              -->
+                        <!-- ───────────────────────────────────────────────────── -->
+                        <div class="row mb-3 d-none" id="sarrafiye_gram_row">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" step="0.001" min="0" class="form-control"
+                                           id="sarrafiye_gram" name="gram"
+                                           value="0" placeholder="Birim Ağırlık (g)"/>
+                                    <label for="sarrafiye_gram">
+                                        <i class="fa-solid fa-scale-balanced me-2"></i> Birim Ağırlık (g) — 1 adet
+                                    </label>
+                                    <div class="invalid-feedback">Adet bazlı ürünlerde birim ağırlık zorunludur.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-muted fs-7 mt-3">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    Reşat / Cumhuriyet ≈ 7.216 g; Ata ≈ 7.216 g; Çeyrek ≈ 1.804 g.
+                                    1 adetin ağırlığını giriniz.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" step="0.01" min="0" class="form-control"
+                                           id="sarrafiye_fixed_labor_amount"
+                                           name="fixed_labor_amount" value="0" placeholder="İşçilik"/>
+                                    <label for="sarrafiye_fixed_labor_amount">
+                                        <i class="fa-solid fa-hammer me-2"></i> Sabit İşçilik (TL)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="text-muted fs-7 mb-2">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            Başlangıç stoğu (opsiyonel) — stok girilirse INITIAL ledger entry oluşur, WAC bu maliyetle başlar.
+                        </div>
+
+                        <!-- Adet bazlı: stok adet inputu görünür; gram bazlı: stok gram inputu görünür -->
+                        <div class="row mb-3">
+                            <div class="col-md-6 d-none" id="sarrafiye_stock_pieces_row">
+                                <div class="form-floating mb-3">
+                                    <input type="number" min="0" class="form-control"
+                                           id="sarrafiye_stock_pieces" name="stock_pieces"
+                                           value="0" placeholder="Adet Stok"/>
+                                    <label for="sarrafiye_stock_pieces">
+                                        <i class="fa-solid fa-box-open me-2"></i> Başlangıç Adet Stoğu
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="sarrafiye_stock_weight_row">
+                                <div class="form-floating mb-3">
+                                    <input type="number" step="0.001" min="0" class="form-control"
+                                           id="sarrafiye_stock_weight" name="stock_weight"
+                                           value="0" placeholder="Gram Stok"/>
+                                    <label for="sarrafiye_stock_weight">
+                                        <i class="fa-solid fa-weight-scale me-2"></i> Başlangıç Gram Stoğu
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="sarrafiye_description"
+                                              name="description" placeholder="Açıklama"
+                                              style="height:80px"></textarea>
+                                    <label for="sarrafiye_description">
+                                        <i class="fa-solid fa-file-lines me-2"></i> Açıklama
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-md-flex align-items-center mt-3">
+                            <div class="ms-auto mt-3 mt-md-0">
+                                <button type="button" class="btn btn-light-danger" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-xmark me-2"></i> İptal
+                                </button>
+                                <button type="button" data-category="Sarrafiye"
+                                        class="btn btn-light-primary save-button">
+                                    <i class="fa-solid fa-check me-2"></i> Kaydet
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" tabindex="-1" id="addModal-Döviz">
         <div class="modal-dialog modal-dialog-centered mw-1000px">
             <div class="modal-content" style="padding: 25px;">
@@ -1143,6 +1360,113 @@
     </div>
 {% endblock body %}
 {% block footer %}
+    <!-- T2 v2 (2026-04-29) — SortableJS drag-and-drop kütüphanesi -->
+    <!-- Ziynet ürün sıralamasında tbody üzerinde drag-handle ile satır taşıma için kullanılıyor. -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <style>
+        .sortable-ghost-ziynet { opacity: 0.4; background: #e9f3ff !important; }
+        .sortable-chosen-ziynet { background: #fff8e1 !important; }
+        #datatable-Ziynet td.ziynet-drag-handle { cursor: grab; }
+        #datatable-Ziynet td.ziynet-drag-handle:active { cursor: grabbing; }
+        .sortable-ghost-doviz { opacity: 0.4; background: #e9f3ff !important; }
+        .sortable-chosen-doviz { background: #fff8e1 !important; }
+        #datatable-Döviz td.doviz-drag-handle { cursor: grab; }
+        #datatable-Döviz td.doviz-drag-handle:active { cursor: grabbing; }
+    </style>
+
+    <script>
+        // ════════════════════════════════════════════════════════════════════
+        // UAT V3 P2 (2026-04-29) — Güvenli Silme Handler (Ziynet DataTable)
+        // ────────────────────────────────────────────────────────────────────
+        // Akış:
+        //   1) Sil ikonuna tıkla → GET /products/<uuid>/deletion-check
+        //   2) Cevaba göre uygun onay metni göster (orphan / soft-with-history)
+        //   3) Onay → POST /products/<uuid>/delete-single
+        //   4) Başarılı → DataTable reload + toast
+        // ════════════════════════════════════════════════════════════════════
+        $(document).on('click', '.delete-product-btn', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var productId = $(this).data('id');
+            var productName = $(this).data('name') || 'Ürün';
+
+            $.ajax({
+                url: '/products/' + productId + '/deletion-check',
+                type: 'GET',
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                success: function (resp) {
+                    if (resp.error) {
+                        Swal.fire('Hata', resp.message || 'Kontrol başarısız.', 'error');
+                        return;
+                    }
+                    if (!resp.can_delete) {
+                        Swal.fire('Silinemez', resp.message, 'warning');
+                        return;
+                    }
+
+                    var msg;
+                    if (resp.mode === 'soft_with_history') {
+                        var details = [];
+                        if (resp.has_ledger) details.push('stok hareketi (ledger) kaydı');
+                        if (resp.has_stock) details.push('mevcut stok');
+                        msg = "'" + productName + "' üzerinde " + details.join(' ve ')
+                            + ' bulunduğu için <strong>kalıcı silinemez</strong>. '
+                            + 'Pasife alınacak (soft-delete) — geçmiş raporlar etkilenmez. Devam edilsin mi?';
+                    } else {
+                        msg = "'" + productName + "' üzerinde hiç işlem yok. "
+                            + 'Ürün listeden kaldırılacak. Devam edilsin mi?';
+                    }
+
+                    Swal.fire({
+                        title: 'Silme Onayı',
+                        html: msg,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Evet, sil',
+                        cancelButtonText: 'İptal',
+                        confirmButtonColor: '#d33',
+                    }).then(function (result) {
+                        if (!result.isConfirmed) return;
+
+                        $.ajax({
+                            url: '/products/' + productId + '/delete-single',
+                            type: 'POST',
+                            headers: {'X-CSRFToken': getCookie('csrftoken')},
+                            success: function (r2) {
+                                if (r2.error) {
+                                    Swal.fire('Hata', r2.message || 'Silme başarısız.', 'error');
+                                    return;
+                                }
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'bottom-end',
+                                    icon: 'success',
+                                    title: r2.message || 'Silindi.',
+                                    showConfirmButton: false,
+                                    timer: 1500,
+                                    timerProgressBar: true,
+                                });
+                                if ($.fn.dataTable.isDataTable('#datatable-Ziynet')) {
+                                    $('#datatable-Ziynet').DataTable().ajax.reload(null, false);
+                                }
+                            },
+                            error: function (xhr) {
+                                var em = (xhr.responseJSON && xhr.responseJSON.message)
+                                    ? xhr.responseJSON.message : 'Sunucu hatası';
+                                Swal.fire('Hata', em, 'error');
+                            }
+                        });
+                    });
+                },
+                error: function (xhr) {
+                    var em = (xhr.responseJSON && xhr.responseJSON.message)
+                        ? xhr.responseJSON.message : 'Sunucu hatası';
+                    Swal.fire('Hata', em, 'error');
+                }
+            });
+        });
+    </script>
+
     <script>
         $(document).ready(function () {
             $('.save-button').click(function () {
@@ -1423,15 +1747,17 @@
         });
         attachCheckAll('#ziynet-check-all', '#datatable-Ziynet');
 
-        setupBulkHandlers({
-            tableSelector: '#datatable-Döviz',
-            field: 'total_stock_pieces',
-            bulkEditBtnId: '#bulkEdit-Döviz',
-            bulkSaveBtnId: '#bulkSave-Döviz',
-            checkAllId: '#doviz-check-all'
-        });
+        // UAT V3 P4 (2026-04-29): Döviz bulk handler kaldırıldı.
+        // Önceden #bulkEdit-Döviz / #bulkSave-Döviz butonları stok güncellemek
+        // için kullanılıyordu; artık Döviz aksiyonları "Manuel Kurları Kaydet"
+        // (saveDovizManualRates) butonu üzerinden ve drag-drop sıralamayla
+        // gerçekleşiyor. checkAll yine de gerekli.
         attachCheckAll('#doviz-check-all', '#datatable-Döviz');
 
+        // T2 v2 (2026-04-29): Sıralama UX değiştirildi — eski "Sıralamayı Kaydet"
+        // butonu ve numeric input bazlı bulk handler kaldırıldı. Yerine SortableJS
+        // drag-and-drop + onEnd auto-save mantığı kullanılıyor; ilgili kod
+        // KTDatatablesServerSideZiynet içindeki initSortableZiynet() fonksiyonunda.
     </script>
 
     <script>
@@ -1496,8 +1822,8 @@
                             }
                         },
                         {data: 'name'},
-                        {data: 'buy_price_tl'},
-                        {data: 'sale_price_tl'},
+                        {data: 'buy_price_eur'},
+                        {data: 'sale_price_eur'},
                         {
                             data: 'total_stock_weight',
                             render: function (data, type, row) {
@@ -1640,6 +1966,11 @@
 
     <script>
         let dtZiynet;
+        // T2 v2 (2026-04-29) — SortableJS instance referansı (yeniden bind etmeyi
+        // önlemek için module-scope tutuluyor). Her draw eventinde önce destroy
+        // edilip yeniden create edilir; bu sayede DataTable client-side mode'da
+        // tbody'yi yeniden render ettiğinde sortable bağlantısı kopmaz.
+        let sortableZiynet = null;
         var KTDatatablesServerSideZiynet = (function () {
             var table;
 
@@ -1650,29 +1981,44 @@
                     return;
                 }
 
+                // ════════════════════════════════════════════════════════════
+                // T2 v2 (2026-04-29) — Drag-and-Drop Sıralama (SortableJS)
+                // ────────────────────────────────────────────────────────────
+                // Server-side mode SortableJS ile uyumsuzdu (her draw eventi
+                // sunucudan yeni AJAX getiriyor, DOM sıralaması korunmuyor).
+                // Çözüm: client-side mode + tek seferde tüm veriyi çek + paging
+                // kapalı + ordering kapalı. SortableJS tbody üzerinde kullanıcı
+                // satırı bıraktığında pozisyon indeksini display_order olarak
+                // /products/reorder endpoint'ine sessizce POST eder.
+                // ════════════════════════════════════════════════════════════
                 dtZiynet = $('#datatable-Ziynet').DataTable({
                     dom: '<\'top d-flex justify-content-end\'f>rt<\'bottom d-flex justify-content-between align-items-center mb-4\'l p><\'clear\'>',
                     info: false,
-                    paging: true,
-                    lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
-                    pageLength: -1,
+                    paging: false,        // Drag-drop için tüm satırlar DOM'da
+                    ordering: false,      // Sıralama SortableJS ile yapılıyor
                     searchDelay: 400,
                     processing: true,
-                    serverSide: true,
-                    orderMulti: false,
+                    serverSide: false,    // Client-side: dataSrc ile JSON.data array'i okur
                     autoWidth: false,
-                    stateSave: true,
+                    stateSave: false,     // Drag sonrası state korunmasın (taze veri)
                     select: {
                         style: 'multi',
                         selector: 'td:first-child input[type=\'checkbox\']',
                         className: 'row-selected'
                     },
+                    rowId: 'id',
                     ajax: {
                         url: '/products/get-all',
                         type: 'GET',
                         dataType: 'json',
+                        dataSrc: 'data',
                         data: function (d) {
                             d.category = category;
+                            // length=-1 ⇒ get_all view'ı tüm satırları döner
+                            // (apps/products/views.py: `if str(length) == '-1': queryset = queryset.order_by(*ordering)`).
+                            d.length = -1;
+                            d.start = 0;
+                            d.draw = 1;
                         }
                     },
                     columns: [
@@ -1682,6 +2028,22 @@
                             className: 'text-center',
                             render: function (d) {
                                 return DTColumnRenderers.checkbox(d);
+                            }
+                        },
+                        // T2 v2: Drag handle sütunu — numeric input yerine
+                        // sürüklenebilir tutamaç. Bu hücre `cursor: grab` stiliyle
+                        // SortableJS'in `handle: '.ziynet-drag-handle'` selector'ına
+                        // bağlanır. data-id row.id'yi taşır (tbody tr'lerinde de
+                        // rowId: 'id' sayesinde DOM id="<uuid>" mevcut).
+                        {
+                            data: 'display_order',
+                            orderable: false,
+                            className: 'text-center ziynet-drag-handle',
+                            render: function (data, type, row) {
+                                return '<i class="fa-solid fa-grip-vertical text-muted fs-5"'
+                                    + ' style="cursor: grab; user-select: none;"'
+                                    + ' data-id="' + row.id + '"'
+                                    + ' title="Sürükleyerek sırala"></i>';
                             }
                         },
                         {
@@ -1725,13 +2087,24 @@
                             orderable: false,
                             className: 'text-center',
                             render: function (d, t, r) {
-                                return DTColumnRenderers.updateBtn(d, r);
+                                // UAT V3 P2 (2026-04-29): is_protected=False ürünler için
+                                // "Sil" ikonu ek olarak gösterilir. Korumalı ürünlerde yalnızca
+                                // "Güncelle" butonu görünür (silme JS tarafında da reddedilir).
+                                var html = DTColumnRenderers.updateBtn(d, r);
+                                if (!r.is_protected) {
+                                    html += ' <button class="btn btn-sm btn-light-danger ms-1 delete-product-btn" '
+                                        + 'data-id="' + r.id + '" data-name="' + (r.name || '').replace(/"/g, '&quot;') + '" '
+                                        + 'title="Ürünü sil">'
+                                        + '<i class="fa-solid fa-trash"></i></button>';
+                                }
+                                return html;
                             }
                         }
                     ],
                     language: {url: '/static/management/plugins/custom/datatables/TR.json'},
                     createdRow: function (row, data) {
-                        $(row).find('td:eq(5)').attr('data-filter', data.type);
+                        // Drag handle sütunu (1) eklendiğinden filter offset 5 -> 6
+                        $(row).find('td:eq(6)').attr('data-filter', data.type);
                     }
                 });
 
@@ -1739,14 +2112,93 @@
 
                 dtZiynet.on('draw', function () {
                     KTMenu.createInstances();
-                });
-
-                dtZiynet.on('column-reorder', function () {
-                    dtZiynet.ajax.reload();
+                    initSortableZiynet();
                 });
 
                 $('#ziynet-check-all').on('change', function () {
                     $('#datatable-Ziynet tbody input[type="checkbox"]').prop('checked', $(this).is(':checked'));
+                });
+            }
+
+            // ════════════════════════════════════════════════════════════════
+            // SortableJS başlatıcı — her DataTable draw sonrası çağrılır.
+            // tbody yeniden render edildiğinde önceki Sortable instance bozulur,
+            // o yüzden destroy + create pattern'i kullanılır.
+            // onEnd: kullanıcı bir satırı bıraktığında DOM sırasını okuyup
+            // her satırın index'ini display_order olarak /products/reorder'a
+            // sessizce (toast yok) POST eder. Hata durumunda küçük bir uyarı.
+            // ════════════════════════════════════════════════════════════════
+            function initSortableZiynet() {
+                var tbody = document.querySelector('#datatable-Ziynet tbody');
+                if (!tbody) return;
+
+                if (sortableZiynet) {
+                    try { sortableZiynet.destroy(); } catch (e) { /* no-op */ }
+                    sortableZiynet = null;
+                }
+
+                if (typeof Sortable === 'undefined') {
+                    console.warn('SortableJS yüklenmemiş — sıralama drag-drop devre dışı.');
+                    return;
+                }
+
+                sortableZiynet = Sortable.create(tbody, {
+                    handle: '.ziynet-drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost-ziynet',
+                    chosenClass: 'sortable-chosen-ziynet',
+                    onEnd: function () {
+                        var rows = tbody.querySelectorAll('tr');
+                        var items = [];
+                        rows.forEach(function (tr, idx) {
+                            // rowId: 'id' sayesinde tr.id = product UUID
+                            var pid = tr.id || tr.getAttribute('data-id');
+                            if (!pid) {
+                                // Fallback: drag handle <i> data-id'sinden oku
+                                var icon = tr.querySelector('.ziynet-drag-handle [data-id]');
+                                if (icon) pid = icon.getAttribute('data-id');
+                            }
+                            if (pid) {
+                                items.push({product_id: String(pid), display_order: idx});
+                            }
+                        });
+
+                        if (items.length === 0) return;
+
+                        $.ajax({
+                            url: '/products/reorder',
+                            type: 'POST',
+                            data: {items: JSON.stringify(items)},
+                            headers: {'X-CSRFToken': getCookie('csrftoken')},
+                            success: function (resp) {
+                                if (resp && resp.status === 'success') {
+                                    // Sessiz başarı — küçük toast (SweetAlert mini)
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire({
+                                            toast: true,
+                                            position: 'bottom-end',
+                                            icon: 'success',
+                                            title: 'Sıralama kaydedildi',
+                                            showConfirmButton: false,
+                                            timer: 1200,
+                                            timerProgressBar: true
+                                        });
+                                    }
+                                } else {
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire('Hata', (resp && resp.message) || 'Sıralama kaydedilemedi.', 'error');
+                                    }
+                                }
+                            },
+                            error: function (xhr) {
+                                var msg = (xhr.responseJSON && xhr.responseJSON.message)
+                                    ? xhr.responseJSON.message : 'Sunucu hatası';
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Hata', msg, 'error');
+                                }
+                            }
+                        });
+                    }
                 });
             }
 
@@ -1854,7 +2306,23 @@
     </script>
 
     <script>
+        // ════════════════════════════════════════════════════════════════════
+        // UAT V3 P4 (2026-04-29) — Döviz DataTable: Client-Side + SortableJS +
+        //                                            Manuel Kur Editable Inputs
+        // ────────────────────────────────────────────────────────────────────
+        // Ziynet ile birebir simetri:
+        //   - serverSide: false, paging: false, ordering: false, length=-1
+        //   - Drag-handle sütunu (`fa-grip-vertical`) + SortableJS onEnd → reorder
+        //   - Manuel Kur açıkken buy_price_eur/sale_price_eur düzenlenebilir
+        //     "Manuel Kurları Kaydet" butonu /settings/update-manual-currency-rates
+        //     endpoint'ine yazar; Products.buy_price_eur'yi DEĞİŞTİRMEZ — Celery
+        //     bypass mantığı korunur. View katmanı (get_all) JSONField'dan okuyor.
+        // ════════════════════════════════════════════════════════════════════
         let dtDoviz;
+        let sortableDoviz = null;
+        // Django template'ten alınan flag — manuel kur modu aktif mi?
+        const manualCurrencyModeActive = {% if use_manual_currency_rate %}true{% else %}false{% endif %};
+
         var KTDatatablesServerSideDoviz = (function () {
             var table;
 
@@ -1872,27 +2340,29 @@
                         '<\'bottom d-flex justify-content-between align-items-center mb-4\'l p>' +
                         '<\'clear\'>',
                     info: false,
-                    paging: true,
-                    lengthMenu: [[-1, 10, 25, 50], ['Tümü', 10, 25, 50]],
-                    pageLength: -1,
+                    paging: false,        // Drag-drop için tüm satırlar DOM'da
+                    ordering: false,      // Sıralama SortableJS ile yapılıyor
                     searchDelay: 400,
                     processing: true,
-                    serverSide: true,
-                    orderMulti: false,
+                    serverSide: false,    // Client-side: dataSrc ile JSON.data array'i okur
                     autoWidth: false,
-                    stateSave: true,
+                    stateSave: false,
                     select: {
                         style: 'multi',
                         selector: 'td:first-child input[type=\'checkbox\']',
                         className: 'row-selected'
                     },
+                    rowId: 'id',
                     ajax: {
                         url: '/products/get-all',
                         type: 'GET',
                         dataType: 'json',
-                        kpSkipLoader: true,
+                        dataSrc: 'data',
                         data: function (d) {
                             d.category = category;
+                            d.length = -1;
+                            d.start = 0;
+                            d.draw = 1;
                         }
                     },
                     columns: [
@@ -1902,6 +2372,18 @@
                             className: 'text-center',
                             render: function (data, type, row) {
                                 return '<input class=\'form-check-input\' type=\'checkbox\' value=\'' + row.id + '\'>';
+                            }
+                        },
+                        // UAT V3 P4 — Drag handle sütunu
+                        {
+                            data: 'display_order',
+                            orderable: false,
+                            className: 'text-center doviz-drag-handle',
+                            render: function (data, type, row) {
+                                return '<i class="fa-solid fa-grip-vertical text-muted fs-5"'
+                                    + ' style="cursor: grab; user-select: none;"'
+                                    + ' data-id="' + row.id + '"'
+                                    + ' title="Sürükleyerek sırala"></i>';
                             }
                         },
                         {
@@ -1916,8 +2398,38 @@
                             }
                         },
                         {data: 'name'},
-                        {data: 'buy_price_tl'},
-                        {data: 'sale_price_tl'},
+                        // UAT V3 P4 — Alış TL: Manuel mod açıksa editable, kapalıysa plain text
+                        {
+                            data: 'buy_price_eur',
+                            render: function (data, type, row) {
+                                var val = parseFloat(data || 0).toFixed(2);
+                                if (manualCurrencyModeActive) {
+                                    return '<input type="number" step="0.01" min="0" '
+                                        + 'class="form-control form-control-sm doviz-manual-rate-input" '
+                                        + 'data-field="buy_tl" data-id="' + row.id + '" '
+                                        + 'data-original="' + val + '" '
+                                        + 'value="' + val + '" '
+                                        + 'style="max-width:8rem;display:inline-block;">';
+                                }
+                                return val;
+                            }
+                        },
+                        // UAT V3 P4 — Satış TL: Manuel mod açıksa editable, kapalıysa plain text
+                        {
+                            data: 'sale_price_eur',
+                            render: function (data, type, row) {
+                                var val = parseFloat(data || 0).toFixed(2);
+                                if (manualCurrencyModeActive) {
+                                    return '<input type="number" step="0.01" min="0" '
+                                        + 'class="form-control form-control-sm doviz-manual-rate-input" '
+                                        + 'data-field="sell_tl" data-id="' + row.id + '" '
+                                        + 'data-original="' + val + '" '
+                                        + 'value="' + val + '" '
+                                        + 'style="max-width:8rem;display:inline-block;">';
+                                }
+                                return val;
+                            }
+                        },
                         {
                             data: 'total_stock_pieces',
                             render: function (data, type, row) {
@@ -1940,21 +2452,12 @@
                                     '<input type=\'number\' class=\'stock-input d-none\' data-field=\'total_stock_pieces\' data-id=\'' + row.id + '\' value=\'' + formattedStock + '\' data-original=\'' + formattedStock + '\' step=\'1\'>' +
                                     '</div>';
                             }
-                        },
-                        {
-                            data: null,
-                            orderable: false,
-                            className: 'text-center',
-                            render: function (data, type, row) {
-                                var incomingStock = parseFloat(row.incoming_stock_pieces || 0);
-                                var btnClass = (incomingStock > 0) ? 'btn-danger' : 'btn-primary';
-                                return '<button class=\'btn btn-sm ' + btnClass + ' update-stock-btn\' data-id=\'' + row.id + '\'>Güncelle</button>';
-                            }
                         }
                     ],
                     language: {url: '/static/management/plugins/custom/datatables/TR.json'},
                     createdRow: function (row, data) {
-                        $(row).find('td:eq(5)').attr('data-filter', data.type);
+                        // checkbox(0)+drag(1)+resim(2)+ürün(3)+alış(4)+satış(5)+stok(6) — Güncelle kaldırıldı, offset değişmedi
+                        $(row).find('td:eq(6)').attr('data-filter', data.type);
                     }
                 });
 
@@ -1962,10 +2465,81 @@
 
                 dtDoviz.on('draw', function () {
                     KTMenu.createInstances();
+                    initSortableDoviz();
                 });
+            }
 
-                dtDoviz.on('column-reorder', function () {
-                    dtDoviz.ajax.reload();
+            // ════════════════════════════════════════════════════════════════
+            // SortableJS başlatıcı (Döviz) — Ziynet ile aynı pattern
+            // ════════════════════════════════════════════════════════════════
+            function initSortableDoviz() {
+                var tbody = document.querySelector('#datatable-Döviz tbody');
+                if (!tbody) return;
+
+                if (sortableDoviz) {
+                    try { sortableDoviz.destroy(); } catch (e) { /* no-op */ }
+                    sortableDoviz = null;
+                }
+
+                if (typeof Sortable === 'undefined') {
+                    console.warn('SortableJS yüklenmemiş — Döviz sıralama drag-drop devre dışı.');
+                    return;
+                }
+
+                sortableDoviz = Sortable.create(tbody, {
+                    handle: '.doviz-drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost-doviz',
+                    chosenClass: 'sortable-chosen-doviz',
+                    onEnd: function () {
+                        var rows = tbody.querySelectorAll('tr');
+                        var items = [];
+                        rows.forEach(function (tr, idx) {
+                            var pid = tr.id || tr.getAttribute('data-id');
+                            if (!pid) {
+                                var icon = tr.querySelector('.doviz-drag-handle [data-id]');
+                                if (icon) pid = icon.getAttribute('data-id');
+                            }
+                            if (pid) {
+                                items.push({product_id: String(pid), display_order: idx});
+                            }
+                        });
+
+                        if (items.length === 0) return;
+
+                        $.ajax({
+                            url: '/products/reorder',
+                            type: 'POST',
+                            data: {items: JSON.stringify(items)},
+                            headers: {'X-CSRFToken': getCookie('csrftoken')},
+                            success: function (resp) {
+                                if (resp && resp.status === 'success') {
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire({
+                                            toast: true,
+                                            position: 'bottom-end',
+                                            icon: 'success',
+                                            title: 'Döviz sıralaması kaydedildi',
+                                            showConfirmButton: false,
+                                            timer: 1200,
+                                            timerProgressBar: true
+                                        });
+                                    }
+                                } else {
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire('Hata', (resp && resp.message) || 'Sıralama kaydedilemedi.', 'error');
+                                    }
+                                }
+                            },
+                            error: function (xhr) {
+                                var msg = (xhr.responseJSON && xhr.responseJSON.message)
+                                    ? xhr.responseJSON.message : 'Sunucu hatası';
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Hata', msg, 'error');
+                                }
+                            }
+                        });
+                    }
                 });
             }
 
@@ -1975,6 +2549,97 @@
                 }
             };
         })();
+
+        // ════════════════════════════════════════════════════════════════════
+        // UAT V3 P4 — "Manuel Kurları Kaydet" Handler
+        // ────────────────────────────────────────────────────────────────────
+        // Döviz tablosundaki tüm `.doviz-manual-rate-input` değerlerini topla,
+        // ürün başına {buy_tl, sell_tl} olarak grupla, sadece DEĞİŞMİŞ ürünleri
+        // gönder. Endpoint StoreConfiguration.manual_currency_rates JSONField'ına
+        // yazar; Products.buy_price_eur/sale_price_eur alanları değişmez —
+        // Celery bypass + view-layer override ile manuel değer okunur.
+        // ════════════════════════════════════════════════════════════════════
+        $(document).on('click', '#saveDovizManualRates', function () {
+            var $btn = $(this);
+            var $inputs = $('.doviz-manual-rate-input');
+            if ($inputs.length === 0) {
+                Swal.fire('Uyarı', 'Düzenlenecek döviz ürünü bulunamadı.', 'warning');
+                return;
+            }
+
+            // Ürün bazında grupla {productId: {buy_tl, sell_tl}}
+            var rates = {};
+            $inputs.each(function () {
+                var $i = $(this);
+                var pid = String($i.data('id') || '');
+                var field = $i.data('field');
+                var val = parseFloat($i.val() || 0);
+                if (!pid || !field || isNaN(val)) return;
+                if (!rates[pid]) rates[pid] = {};
+                rates[pid][field] = val.toFixed(2);
+            });
+
+            // Sadece HEM buy_tl HEM sell_tl > 0 olan ürünleri gönder
+            // (view override `mb > 0 and ms > 0` şartı arıyor)
+            var clean = {};
+            Object.keys(rates).forEach(function (pid) {
+                var entry = rates[pid] || {};
+                var b = parseFloat(entry.buy_tl || 0);
+                var s = parseFloat(entry.sell_tl || 0);
+                if (b > 0 && s > 0) {
+                    clean[pid] = {buy_tl: b.toFixed(2), sell_tl: s.toFixed(2)};
+                }
+            });
+
+            if (Object.keys(clean).length === 0) {
+                Swal.fire('Uyarı',
+                    'Geçerli kur değeri bulunamadı (alış ve satış 0\'dan büyük olmalı).',
+                    'warning');
+                return;
+            }
+
+            // store_id template'ten alınır (modal hidden field'iyle birebir)
+            var storeId = '{{ request.user.store.id }}';
+
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '{% url "settings:update_manual_currency_rates" %}',
+                type: 'POST',
+                data: {
+                    store_id: storeId,
+                    rates: JSON.stringify(clean),
+                },
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                success: function (resp) {
+                    if (resp && resp.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'bottom-end',
+                            icon: 'success',
+                            title: 'Manuel kurlar kaydedildi (' + (resp.count || 0) + ' ürün).',
+                            showConfirmButton: false,
+                            timer: 1500,
+                            timerProgressBar: true,
+                        });
+                        if ($.fn.dataTable.isDataTable('#datatable-Döviz')) {
+                            $('#datatable-Döviz').DataTable().ajax.reload(null, false);
+                        }
+                    } else {
+                        Swal.fire('Hata',
+                            (resp && resp.message) || 'Kurlar kaydedilemedi.',
+                            'error');
+                    }
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message)
+                        ? xhr.responseJSON.message : 'Sunucu hatası';
+                    Swal.fire('Hata', msg, 'error');
+                },
+                complete: function () {
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
     </script>
 
     <script>
@@ -2642,8 +3307,52 @@
         }();
     </script>
 
-    {# PIVOT FAZ E (2026-04-23): FAZ D JS modülleri kaldırıldı.                 #}
-    {# Saat ve Pırlanta artık gold_purchases/index.html 3'lü tab yapısı ile     #}
-    {# /gold-purchases/multi-material-add endpoint'ine AJAX batch entry yapar.  #}
 
+
+    <script>
+        $(document).on('change', '.sarrafiye-type-radio', function () {
+            var type = $(this).val();
+            var $hidden = $('#sarrafiye_is_gram_bullion');
+            var $gramRow = $('#sarrafiye_gram_row');
+            var $stockPiecesRow = $('#sarrafiye_stock_pieces_row');
+            var $stockWeightRow = $('#sarrafiye_stock_weight_row');
+            var $gramInput = $('#sarrafiye_gram');
+
+            if (type === 'piece') {
+                $hidden.val('');
+                $gramRow.removeClass('d-none');
+                $gramInput.attr('required', 'required');
+                $stockPiecesRow.removeClass('d-none');
+                $stockWeightRow.addClass('d-none');
+            } else {
+                $hidden.val('on');
+                $gramRow.addClass('d-none');
+                $gramInput.removeAttr('required');
+                $gramInput.val(0);
+                $stockPiecesRow.addClass('d-none');
+                $stockWeightRow.removeClass('d-none');
+            }
+        });
+
+        $(document).on('change', '#sarrafiye_mileage_preset', function () {
+            var v = $(this).val();
+            var $input = $('#sarrafiye_product_mileage');
+            if (v === 'custom') {
+                $input.val('');
+                $input.focus();
+            } else {
+                $input.val(v);
+            }
+        });
+
+        $('#addModal-Sarrafiye').on('show.bs.modal', function () {
+            $('#add-form-Sarrafiye')[0].reset();
+            $('#sarrafiye_type_gram').prop('checked', true).trigger('change');
+            $('#sarrafiye_mileage_preset').val('1000');
+            $('#sarrafiye_product_mileage').val('1000');
+            $('#sarrafiye_category_id').val(
+                "{% for c in categories %}{% if c.name == 'Ziynet' %}{{ c.id }}{% endif %}{% endfor %}"
+            );
+        });
+    </script>
 {% endblock footer %}

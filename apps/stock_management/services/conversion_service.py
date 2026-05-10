@@ -100,7 +100,7 @@ class ConversionService:
         store,
         user=None,
         ref_id: Optional[str] = None,
-        hs_rate_tl: Decimal = Decimal('0.0000'),
+        hs_rate_eur: Decimal = Decimal('0.0000'),
         notes: str = '',
     ) -> dict:
         """
@@ -128,7 +128,7 @@ class ConversionService:
             store: Magaza (Stores instance)
             user: Islemi yapan kullanici
             ref_id: Donusum islem numarasi (bos ise otomatik UUID uretilir)
-            hs_rate_tl: Islem anindaki Has/TL kuru
+            hs_rate_eur: Islem anindaki Has/TL kuru
             notes: Serbest metin aciklama
 
         Returns:
@@ -152,7 +152,7 @@ class ConversionService:
         source_gram = _q4(Decimal(str(source_gram)))
         target_gram = _q4(Decimal(str(target_gram)))
         fire_gram = _q4(Decimal(str(fire_gram)))
-        hs_rate_tl = _q4(Decimal(str(hs_rate_tl)))
+        hs_rate_eur = _q4(Decimal(str(hs_rate_eur)))
 
         if source_gram <= 0:
             raise ValueError("Kaynak gram sifirdan buyuk olmalidir.")
@@ -212,14 +212,14 @@ class ConversionService:
                     'stock_gram': Decimal('0.0000'),
                     'stock_pieces': 0,
                     'weighted_avg_cost_hs': Decimal('0.0000'),
-                    'weighted_avg_cost_tl': Decimal('0.00'),
+                    'weighted_avg_cost_eur': Decimal('0.00'),
                 }
             )
         )
 
         # Maliyet: Kaynak'in WAC'i hedef'e devredilir
         source_wac_hs = source_snapshot.weighted_avg_cost_hs
-        source_wac_tl = source_snapshot.weighted_avg_cost_tl
+        source_wac_tl = source_snapshot.weighted_avg_cost_eur
 
         # ── ADIM 3: Kaynak icin OUT ledger satiri ──
         out_entry = StockLedger.objects.create(
@@ -230,8 +230,8 @@ class ConversionService:
             quantity_gram=source_gram,
             quantity_pieces=0,
             unit_cost_hs=source_wac_hs,
-            unit_cost_tl=source_wac_tl,
-            hs_rate_tl=hs_rate_tl,
+            unit_cost_eur=source_wac_tl,
+            hs_rate_eur=hs_rate_eur,
             ref_type='conversion',
             ref_id=ref_id,
             notes=notes or f"Donusum cikisi -> {target_product.name}",
@@ -247,8 +247,8 @@ class ConversionService:
             quantity_gram=target_gram,
             quantity_pieces=0,
             unit_cost_hs=source_wac_hs,  # Maliyet kaynaktan miras alinir
-            unit_cost_tl=source_wac_tl,
-            hs_rate_tl=hs_rate_tl,
+            unit_cost_eur=source_wac_tl,
+            hs_rate_eur=hs_rate_eur,
             ref_type='conversion',
             ref_id=ref_id,
             notes=notes or f"Donusum girisi <- {source_product.name}",
@@ -266,8 +266,8 @@ class ConversionService:
                 quantity_gram=fire_gram,
                 quantity_pieces=0,
                 unit_cost_hs=source_wac_hs,
-                unit_cost_tl=source_wac_tl,
-                hs_rate_tl=hs_rate_tl,
+                unit_cost_eur=source_wac_tl,
+                hs_rate_eur=hs_rate_eur,
                 ref_type='conversion',
                 ref_id=ref_id,
                 notes=f"Isleme firesi ({fire_gram}g)",
@@ -289,7 +289,7 @@ class ConversionService:
         # ── ADIM 8: Hedef snapshot guncelle (WAC yeniden hesapla) ──
         old_target_gram = target_snapshot.stock_gram
         old_target_wac_hs = target_snapshot.weighted_avg_cost_hs
-        old_target_wac_tl = target_snapshot.weighted_avg_cost_tl
+        old_target_wac_tl = target_snapshot.weighted_avg_cost_eur
         new_target_gram = old_target_gram + target_gram
 
         if new_target_gram > Decimal('0'):
@@ -307,11 +307,11 @@ class ConversionService:
 
         target_snapshot.stock_gram = new_target_gram
         target_snapshot.weighted_avg_cost_hs = new_target_wac_hs
-        target_snapshot.weighted_avg_cost_tl = new_target_wac_tl
+        target_snapshot.weighted_avg_cost_eur = new_target_wac_tl
         target_snapshot.save(update_fields=[
             'stock_gram',
             'weighted_avg_cost_hs',
-            'weighted_avg_cost_tl',
+            'weighted_avg_cost_eur',
             'updated_on',
         ])
 
@@ -344,7 +344,7 @@ class ConversionService:
         store,
         user=None,
         ref_id: Optional[str] = None,
-        hs_rate_tl: Decimal = Decimal('0.0000'),
+        hs_rate_eur: Decimal = Decimal('0.0000'),
         notes: str = '',
     ) -> dict:
         """
@@ -365,7 +365,7 @@ class ConversionService:
             store: Magaza
             user: Islemi yapan kullanici
             ref_id: Donusum referans ID
-            hs_rate_tl: Has/TL kuru
+            hs_rate_eur: Has/TL kuru
             notes: Aciklama
 
         Returns:
@@ -384,7 +384,7 @@ class ConversionService:
         """
         source_gram = _q4(Decimal(str(source_gram)))
         fire_gram = _q4(Decimal(str(fire_gram)))
-        hs_rate_tl = _q4(Decimal(str(hs_rate_tl)))
+        hs_rate_eur = _q4(Decimal(str(hs_rate_eur)))
 
         if not targets:
             raise ValueError("En az bir hedef belirtilmelidir.")
@@ -435,7 +435,7 @@ class ConversionService:
             )
 
         source_wac_hs = source_snapshot.weighted_avg_cost_hs
-        source_wac_tl = source_snapshot.weighted_avg_cost_tl
+        source_wac_tl = source_snapshot.weighted_avg_cost_eur
 
         # ── Kaynak OUT ledger ──
         out_entry = StockLedger.objects.create(
@@ -446,8 +446,8 @@ class ConversionService:
             quantity_gram=source_gram,
             quantity_pieces=0,
             unit_cost_hs=source_wac_hs,
-            unit_cost_tl=source_wac_tl,
-            hs_rate_tl=hs_rate_tl,
+            unit_cost_eur=source_wac_tl,
+            hs_rate_eur=hs_rate_eur,
             ref_type='conversion',
             ref_id=ref_id,
             notes=notes or f"Coklu donusum cikisi ({len(targets)} hedef)",
@@ -479,7 +479,7 @@ class ConversionService:
                         'stock_gram': Decimal('0.0000'),
                         'stock_pieces': 0,
                         'weighted_avg_cost_hs': Decimal('0.0000'),
-                        'weighted_avg_cost_tl': Decimal('0.00'),
+                        'weighted_avg_cost_eur': Decimal('0.00'),
                     }
                 )
             )
@@ -493,8 +493,8 @@ class ConversionService:
                 quantity_gram=target_gram,
                 quantity_pieces=target_pieces,
                 unit_cost_hs=source_wac_hs,
-                unit_cost_tl=source_wac_tl,
-                hs_rate_tl=hs_rate_tl,
+                unit_cost_eur=source_wac_tl,
+                hs_rate_eur=hs_rate_eur,
                 ref_type='conversion',
                 ref_id=ref_id,
                 notes=notes or f"Donusum girisi <- {source_product.name}",
@@ -506,7 +506,7 @@ class ConversionService:
             # Hedef snapshot WAC guncelle
             old_g = t_snapshot.stock_gram
             old_wac_hs = t_snapshot.weighted_avg_cost_hs
-            old_wac_tl = t_snapshot.weighted_avg_cost_tl
+            old_wac_tl = t_snapshot.weighted_avg_cost_eur
             new_g = old_g + target_gram
 
             if new_g > Decimal('0'):
@@ -523,10 +523,10 @@ class ConversionService:
             t_snapshot.stock_gram = new_g
             t_snapshot.stock_pieces = t_snapshot.stock_pieces + target_pieces
             t_snapshot.weighted_avg_cost_hs = new_wac_hs
-            t_snapshot.weighted_avg_cost_tl = new_wac_tl
+            t_snapshot.weighted_avg_cost_eur = new_wac_tl
             t_snapshot.save(update_fields=[
                 'stock_gram', 'stock_pieces',
-                'weighted_avg_cost_hs', 'weighted_avg_cost_tl',
+                'weighted_avg_cost_hs', 'weighted_avg_cost_eur',
                 'updated_on',
             ])
 
@@ -548,8 +548,8 @@ class ConversionService:
                 quantity_gram=fire_gram,
                 quantity_pieces=0,
                 unit_cost_hs=source_wac_hs,
-                unit_cost_tl=source_wac_tl,
-                hs_rate_tl=hs_rate_tl,
+                unit_cost_eur=source_wac_tl,
+                hs_rate_eur=hs_rate_eur,
                 ref_type='conversion',
                 ref_id=ref_id,
                 notes=f"Isleme firesi ({fire_gram}g)",
@@ -719,7 +719,7 @@ class ConversionService:
 
         # Kaynak WAC: cikis isleminde StockService tarafindan muhurlenmis maliyet
         source_wac_hs = conv_out_entry.unit_cost_hs
-        source_wac_tl = conv_out_entry.unit_cost_tl
+        source_wac_tl = conv_out_entry.unit_cost_eur
 
         # ── ADIM 2: Hedef urun girisi (CONV_IN) ──
         # Maliyet kaynak WAC'tan miras alinir.
@@ -733,7 +733,7 @@ class ConversionService:
             ref_type='conversion',
             ref_id=ref_id,
             unit_cost_hs=source_wac_hs,
-            unit_cost_tl=source_wac_tl,
+            unit_cost_eur=source_wac_tl,
             user=user,
             notes=notes or f"Donusum girisi <- {source_scrap.name}",
         )

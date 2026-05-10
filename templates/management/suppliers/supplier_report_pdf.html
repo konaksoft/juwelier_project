@@ -328,7 +328,7 @@
     {% for p in transactions %}
         <tr>
             <td>{{ p.date|date:"d.m.Y H:i" }}</td>
-            {# FAZ 11 / SYNC-03: process_no monospace + vurgu (eşleştirme için) #}
+            <!-- FAZ 11 / SYNC-03: process_no monospace + vurgu (eşleştirme için) -->
             <td style="font-family: monospace; font-size: 8pt; color: #555;">{{ p.process_no }}</td>
             <td>
                 {% if p.transaction_type in 'PURCHASE,STOCK_IN,ORDER_IN' %}
@@ -357,12 +357,12 @@
     </tbody>
 </table>
 
-{# ════════════════════════════════════════════════════════════════════ #}
-{# FAZ 11 / BL-04 — MUTABAKAT DÜZELTMELERİ (Adjustment Entries)         #}
-{# ════════════════════════════════════════════════════════════════════ #}
-{# ADJ- prefix'li SupplierLedger kayıtları burada ayrı bölüm olarak     #}
-{# listelenir. Immutable Ledger uyumlu — her kayıt düzeltme fişidir.    #}
-{# ════════════════════════════════════════════════════════════════════ #}
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- FAZ 11 / BL-04 — MUTABAKAT DÜZELTMELERİ (Adjustment Entries)         -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- ADJ- prefix'li SupplierLedger kayıtları burada ayrı bölüm olarak     -->
+<!-- listelenir. Immutable Ledger uyumlu — her kayıt düzeltme fişidir.    -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
 {% if adjustment_entries %}
     <div class="section-header" style="margin-top: 25px; background: #fff5e6; color: #b56500;">
         Mutabakat Düzeltmeleri (Cari Sıfırlama / Eşitleme)

@@ -13,7 +13,6 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.orders.models import *
 from apps.stores.models import Stores
 from apps.whatsapp.models import WhatsAppCreditRequest
-from apps.invoices.models import EInvoiceCreditRequest
 
 
 def _is_orders_admin(u):

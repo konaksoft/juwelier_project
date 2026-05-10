@@ -1150,13 +1150,15 @@
                             orderable: false,
                             className: "text-center",
                             "render": function (data, type, row) {
-                                let pay = parseFloat(row.payable_hs) || 0;
-                                let rec = parseFloat(row.receivable_hs) || 0;
-                                let balance = pay - rec;
-                                if (balance > 0.001) {
-                                    return `<span class="text-danger fw-bold">${balance.toFixed(3)} HS (Borç)</span>`;
-                                } else if (balance < -0.001) {
-                                    return `<span class="text-success fw-bold">${Math.abs(balance).toFixed(3)} HS (Alacak)</span>`;
+                                // FAZ 41 — SSOT: backend'den gelen signed `balance_hs`
+                                // doğrudan kullanılır. Konvansiyon:
+                                //   balance_hs > 0  → müşteri mağazaya BORÇLU (Borç, kırmızı)
+                                //   balance_hs < 0  → mağaza müşteriye borçlu (Alacak, yeşil)
+                                let bal_hs = parseFloat(row.balance_hs) || 0;
+                                if (bal_hs > 0.001) {
+                                    return `<span class="text-danger fw-bold">${bal_hs.toFixed(3)} HS (Borç)</span>`;
+                                } else if (bal_hs < -0.001) {
+                                    return `<span class="text-success fw-bold">${Math.abs(bal_hs).toFixed(3)} HS (Alacak)</span>`;
                                 } else {
                                     return `<span class="text-muted fw-bold">0.000 HS</span>`;
                                 }
@@ -1167,20 +1169,20 @@
                             orderable: false,
                             className: "text-center",
                             "render": function (data, type, row) {
-                                let pay = parseFloat(row.payable_hs) || 0;
-                                let rec = parseFloat(row.receivable_hs) || 0;
-                                let balance = pay - rec;
-                                let tl_val = Math.abs(balance) * HAS_PRICE_TL;
-                                if (balance > 0.001) {
-                                    return `<span class="text-danger fw-bold">${tl_val.toLocaleString('tr-TR', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })} ₺</span>`;
-                                } else if (balance < -0.001) {
-                                    return `<span class="text-success fw-bold">${tl_val.toLocaleString('tr-TR', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })} ₺</span>`;
+                                // FAZ 41 — Stored TL SSOT: backend'den gelen
+                                // `balance_eur` (Σ signed amount_eur) doğrudan
+                                // gösterilir. Anlık kur ile yeniden hesaplama
+                                // YOKTUR — "satıştaki TL = cari TL" garantisi.
+                                let bal_hs = parseFloat(row.balance_hs) || 0;
+                                let bal_tl = parseFloat(row.balance_eur) || 0;
+                                let formatted = Math.abs(bal_tl).toLocaleString('tr-TR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                                if (bal_hs > 0.001) {
+                                    return `<span class="text-danger fw-bold">${formatted} ₺</span>`;
+                                } else if (bal_hs < -0.001) {
+                                    return `<span class="text-success fw-bold">${formatted} ₺</span>`;
                                 } else {
                                     return `<span class="text-muted fw-bold">0,00 ₺</span>`;
                                 }

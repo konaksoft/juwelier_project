@@ -18,14 +18,14 @@ API Response Format (gerçek):
 FAZ 21 FIX: Döviz ürünleri (CURRENCY_CODE_MAP) için buy_price_hs/sale_price_hs
 YAZILMAZ. Bu alanlar altın ağırlık taban hesabına aittir; dövizde anlamsızdır
 ve altın fiyatı değiştikçe stale kalarak yanlış görüntüye neden olur.
-Dövizlerde yalnızca buy_price_tl / sale_price_tl güncellenir.
+Dövizlerde yalnızca buy_price_eur / sale_price_eur güncellenir.
 """
 import logging
 import uuid
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 # Model alanlarının ondalık hassasiyetleri (apps/products/models.py)
-#   buy_price_tl / sale_price_tl → decimal_places=2
+#   buy_price_eur / sale_price_eur → decimal_places=2
 #   buy_price_hs / sale_price_hs → decimal_places=3
 #   profit                       → decimal_places=3
 # API "44.7234" gibi 2'den fazla ondalık döndürdüğünde model full_clean()
@@ -47,8 +47,35 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
-from apps.products.models import Products
+from apps.products.models import Products, CurrencyChoices
 from apps.stores.services import update_store_has_cache_for_all_stores
+
+# FAZ 21 Hotfix (2026-05-01): price_currency ValidationError'ını önler.
+# Products.save() override edilmiş — full_clean() her save'de çalışır ve
+# price_currency alanı CurrencyChoices.choices ile sınırlıdır. Geçmiş bir
+# task versiyonunda parite ürünlerinde price_currency='USD/KG' gibi geçersiz
+# değer set edilmiş olabilir — bu durumda update_fields ile bile save() patlar.
+# Bu set, target_currency'nin geçerli bir choice olup olmadığını O(1) doğrular.
+_VALID_CURRENCIES = {c.value for c in CurrencyChoices}
+
+
+def _resolve_price_currency(is_currency_product, is_parity_product, target_currency):
+    """
+    FAZ 21 Hotfix (2026-05-01): Bir ürün için doğru price_currency değerini döner.
+
+    - Döviz ürünleri (USDTRY, EURTRY...): hedef her zaman TRY → 'TRY'
+    - Parite ürünleri (USDKG, XAGUSD...): target_currency CurrencyChoices'ta
+      varsa onu kullan (USDKG → 'USD', XAGUSD → 'USD', PLATIN → 'TRY'), yoksa
+      'TRY' fallback (güvenli choice).
+    - Altın/diğer ürünler: None döner — caller default ('HS') veya mevcut
+      değeri korur, dokunulmaz.
+    """
+    if is_currency_product:
+        return 'TRY'
+    if is_parity_product:
+        tc = (target_currency or '').strip().upper()
+        return tc if tc in _VALID_CURRENCIES else 'TRY'
+    return None
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +132,28 @@ CURRENCY_CODE_MAP = {
     'JODTRY': 'JODTRY',
 }
 
+# FAZ 20 (2026-04-30): PARITY_CODE_MAP — Pariteler (kg altın, EUR/USD, vb.)
+# API code → DB ürün adı eşleştirmesi. Bu ürünler bir döviz değildir (FX kasa
+# veya alım/satım akışına dahil edilmez), yalnızca Live Board'da bilgilendirme
+# amaçlı gösterilir. Buy/sell fiyatı target birimde (USD, EUR vb.) tutulur;
+# buy_price_hs / sale_price_hs hesaplanmaz (target TRY olmadığından has hesabı
+# anlamsız). is_currency=False kalır — retail/wholesale akışlarına sızmaz.
+PARITY_CODE_MAP = {
+    'USDKG': 'USD/KG',          # 1 Kilo Altın-Amerikan Doları
+    'EURKG': 'EUR/KG',          # 1 Kilo Altın-Euro
+    'EURUSD': 'EUR/USD',        # Euro-Amerikan Doları
+    'GBPUSD': 'GBP/USD',        # İngiliz Sterlini-Amerikan Doları
+    'AUDUSD': 'AUD/USD',        # Avustralya Doları-Amerikan Doları
+    'USDCHF': 'USD/CHF',
+    'USDJPY': 'USD/JPY',
+    'USDCAD': 'USD/CAD',
+    'XAGUSD': 'Gümüş ONS',      # Gümüş-USD ons
+    'XPTUSD': 'Platin ONS',     # Platin-USD ons
+    'XPDUSD': 'Paladyum ONS',   # Paladyum-USD ons
+    'PLATIN': 'Platin TL',      # Platin-Türk Lirası
+    'PALADYUM': 'Paladyum TL',  # Paladyum-Türk Lirası
+}
+
 
 def _safe_decimal(value, default='0'):
     """
@@ -136,7 +185,7 @@ def update_products_from_api():
     FAZ 21 FIX: Döviz ürünleri (CURRENCY_CODE_MAP) için:
         - buy_price_hs / sale_price_hs güncellenmez (stale kalırsa has×kur çarpımı yanlış sonuç üretir)
         - is_currency=True set edilir
-        - Yalnızca buy_price_tl / sale_price_tl doğrudan API değeriyle güncellenir
+        - Yalnızca buy_price_eur / sale_price_eur doğrudan API değeriyle güncellenir
     """
     url = f"https://{settings.RAPIDAPI_HOST}/economy/live-exchange-rates"
 
@@ -199,11 +248,21 @@ def update_products_from_api():
                 continue
 
             # ─── 4. ÜRÜN İSMİ BELİRLEME ───
-            # Öncelik 1: CURRENCY_CODE_MAP (code → DB adı)
-            # Öncelik 2: SPECIAL_NAME_MAP (baseCurrency → DB adı)
-            # Öncelik 3: code doğrudan kullan
-            name = CURRENCY_CODE_MAP.get(currency_code.upper())
+            # Öncelik 1: CURRENCY_CODE_MAP (code → DB adı, döviz)
+            # Öncelik 2: PARITY_CODE_MAP (code → DB adı, parite — FAZ 20)
+            # Öncelik 3: SPECIAL_NAME_MAP (baseCurrency → DB adı)
+            # Öncelik 4: code doğrudan kullan
+            _code_upper = currency_code.upper()
+            name = CURRENCY_CODE_MAP.get(_code_upper)
             is_currency_product = name is not None  # FAZ 21 FIX: döviz mi?
+
+            # FAZ 20 (2026-04-30): Parite tespiti
+            is_parity_product = False
+            if not name:
+                parity_name = PARITY_CODE_MAP.get(_code_upper)
+                if parity_name:
+                    name = parity_name
+                    is_parity_product = True
 
             if not name:
                 name = SPECIAL_NAME_MAP.get(base_currency)
@@ -215,8 +274,10 @@ def update_products_from_api():
                     name = base_currency or currency_code
 
             # FAZ 21 FIX: Döviz ürünleri için buy_price_hs/sale_price_hs hesaplanmaz.
+            # FAZ 20 FIX: Parite ürünleri için de hesaplanmaz (target TRY değil,
+            # has hesabı anlamsız — örn. USDKG'de buy_price USD cinsinden).
             # Altın/diğer ürünler için baz HS hesaplama (mağaza bağımsız) yapılır.
-            if is_currency_product:
+            if is_currency_product or is_parity_product:
                 buy_price_hs = None
                 sell_price_hs = None
             else:
@@ -237,25 +298,42 @@ def update_products_from_api():
                 if existing_product:
                     # FAZ 21 / Hotfix 2026-04-27: Asimetrik API verisi (buy=null, sell>0) durumu.
                     # Harem Altın bazı dövizler için yalnızca sell döndürür. Eski kod
-                    # `buy_price_tl`'yi update_fields'a koruyup atlatılan assignment ile
+                    # `buy_price_eur`'yi update_fields'a koruyup atlatılan assignment ile
                     # in-memory 0'ı tekrar DB'ye yazıyordu. Artık eksik tarafı diğeriyle doldur.
                     effective_buy = buy_price if buy_price > 0 else sell_price
                     effective_sell = sell_price if sell_price > 0 else buy_price
 
                     update_fields = ["profit", "description"]
 
+                    # 2026-05-07 retroactive fix: API kaynaklı standart ürünlerin
+                    # `is_protected=True` olması garantilenir. Eski DB / fixture
+                    # kayıtlarında `is_protected=False` kalmış olabilir; bu durumda
+                    # `change_status` ve `delete` view'leri ürünü korumayı başaramaz
+                    # ("Eski Tam" / "22 Ayar Gram" tüm mağazalardan kaybolma incident).
+                    if not existing_product.is_protected:
+                        existing_product.is_protected = True
+                        update_fields.append("is_protected")
+
                     if effective_buy > 0:
-                        existing_product.buy_price_tl = _quant(effective_buy, _TL_QUANT)
-                        update_fields.append("buy_price_tl")
+                        existing_product.buy_price_eur = _quant(effective_buy, _TL_QUANT)
+                        update_fields.append("buy_price_eur")
                     if effective_sell > 0:
-                        existing_product.sale_price_tl = _quant(effective_sell, _TL_QUANT)
-                        update_fields.append("sale_price_tl")
+                        existing_product.sale_price_eur = _quant(effective_sell, _TL_QUANT)
+                        update_fields.append("sale_price_eur")
 
                     # FAZ 21 FIX: Döviz ürünlerinde buy_price_hs/sale_price_hs güncellenmez.
                     # is_currency flag'i güncellenir (daha önce set edilmemişse düzeltilir).
+                    # FAZ 20 (2026-04-30): Parite ürünleri için de HS güncellenmez ama
+                    # is_currency=False kalır — parite tradeable bir ürün değildir.
                     if is_currency_product:
                         existing_product.is_currency = True
                         update_fields.append("is_currency")
+                    elif is_parity_product:
+                        # Parite ürünleri: is_currency=False kalmalı; HS güncellenmez.
+                        # Mevcut kayıtta is_currency yanlışlıkla True ise düzelt.
+                        if existing_product.is_currency:
+                            existing_product.is_currency = False
+                            update_fields.append("is_currency")
                     else:
                         # HS hesaplaması için effective değerleri tekrar hesapla
                         if effective_buy > 0:
@@ -264,6 +342,20 @@ def update_products_from_api():
                         if effective_sell > 0:
                             existing_product.sale_price_hs = _quant(effective_sell / base_has_sale, _HS_QUANT)
                             update_fields.append("sale_price_hs")
+
+                    # FAZ 21 Hotfix (2026-05-01): price_currency düzeltme.
+                    # Products.save() full_clean() her alanı valide eder; update_fields
+                    # bu validasyonu kısıtlamaz. Geçmişte parite ürünlerinde yanlış
+                    # değer ('USD/KG' gibi) DB'ye yazılmışsa update'te ValidationError
+                    # fırlar. Bu blok her güncellemede price_currency'i geçerli bir
+                    # choice değerine çekerek kirli kayıtları otomatik temizler.
+                    # Altın/sarrafiye (None döner) için dokunulmaz — default 'HS' korunur.
+                    _new_pc = _resolve_price_currency(
+                        is_currency_product, is_parity_product, target_currency
+                    )
+                    if _new_pc is not None and existing_product.price_currency != _new_pc:
+                        existing_product.price_currency = _new_pc
+                        update_fields.append("price_currency")
 
                     existing_product.profit = _quant(change_rate, _RATE_QUANT)
                     existing_product.description = (
@@ -277,7 +369,7 @@ def update_products_from_api():
                     if buy_price > 0 or sell_price > 0:
                         # Hotfix 2026-04-27: Asimetrik API (buy=null, sell>0) için
                         # eksik tarafı diğeriyle doldur — yoksa USDTRY gibi ürünler
-                        # buy_price_tl=0 ile yaratılıp dönüşüm modalını kilitliyor.
+                        # buy_price_eur=0 ile yaratılıp dönüşüm modalını kilitliyor.
                         effective_buy = buy_price if buy_price > 0 else sell_price
                         effective_sell = sell_price if sell_price > 0 else buy_price
 
@@ -285,8 +377,8 @@ def update_products_from_api():
                             id=uuid.uuid4(),
                             name=target_product_name,
                             is_protected=True,
-                            buy_price_tl=_quant(effective_buy, _TL_QUANT),
-                            sale_price_tl=_quant(effective_sell, _TL_QUANT),
+                            buy_price_eur=_quant(effective_buy, _TL_QUANT),
+                            sale_price_eur=_quant(effective_sell, _TL_QUANT),
                             profit=_quant(change_rate, _RATE_QUANT),
                             description=(
                                 f"{base_currency}-{target_currency} kuru güncellendi. "
@@ -295,13 +387,31 @@ def update_products_from_api():
                             created_on=timezone.now(),
                         )
                         # FAZ 21 FIX: Döviz ürünlerinde HS alanları 0, is_currency=True
+                        # FAZ 20 (2026-04-30): Parite ürünlerinde HS=0, is_currency=False
+                        # (parite tradeable bir ürün değil, sadece bilgi amaçlı gösterim).
                         if is_currency_product:
                             create_kwargs['is_currency'] = True
+                            create_kwargs['buy_price_hs'] = Decimal('0.000')
+                            create_kwargs['sale_price_hs'] = Decimal('0.000')
+                        elif is_parity_product:
+                            create_kwargs['is_currency'] = False
                             create_kwargs['buy_price_hs'] = Decimal('0.000')
                             create_kwargs['sale_price_hs'] = Decimal('0.000')
                         else:
                             create_kwargs['buy_price_hs'] = _quant(effective_buy / base_has_buy, _HS_QUANT)
                             create_kwargs['sale_price_hs'] = _quant(effective_sell / base_has_sale, _HS_QUANT)
+
+                        # FAZ 21 Hotfix (2026-05-01): price_currency'i ilk yaratımda
+                        # doğru değerle ata — model default'una ('HS') düşmesin.
+                        # Döviz/parite ürünleri için 'HS' semantik olarak yanlıştır
+                        # ve gelecekteki herhangi bir akış buna güvenirse hata verir.
+                        # Altın/sarrafiye için _resolve_price_currency None döner;
+                        # o durumda kwargs'a hiç eklenmez ve model default 'HS' geçerli.
+                        _new_pc = _resolve_price_currency(
+                            is_currency_product, is_parity_product, target_currency
+                        )
+                        if _new_pc is not None:
+                            create_kwargs['price_currency'] = _new_pc
 
                         Products.objects.create(**create_kwargs)
                         new_count += 1

@@ -132,8 +132,8 @@ def _build_process_report_context(store, user, start_date, end_date, period_days
         "branch_name": getattr(store, "branch_name", getattr(store, "name", "-")),
         "authorized_person": (f"{user.first_name} {user.last_name}".strip() or user.username),
         "period_days": period_days,
-        "sum_total_sales_tl": _fmt_tr(total_sales, 2),
-        "sum_total_purchases_tl": _fmt_tr(total_purchases, 2),
+        "sum_total_sales_eur": _fmt_tr(total_sales, 2),
+        "sum_total_purchases_eur": _fmt_tr(total_purchases, 2),
         "sum_total_sales_has": _fmt_tr(total_sale_has, 3),
         "sum_net_total_tl": _fmt_tr(net_total, 2),
         "is_net_negative": net_total < 0,
@@ -234,19 +234,32 @@ def _build_profit_report_context(store, user, start_date, end_date, period_days,
                 elif active_chamber_id and getattr(p, 'chamber_buy', None) is not None:
                     birim_maliyet_has = Decimal(str(p.chamber_buy))
                 elif p.product and getattr(p.product, 'buy_price_hs', None):
-                    birim_maliyet_has = Decimal(str(p.product.buy_price_hs))
+                    # FAZ 44 — 1.05 EŞİK KURALI:
+                    # Products.buy_price_hs iki çağdan veriyi karışık tutuyor:
+                    #   - gold_purchases formundan giriş: TOPLAM maliyet (örn. 10.575)
+                    #   - retail_views.py:1355 üzerine yazıyor: BİRİM maliyet (örn. 0.705)
+                    # Burada birim maliyet bekliyoruz; 1.05 üzerindeki değerler
+                    # legacy "toplam" demektir → ürünün gramına bölerek normalize et.
+                    raw_buy = Decimal(str(p.product.buy_price_hs))
+                    prod_gram = Decimal(str(getattr(p.product, 'gram', 0) or 0))
+                    if raw_buy > Decimal('1.05') and prod_gram > Decimal('0'):
+                        birim_maliyet_has = (raw_buy / prod_gram).quantize(
+                            Decimal('0.0001'), rounding=ROUND_HALF_UP
+                        )
+                    else:
+                        birim_maliyet_has = raw_buy
 
             if birim_maliyet_has == Decimal('0'):
-                cost_amount_tl = Decimal(str(p.cost_amount_tl)) if getattr(p, 'cost_amount_tl', None) else Decimal('0')
-                if cost_amount_tl == Decimal('0'):
+                cost_amount_eur = Decimal(str(p.cost_amount_eur)) if getattr(p, 'cost_amount_eur', None) else Decimal('0')
+                if cost_amount_eur == Decimal('0'):
                     sale_amount = Decimal(str(p.amount)) if getattr(p, 'amount', None) else Decimal('0')
                     gross_profit = Decimal(str(p.gross_profit)) if getattr(p, 'gross_profit', None) else Decimal('0')
-                    cost_amount_tl = sale_amount - gross_profit
+                    cost_amount_eur = sale_amount - gross_profit
 
-                if cost_amount_tl > Decimal('0'):
-                    kur = getattr(p, 'hs_rate_buy_tl', 0) or getattr(p, 'hs_rate_sale_tl', 0)
+                if cost_amount_eur > Decimal('0'):
+                    kur = getattr(p, 'hs_rate_buy_eur', 0) or getattr(p, 'hs_rate_sale_eur', 0)
                     if kur and Decimal(str(kur)) > Decimal('0'):
-                        birim_maliyet_has = (cost_amount_tl / Decimal(str(kur))) / qty_val
+                        birim_maliyet_has = (cost_amount_eur / Decimal(str(kur))) / qty_val
 
             birim_maliyet_has = birim_maliyet_has.quantize(Decimal('0.001'))
             cost_amount_hs = (birim_maliyet_has * qty_val).quantize(Decimal('0.001'))
@@ -269,7 +282,7 @@ def _build_profit_report_context(store, user, start_date, end_date, period_days,
             })
 
         has_product = Products.objects.filter(name__icontains='Has Altın').first()
-        guncel_has_kur = Decimal(str(has_product.buy_price_tl)) if has_product and getattr(has_product, 'buy_price_tl',
+        guncel_has_kur = Decimal(str(has_product.buy_price_eur)) if has_product and getattr(has_product, 'buy_price_eur',
                                                                                            None) else Decimal('0')
         anlik_tl_karsiligi = total_profit_hs * guncel_has_kur
 
@@ -334,28 +347,28 @@ def _build_profit_report_context(store, user, start_date, end_date, period_days,
 
             if gross_profit == Decimal('0') and sale_amount > Decimal('0'):
                 maliyet_tl = Decimal('0')
-                if getattr(p, 'cost_amount_tl', 0) and p.cost_amount_tl > 0:
-                    maliyet_tl = Decimal(str(p.cost_amount_tl))
+                if getattr(p, 'cost_amount_eur', 0) and p.cost_amount_eur > 0:
+                    maliyet_tl = Decimal(str(p.cost_amount_eur))
                 elif p.product and getattr(p.product, 'buy_price_hs', 0) > 0:
-                    kur = getattr(p, 'hs_rate_buy_tl', 0)
-                    if not kur or kur == 0: kur = getattr(p, 'hs_rate_sale_tl', 0)
+                    kur = getattr(p, 'hs_rate_buy_eur', 0)
+                    if not kur or kur == 0: kur = getattr(p, 'hs_rate_sale_eur', 0)
                     if kur and Decimal(str(kur)) > Decimal('0'):
                         maliyet_tl = Decimal(str(p.product.buy_price_hs)) * Decimal(str(kur))
                 if maliyet_tl > Decimal('0'):
                     gross_profit = sale_amount - maliyet_tl
 
-            cost_amount_tl = Decimal(str(p.cost_amount_tl)) if getattr(p, 'cost_amount_tl', None) else Decimal('0')
-            if cost_amount_tl == Decimal('0'):
-                cost_amount_tl = sale_amount - gross_profit
+            cost_amount_eur = Decimal(str(p.cost_amount_eur)) if getattr(p, 'cost_amount_eur', None) else Decimal('0')
+            if cost_amount_eur == Decimal('0'):
+                cost_amount_eur = sale_amount - gross_profit
 
             qty_val = Decimal(p.piece) if p.piece > 0 else Decimal(p.gram or 0)
             unit_label = "Ad" if p.piece > 0 else "Gr"
             qty_display = f"{fmt_tr(qty_val, 0 if p.piece > 0 else 2)} {unit_label}"
 
-            unit_cost = (cost_amount_tl / qty_val) if qty_val > 0 else Decimal('0')
+            unit_cost = (cost_amount_eur / qty_val) if qty_val > 0 else Decimal('0')
 
             total_revenue += sale_amount
-            total_cost += cost_amount_tl
+            total_cost += cost_amount_eur
             total_profit += gross_profit
 
             rows.append({
@@ -497,15 +510,15 @@ def _build_customer_detail_report_context(store, user, customer, start_date, end
 
     hs_product = Products.objects.filter(
         name__icontains='Has Altın'
-    ).only('sale_price_tl', 'buy_price_tl').first()
+    ).only('sale_price_eur', 'buy_price_eur').first()
 
     guncel_has_kur = Decimal('0.00')
-    if hs_product and hs_product.sale_price_tl:
-        guncel_has_kur = _dec(hs_product.sale_price_tl)
+    if hs_product and hs_product.sale_price_eur:
+        guncel_has_kur = _dec(hs_product.sale_price_eur)
 
     receivable_tl = receivable_hs * guncel_has_kur
     payable_tl = payable_hs * guncel_has_kur
-    net_balance_tl = net_balance_hs * guncel_has_kur
+    net_balance_eur = net_balance_hs * guncel_has_kur
 
     if net_balance_hs > Decimal('0.001'):
         balance_status = "ALACAKLI"
@@ -523,7 +536,7 @@ def _build_customer_detail_report_context(store, user, customer, start_date, end
         "net_balance_hs": _fmt_tr(abs(net_balance_hs), 3),
         "receivable_tl": _fmt_tr(receivable_tl, 2),
         "payable_tl": _fmt_tr(payable_tl, 2),
-        "net_balance_tl": _fmt_tr(abs(net_balance_tl), 2),
+        "net_balance_eur": _fmt_tr(abs(net_balance_eur), 2),
         "is_net_negative": net_balance_hs < 0,
         "balance_status": balance_status,
         "balance_status_desc": balance_status_desc,
@@ -895,8 +908,8 @@ def _build_currency_report_context(store, user, start_date, end_date, period_day
         "branch_name": getattr(store, "branch_name", getattr(store, "name", "-")),
         "authorized_person": full_name(user),
         "period_days": period_days,
-        "sum_total_sales_tl": fmt_tr(total_sell_tl, 2),
-        "sum_total_purchases_tl": fmt_tr(total_buy_tl, 2),
+        "sum_total_sales_eur": fmt_tr(total_sell_tl, 2),
+        "sum_total_purchases_eur": fmt_tr(total_buy_tl, 2),
         "sum_net_total_tl": fmt_tr(net_tl, 2),
         "is_net_negative": (net_tl < 0),
         "rows": rows,
@@ -973,10 +986,10 @@ def _build_current_stock_report_context(store, user, start_date, end_date, perio
 
     process_qs = Process.objects.filter(is_deleted=False, is_status='COMPLETED', date__date__gte=start_date,
                                         date__date__lte=end_date, store=store)
-    total_sales_tl = D(process_qs.filter(transaction_type='SALE').aggregate(s=Sum('amount'))['s'])
-    total_purchases_tl = D(
+    total_sales_eur = D(process_qs.filter(transaction_type='SALE').aggregate(s=Sum('amount'))['s'])
+    total_purchases_eur = D(
         process_qs.filter(transaction_type__in=['PURCHASE', 'RETURN']).aggregate(s=Sum('amount'))['s'])
-    net_total_tl = total_sales_tl - total_purchases_tl
+    net_total_tl = total_sales_eur - total_purchases_eur
 
     ledger_period_qs = StockLedger.objects.filter(store=store, created_on__date__gte=start_date,
                                                   created_on__date__lte=end_date).select_related('product',
@@ -1099,8 +1112,8 @@ def _build_current_stock_report_context(store, user, start_date, end_date, perio
         'store_id': str(getattr(store, 'store_id', '') or getattr(store, 'id', '-')),
         'rows': grouped_rows,
         'is_preview': False,
-        'sum_total_sales_tl': fmt_tr(total_sales_tl),
-        'sum_total_purchases_tl': fmt_tr(total_purchases_tl),
+        'sum_total_sales_eur': fmt_tr(total_sales_eur),
+        'sum_total_purchases_eur': fmt_tr(total_purchases_eur),
         'sum_net_total_tl': fmt_tr(net_total_tl),
         'is_net_negative': net_total_tl < 0,
     }

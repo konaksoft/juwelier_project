@@ -322,11 +322,19 @@
                                             data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
                                         <i class="ki-solid ki-dots-horizontal fs-2x"></i>
                                     </button>
-                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-200px py-3"
+                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-225px py-3"
                                          data-kt-menu="true">
+                                        <div class="menu-item px-3">
+                                            <a href="{% url 'stores:reset_panel' %}?store_id={{ record.id }}"
+                                               class="menu-link px-3 text-danger fw-bold">
+                                                <i class="bi bi-exclamation-octagon-fill me-2 text-danger"></i>
+                                                Sıfırlama Merkezi
+                                            </a>
+                                        </div>
+                                        <div class="separator my-2"></div>
                                         <div class="menu-item px-3"><a href="#"
                                                                        onclick="hard_data_store('{{ record.id }}')"
-                                                                       class="menu-link px-3">Mağazayı Sıfırla</a></div>
+                                                                       class="menu-link px-3">Mağazayı Sıfırla (Eski)</a></div>
                                         <div class="menu-item px-3"><a href="#"
                                                                        onclick="hard_delete_store('{{ record.id }}')"
                                                                        class="menu-link px-3">Mağazayı Sil (Kalıcı)</a>
@@ -390,7 +398,15 @@
                        data-bs-toggle="tab" href="#wa">WhatsApp</a>
                 </li>
 
-                {# E-Fatura Kontör sekmesi kaldırıldı — fatura kontör sistemi devre dışı (Nisan 2026) #}
+                <!-- E-Fatura Kontör sekmesi kaldırıldı — fatura kontör sistemi devre dışı (Nisan 2026) -->
+                {% if can_create_backup %}
+                <li class="nav-item mt-2">
+                    <a class="nav-link text-active-primary ms-0 me-10 py-5"
+                       data-bs-toggle="tab" href="#backup-tab">
+                        <i class="fa-solid fa-database me-1 fs-7"></i>Yedekleme
+                    </a>
+                </li>
+                {% endif %}
             </ul>
 
         </div>
@@ -473,7 +489,7 @@
                 </div>
             </div>
 
-            {# ── Faz 12.3: Modül Bilgileri Kartı ── #}
+            <!-- ── Faz 12.3: Modül Bilgileri Kartı ── -->
             <div class="card mb-5 mb-xl-10">
                 <div class="card-header cursor-pointer">
                     <div class="card-title m-0">
@@ -598,6 +614,79 @@
                         </div>
                     </div>
 
+                    <!-- ─── T3 (2026-04-29): Manuel Kur Ayarı (Döviz İçin) ─── -->
+                    <div class="row mb-8 align-items-center">
+                        <label class="col-lg-4 fw-semibold text-muted">Manuel Kur Ayarı (Döviz)</label>
+                        <div class="col-lg-8">
+                            <div class="form-check form-switch form-check-custom form-check-solid">
+                                <input class="form-check-input store-setting-switch" type="checkbox"
+                                       data-key="use_manual_currency_rate"
+                                       id="chkManualCurrencyRate"
+                                       {% if record.config.use_manual_currency_rate %}checked{% endif %}>
+                                <label class="form-check-label ms-3 fw-bold" for="chkManualCurrencyRate">
+                                    Manuel kur modu aktif (döviz)
+                                </label>
+                            </div>
+                            <div class="text-muted fs-7 mt-2 ms-12">
+                                Aktif edildiğinde, döviz ürünleri (USDTRY, EURTRY vb.) için API kuru yerine
+                                aşağıda girilen manuel TL kurları kullanılır.
+                            </div>
+
+                            <div id="manualCurrencyRatesPanel"
+                                 class="mt-4 ms-12"
+                                 style="{% if not record.config.use_manual_currency_rate %}display:none;{% endif %}">
+                                {% if currency_products %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle table-row-dashed gy-3">
+                                            <thead class="text-gray-500 fs-7 text-uppercase">
+                                                <tr>
+                                                    <th>Döviz Ürünü</th>
+                                                    <th class="text-center">API Alış</th>
+                                                    <th class="text-center">API Satış</th>
+                                                    <th class="text-center">Manuel Alış (TL)</th>
+                                                    <th class="text-center">Manuel Satış (TL)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for cp in currency_products %}
+                                                <tr>
+                                                    <td class="fw-semibold">{{ cp.name }}</td>
+                                                    <td class="text-center text-muted">{{ cp.api_buy_tl }}</td>
+                                                    <td class="text-center text-muted">{{ cp.api_sale_tl }}</td>
+                                                    <td class="text-center">
+                                                        <input type="number" step="0.0001" min="0"
+                                                               class="form-control form-control-sm manual-fx-buy text-center"
+                                                               data-product-id="{{ cp.id }}"
+                                                               value="{{ cp.manual_buy_tl }}"
+                                                               style="width:120px;display:inline-block;">
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <input type="number" step="0.0001" min="0"
+                                                               class="form-control form-control-sm manual-fx-sell text-center"
+                                                               data-product-id="{{ cp.id }}"
+                                                               value="{{ cp.manual_sell_tl }}"
+                                                               style="width:120px;display:inline-block;">
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-2">
+                                        <button type="button" id="saveManualCurrencyRates"
+                                                class="btn btn-light-success btn-sm">
+                                            <i class="fa-solid fa-floppy-disk me-1"></i> Manuel Kurları Kaydet
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted fs-7">
+                                        Bu mağazada manuel kur uygulanabilecek döviz ürünü bulunamadı.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="separator separator-dashed my-5"></div>
 
                     <div class="row mb-8 align-items-center">
@@ -619,6 +708,51 @@
                                 <i class="fa-solid fa-circle-info text-primary"></i>
                                 Seçilen derneğin belirlediği ürün fiyatları mağazanızda geçerli olur. Kendi girdiğiniz
                                 özel has değerleriniz derneğin üzerinde sayılır.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="separator separator-dashed my-5"></div>
+
+                    <!-- ─── FAZ 38: Cari Hesap & Tahsilat Tercihleri ─── -->
+                    <h5 class="fw-bold text-gray-800 mb-4"><i class="fa-solid fa-receipt me-2"></i> Cari Hesap & Tahsilat</h5>
+
+                    <div class="row mb-5 align-items-center">
+                        <label class="col-lg-4 fw-semibold text-muted">Borç Birim Modu</label>
+                        <div class="col-lg-8">
+                            <select class="form-select form-select-solid store-setting-select"
+                                    data-key="debt_currency_mode" id="selDebtCurrencyMode">
+                                <option value="HS" {% if record.config.debt_currency_mode == 'HS' or not record.config.debt_currency_mode %}selected{% endif %}>
+                                    Has (gram) — borç gram cinsinden sabit
+                                </option>
+                                <option value="TL" {% if record.config.debt_currency_mode == 'TL' %}selected{% endif %}>
+                                    TL — borç TL cinsinden sabit
+                                </option>
+                            </select>
+                            <div class="text-muted fs-7 mt-2 ms-2">
+                                <i class="fa-solid fa-circle-info text-primary"></i>
+                                <span class="fw-semibold">HS Modu:</span> Borç gram cinsinden korunur; tahsilat ekranında varsayılan birim Has Altın olur.
+                                <span class="fw-semibold">TL Modu:</span> Borç TL cinsinden korunur; tahsilat ekranında varsayılan birim Türk Lirası olur, anlık gram karşılığı bilgi amaçlı gösterilir.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-5 align-items-center">
+                        <label class="col-lg-4 fw-semibold text-muted">Fazla Tahsilatı Varsayılan Kabul Et</label>
+                        <div class="col-lg-8">
+                            <div class="form-check form-switch form-check-custom form-check-solid">
+                                <input class="form-check-input store-setting-switch" type="checkbox"
+                                       data-key="allow_overpayment_default"
+                                       id="chkAllowOverpaymentDefault"
+                                       {% if record.config.allow_overpayment_default %}checked{% endif %}>
+                                <label class="form-check-label ms-3" for="chkAllowOverpaymentDefault">
+                                    <span class="fw-bold">Toggle açık başlasın</span>
+                                    <div class="text-muted fs-7">
+                                        Tahsilat modalında "Fazla Tahsilatı Kabul Et" toggle'ı varsayılan açık gelsin.
+                                        Müşteri borcundan fazla tutar tahsil edildiğinde aşan kısım otomatik olarak
+                                        "Kasa Fazlası" satırına yazılır.
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -845,7 +979,7 @@
                 </div>
                 <div class="card-body p-9">
 
-                    {# ─── Etiket Firma Adı (barcode_title) ─── #}
+                    <!-- ─── Etiket Firma Adı (barcode_title) ─── -->
                     <div class="row mb-8">
                         <label class="col-lg-3 fw-semibold text-muted fs-5">Etiket Firma Adı:</label>
                         <div class="col-lg-9">
@@ -865,7 +999,7 @@
 
                     <div class="separator separator-dashed my-5"></div>
 
-                    {# ─── Ürün Kategorisi (Material Type) — Çoklu Maden Etiket Tasarımı ─── #}
+                    <!-- ─── Ürün Kategorisi (Material Type) — Çoklu Maden Etiket Tasarımı ─── -->
                     <div class="row mb-8">
                         <label class="col-lg-3 fw-semibold text-muted fs-5">Ürün Kategorisi:</label>
                         <div class="col-lg-9">
@@ -964,7 +1098,7 @@
 
                     <div class="separator separator-dashed my-5"></div>
 
-                    {# ─── Sol Alt Köşe Veri Tercihi ─── #}
+                    <!-- ─── Sol Alt Köşe Veri Tercihi ─── -->
                     <div class="row mb-8">
                         <label class="col-lg-3 fw-semibold text-muted fs-5">Sol Alt Köşe Verisi:</label>
                         <div class="col-lg-9">
@@ -1001,7 +1135,7 @@
                         </div>
                     </div>
 
-                    {# ─── Etiket Düzeni (Layout Mode) ─── #}
+                    <!-- ─── Etiket Düzeni (Layout Mode) ─── -->
                     <div class="row mb-8">
                         <label class="col-lg-3 fw-semibold text-muted fs-5">Etiket Düzeni:</label>
                         <div class="col-lg-9">
@@ -1050,9 +1184,9 @@
                                 </label>
                             </div>
 
-                            {# ─── Yan Yana Etiket Ayarları (Sadece SIDE_BY_SIDE seçiliyken görünür) ─── #}
+                            <!-- ─── Yan Yana Etiket Ayarları (Sadece SIDE_BY_SIDE seçiliyken görünür) ─── -->
                             <div id="labelWidthRow" class="mt-4 {% if record.label_settings.label_layout_mode != 'SIDE_BY_SIDE' %}d-none{% endif %}">
-                                {# a) Etiket-1 Genişliği — % bazlı #}
+                                <!-- a) Etiket-1 Genişliği — % bazlı -->
                                 <div class="d-flex align-items-center gap-3">
                                     <label class="fw-semibold text-muted fs-7 text-nowrap" style="min-width:130px;">Etiket-1 Genişliği:</label>
                                     <input type="range" id="labelWidthSlider" class="form-range flex-grow-1"
@@ -1067,7 +1201,7 @@
                         </div>
                     </div>
 
-                    {# ─── RFID Yazıcı Modu ─── #}
+                    <!-- ─── RFID Yazıcı Modu ─── -->
                     <div class="row mb-8">
                         <label class="col-lg-3 fw-semibold text-muted fs-5">RFID Yazıcı Modu:</label>
                         <div class="col-lg-9">
@@ -1114,7 +1248,7 @@
                                         <span class="fs-7 text-gray-600">Küçük etiket ayarları. Değişiklikleri anlık olarak sağdaki önizlemede görebilirsiniz.</span>
                                     </div>
 
-                                    {# Pırlanta-özel: fiyat satırında para birimi simgesini göster/gizle #}
+                                    <!-- Pırlanta-özel: fiyat satırında para birimi simgesini göster/gizle -->
                                     <div id="diamondPriceCurrencyRow_small" class="alert alert-light border d-flex align-items-center p-3 mb-4 diamond-only-option" style="display:none;">
                                         <i class="fa-solid fa-coins fs-4 me-3 text-warning"></i>
                                         <div class="form-check form-switch flex-grow-1 m-0">
@@ -1157,7 +1291,7 @@
                                         <span class="fs-7 text-gray-700">Büyük etiket ayarları.</span>
                                     </div>
 
-                                    {# Pırlanta-özel: fiyat satırında para birimi simgesini göster/gizle #}
+                                    <!-- Pırlanta-özel: fiyat satırında para birimi simgesini göster/gizle -->
                                     <div id="diamondPriceCurrencyRow_large" class="alert alert-light border d-flex align-items-center p-3 mb-4 diamond-only-option" style="display:none;">
                                         <i class="fa-solid fa-coins fs-4 me-3 text-warning"></i>
                                         <div class="form-check form-switch flex-grow-1 m-0">
@@ -1241,7 +1375,7 @@
                 </div>
             </div>
 
-            {# ── Açık Bankacılık Fatura Ayarları (2026-04) ── #}
+            <!-- ── Açık Bankacılık Fatura Ayarları (2026-04) ── -->
             <div class="card mb-5 mb-xl-10 border-dashed border-primary">
                 <div class="card-header">
                     <div class="card-title m-0">
@@ -1369,9 +1503,9 @@
                 </div>
             </div>
         </div>
-        {# ─── Barkod Etiket Ayarları Tab Pane (içeriği JS ile #card_label_design'dan taşınır) ─── #}
+        <!-- ─── Barkod Etiket Ayarları Tab Pane (içeriği JS ile #card_label_design'dan taşınır) ─── -->
         <div class="tab-pane fade" id="label-settings" role="tabpanel">
-            {# Etiket Tasarımı & Boyutlandırma kartı document.ready'de buraya appendChild edilir. #}
+            <!-- Etiket Tasarımı & Boyutlandırma kartı document.ready'de buraya appendChild edilir. -->
         </div>
 
         <div class="tab-pane fade" id="personals" role="tabpanel">
@@ -1837,7 +1971,168 @@
             </div>
         </div>
 
-        {# E-Fatura Yönetimi tab-pane'i kaldırıldı — fatura kontör sistemi devre dışı (Nisan 2026) #}
+        <!-- E-Fatura Yönetimi tab-pane'i kaldırıldı — fatura kontör sistemi devre dışı (Nisan 2026) -->
+
+        {% if can_create_backup %}
+        <!-- FAZ 57 — Yedekleme Sekmesi (store_detail.html)
+             Görünür: BACKUPS_CREATE permission olan tüm kullanıcılar
+             Tam geri yükleme: yalnızca BACKUPS_RESTORE_FULL
+             Smart Restore   : BACKUPS_RESTORE_SMART veya RESTORE_FULL -->
+        <div class="tab-pane fade" id="backup-tab" role="tabpanel">
+            <div class="card mb-5 mb-xl-10">
+                <div class="card-header cursor-pointer align-items-center flex-wrap gap-2 py-5">
+                    <div class="card-title m-0">
+                        <h3 class="fw-bold m-0">
+                            <i class="fa-solid fa-database text-primary me-2"></i>Mağaza Yedekleri
+                        </h3>
+                        <span class="text-muted fs-7 ms-2">{{ record.name }}</span>
+                    </div>
+                    <div class="card-toolbar d-flex flex-wrap gap-2">
+                        <!-- Tam Yedek Grubu -->
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-light-primary" onclick="bk_triggerCreate('json', false)"
+                                    title="Klasik JSON yedek">
+                                <i class="ki-duotone ki-file-up fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                JSON Yedek
+                            </button>
+                            <button class="btn btn-sm btn-light-info" onclick="bk_triggerCreateZip()"
+                                    title="ZIP yedek (11 dosya + opsiyonel media)">
+                                <i class="fa-solid fa-file-zipper me-1"></i>ZIP Yedek
+                            </button>
+                            <a class="btn btn-sm btn-light-success"
+                               href="{% url 'backups:export_xlsx' %}?company_id={{ record.company.id }}"
+                               target="_blank" title="Anlık Excel raporu (sadece okuma)">
+                                <i class="fa-solid fa-file-excel me-1"></i>Excel Raporu
+                            </a>
+                        </div>
+                        <!-- Smart Export — Metronic KTMenu dropdown -->
+                        <button type="button"
+                                class="btn btn-sm btn-light-warning"
+                                data-kt-menu-trigger="click"
+                                data-kt-menu-placement="bottom-end"
+                                title="İlişkisel paket dışa aktar (ZIP + görseller)">
+                            <i class="fa-solid fa-box-archive me-1"></i>Smart Export
+                            <i class="fa-solid fa-chevron-down ms-1 fs-9"></i>
+                        </button>
+                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-700 menu-state-bg-light-warning fw-semibold fs-7 w-280px py-4"
+                             data-kt-menu="true">
+                            <div class="menu-item px-3">
+                                <div class="menu-content text-uppercase fs-8 text-muted px-3 pb-2">
+                                    Barkodlu Ürün Paketi
+                                </div>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a class="menu-link px-3"
+                                   onclick="bk_smartExport('gold_purchases', true); return false;">
+                                    <i class="fa-solid fa-barcode me-2 text-warning"></i>
+                                    Görseller Dahil <span class="badge badge-light-success ms-auto">ZIP</span>
+                                </a>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a class="menu-link px-3"
+                                   onclick="bk_smartExport('gold_purchases', false); return false;">
+                                    <i class="fa-solid fa-barcode me-2 text-warning"></i>
+                                    Sadece Veri <span class="badge badge-light ms-auto">ZIP</span>
+                                </a>
+                            </div>
+                            <div class="separator my-2"></div>
+                            <div class="menu-item px-3">
+                                <div class="menu-content text-uppercase fs-8 text-muted px-3 pb-2">
+                                    Müşteri Paketi
+                                </div>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a class="menu-link px-3"
+                                   onclick="bk_smartExport('customers', true); return false;">
+                                    <i class="fa-solid fa-users me-2 text-info"></i>
+                                    Kimlik Görselleri Dahil <span class="badge badge-light-success ms-auto">ZIP</span>
+                                </a>
+                            </div>
+                            <div class="menu-item px-3">
+                                <a class="menu-link px-3"
+                                   onclick="bk_smartExport('customers', false); return false;">
+                                    <i class="fa-solid fa-users me-2 text-info"></i>
+                                    Sadece Veri <span class="badge badge-light ms-auto">ZIP</span>
+                                </a>
+                            </div>
+                            <div class="separator my-2"></div>
+                            <div class="menu-item px-3">
+                                <a class="menu-link px-3"
+                                   onclick="bk_smartExport('settings', false); return false;">
+                                    <i class="fa-solid fa-gears me-2 text-secondary"></i>
+                                    Mağaza Ayarları Paketi <span class="badge badge-light ms-auto">ZIP</span>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- Smart Restore — ayrı buton -->
+                        {% if can_restore_smart %}
+                        <button class="btn btn-sm btn-warning" onclick="bk_triggerSmartRestore()"
+                                title="Paket dosyası yükle — merge (mevcut veriye dokunmaz)">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i>Smart Restore
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if can_restore_full %}
+                    <div class="alert alert-dismissible bg-light-danger border border-danger d-flex align-items-center p-4 mb-6">
+                        <i class="ki-duotone ki-shield-cross fs-2hx text-danger me-3">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div>
+                            <h5 class="mb-1 text-danger">Kritik Uyarı</h5>
+                            <span>"Yükle" işlemi firmanın <b>şu anki tüm verilerini siler</b> ve seçilen
+                                yedeği geri yükler. <b>Bu işlem geri alınamaz!</b></span>
+                        </div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    <table id="bkStoreTable" class="table align-middle table-row-dashed fs-6 gy-5">
+                        <thead>
+                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                            <th>Tarih</th>
+                            <th>Not</th>
+                            <th>Format</th>
+                            <th>Boyut</th>
+                            <th>Oluşturan</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if can_view_audit %}
+            <!-- Audit log mini özet — son 10 restore -->
+            <div class="card mb-5">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h4 class="fw-bold m-0">
+                            <i class="fa-solid fa-clock-rotate-left text-muted me-2"></i>Son Restore Kayıtları
+                        </h4>
+                    </div>
+                </div>
+                <div class="card-body py-4">
+                    <table id="bkAuditTable" class="table table-sm align-middle table-row-dashed fs-7 gy-3">
+                        <thead>
+                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase">
+                            <th>Tarih</th>
+                            <th>Tür</th>
+                            <th>Model</th>
+                            <th>Notlar</th>
+                        </tr>
+                        </thead>
+                        <tbody id="bkAuditBody">
+                        <tr><td colspan="4" class="text-center text-muted py-4">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}<!-- /can_create_backup -->
 
     </div>
 
@@ -1859,7 +2154,7 @@
             </div>
         </div>
     </div>
-    {# ═══ FAZ 4-5 Ek 3: Personel Rol Değiştirme Modal'ı ═══ #}
+    <!-- ═══ FAZ 4-5 Ek 3: Personel Rol Değiştirme Modal'ı ═══ -->
     <div class="modal fade" tabindex="-1" id="changeRoleModal">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content" style="padding:25px;">
@@ -2075,7 +2370,7 @@
         }
     </script>
 
-    {# ── Paket & Modül Güncelleme Modalı ── #}
+    <!-- ── Paket & Modül Güncelleme Modalı ── -->
     {% if request.user.is_superuser or request.user.is_staff %}
     <div class="modal fade" id="updatePackageModulesModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -2092,7 +2387,7 @@
                 <form id="updatePkgModForm" method="post" autocomplete="off">
                     {% csrf_token %}
                     <div class="modal-body">
-                        {# Paket Seçimi (Opsiyonel) #}
+                        <!-- Paket Seçimi (Opsiyonel) -->
                         <div class="mb-5">
                             <label class="form-label fw-bold fs-6">
                                 <i class="fa-solid fa-box-open me-1 text-primary"></i> Paket (Opsiyonel)
@@ -2113,7 +2408,7 @@
                             </div>
                         </div>
 
-                        {# Modül Seçimi #}
+                        <!-- Modül Seçimi -->
                         {% if all_modules %}
                         <div class="separator separator-dashed my-5"></div>
                         <div class="mb-3">
@@ -3177,7 +3472,446 @@
         })();
     </script>
 
-    {# E-Fatura Kontör JS bloğu (quota + DataTable) kaldırıldı — fatura kontör sistemi devre dışı (Nisan 2026) #}
+    <!-- E-Fatura Kontör JS bloğu (quota + DataTable) kaldırıldı — fatura kontör sistemi devre dışı (Nisan 2026) -->
+
+    {% if can_create_backup %}
+    <!-- FAZ 57 — Yedekleme JS (store_detail.html)
+         STORE_ID / COMPANY_ID template'ten inject edilir. -->
+    <script>
+    (function () {
+        'use strict';
+
+        const BK_COMPANY_ID  = "{{ record.company.id }}";
+        const BK_STORE_ID    = "{{ record.id }}";
+        const BK_CAN_CREATE        = {{ can_create_backup|yesno:"true,false" }};
+        const BK_CAN_RESTORE_FULL  = {{ can_restore_full|yesno:"true,false" }};
+        const BK_CAN_RESTORE_SMART = {{ can_restore_smart|yesno:"true,false" }};
+        const BK_CAN_VIEW_AUDIT    = {{ can_view_audit|yesno:"true,false" }};
+
+        let bkDT;
+
+        // ── Backup tablosunu başlat ──────────────────────────────────
+        function bk_initDT() {
+            if ($.fn.DataTable.isDataTable('#bkStoreTable')) {
+                $('#bkStoreTable').DataTable().destroy();
+            }
+            bkDT = $('#bkStoreTable').DataTable({
+                processing: true,
+                serverSide: false,
+                ajax: {
+                    url: "{% url 'backups:get-all' %}",
+                    type: "GET",
+                    data: {company_id: BK_COMPANY_ID}
+                },
+                columns: [
+                    {data: 'created_at'},
+                    {data: 'note', render: d => d && d.length > 40 ? d.substr(0, 40) + '…' : (d || '-')},
+                    {
+                        data: 'format',
+                        render: function (d) {
+                            if (!d || d === '-') return '<span class="badge badge-light">-</span>';
+                            if (d === 'JSON') return '<span class="badge badge-light-primary">JSON</span>';
+                            if (d === 'ZIP (DB)') return '<span class="badge badge-light-info">ZIP (DB)</span>';
+                            if (d === 'ZIP + Media') return '<span class="badge badge-light-success">ZIP + Media</span>';
+                            return `<span class="badge badge-light">${d}</span>`;
+                        }
+                    },
+                    {data: 'file_size'},
+                    {data: 'created_by'},
+                    {
+                        data: null, className: 'text-end', orderable: false,
+                        render: function (data, type, row) {
+                            let btns = `<a href="${row.download_url}" target="_blank"
+                                class="btn btn-sm btn-icon btn-light-success me-2" title="İndir">
+                                <i class="fa-solid fa-download"></i>
+                            </a>`;
+                            if (BK_CAN_RESTORE_FULL) {
+                                btns += `<button onclick="bk_triggerRestore('${row.id}','${row.created_at}')"
+                                    class="btn btn-sm btn-light-danger me-2" title="Bu yedeği yükle">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Yükle
+                                </button>`;
+                            }
+                            if (BK_CAN_CREATE) {
+                                btns += `<button onclick="bk_deleteBackup('${row.id}','${row.created_at}','${(row.note||'').replace(/'/g,"\\'")}' )"
+                                    class="btn btn-sm btn-icon btn-light-danger" title="Yedeği Sil">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>`;
+                            }
+                            return btns;
+                        }
+                    }
+                ],
+                order: [[0, 'desc']],
+                language: {url: "/static/management/plugins/custom/datatables/TR.json"}
+            });
+        }
+
+        // Tab açıldığında yükle (lazy)
+        $('a[data-bs-toggle="tab"][href="#backup-tab"]').on('shown.bs.tab', function () {
+            if (!bkDT) {
+                bk_initDT();
+                if (BK_CAN_VIEW_AUDIT) bk_loadAudit();
+            } else {
+                bkDT.ajax.reload();
+            }
+            // KTMenu'yu yeniden başlat — tab içindeki dropdown'lar için gerekli
+            if (typeof KTMenu !== 'undefined' && KTMenu.createInstances) {
+                KTMenu.createInstances();
+            }
+        });
+
+        // ── Audit log mini özet ──────────────────────────────────────
+        function bk_loadAudit() {
+            $.get("{% url 'backups:audit_log' %}", {company_id: BK_COMPANY_ID, limit: 10})
+                .done(function (res) {
+                    const rows = (res.data || []);
+                    const tbody = document.getElementById('bkAuditBody');
+                    if (!tbody) return;
+                    if (!rows.length) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Henüz restore kaydı yok.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = rows.map(r => `
+                        <tr>
+                            <td>${r.restored_at || '-'}</td>
+                            <td><span class="badge badge-light-${r.restore_type === 'SMART' ? 'warning' : 'danger'}">${r.restore_type || '-'}</span></td>
+                            <td class="text-muted">${r.content_type || '-'}</td>
+                            <td class="text-muted text-truncate" style="max-width:200px">${r.restore_notes || '-'}</td>
+                        </tr>
+                    `).join('');
+                })
+                .fail(function () {
+                    const tbody = document.getElementById('bkAuditBody');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">Yüklenemedi.</td></tr>';
+                });
+        }
+
+        // ── Yedek Oluştur (JSON / ZIP) ───────────────────────────────
+        window.bk_triggerCreate = function (fmt, includeMedia) {
+            fmt = fmt || 'json';
+            includeMedia = includeMedia === true;
+            const fmtLabel = fmt === 'zip' ? (includeMedia ? 'ZIP + Media' : 'ZIP (DB)') : 'JSON';
+
+            Swal.fire({
+                title: `Yedek Oluştur (${fmtLabel})`,
+                text: 'Bu yedek için bir not girin (opsiyonel):',
+                input: 'text',
+                showCancelButton: true,
+                confirmButtonText: 'Yedeklemeyi Başlat',
+                cancelButtonText: 'İptal',
+                showLoaderOnConfirm: true,
+                preConfirm: (note) => {
+                    const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                    return $.ajax({
+                        url: "{% url 'backups:create' %}",
+                        type: 'POST',
+                        data: {company_id: BK_COMPANY_ID, store_id: BK_STORE_ID,
+                               note, format: fmt,
+                               include_media: includeMedia ? 'true' : 'false',
+                               csrfmiddlewaretoken: CSRF}
+                    }).then(r => {
+                        if (!r.result) throw new Error(r.error_msg || 'Hata oluştu');
+                        return r;
+                    }).catch(e => Swal.showValidationMessage(`Başlatılamadı: ${e}`));
+                }
+            }).then((result) => {
+                if (!result.isConfirmed || !result.value?.result) return;
+                const backupId = result.value.backup_id;
+                let timer;
+                Swal.fire({
+                    title: 'Yedekleniyor…',
+                    html: 'Veriler işleniyor, lütfen bekleyin.<br><b id="bkStatus">Hazırlanıyor…</b>',
+                    allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                        timer = setInterval(() => {
+                            $.get("{% url 'backups:check_status' %}", {backup_id: backupId})
+                                .done(res => {
+                                    if (res.status === 'COMPLETED') {
+                                        clearInterval(timer);
+                                        Swal.fire({icon: 'success', title: 'Tamamlandı!',
+                                            text: 'Yedek başarıyla oluşturuldu.', timer: 2000, showConfirmButton: false});
+                                        if (bkDT) bkDT.ajax.reload();
+                                    } else if (res.status === 'FAILED') {
+                                        clearInterval(timer);
+                                        Swal.fire('Hata', res.error || 'Yedekleme sırasında hata oluştu.', 'error');
+                                    } else {
+                                        const el = document.getElementById('bkStatus');
+                                        if (el) el.textContent = 'İşleniyor… ' + new Date().toLocaleTimeString('tr-TR');
+                                    }
+                                });
+                        }, 2000);
+                    },
+                    willClose: () => clearInterval(timer)
+                });
+            });
+        };
+
+        window.bk_triggerCreateZip = function () {
+            Swal.fire({
+                title: 'ZIP Yedek Seçenekleri',
+                html: `
+                    <div class="text-start">
+                        <p class="text-muted mb-4">ZIP yedek <b>11 JSON dosyası</b> + <b>manifest.json</b> içerir.
+                           Geri yüklemede otomatik tespit edilir.</p>
+                        <div class="form-check form-check-custom form-check-solid mb-3">
+                            <input class="form-check-input" type="checkbox" id="bkZipMedia"/>
+                            <label class="form-check-label fw-semibold" for="bkZipMedia">
+                                Media dosyalarını dahil et
+                                <small class="d-block text-muted">Ürün görselleri + müşteri/mağaza avatarları.
+                                    Yedek boyutu önemli ölçüde artar.</small>
+                            </label>
+                        </div>
+                    </div>`,
+                showCancelButton: true, confirmButtonText: 'Devam', cancelButtonText: 'İptal',
+                focusConfirm: false,
+                preConfirm: () => ({includeMedia: document.getElementById('bkZipMedia').checked})
+            }).then(r => {
+                if (r.isConfirmed && r.value) bk_triggerCreate('zip', r.value.includeMedia);
+            });
+        };
+
+        // ── Tam Geri Yükleme ─────────────────────────────────────────
+        window.bk_triggerRestore = function (backupId, dateStr) {
+            const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            Swal.fire({
+                title: 'EMİN MİSİNİZ?',
+                html: `Bu işlem firmanın <b>TÜM GÜNCEL VERİLERİNİ SİLECEK</b> ve<br>
+                       <b>${dateStr}</b> tarihli yedeği geri yükleyecektir.<br><br>
+                       <span class="text-danger fw-bold">Bu işlem geri alınamaz!</span>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33', cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Evet, Sil ve Yükle!',
+                cancelButtonText: 'İptal'
+            }).then(r1 => {
+                if (!r1.isConfirmed) return;
+                Swal.fire({
+                    title: 'Son Onay',
+                    text: 'Tüm veriler silinecek. Onaylıyor musunuz?',
+                    icon: 'question',
+                    showCancelButton: true, confirmButtonText: 'ONAYLIYORUM',
+                    showLoaderOnConfirm: true, allowOutsideClick: false,
+                    preConfirm: () => $.ajax({
+                        url: "{% url 'backups:restore' %}", type: 'POST',
+                        data: {company_id: BK_COMPANY_ID, store_id: BK_STORE_ID,
+                               backup_id: backupId, csrfmiddlewaretoken: CSRF}
+                    }).then(res => {
+                        if (!res.result) throw new Error(res.error_msg);
+                        return res;
+                    }).catch(e => Swal.showValidationMessage(e))
+                }).then(r2 => {
+                    if (r2.isConfirmed) {
+                        Swal.fire({icon: 'success', title: 'Başarılı',
+                            text: r2.value.msg || 'Yedek başarıyla yüklendi.', confirmButtonText: 'Tamam'
+                        }).then(() => window.location.reload());
+                    }
+                });
+            });
+        };
+
+        // ── Yedek Sil ────────────────────────────────────────────────
+        window.bk_deleteBackup = function (backupId, dateStr, noteStr) {
+            const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            Swal.fire({
+                title: 'Yedeği Sil',
+                html: `<div class="text-start">
+                    <p class="mb-2">Aşağıdaki yedek <b>kalıcı olarak silinecek</b>:</p>
+                    <ul class="list-unstyled mb-3">
+                        <li><i class="fa-solid fa-calendar-alt me-2 text-muted"></i><b>${dateStr}</b></li>
+                        ${noteStr ? `<li><i class="fa-solid fa-note-sticky me-2 text-muted"></i>${noteStr}</li>` : ''}
+                    </ul>
+                    <div class="alert alert-danger py-2 px-3 mb-0">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        Dosya diskten de silinir. Bu işlem <b>geri alınamaz.</b>
+                    </div>
+                </div>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fa-solid fa-trash me-1"></i>Evet, Sil',
+                cancelButtonText: 'İptal',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: false,
+                preConfirm: () => $.ajax({
+                    url: "{% url 'backups:delete' %}",
+                    type: 'POST',
+                    data: {backup_id: backupId, csrfmiddlewaretoken: CSRF}
+                }).then(res => {
+                    if (!res.result) throw new Error(res.error_msg || 'Silme başarısız.');
+                    return res;
+                }).catch(e => Swal.showValidationMessage(e.message || String(e)))
+            }).then(r => {
+                if (r.isConfirmed && r.value && r.value.result) {
+                    Swal.fire({
+                        icon: 'success', title: 'Silindi',
+                        text: 'Yedek başarıyla silindi.', timer: 1800, showConfirmButton: false
+                    }).then(() => bkDT && bkDT.ajax.reload());
+                }
+            });
+        };
+
+        // ── Smart Export — ZIP indirme (görsel dahil/hariç) ──────────
+        // window.location ile direct download tetiklenir; menü kapanır.
+        window.bk_smartExport = function (kind, includeMedia) {
+            const params = new URLSearchParams({
+                store_id: BK_STORE_ID,
+                kind: kind,
+                format: 'zip',
+                include_media: includeMedia ? 'true' : 'false',
+            });
+            const url = "{% url 'backups:smart_export' %}?" + params.toString();
+            // Açılan menüyü gizle (KTMenu otomatik kapatmaz)
+            try {
+                const trigger = document.querySelector('[data-kt-menu-trigger="click"][title*="Smart Export"]');
+                if (trigger && typeof KTMenu !== 'undefined') {
+                    const menu = KTMenu.getInstance(trigger);
+                    if (menu) menu.hide();
+                }
+            } catch (e) { /* yoksay */ }
+            // Direct download — yeni sekme yerine aynı sayfada (popup blocker'ı atlatır)
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        };
+
+        // ── Smart Restore ────────────────────────────────────────────
+        window.bk_triggerSmartRestore = function () {
+            Swal.fire({
+                title: 'Smart Restore — Paket Yükle',
+                html: `
+                    <div class="text-start">
+                        <p class="text-muted mb-3">
+                            <b>Smart Restore</b> mevcut veriye dokunmaz; eksik tedarikçi/müşteri/ürünleri
+                            <b>merge</b> ile ekler.<br>
+                            <small class="text-muted">Karar 5: TCKN/Vergi No olmadan eşleşme yapılmaz,
+                            yeni kayıt oluşturulur.</small>
+                        </p>
+                        <input type="file" id="bkSmartFile" class="form-control" accept=".zip,.json"/>
+                        <p class="text-muted mt-2 mb-0">
+                            <small><b>ZIP</b> paketler ürün/müşteri görsellerini de geri yükler.
+                            <b>JSON</b> dosyalar yalnızca veri içerir (eski format).</small>
+                        </p>
+                        <p class="text-muted mt-3 mb-0">
+                            <small>Önce <b>dry-run</b> yapılır (hiçbir şey yazılmaz).
+                            Onaylarsanız gerçek restore başlar.</small>
+                        </p>
+                    </div>`,
+                showCancelButton: true, confirmButtonText: 'Dry-Run Çalıştır', cancelButtonText: 'İptal',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const fi = document.getElementById('bkSmartFile');
+                    if (!fi.files || !fi.files[0]) {
+                        Swal.showValidationMessage('Lütfen bir paket dosyası seçin (ZIP veya JSON).');
+                        return false;
+                    }
+                    return fi.files[0];
+                }
+            }).then(r => {
+                if (r.isConfirmed && r.value) _bk_smartSubmit(r.value, true);
+            });
+        };
+
+        function _bk_smartSubmit(file, dryRun) {
+            const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            const fd = new FormData();
+            fd.append('store_id', BK_STORE_ID);
+            fd.append('dry_run', dryRun ? 'true' : 'false');
+            fd.append('file', file);
+            fd.append('csrfmiddlewaretoken', CSRF);
+
+            Swal.fire({
+                title: dryRun ? 'Dry-Run Çalışıyor…' : 'Smart Restore Çalışıyor…',
+                html: 'Lütfen bekleyin.', allowOutsideClick: false, showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            $.ajax({
+                url: "{% url 'backups:smart_restore' %}",
+                type: 'POST', data: fd, processData: false, contentType: false
+            }).done(function (res) {
+                if (!res.result) {
+                    Swal.fire('Hata', res.error_msg || 'Smart restore başarısız.', 'error');
+                    return;
+                }
+                const r = res.report || {};
+                const html = _bk_renderReport(r, dryRun);
+                if (dryRun) {
+                    Swal.fire({
+                        title: 'Dry-Run Sonucu', html, width: 680,
+                        showCancelButton: true, confirmButtonText: 'Onayla ve Yükle',
+                        cancelButtonText: 'İptal', confirmButtonColor: '#d97706'
+                    }).then(c => { if (c.isConfirmed) _bk_smartSubmit(file, false); });
+                } else {
+                    Swal.fire({icon: r.success ? 'success' : 'error',
+                        title: r.success ? 'Smart Restore Tamamlandı' : 'Hata', html, width: 680});
+                    if (bkDT) bkDT.ajax.reload();
+                    if (BK_CAN_VIEW_AUDIT) bk_loadAudit();
+                }
+            }).fail(xhr => Swal.fire('Hata', 'İstek başarısız: ' + xhr.status, 'error'));
+        }
+
+        function _bk_renderReport(r, dryRun) {
+            const skip = (r.idempotency_skips || []).length;
+            const conf = (r.barcode_conflicts || []).length;
+            const warn = (r.similarity_warnings || []).length;
+            let html = '<div class="text-start" style="font-size:.9rem"><table class="table table-sm">';
+            if (dryRun) {
+                html += `<tr><td>Yeni tedarikçi oluşturulacak</td><td><b>${r.will_create_suppliers||0}</b></td></tr>`;
+                html += `<tr><td>Eşleşen tedarikçi</td><td><b>${r.will_match_suppliers||0}</b></td></tr>`;
+                html += `<tr><td>Yeni müşteri oluşturulacak</td><td><b>${r.will_create_customers||0}</b></td></tr>`;
+                html += `<tr><td>Eşleşen müşteri</td><td><b>${r.will_match_customers||0}</b></td></tr>`;
+                html += `<tr><td>Yeni ürün oluşturulacak</td><td><b>${r.will_create_products||0}</b></td></tr>`;
+            } else {
+                html += `<tr><td>Oluşturulan tedarikçi</td><td><b>${r.created_suppliers||0}</b></td></tr>`;
+                html += `<tr><td>Eşleşen tedarikçi</td><td><b>${r.matched_suppliers||0}</b></td></tr>`;
+                html += `<tr><td>Oluşturulan müşteri</td><td><b>${r.created_customers||0}</b></td></tr>`;
+                html += `<tr><td>Eşleşen müşteri</td><td><b>${r.matched_customers||0}</b></td></tr>`;
+                html += `<tr><td>Oluşturulan ürün</td><td><b>${r.created_products||0}</b></td></tr>`;
+                html += `<tr><td>Tedarikçi cari satırı</td><td><b>${r.created_supplier_ledger_entries||0}</b></td></tr>`;
+                html += `<tr><td>Müşteri cari satırı</td><td><b>${r.created_customer_ledger_entries||0}</b></td></tr>`;
+                if (r.media_attached) {
+                    html += `<tr class="table-success"><td><i class="fa-solid fa-images me-1"></i>Çıkarılan görsel dosyası</td><td><b>${r.media_extracted||0}</b></td></tr>`;
+                    if (r.attached_product_images) {
+                        html += `<tr><td class="ps-4">↳ Ürün görseli bağlanan</td><td><b>${r.attached_product_images}</b></td></tr>`;
+                    }
+                    if (r.attached_customer_images) {
+                        html += `<tr><td class="ps-4">↳ Müşteri kimlik görseli bağlanan</td><td><b>${r.attached_customer_images}</b></td></tr>`;
+                    }
+                }
+            }
+            html += `<tr><td class="text-warning">⚠ Idempotency atlandı</td><td><b>${skip}</b></td></tr>`;
+            html += `<tr><td class="text-warning">⚠ Barkod çakışması</td><td><b>${conf}</b></td></tr>`;
+            html += `<tr><td class="text-warning">⚠ Şüpheli benzerlik</td><td><b>${warn}</b></td></tr>`;
+            html += '</table>';
+            if (conf > 0 && r.barcode_conflicts) {
+                html += '<div class="alert alert-warning mt-2"><b>Barkod Çakışmaları:</b><ul class="mb-0">';
+                r.barcode_conflicts.slice(0, 5).forEach(b => {
+                    html += `<li>${b.original} → <b>${b.resolved}</b></li>`;
+                });
+                if (conf > 5) html += `<li>… ve ${conf-5} adet daha</li>`;
+                html += '</ul></div>';
+            }
+            if (warn > 0 && r.similarity_warnings) {
+                html += '<div class="alert alert-info mt-2"><b>Manuel İnceleme Önerilen:</b><ul class="mb-0">';
+                r.similarity_warnings.slice(0, 5).forEach(s => {
+                    html += `<li>${s.kind}: <b>${s.incoming}</b> — ${(s.matches||[]).length} benzer kayıt</li>`;
+                });
+                if (warn > 5) html += `<li>… ve ${warn-5} adet daha</li>`;
+                html += '</ul></div>';
+            }
+            if (r.error) html += `<div class="alert alert-danger mt-2"><b>Hata:</b> ${r.error}</div>`;
+            html += '</div>';
+            return html;
+        }
+
+    })();
+    </script>
+    {% endif %}<!-- /can_create_backup -->
     <script>
         (function () {
             function showResult(obj, targetId) {
@@ -3644,6 +4378,69 @@
             });
         });
 
+        // ============================================================
+        // T3 (2026-04-29): Manuel Kur Ayarı — panel toggle + bulk save
+        // ============================================================
+        // Switch açılıp kapandığında manuel kur tablosunu göster/gizle.
+        // (Switch'in backend persistance'ı genel store-setting-switch handler'ı
+        // tarafından otomatik halledilir; burada sadece UI toggle.)
+        $(document).on('change', '#chkManualCurrencyRate', function () {
+            if ($(this).is(':checked')) {
+                $('#manualCurrencyRatesPanel').slideDown(150);
+            } else {
+                $('#manualCurrencyRatesPanel').slideUp(150);
+            }
+        });
+
+        // "Manuel Kurları Kaydet" butonu — tüm inputları toplayıp tek POST
+        $(document).on('click', '#saveManualCurrencyRates', function () {
+            var $btn = $(this);
+            var storeId = "{{ record.id }}";
+            var csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+
+            var rates = {};
+            $('.manual-fx-buy').each(function () {
+                var pid = $(this).data('product-id');
+                if (!pid) return;
+                if (!rates[pid]) rates[pid] = {};
+                rates[pid].buy_tl = $(this).val();
+            });
+            $('.manual-fx-sell').each(function () {
+                var pid = $(this).data('product-id');
+                if (!pid) return;
+                if (!rates[pid]) rates[pid] = {};
+                rates[pid].sell_tl = $(this).val();
+            });
+
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: "{% url 'settings:update_manual_currency_rates' %}",
+                type: 'POST',
+                data: {
+                    'store_id': storeId,
+                    'rates': JSON.stringify(rates),
+                    'csrfmiddlewaretoken': csrfToken
+                },
+                success: function (response) {
+                    if (response.success) {
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'success',
+                            title: 'Manuel kurlar kaydedildi (' + (response.count || 0) + ' ürün)',
+                            showConfirmButton: false, timer: 1800
+                        });
+                    } else {
+                        Swal.fire('Hata', response.error || 'Kayıt başarısız.', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                },
+                complete: function () {
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
         // 2. Fiyat Marjı (Decimal Input)
         $('#btnSaveMargin').on('click', function () {
             var val = $('#inpPriceMargin').val();
@@ -3788,7 +4585,7 @@
                     if (response.success) {
                         Swal.fire({
                             toast: true, position: 'top-end', icon: 'success',
-                            title: 'Dernek referansı güncellendi', showConfirmButton: false, timer: 1500
+                            title: 'Ayarlar güncellendi', showConfirmButton: false, timer: 1500
                         });
                     } else {
                         Swal.fire('Hata', response.error || 'Hata oluştu.', 'error');
@@ -3803,7 +4600,7 @@
 
     {{ record.label_settings.small_design|json_script:"small-design-data" }}
     {{ record.label_settings.large_design|json_script:"large-design-data" }}
-    {# ─── Çoklu Maden — Pırlanta / Saat config kaynakları (NULL olabilir, JS default fallback) ─── #}
+    <!-- ─── Çoklu Maden — Pırlanta / Saat config kaynakları (NULL olabilir, JS default fallback) ─── -->
     {{ record.label_settings.diamond_small_design|json_script:"diamond-small-design-data" }}
     {{ record.label_settings.diamond_large_design|json_script:"diamond-large-design-data" }}
     {{ record.label_settings.watch_small_design|json_script:"watch-small-design-data" }}
@@ -3840,7 +4637,7 @@
             const defaultsByMaterial = {
                 GOLD: {
                     "store_name":   {"label": "Firma Adı",       "x": 180, "y": 90,  "font": 20, "width": 0,  "visible": true},
-                    "barcode_lines": {"label": "Barkod Çizgileri", "x": 200, "y": 130, "font": 25, "width": 70, "visible": true},
+                    "barcode_lines": {"label": "Barkod Çizgileri", "x": 200, "y": 130, "font": 25, "width": 35, "visible": true},
                     "barcode_no":   {"label": "Barkod No",       "x": 180, "y": 145, "font": 20, "width": 0,  "visible": true},
                     "quality_text": {"label": "Ayar (14K)",      "x": 280, "y": 145, "font": 20, "width": 0,  "visible": true},
                     "price":        {"label": "Fiyat",           "x": 220, "y": 175, "font": 25, "width": 0,  "visible": true},
@@ -4547,7 +5344,7 @@
         });
     </script>
 
-    {# ── Paket & Modül Güncelleme Form Handler ── #}
+    <!-- ── Paket & Modül Güncelleme Form Handler ── -->
     {% if request.user.is_superuser or request.user.is_staff %}
     <script>
         $(document).ready(function () {

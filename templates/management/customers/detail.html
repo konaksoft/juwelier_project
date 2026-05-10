@@ -164,6 +164,131 @@
             color: inherit !important;
         }
 
+        /* FAZ 22 — Bakiye Mutabakat Banner */
+        .reconcile-banner {
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: .9rem;
+            font-weight: 600;
+        }
+        .reconcile-banner--ok {
+            background: rgba(40, 167, 69, .08);
+            color: #1f8d3d;
+            border-color: rgba(40, 167, 69, .25);
+        }
+        .reconcile-banner--warn {
+            background: rgba(255, 165, 0, .12);
+            color: #b97700;
+            border-color: rgba(255, 165, 0, .35);
+        }
+        .reconcile-banner--err {
+            background: rgba(220, 53, 69, .10);
+            color: #b11e2b;
+            border-color: rgba(220, 53, 69, .30);
+        }
+        .reconcile-banner i { font-size: 1.25rem; }
+
+        /* FAZ 22 — Cari Tahsilat Modal */
+        #debtCollectionModal .modal-content { border-radius: 14px; overflow: hidden; }
+        #debtCollectionModal .balance-card {
+            background: linear-gradient(135deg, #f4f8ff 0%, #eaf3ff 100%);
+            border: 1px dashed #5e93f7;
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        #debtCollectionModal .balance-card.is-debt {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe9e9 100%);
+            border-color: #ec7d7d;
+        }
+        #debtCollectionModal .balance-card.is-credit {
+            background: linear-gradient(135deg, #f1fbf3 0%, #def5e3 100%);
+            border-color: #6cc081;
+        }
+        #debtCollectionModal .balance-card.is-zero {
+            background: linear-gradient(135deg, #f7f9fb 0%, #eef1f5 100%);
+            border-color: #c2cad4;
+        }
+        #debtCollectionModal .preview-card {
+            background: linear-gradient(135deg, #fffbf2 0%, #fff5dc 100%);
+            border: 1px dashed #e0b956;
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        #debtCollectionModal .preview-card .label { color: #7a6a3d; font-size: .78rem; font-weight: 600; }
+        #debtCollectionModal .preview-card .value { font-size: 1rem; font-weight: 800; color: #2a2a2a; }
+        #debtCollectionModal .preview-card .value.text-pos { color: #1f8d3d; }
+        #debtCollectionModal .preview-card .value.text-neg { color: #b11e2b; }
+        #debtCollectionModal .pill-bank {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #eef5ff; color: #2c5fa7;
+            border-radius: 999px; padding: 2px 10px; font-size: .75rem; font-weight: 700;
+        }
+        #debtCollectionModal .mode-pill {
+            display: inline-flex; align-items: center; gap: 4px;
+            border-radius: 999px; padding: 3px 10px; font-size: .72rem; font-weight: 700;
+        }
+        #debtCollectionModal .mode-pill--customer { background: #eef5ff; color: #2c5fa7; }
+        #debtCollectionModal .mode-pill--basket { background: #f1ecff; color: #5b3fc2; }
+        #debtCollectionModal .form-required::after {
+            content: ' *'; color: #dc3545; font-weight: 800;
+        }
+        /* FAZ 22.7 — Açıklama alanı modal-body içinde aşağıya sabitlenir; kullanıcı
+           gelişmiş alanlar açıkken bile açıklamayı her zaman görür. */
+        #debtCollectionModal .sticky-desc {
+            position: sticky;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 24%, #fff 100%);
+            z-index: 5;
+            border-top: 1px solid #eef0f8;
+            margin-top: 14px;
+            padding: 10px 4px 6px 4px;
+        }
+        /* FAZ 22.7 — Gelişmiş Ayarlar accordion: temel akış görünmesin
+           diye varsayılan kapalı; chevron rotation animasyonu. */
+        #debtCollectionModal .adv-toggle {
+            cursor: pointer;
+            user-select: none;
+            color: #5b3fc2;
+            font-weight: 700;
+            font-size: .9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border: 1px dashed #c4b8ee;
+            background: #faf8ff;
+            border-radius: 8px;
+            transition: all .15s ease;
+        }
+        #debtCollectionModal .adv-toggle:hover {
+            background: #f1ecff;
+        }
+        #debtCollectionModal .adv-toggle .chev {
+            transition: transform .2s ease;
+        }
+        #debtCollectionModal .adv-toggle[aria-expanded="true"] .chev {
+            transform: rotate(180deg);
+        }
+        #debtCollectionModal .adv-section { display: none; margin-top: 12px; }
+        #debtCollectionModal .adv-section.is-open { display: block; }
+        /* FAZ 22.7 — Yön rozet (collapsed direction selector) */
+        #debtCollectionModal .direction-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 999px;
+            font-weight: 700; font-size: .82rem;
+            cursor: pointer; user-select: none;
+            border: 1px solid transparent;
+        }
+        #debtCollectionModal .direction-pill--collection { background: #e8f5ee; color: #1f8d3d; border-color: #b6e0c6; }
+        #debtCollectionModal .direction-pill--payment    { background: #fdecec; color: #b11e2b; border-color: #f0bcbc; }
+        #debtCollectionModal .direction-pill .change-link {
+            color: #5b6b80; font-weight: 600; font-size: .72rem;
+            text-decoration: underline; margin-left: 6px;
+        }
     </style>
 {% endblock header %}
 
@@ -214,8 +339,12 @@
                                                     <div class="kpi__icon"><i class="fa-solid fa-turkish-lira-sign"></i>
                                                     </div>
                                                     <div class="kpi__body">
-                                                        <div class="kpi__label">Borç TL Karşılığı (Anlık Kur)</div>
-                                                        <div class="kpi__value">{{ balance_tl|floatformat:2 }} ₺</div>
+                                                        <div class="kpi__label">Borç TL Karşılığı</div>
+                                                        <div class="kpi__value" id="kpiBalanceTl"
+                                                             data-balance-hs="{{ balance_hs|stringformat:'f' }}">{{ balance_eur|floatformat:2 }} ₺</div>
+                                                        <div class="text-muted fs-9 mt-1" id="kpiRateInfo">
+                                                            <i class="fa-solid fa-circle-check text-success me-1"></i>Sabit (yazıldığı andaki kur)
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -235,8 +364,12 @@
                                                     <div class="kpi__icon"><i class="fa-solid fa-turkish-lira-sign"></i>
                                                     </div>
                                                     <div class="kpi__body">
-                                                        <div class="kpi__label">Alacak TL Karşılığı (Anlık Kur)</div>
-                                                        <div class="kpi__value">{{ balance_tl|floatformat:2 }} ₺</div>
+                                                        <div class="kpi__label">Alacak TL Karşılığı</div>
+                                                        <div class="kpi__value" id="kpiBalanceTl"
+                                                             data-balance-hs="{{ balance_hs|stringformat:'f' }}">{{ balance_eur|floatformat:2 }} ₺</div>
+                                                        <div class="text-muted fs-9 mt-1" id="kpiRateInfo">
+                                                            <i class="fa-solid fa-circle-check text-success me-1"></i>Sabit (yazıldığı andaki kur)
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -257,10 +390,38 @@
 
                                     </div>
 
+                                    <!-- FAZ 22.3 — Bakiye Mutabakat Banner'ı (canonical vs statik alan kontrolü) -->
+                                    <div class="row g-3 mt-1 mb-4" id="reconcileBannerRow" style="display:none;">
+                                        <div class="col-12">
+                                            <div class="reconcile-banner reconcile-banner--ok" id="reconcileBanner">
+                                                <i class="fa-solid fa-shield-check"></i>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bolder fs-6" id="reconcileTitle">Cari Bakiye Mutabık</div>
+                                                    <div class="fs-8 fw-semibold opacity-75" id="reconcileDetail">
+                                                        Canonical defter (CustomerLedger) ile statik alanlar uyumlu — tutarlar tutuyor.
+                                                    </div>
+                                                </div>
+                                                <span class="badge fw-bold fs-8 ms-2" id="reconcileDelta">±0.000 HS</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="d-flex justify-content-end align-items-center mb-5 gap-2">
+                                        <a href="{% url 'customers:cari-detail-page' customer.id %}"
+                                           class="btn btn-light-primary fw-bold"
+                                           title="Yeni cari hesap merkezini aç (emanet mahsuplaşma + onay kuyruğu + canlı ledger)">
+                                            <i class="fa-solid fa-arrow-up-right-from-square me-2"></i>
+                                            Cari Hesap Merkezi
+                                        </a>
                                         <button type="button" class="btn btn-success" data-bs-toggle="modal"
                                                 data-bs-target="#debtCollectionModal">
                                             <i class="fa-solid fa-money-bill-wave fs-2 me-2"></i> Borç Tahsilat / Ödeme
+                                        </button>
+                                        <button type="button" class="btn btn-warning text-dark fw-bold"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#productPaymentModal"
+                                                title="Müşteriden ürün/hurda al (tahsilat) veya müşteriye ürün ver (ödeme). Sepete birden fazla kalem eklenebilir.">
+                                            <i class="fa-solid fa-gem fs-2 me-2"></i> Ürün/Hurda ile Tahsilat / Ödeme
                                         </button>
                                     </div>
                                 </div>
@@ -648,10 +809,27 @@
 
                         <div class="tab-pane fade" id="debts" role="tabpanel">
                             <div class="card mb-5 mb-xl-10">
-                                <div class="card-header cursor-pointer">
+                                <div class="card-header cursor-pointer d-flex align-items-center justify-content-between">
                                     <div class="card-title m-0"><h3 class="fw-bold m-0">Alacak/Borç İşlemleri</h3></div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-light-info text-info fw-bold fs-8">
+                                            <i class="fa-solid fa-list-check me-1"></i>
+                                            Tek Tek İşlem Görünümü
+                                        </span>
+                                        <a href="{% url 'customers:cari-detail-page' customer.id %}"
+                                           class="btn btn-sm btn-light-primary fw-bold"
+                                           title="Tüm hesap hareketlerini tek defterde görmek için">
+                                            <i class="fa-solid fa-book me-1"></i> Tüm Hesap Defteri
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="card-body">
+                                    <div class="alert alert-light-primary border border-dashed border-primary py-2 px-3 mb-3 fs-8">
+                                        <i class="fa-solid fa-lightbulb text-primary me-1"></i>
+                                        <span class="fw-bold text-gray-800">Burada</span> her bir alışveriş için kalan borç ayrı satırda görünür —
+                                        ödediğinizde işlemden işleme dağıtılır. <span class="fw-bold">Tüm geçmiş, kasa hareketleri ve döviz farkları</span>
+                                        için sağdaki <a href="{% url 'customers:cari-detail-page' customer.id %}" class="fw-bold">Tüm Hesap Defteri</a>ni açın.
+                                    </div>
                                     <div id="debtsToolbar"
                                          class="d-flex justify-content-between align-items-center gap-3 mb-3">
                                         <div>
@@ -703,6 +881,19 @@
                             <div class="card mb-5 mb-xl-10">
                                 <div class="card-header cursor-pointer">
                                     <div class="card-title m-0"><h3 class="fw-bold m-0">Emanet</h3></div>
+                                    <!-- FAZ 31 / BUG-4: Müşteri carisinden emanet yazdır -->
+                                    <div class="card-toolbar">
+                                        <button type="button" id="btnPrintCustodyOld"
+                                                class="btn btn-sm btn-light-primary me-2"
+                                                title="Emanet ekstresini yazdır">
+                                            <i class="fa-solid fa-print me-1"></i> Yazdır
+                                        </button>
+                                        <button type="button" id="btnPdfCustodyOld"
+                                                class="btn btn-sm btn-light-danger"
+                                                title="Emanet ekstresini PDF olarak indir">
+                                            <i class="fa-solid fa-file-pdf me-1"></i> PDF
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div id="custodiesToolbar"
@@ -835,6 +1026,7 @@
                                                 <thead>
                                                 <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                                     <th>İşlem</th>
+                                                    <th>Cari Etkisi</th>
                                                     <th>Ödeme Numarası</th>
                                                     <th>Ödeme Türü</th>
                                                     <th>Miktar</th>
@@ -844,9 +1036,33 @@
                                                 <tbody class="text-gray-600 fw-semibold">
                                                 {% for payment in payments %}
                                                     <tr>
-                                                        <td>{% if payment.is_output %}Nakit Çıkış{% else %}Nakit
-                                                            Giriş{% endif %}</td>
-                                                        <td>{{ payment.process_no }}</td>
+                                                        <td>
+                                                            {% if payment.is_output %}
+                                                                <span class="badge bg-light-danger text-danger fw-bold"><i class="fa-solid fa-arrow-up-from-bracket me-1"></i>Nakit Çıkış</span>
+                                                            {% else %}
+                                                                <span class="badge bg-light-success text-success fw-bold"><i class="fa-solid fa-arrow-down-to-bracket me-1"></i>Nakit Giriş</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% comment %}
+                                                            FAZ 39 — Cari etki etiketi:
+                                                              is_output=True  → Müşteriye Ödeme (Alacak Ödemesi)
+                                                              is_output=False → Tahsilat (Borç Ödemesi)
+                                                            {% endcomment %}
+                                                            {% if payment.is_output %}
+                                                                <span class="badge bg-warning text-dark fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i>Alacak Ödemesi</span>
+                                                            {% else %}
+                                                                <span class="badge bg-primary text-white fw-bold"><i class="fa-solid fa-money-bill-trend-up me-1"></i>Borç Ödemesi</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if payment.process_no %}
+                                                                <span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                                                      data-process-no="{{ payment.process_no }}"
+                                                                      style="cursor:pointer;letter-spacing:.3px;"
+                                                                      title="İşlem röntgenini aç">{{ payment.process_no }}</span>
+                                                            {% else %}-{% endif %}
+                                                        </td>
                                                         <td>{{ payment.get_payment_type_display }}</td>
                                                         <td>{{ payment.amount }}</td>
                                                         <td data-order="{{ payment.date|date:'Y-m-d H:i' }}">{{ payment.date }}</td>
@@ -1008,23 +1224,50 @@
             </div>
         </div>
     </div>
-    <div class="modal fade" id="debtCollectionModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <!-- FAZ 22 — Profesyonel Cari Tahsilat / Ödeme Modalı (Akıllı Komuta Merkezi) -->
+    <div class="modal fade" id="debtCollectionModal" tabindex="-1" aria-hidden="true"
+         data-customer-id="{{ customer.id }}">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header bg-light-primary">
-                    <h3 class="modal-title fw-bold text-primary">Nakit İşlem (Tahsilat/Ödeme)</h3>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-light-primary py-3">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                        <div class="symbol symbol-40px">
+                            <span class="symbol-label bg-primary text-white">
+                                <i class="fa-solid fa-cash-register fs-3 text-white"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h3 class="modal-title fw-bold text-primary mb-0">Cari Hesap İşlemi</h3>
+                            <span class="text-muted fw-semibold fs-7">Tahsilat / Ödeme &middot;
+                                <span id="modalModeBadge" class="mode-pill mode-pill--customer">
+                                    <i class="fa-solid fa-user fs-9"></i> Müşteri Modu
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
                 </div>
-                <div class="modal-body py-5 px-lg-10">
 
-                    <div class="d-flex align-items-center bg-light-info rounded p-4 mb-5 border border-info border-dashed">
-                        <i class="fa-solid fa-wallet fs-2x text-info me-4"></i>
-                        <div class="d-flex flex-column flex-grow-1">
-                            <span class="fw-bold text-gray-800 fs-6 mb-1">Mevcut Bakiye Durumu</span>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fs-5 fw-bolder text-info" id="modalBalanceDisplay">0.000 HS</span>
-                                <span class="badge badge-light-info fw-bold fs-7"
-                                      id="modalBalanceStatus">Yükleniyor...</span>
+                <div class="modal-body py-4 px-lg-7">
+
+                    <!-- 1) BAKİYE ÖZET KARTI -->
+                    <div class="balance-card mb-4 is-zero" id="modalBalanceCard">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <i class="fa-solid fa-wallet fs-2x" id="modalBalanceIcon"></i>
+                            <div class="flex-grow-1">
+                                <div class="fs-7 fw-bold text-gray-700 mb-1">
+                                    Müşteri Cari Bakiyesi
+                                    <span class="badge fw-bold fs-8 ms-2" id="modalBalanceStatus">Yükleniyor…</span>
+                                </div>
+                                <div class="d-flex align-items-baseline gap-3 flex-wrap">
+                                    <span class="fs-2 fw-bolder" id="modalBalanceDisplay">— HS</span>
+                                    <span class="text-gray-700 fw-bold fs-6">≈ <span id="modalBalanceTl">— ₺</span></span>
+                                </div>
+                                <div class="text-muted fs-8 mt-1">
+                                    <i class="fa-solid fa-bolt fs-9 me-1"></i>
+                                    Anlık Has Kuru: <span class="fw-bolder text-gray-800" id="modalRateDisplay">—</span> ₺/gr
+                                    <span class="ms-3" id="modalReconcileBadge"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1035,92 +1278,738 @@
                         <input type="hidden" id="rawBalanceHS" value="0">
                         <input type="hidden" name="selected_processes" id="selectedProcesses" value="">
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold required">İşlem Türü</label>
+                        <!-- 2) İŞLEM YÖNÜ -->
+                        <!-- FAZ 22.7 — Yön rozet (otomatik daraltılmış görünüm).
+                             Bakiye sıfır değilse büyük seçim kartları gizlenir; yalnızca
+                             rozet görünür. "Değiştir" linki tıklanırsa kartlar geri gelir. -->
+                        <div class="mb-3" id="directionPillRow" style="display:none;">
+                            <label class="form-label fw-bold mb-1">İşlem Yönü</label>
+                            <div>
+                                <span class="direction-pill" id="directionPill">
+                                    <i class="fa-solid fa-arrow-down-to-line"></i>
+                                    <span id="directionPillText">Tahsilat Yap</span>
+                                    <a href="javascript:void(0)" class="change-link" id="directionChangeLink">Değiştir</a>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-4" id="directionFullRow">
+                            <label class="form-label fw-bold form-required">İşlem Yönü</label>
                             <div class="row g-3" data-kt-buttons="true">
-                                <div class="col">
-                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-success d-flex text-start p-4 active"
+                                <div class="col-6">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-success d-flex text-start p-3 active"
                                            data-direction="collection">
                                         <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
                                             <input class="form-check-input" type="radio" name="direction"
                                                    value="collection" checked="checked">
                                         </span>
                                         <span class="ms-3">
-                                            <span class="fs-6 fw-bold text-gray-800 d-block">Tahsilat Yap</span>
-                                            <span class="fs-7 text-muted">Müşteriden para al</span>
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">
+                                                <i class="fa-solid fa-arrow-down-to-line text-success me-1"></i>
+                                                Tahsilat Yap
+                                            </span>
+                                            <span class="fs-8 text-muted">Müşteriden para al · Kasaya GİRİŞ</span>
                                         </span>
                                     </label>
                                 </div>
-                                <div class="col">
-                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-danger d-flex text-start p-4"
+                                <div class="col-6">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-danger d-flex text-start p-3"
                                            data-direction="payment">
                                         <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
                                             <input class="form-check-input" type="radio" name="direction"
                                                    value="payment_to_customer">
                                         </span>
                                         <span class="ms-3">
-                                            <span class="fs-6 fw-bold text-gray-800 d-block">Ödeme Yap</span>
-                                            <span class="fs-7 text-muted">Müşteriye para ver</span>
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">
+                                                <i class="fa-solid fa-arrow-up-from-bracket text-danger me-1"></i>
+                                                Ödeme Yap
+                                            </span>
+                                            <span class="fs-8 text-muted">Müşteriye para ver · Kasadan ÇIKIŞ</span>
                                         </span>
                                     </label>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <label class="form-label fw-bold required">Para Birimi</label>
+                        <!-- 3) KASA / BANKA HESABI SEÇİCİ — FAZ 22 KÖR NOKTA KAPATMA -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold form-required">
+                                Kasa / Banka Hesabı
+                                <i class="fa-solid fa-circle-info text-muted small ms-1"
+                                   title="Tahsilatın yazılacağı kasa. Para birimi seçimine göre uygun kasalar listelenir."></i>
+                            </label>
+                            <select class="form-select form-select-solid fw-bold" id="bankAccountSel"
+                                    name="bank_account_id" required>
+                                <option value="">Yükleniyor…</option>
+                            </select>
+                            <div class="text-muted fs-8 mt-1" id="bankAccountHint">&nbsp;</div>
+                        </div>
+
+                        <!-- 4) PARA BİRİMİ + KUR + TUTAR -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold form-required">Para Birimi</label>
                                 <select class="form-select form-select-solid fw-bold" name="currency_type"
                                         id="currencyType">
-                                    <option value="TL">Türk Lirası (₺)</option>
-                                    <option value="HS">Has Altın (gr)</option>
+                                    <option value="TL">₺ Türk Lirası</option>
+                                    <option value="HS">⚖ Has Altın (gr)</option>
+                                    <option value="USD" data-customer-only="1">$ ABD Doları</option>
+                                    <option value="EUR" data-customer-only="1">€ Euro</option>
+                                    <option value="GBP" data-customer-only="1">£ Sterlin</option>
+                                </select>
+                                <div class="fs-8 text-muted mt-1" id="currencyHint">&nbsp;</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold form-required d-flex align-items-center" id="rateLabel">
+                                    <span>Kur (Has Satış)</span>
+                                    <i class="fa-solid fa-lock text-muted small ms-2"
+                                       title="Kur otomatik kaynaktan çekilir. Yenilemek için sağdaki butonu kullanın."></i>
+                                </label>
+                                <!-- FAZ 22.7 — Salt-okunur kur. Kullanıcı elle düzenleyemez;
+                                     yalnızca "Kuru Yenile" butonu kur servislerini yeniden tetikler. -->
+                                <div class="input-group input-group-solid">
+                                    <input type="number" class="form-control form-control-solid fw-bold bg-light text-gray-800"
+                                           name="exchange_rate" id="exchangeRate"
+                                           step="0.0001" min="0"
+                                           value="{{ has_price|stringformat:'f'|default:'0' }}"
+                                           readonly tabindex="-1"
+                                           aria-label="Anlık kur (salt okunur)"
+                                           style="cursor: not-allowed;">
+                                    <button class="btn btn-light-primary fw-bold" type="button" id="btnRefreshRate"
+                                            title="Kur servislerini yeniden çek (Has + döviz)">
+                                        <i class="fa-solid fa-arrows-rotate"></i>
+                                    </button>
+                                </div>
+                                <div class="fs-8 text-muted mt-1" id="rateHint">&nbsp;</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold form-required">İşlem Tutarı</label>
+                                <div class="input-group input-group-solid">
+                                    <input type="number"
+                                           class="form-control form-control-solid fs-4 fw-bolder text-gray-900"
+                                           name="amount" id="paymentAmount" step="0.01" placeholder="0,00">
+                                    <button class="btn btn-light-primary fw-bold" type="button" id="btnPayAll"
+                                            title="Açık bakiyenin TAMAMINI tutara doldur">
+                                        <i class="fa-solid fa-check-double fs-5"></i>
+                                    </button>
+                                </div>
+                                <div class="text-muted fs-8 mt-1 text-end">
+                                    Karşılığı:
+                                    <span class="fw-bolder text-gray-800" id="conversionResult">0,00</span>
+                                    <span class="fw-bold" id="conversionUnit">HS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAZ 22.7 — Gelişmiş Ayarlar accordion toggle.
+                             Temel akış (kasa + tutar) kullanıcının %80'i için yeterli.
+                             Bu butona tıklayınca Kapama Hedefi + Fark Yönetimi + Canlı Önizleme
+                             bloğu birlikte açılır. -->
+                        <div class="mb-2" id="advToggleRow">
+                            <button type="button" class="adv-toggle" id="btnAdvToggle"
+                                    aria-expanded="false" aria-controls="advSection">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>Fark / İskonto / Önizleme</span>
+                                <span class="text-muted fs-8 fw-normal">— Açmak için tıklayın</span>
+                                <i class="fa-solid fa-chevron-down chev ms-1"></i>
+                            </button>
+                        </div>
+
+                        <div class="adv-section" id="advSection">
+
+                        <!-- 5) KAPAMA HEDEFİ + FARK YÖNETİMİ — Sadece Müşteri Modu (process seçilmediğinde) -->
+                        <div class="row g-3 mb-3" id="targetCloseRow">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    Kapama Hedefi (HS)
+                                    <i class="fa-solid fa-circle-info text-muted small ms-1"
+                                       title="Borçtan kapatmak istediğiniz miktar. Boş = tahsilatın HS karşılığı kadar. 0,001 HS hassasiyeti."></i>
+                                </label>
+                                <div class="input-group input-group-solid">
+                                    <input type="number" step="0.001" min="0"
+                                           class="form-control form-control-solid"
+                                           id="targetCloseInput" name="target_close_hs"
+                                           placeholder="Boş = tahsilat HS karşılığı">
+                                    <button type="button" class="btn btn-light-primary fw-bold"
+                                            id="btnFillTargetFromBalance"
+                                            title="Açık borcun TAMAMINI hedef olarak doldur">
+                                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>
+                                        Tüm Borcu Kapat
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" id="adjustmentTypeLabel">
+                                    Fark Tipi
+                                    <i class="fa-solid fa-circle-info text-muted small ms-1"
+                                       title="Kapama hedefi tahsilattan farklıysa farkın hangi defter satırına yazılacağı (mağaza P&L)."></i>
+                                </label>
+                                <select class="form-select form-select-solid" id="adjustmentType"
+                                        name="adjustment_type">
+                                    <option value="">— Yok —</option>
+                                    <option value="DISCOUNT">İskonto (Müşteri jesti)</option>
+                                    <option value="FX_GAIN">Kur Farkı (Mağaza zararı)</option>
+                                    <option value="WRITEOFF">Yazım (Tahsil edilemez)</option>
                                 </select>
                             </div>
-                            <div class="col-6">
-                                <label class="form-label fw-bold required">Kur (Has Satış)</label>
-                                <input type="number" class="form-control form-control-solid fw-bold"
-                                       name="exchange_rate" id="exchangeRate"
-                                       step="0.01" value="{{ has_price|stringformat:'f'|default:'0' }}">
+
+                            <input type="hidden" id="adjustmentReason" name="adjustment_reason" value="">
+                            <div id="adjustmentReasonRow" style="display:none;"></div>
+                        </div>
+
+                        <!-- FAZ 33 — Fazla Tahsilatı Kabul Et toggle.
+                             cari_detail.html'deki #allowOverpaymentChk ile birebir
+                             aynı semantik. CollectionService backend tarafında
+                             allow_overpayment=True ile aşan tutar Payment +
+                             CashboxLedger'a tam yazılır, fark CustomerLedger.
+                             OVERPAYMENT + IncomeExpenseLedger.OTHER_INCOME satırı
+                             olarak otomatik muhasebeleşir. -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="allowOverpaymentChk">
+                                    <label class="form-check-label" for="allowOverpaymentChk">
+                                        <strong>Fazla Tahsilatı Kabul Et</strong>
+                                        <span class="text-muted small">
+                                            — Müşteri borcundan fazla ödüyorsa aşan tutar
+                                            "Kasa Fazlası / Diğer Gelir" olarak yazılır.
+                                            %10 ve altı farklar personel tarafından, üstü
+                                            Mağaza Admin tarafından onaylanır.
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold required">İşlem Tutarı</label>
-                            <div class="input-group input-group-solid">
-                                <input type="number"
-                                       class="form-control form-control-solid fs-4 fw-bolder text-gray-800"
-                                       name="amount" id="paymentAmount" step="0.01" placeholder="0.00">
-                                <button class="btn btn-primary fw-bold" type="button" id="btnPayAll">
-                                    <i class="fa-solid fa-check-double fs-4 me-1"></i> HEPSİNİ SEÇ
-                                </button>
+                        <!-- 6) CANLI ÖNİZLEME -->
+                        <div class="preview-card mb-3" id="previewCard">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fa-solid fa-calculator fs-4 me-2"></i>
+                                <span class="fw-bold fs-6 text-gray-800">Canlı Önizleme</span>
+                                <span class="ms-auto fs-8 text-muted" id="previewStatus">—</span>
                             </div>
-                            <div class="mt-2 text-end">
-                                <span class="text-muted fw-bold fs-7">Karşılığı: </span>
-                                <span class="text-dark fw-bolder fs-6" id="conversionResult">0.00</span>
-                                <span class="text-dark fw-bold fs-7" id="conversionUnit">HS</span>
+                            <div class="row g-2">
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Tahsilat HS</div>
+                                    <div class="value" id="previewCollectionHs">— HS</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Tahsilat TL</div>
+                                    <div class="value" id="previewCollectionTl">— ₺</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Hedef Kapama</div>
+                                    <div class="value" id="previewTargetHs">— HS</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="label">Yeni Bakiye</div>
+                                    <div class="value" id="previewNewBalance">—</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded mt-2 px-3 py-2 border border-warning d-flex align-items-center gap-2"
+                                 id="previewAdjustmentBox" style="display:none;">
+                                <i class="fa-solid fa-circle-exclamation text-warning"></i>
+                                <span class="fw-bold text-gray-700">Fark:</span>
+                                <span class="fw-bolder" id="previewAdjustmentHs">— HS</span>
+                                <span class="text-muted">≈ <span id="previewAdjustmentTl">— ₺</span></span>
+                                <span class="ms-auto fw-semibold text-gray-700 fs-7" id="previewAdjustmentLabel"></span>
+                            </div>
+
+                            <!-- FAZ 33 — Overpayment göstergesi (yalnız tetiklenince görünür).
+                                 Backend has_overpayment / overpayment_tl / overpayment_pct_of_debt
+                                 alanları döndüğünde aktive olur. -->
+                            <div id="previewOverpaymentBox"
+                                 class="bg-white rounded mt-2 px-3 py-2 border border-success"
+                                 style="display:none;">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <i class="fa-solid fa-coins text-success me-1"></i>
+                                        <span class="fw-bold text-gray-800">Fazla Tahsilat Tespit Edildi</span>
+                                        <div class="small text-muted mt-1">
+                                            Bu tahsilatla borç tamamen kapanır; aşan kısım
+                                            <strong>Kasa Fazlası / Diğer Gelir</strong> olarak yazılır.
+                                            "Fazla Tahsilatı Kabul Et" işaretli olmalıdır.
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-muted small">Fazla Tutar</div>
+                                        <div class="fw-bold fs-5 text-success">
+                                            +<span id="previewOverpaymentTl">—</span> ₺
+                                        </div>
+                                        <div class="small text-muted">
+                                            %<span id="previewOverpaymentPct">—</span>
+                                            (<span id="previewOverpaymentBand">—</span>)
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-2">
-                            <label class="form-label fw-bold">Açıklama</label>
+                        </div><!-- /adv-section -->
+
+                        <!-- 7) AÇIKLAMA — FAZ 22.7: sticky-desc ile her zaman görünür.
+                             Kullanıcı modal scroll etse bile açıklama alanı footer üstünde sabit kalır. -->
+                        <div class="sticky-desc">
+                            <label class="form-label fw-bold mb-1">
+                                <i class="fa-solid fa-pen-to-square text-muted me-1"></i>
+                                Açıklama / Not
+                            </label>
                             <textarea class="form-control form-control-solid" name="description" rows="2"
-                                      placeholder="İşlem notu..."></textarea>
+                                      placeholder="Örn: Müşteri eli, çeyrek karşılığı, 01.05.2026 nakit tahsilat..."></textarea>
                         </div>
 
                     </form>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-light btn-active-light-primary" data-bs-dismiss="modal">İptal
+
+                <div class="modal-footer bg-light py-3">
+                    <div class="me-auto fs-8 text-muted">
+                        <i class="fa-solid fa-shield-halved me-1"></i>
+                        Tüm işlem atomik olarak Payment + CashboxLedger + CustomerLedger defterlerine yazılır.
+                    </div>
+                    <button type="button" class="btn btn-light btn-active-light-primary" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark me-1"></i> İptal
                     </button>
                     <button type="button" class="btn btn-success" id="btnSaveDebtCollection">
-                        <span class="indicator-label"><i class="fa-solid fa-save me-1"></i> Kaydet ve Bitir</span>
-                        <span class="indicator-progress">İşleniyor... <span
-                                class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                        <span class="indicator-label">
+                            <i class="fa-solid fa-circle-check me-1"></i> Kaydet ve Bitir
+                        </span>
+                        <span class="indicator-progress">İşleniyor…
+                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                        </span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         FAZ 49 — Ürün/Hurda ile Tahsilat ve Ödeme Modalı
+         ════════════════════════════════════════════════════════════════ -->
+    <style>
+        #productPaymentModal .modal-content { border-radius: 14px; overflow: hidden; }
+        #productPaymentModal .pp-balance-card {
+            border: 1px dashed #d4b572; background: #fffaf0;
+            border-radius: 10px; padding: 12px 14px;
+        }
+        #productPaymentModal .pp-balance-card.is-credit {
+            border-color: #b6e0c6; background: #f1faf3;
+        }
+        #productPaymentModal .pp-balance-card.is-debt {
+            border-color: #f0bcbc; background: #fdecec;
+        }
+        /* FAZ 49 fix: Yön pill — aktif/inaktif ayrımı belirginleştirildi.
+           Default: soluk gri (seçili değil); .active: dolu renk + büyüme + gölge. */
+        #productPaymentModal .pp-direction-group {
+            display: flex; gap: .5rem; padding: .35rem;
+            background: #f5f5f5; border: 1px solid #e3e6ea;
+            border-radius: 999px; width: fit-content;
+        }
+        #productPaymentModal .pp-direction-pill {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .55rem 1.1rem; border-radius: 999px; font-weight: 700;
+            border: 2px solid transparent; font-size: .9rem;
+            background: transparent; color: #888;
+            cursor: pointer; transition: all .18s ease;
+        }
+        #productPaymentModal .pp-direction-pill:hover { color: #444; background: #ececec; }
+        #productPaymentModal .pp-direction-pill .pp-pill-check {
+            display: none; font-size: .85rem;
+        }
+        #productPaymentModal .pp-direction-pill.active .pp-pill-check { display: inline-block; }
+        #productPaymentModal .pp-direction-pill--collect.active {
+            background: #1f8d3d; color: #fff; border-color: #196f31;
+            box-shadow: 0 4px 12px rgba(31,141,61,.28);
+            transform: translateY(-1px);
+        }
+        #productPaymentModal .pp-direction-pill--pay.active {
+            background: #b11e2b; color: #fff; border-color: #8a1622;
+            box-shadow: 0 4px 12px rgba(177,30,43,.28);
+            transform: translateY(-1px);
+        }
+        #productPaymentModal .pp-direction-label {
+            font-size: .72rem; color: #7a6a3d; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px; margin-bottom: .35rem;
+            display: block;
+        }
+        #productPaymentModal .pp-kind-tabs .btn {
+            font-weight: 600; font-size: .85rem;
+        }
+        #productPaymentModal .pp-kind-tabs .btn.active {
+            background: #ffc107; color: #2a2a2a; border-color: #d4a106;
+        }
+        #productPaymentModal .pp-item-form {
+            background: #f8f9fa; border: 1px solid #e3e6ea;
+            border-radius: 8px; padding: 12px;
+        }
+        #productPaymentModal .pp-basket-table { font-size: .88rem; }
+        #productPaymentModal .pp-basket-table th {
+            background: #f1f3f5; font-weight: 700; font-size: .78rem;
+            color: #444; padding: 8px;
+        }
+        #productPaymentModal .pp-basket-table td { vertical-align: middle; padding: 8px; }
+        #productPaymentModal .pp-basket-empty {
+            text-align: center; padding: 24px; color: #888; font-style: italic;
+        }
+        #productPaymentModal .pp-summary {
+            background: linear-gradient(135deg, #fff5d6 0%, #fffaf0 100%);
+            border: 1px solid #d4b572; border-radius: 10px; padding: 12px 14px;
+        }
+        #productPaymentModal .pp-summary .label { font-size: .75rem; color: #7a6a3d; font-weight: 600; }
+        #productPaymentModal .pp-summary .value { font-size: 1.1rem; font-weight: 800; color: #2a2a2a; }
+        #productPaymentModal .pp-product-search-result {
+            max-height: 240px; overflow-y: auto;
+            border: 1px solid #e3e6ea; border-radius: 6px;
+            background: white;
+        }
+        #productPaymentModal .pp-product-search-result .item {
+            padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f3f5;
+            font-size: .85rem;
+        }
+        #productPaymentModal .pp-product-search-result .item:hover { background: #fff5d6; }
+        #productPaymentModal .pp-product-search-result .item.disabled {
+            color: #aaa; cursor: not-allowed; background: #fafafa;
+        }
+        #productPaymentModal .pp-product-search-result .item .meta {
+            display: block; font-size: .72rem; color: #888;
+        }
+    </style>
+
+    <div class="modal fade" id="productPaymentModal" tabindex="-1" aria-hidden="true"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-warning bg-opacity-10 border-0">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="symbol symbol-50px symbol-circle bg-warning bg-opacity-25 text-dark">
+                            <i class="fa-solid fa-gem fs-2"></i>
+                        </div>
+                        <div>
+                            <h2 class="m-0 fw-bolder text-dark">Ürün/Hurda ile Tahsilat / Ödeme</h2>
+                            <div class="text-muted fs-7">
+                                Sepet mantığıyla birden fazla kalem ekleyin · Anlık piyasa fiyatı kullanılır (manuel revize edilebilir)
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+
+                    <!-- Müşteri Bakiye Kartı -->
+                    <div class="pp-balance-card mb-4" id="pp-balance-card">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <div class="text-muted fs-8 fw-bold">Müşteri Cari Bakiyesi</div>
+                                <div class="d-flex align-items-baseline gap-2 mt-1">
+                                    <span class="fs-2 fw-bolder" id="pp-balance-hs">0,000 HS</span>
+                                    <span class="fs-7 text-muted" id="pp-balance-tl">≈ 0,00 ₺</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-muted fs-8">Anlık Has Kuru</div>
+                                <div class="fw-bolder fs-5" id="pp-has-rate">0,00 ₺/gr</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- İşlem Yönü Seçimi (FAZ 49 fix: belirgin segmented pill grubu) -->
+                    <div class="mb-4">
+                        <span class="pp-direction-label">
+                            <i class="fa-solid fa-arrows-up-down me-1"></i>İşlem Yönü
+                        </span>
+                        <div class="pp-direction-group" role="group" aria-label="İşlem yönü seçimi">
+                            <button type="button" class="pp-direction-pill pp-direction-pill--collect active"
+                                    data-direction="collect" id="pp-dir-collect"
+                                    aria-pressed="true">
+                                <i class="fa-solid fa-circle-check pp-pill-check"></i>
+                                <i class="fa-solid fa-arrow-down"></i>
+                                Tahsilat (Müşteriden Al)
+                            </button>
+                            <button type="button" class="pp-direction-pill pp-direction-pill--pay"
+                                    data-direction="pay" id="pp-dir-pay"
+                                    aria-pressed="false">
+                                <i class="fa-solid fa-circle-check pp-pill-check"></i>
+                                <i class="fa-solid fa-arrow-up"></i>
+                                Ödeme (Müşteriye Ver)
+                            </button>
+                        </div>
+                        <div class="form-text mt-2" id="pp-dir-hint">
+                            <i class="fa-solid fa-circle-info text-muted"></i>
+                            Müşteri çeyrek altın, hurda, bilezik vb. getirir; stoğa girer ve borcu azalır.
+                        </div>
+                    </div>
+
+                    <!-- Kalem Ekleme -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold m-0">Kalem Ekle</label>
+                            <div class="pp-kind-tabs btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light active" data-kind="product">
+                                    <i class="fa-solid fa-coins me-1"></i> Mevcut Ürün
+                                </button>
+                                <button type="button" class="btn btn-light" data-kind="scrap" id="pp-tab-scrap">
+                                    <i class="fa-solid fa-recycle me-1"></i> Yeni Hurda
+                                </button>
+                                <button type="button" class="btn btn-light" data-kind="bracelet" id="pp-tab-bracelet">
+                                    <i class="fa-solid fa-link me-1"></i> Yeni Bilezik
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mevcut Ürün Formu -->
+                        <div class="pp-item-form" id="pp-form-product">
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <label class="form-label fs-8 fw-bold">Ürün Ara (gramajlı/sarrafiye/hurda/bilezik)</label>
+                                    <input type="text" class="form-control form-control-sm" id="pp-product-q"
+                                           placeholder="Ör: Çeyrek, 22 Ayar, Burma…" autocomplete="off">
+                                    <div class="pp-product-search-result mt-1 d-none" id="pp-product-results"></div>
+                                    <input type="hidden" id="pp-product-id">
+                                    <input type="hidden" id="pp-product-name">
+                                    <input type="hidden" id="pp-product-mileage">
+                                    <input type="hidden" id="pp-product-isgrambullion">
+                                    <input type="hidden" id="pp-product-stockgram">
+                                    <input type="hidden" id="pp-product-stockpieces">
+                                    <input type="hidden" id="pp-product-unitgram">
+                                    <input type="hidden" id="pp-product-wac">
+                                    <input type="hidden" id="pp-product-buyhs">
+                                    <input type="hidden" id="pp-product-salehs">
+                                    <div class="form-text small mt-1" id="pp-product-selected">Henüz ürün seçilmedi.</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-8 fw-bold">Adet</label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-product-pieces"
+                                           min="0" step="1" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-8 fw-bold">Gram</label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-product-gram"
+                                           min="0" step="0.001" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-8 fw-bold">Has (HS)
+                                        <i class="fa-solid fa-pen-to-square text-muted" title="Manuel düzenlenebilir"></i>
+                                    </label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-product-hs"
+                                           min="0" step="0.001" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fs-8 fw-bold">TL Karşılığı
+                                        <i class="fa-solid fa-pen-to-square text-muted" title="Manuel düzenlenebilir"></i>
+                                    </label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-product-tl"
+                                           min="0" step="0.01" value="0">
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="button" class="btn btn-primary btn-sm" id="pp-add-product">
+                                        <i class="fa-solid fa-plus"></i> Sepete Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Yeni Hurda Formu -->
+                        <div class="pp-item-form d-none" id="pp-form-scrap">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fs-8 fw-bold">Ayar Adı</label>
+                                    <select class="form-select form-select-sm" id="pp-scrap-name">
+                                        <option value="">Seçin…</option>
+                                        <option value="22 Ayar">22 Ayar</option>
+                                        <option value="14 Ayar">14 Ayar</option>
+                                        <option value="18 Ayar">18 Ayar</option>
+                                        <option value="21 Ayar">21 Ayar</option>
+                                        <option value="8 Ayar">8 Ayar</option>
+                                        <option value="24 Ayar">24 Ayar</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">Ayar Milyemi</label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-scrap-mileage"
+                                           min="0" max="1000" step="1" value="916">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">Gram</label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-scrap-gram"
+                                           min="0" step="0.001" value="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">Has (HS)
+                                        <i class="fa-solid fa-pen-to-square text-muted"></i>
+                                    </label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-scrap-hs"
+                                           min="0" step="0.001" value="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">TL
+                                        <i class="fa-solid fa-pen-to-square text-muted"></i>
+                                    </label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-scrap-tl"
+                                           min="0" step="0.01" value="0">
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="button" class="btn btn-primary btn-sm" id="pp-add-scrap">
+                                        <i class="fa-solid fa-plus"></i> Sepete Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Yeni Bilezik Formu -->
+                        <div class="pp-item-form d-none" id="pp-form-bracelet">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fs-8 fw-bold">Bilezik Adı</label>
+                                    <input type="text" class="form-control form-control-sm" id="pp-bracelet-name"
+                                           placeholder="Ör: Burma, Ajda, Tek Sıra…">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">Ayar Milyemi</label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-bracelet-mileage"
+                                           min="0" max="1000" step="1" value="916">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">Gram</label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-bracelet-gram"
+                                           min="0" step="0.001" value="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">Has (HS)
+                                        <i class="fa-solid fa-pen-to-square text-muted"></i>
+                                    </label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-bracelet-hs"
+                                           min="0" step="0.001" value="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fs-8 fw-bold">TL
+                                        <i class="fa-solid fa-pen-to-square text-muted"></i>
+                                    </label>
+                                    <input type="number" class="form-control form-control-sm" id="pp-bracelet-tl"
+                                           min="0" step="0.01" value="0">
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="button" class="btn btn-primary btn-sm" id="pp-add-bracelet">
+                                        <i class="fa-solid fa-plus"></i> Sepete Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sepet -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fa-solid fa-basket-shopping text-warning me-1"></i>
+                            Sepet (<span id="pp-basket-count">0</span> kalem)
+                        </label>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered pp-basket-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:36px">#</th>
+                                        <th>Tip</th>
+                                        <th>Ürün / Ayar</th>
+                                        <th class="text-end" style="width:80px">Adet</th>
+                                        <th class="text-end" style="width:90px">Gram</th>
+                                        <th class="text-end" style="width:100px">Has (HS)</th>
+                                        <th class="text-end" style="width:120px">TL</th>
+                                        <th style="width:50px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pp-basket-tbody">
+                                    <tr>
+                                        <td colspan="8" class="pp-basket-empty">
+                                            Henüz sepete kalem eklenmedi.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Sepet Özeti -->
+                    <div class="pp-summary mb-3">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-4">
+                                <div class="label">Toplam Kalem HS</div>
+                                <div class="value" id="pp-total-hs">0,000 HS</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="label">Toplam Kalem TL</div>
+                                <div class="value" id="pp-total-tl">0,00 ₺</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="label">Bakiye Sonrası (HS)</div>
+                                <div class="value" id="pp-projected-balance">0,000 HS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kalan Nakit (sadece collect yönünde) -->
+                    <div class="mb-3" id="pp-cash-section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold m-0">
+                                <i class="fa-solid fa-money-bill-wave text-success me-1"></i>
+                                Kalan için Nakit Ekle (Opsiyonel)
+                            </label>
+                            <button type="button" class="btn btn-sm btn-light text-success fw-bold"
+                                    id="pp-fill-remaining">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Kalanı Otomatik Doldur (HS)
+                            </button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <label class="form-label fs-8 fw-bold">Kasa</label>
+                                <select class="form-select form-select-sm" id="pp-cash-bank">
+                                    <option value="">— Yok (sadece ürün ile) —</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fs-8 fw-bold">Para Birimi</label>
+                                <select class="form-select form-select-sm" id="pp-cash-currency">
+                                    <option value="TRY">₺ TL</option>
+                                    <option value="HS">⚖ Has (gr)</option>
+                                    <option value="USD">$ USD</option>
+                                    <option value="EUR">€ EUR</option>
+                                    <option value="GBP">£ GBP</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fs-8 fw-bold">Tutar</label>
+                                <input type="number" class="form-control form-control-sm" id="pp-cash-amount"
+                                       min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Açıklama -->
+                    <div class="mb-2">
+                        <label class="form-label fw-bold fs-8">Açıklama / Not</label>
+                        <textarea class="form-control form-control-sm" id="pp-description" rows="2"
+                                  placeholder="Ör: 2 çeyrek + nakit kalan, müşteri ile mutabakat..."></textarea>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <div class="me-auto small text-muted">
+                        <i class="fa-solid fa-shield-halved text-success"></i>
+                        İşlem atomiktir: stok + cari + (varsa) kasa tek bloğu yazar.
+                    </div>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i> İptal
+                    </button>
+                    <button type="button" class="btn btn-warning text-dark fw-bold" id="pp-save-btn" disabled>
+                        <span class="indicator-label"><i class="fa-solid fa-check"></i> Kaydet ve Bitir</span>
+                        <span class="indicator-progress d-none">İşleniyor…
+                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% csrf_token %}
 {% endblock body %}
 
@@ -1300,7 +2189,8 @@
                             } else if (hs < -0.001) {
                                 return `<span class="badge bg-light-success text-success fw-bold px-3 py-2" style="font-size: 0.95em;">${Math.abs(hs).toFixed(3)} HS<br>(Müşteri Alacağı)</span>`;
                             }
-                            return `<span class="text-muted fw-bold">0.000 HS</span>`;
+                            // FAZ 39 — Kalan = 0: işlem kapandı, görsel olarak belirgin.
+                            return `<span class="badge bg-success text-white fw-bold px-3 py-2" style="font-size: 0.95em;"><i class="fa-solid fa-circle-check me-1"></i>KAPANDI<br>0.000 HS</span>`;
                         }
                     },
                     {
@@ -1309,7 +2199,17 @@
                         }
                     },
                     {
-                        data: "status", render: function (s) {
+                        // FAZ 39 — `row.remaining_hs ≈ 0` ve status COMPLETED ise
+                        // alacak/borç işlemi tamamen kapanmış demektir.
+                        // "Tamamlandı" yerine daha belirgin "İşlem Kapandı"
+                        // ifadesi ve farklı renk kullanılır; raporlamada ayırt
+                        // edici olur.
+                        data: "status", render: function (s, type, row) {
+                            const remaining = Math.abs(parseFloat(row && row.remaining_hs) || 0);
+                            const isClosed = (s === 'COMPLETED' && remaining <= 0.001);
+                            if (isClosed) {
+                                return "<span class='badge bg-success text-white fw-bold px-3 py-2'><i class='fa-solid fa-circle-check me-1'></i>İşlem Kapandı</span>";
+                            }
                             return s === 'COMPLETED' ? "<span class='badge bg-light-success text-success'>Tamamlandı</span>"
                                 : s === 'PENDING' ? "<span class='badge bg-light-warning text-warning'>Bekliyor</span>"
                                     : s === 'IN_PROGRESS' ? "<span class='badge bg-light-primary text-primary'>İşlemde</span>"
@@ -1408,6 +2308,10 @@
 
                 function _openModalWithData(amountToPay) {
                     document.getElementById('selectedProcesses').value = JSON.stringify(processNos);
+                    // FAZ 22.7 — Sepet modu HS tabanını stabil bir DOM data attribute'unda tutuyoruz.
+                    // Modal IIFE state'i bu değeri okuyup kullanır.
+                    const sp = document.getElementById('selectedProcesses');
+                    if (sp) sp.setAttribute('data-basket-hs', String(amountToPay || 0));
 
                     const currencySelect = document.getElementById('currencyType');
                     if (currencySelect) currencySelect.value = 'HS';
@@ -1745,7 +2649,168 @@
         document.addEventListener('DOMContentLoaded', function () {
             const customerId = "{{ customer.id }}";
             window._dtCustodies = initCustomerCustodyDT(customerId);
+            // FAZ 31 / BUG-4: Müşteri carisinden emanet yazdırma butonları
+            setupCustodyPrintButtonsOld(customerId);
         });
+
+        // ─────────────────────────────────────────────────────────────────
+        // FAZ 31 / BUG-4: Eski müşteri detay sayfası emanet yazdır/PDF
+        // ─────────────────────────────────────────────────────────────────
+        // KURAL 6 (Defensive DOM): tüm element erişimleri null-check'li
+        // KURAL 8 (Scope limits): yeni fonksiyon — mevcut helper'lara dokunulmaz
+        function setupCustodyPrintButtonsOld(customerId) {
+            const btnPrint = document.getElementById('btnPrintCustodyOld');
+            const btnPdf = document.getElementById('btnPdfCustodyOld');
+            if (!btnPrint && !btnPdf) return;
+
+            function fetchCustodyHistoryAndRender(callback) {
+                const url = "/custody/customer/" + encodeURIComponent(customerId) + "/history";
+                fetch(url, {credentials: 'same-origin'})
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (!data || !data.result) {
+                            Swal.fire('Hata', (data && data.error_msg) || 'Emanet geçmişi alınamadı.', 'error');
+                            return;
+                        }
+                        const html = buildCustodyPrintHtml(data);
+                        callback(html, data);
+                    })
+                    .catch(function () {
+                        Swal.fire('Hata', 'Sunucu hatası — emanet ekstresi alınamadı.', 'error');
+                    });
+            }
+
+            function escapeHtml(s) {
+                if (s === null || s === undefined) return '';
+                return String(s)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function buildCustodyPrintHtml(data) {
+                const customer = data.customer || {};
+                const summary = data.summary || {};
+                const rows = data.rows || [];
+                const today = new Date().toLocaleDateString('tr-TR');
+
+                let rowsHtml = '';
+                if (rows.length === 0) {
+                    rowsHtml = '<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">Hareket bulunamadı.</td></tr>';
+                } else {
+                    rows.forEach(function (r) {
+                        rowsHtml +=
+                            '<tr>' +
+                            '<td>' + escapeHtml(r.created_on) + '</td>' +
+                            '<td>' + escapeHtml(r.custody_type_label) + '</td>' +
+                            '<td>' + escapeHtml(r.product) + '</td>' +
+                            '<td style="text-align:right;">' + escapeHtml(r.quantity_gram) + '</td>' +
+                            '<td style="text-align:right;">' + escapeHtml(r.amount_hs) + '</td>' +
+                            '<td style="text-align:right;">' + escapeHtml(r.amount_eur) + '</td>' +
+                            '<td>' + escapeHtml(r.description) + '</td>' +
+                            '</tr>';
+                    });
+                }
+
+                return '' +
+                    '<div style="font-family:Arial,sans-serif;color:#222;padding:24px;">' +
+                    '  <h2 style="margin:0 0 4px 0;">Emanet Ekstresi</h2>' +
+                    '  <div style="font-size:12px;color:#666;margin-bottom:16px;">' +
+                    '    Yazdırma: ' + escapeHtml(today) +
+                    '  </div>' +
+                    '  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">' +
+                    '    <tr>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#f7f7f7;width:30%;">Müşteri</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;">' + escapeHtml(customer.full_name) + '</td>' +
+                    '    </tr>' +
+                    '    <tr>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#f7f7f7;">Telefon</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;">' + escapeHtml(customer.phone) + '</td>' +
+                    '    </tr>' +
+                    '  </table>' +
+                    '  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">' +
+                    '    <tr>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#eef;">Toplam Giriş HS</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">' + escapeHtml(summary.in_total_hs) + '</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#fee;">Toplam Çıkış HS</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">' + escapeHtml(summary.out_total_hs) + '</td>' +
+                    '    </tr>' +
+                    '    <tr>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#efe;">Mahsuplaşma HS</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">' + escapeHtml(summary.offset_total_hs) + '</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#ffd;"><strong>Net Bakiye HS</strong></td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;"><strong>' + escapeHtml(summary.balance_hs) + '</strong></td>' +
+                    '    </tr>' +
+                    '    <tr>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#f7f7f7;" colspan="2">Anlık Has Kuru</td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;" colspan="2">' + escapeHtml(summary.current_rate) + ' TL</td>' +
+                    '    </tr>' +
+                    '    <tr>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;background:#f7f7f7;" colspan="2"><strong>TL Karşılığı</strong></td>' +
+                    '      <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;" colspan="2"><strong>' + escapeHtml(summary.current_balance_eur) + ' TL</strong></td>' +
+                    '    </tr>' +
+                    '  </table>' +
+                    '  <table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+                    '    <thead>' +
+                    '      <tr style="background:#333;color:#fff;">' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:left;">Tarih</th>' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:left;">Tip</th>' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:left;">Ürün</th>' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:right;">Gram</th>' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:right;">HS</th>' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:right;">TL</th>' +
+                    '        <th style="padding:8px;border:1px solid #333;text-align:left;">Açıklama</th>' +
+                    '      </tr>' +
+                    '    </thead>' +
+                    '    <tbody>' + rowsHtml + '</tbody>' +
+                    '  </table>' +
+                    '</div>';
+            }
+
+            if (btnPrint) {
+                btnPrint.addEventListener('click', function () {
+                    fetchCustodyHistoryAndRender(function (html, data) {
+                        const w = window.open('', '_blank', 'width=900,height=700');
+                        if (!w) {
+                            Swal.fire('Uyarı', 'Tarayıcı popup engelliyor. Yeni sekmeye izin verin.', 'warning');
+                            return;
+                        }
+                        w.document.open();
+                        w.document.write('<html><head><title>Emanet Ekstresi</title></head><body>' +
+                            html +
+                            '<script>window.onload = function(){window.print();}<\/script>' +
+                            '</body></html>');
+                        w.document.close();
+                    });
+                });
+            }
+
+            if (btnPdf) {
+                btnPdf.addEventListener('click', function () {
+                    if (typeof html2pdf === 'undefined') {
+                        Swal.fire('Uyarı', 'PDF kütüphanesi yüklenmedi. Lütfen sayfayı yenileyin.', 'warning');
+                        return;
+                    }
+                    fetchCustodyHistoryAndRender(function (html, data) {
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = html;
+                        const customerName = (data.customer && data.customer.full_name) || 'musteri';
+                        const safeName = customerName.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ ]+/g, '').replace(/\s+/g, '_');
+                        const dateStr = new Date().toISOString().slice(0, 10);
+                        html2pdf().set({
+                            margin: [10, 10, 10, 10],
+                            filename: 'Emanet_Ekstre_' + safeName + '_' + dateStr + '.pdf',
+                            html2canvas: {scale: 2},
+                            jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'},
+                        })
+                            .from(tmp)
+                            .save();
+                    });
+                });
+            }
+        }
 
         function edit_custody(id) {
             const dt = $('#custodiesTable').DataTable();
@@ -2073,194 +3138,1735 @@
         }
     </script>
 
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         FAZ 22 — Cari Tahsilat Komuta Merkezi (Akıllı Modal)
+         İki mod:
+           • Müşteri Modu (selectedProcesses boş)  → /customers/<uuid>/cari/collect
+                                                    (CollectionService, multi-currency,
+                                                     target_close_hs, adjustment)
+           • Sepet Modu (selectedProcesses dolu)   → /customers/save-debt-collection
+                                                    (Process-bazlı oransal dağıtım)
+         Her iki mod da: Bakiye API + Kasa selector + Canlı önizleme + Tüm Borcu
+         Kapat. SSOT: cari/balance + cari/preview-close.
+    ─────────────────────────────────────────────────────────────────────────── -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const balanceVal = parseFloat("{{ balance_hs|stringformat:'f' }}".replace(',', '.')) || 0;
-            const isDebt = "{{ balance_type }}" === 'debt';
-            const signedBalanceHS = isDebt ? balanceVal : -balanceVal;
-            const modal = document.getElementById('debtCollectionModal');
-            const rawBalanceInput = document.getElementById('rawBalanceHS');
-            const modalDisplay = document.getElementById('modalBalanceDisplay');
-            const modalStatus = document.getElementById('modalBalanceStatus');
-            const radioCollection = document.querySelector('input[name="direction"][value="collection"]');
-            const radioPayment = document.querySelector('input[name="direction"][value="payment_to_customer"]');
+        (function () {
+            'use strict';
 
-            if (modal) {
-                modal.addEventListener('show.bs.modal', function () {
-                    if (rawBalanceInput) rawBalanceInput.value = signedBalanceHS;
+            const URLS = {
+                balance:        "{% url 'customers:cari-balance' customer.id %}",
+                preview:        "{% url 'customers:cari-preview-close' customer.id %}",
+                bankAccounts:   "{% url 'customers:cari-bank-accounts' %}",
+                fxRates:        "/customers/cari/fx-rates",
+                // FAZ 22.7 — Has kur ikincil kaynağı (PriceService → Redis/DB).
+                // cari/fx-rates 0 dönerse bu endpoint sale_hs_tl ile devreye girer.
+                productHasPrices: "{% url 'products:get-has-gold-prices' %}",
+                cariCollect:    "{% url 'customers:cari-collect' customer.id %}",
+                legacyCollect:  "{% url 'customers:save_debt_collection' %}"
+            };
+            const CSRF = document.querySelector('input[name=csrfmiddlewaretoken]')?.value || '';
+            const FALLBACK_HAS_RATE = parseFloat("{{ has_price|stringformat:'f'|default:'0' }}".replace(',', '.')) || 0;
 
-                    if (modalDisplay) modalDisplay.innerText = Math.abs(signedBalanceHS).toFixed(3) + " HS";
+            // ────────────────────────────────────────────────────────────
+            // STATE
+            // ────────────────────────────────────────────────────────────
+            const state = {
+                openBalanceHs: 0,        // pozitif=müşteri borçlu, negatif=alacaklı
+                openBalanceTl: 0,
+                hasRate: FALLBACK_HAS_RATE,
+                fxRates: { USD: 0, EUR: 0, GBP: 0 },
+                bankAccounts: [],
+                mode: 'customer',        // 'customer' | 'basket'
+                basketBaseHs: 0,         // FAZ 22.7 — sepet modu için stabil HS taban değeri
+                previewTimer: null,
+                lastPreview: null,
+                // FAZ 38 — Mağaza tercihleri (cari_balance response'tan)
+                debtCurrencyMode: 'HS',           // 'HS' | 'TL'
+                allowOverpaymentDefault: false,
+                _storePrefsApplied: false         // tek seferlik uygulama flag'i
+            };
 
-                    if (signedBalanceHS > 0.001) {
-                        if (modalStatus) {
-                            modalStatus.innerText = "Müşteri Borçlu";
-                            modalStatus.className = "badge badge-light-danger fw-bold fs-7";
-                        }
-                        if (modalDisplay) modalDisplay.className = "fs-5 fw-bolder text-danger";
+            // ────────────────────────────────────────────────────────────
+            // UI ELEMENT REFS
+            // ────────────────────────────────────────────────────────────
+            const $modal           = document.getElementById('debtCollectionModal');
+            if (!$modal) return;
 
-                        if (radioCollection) radioCollection.click();
-                    } else if (signedBalanceHS < -0.001) {
-                        if (modalStatus) {
-                            modalStatus.innerText = "Müşteri Alacaklı";
-                            modalStatus.className = "badge badge-light-success fw-bold fs-7";
-                        }
-                        if (modalDisplay) modalDisplay.className = "fs-5 fw-bolder text-success";
+            const $form            = document.getElementById('debtCollectionForm');
+            const $modalCard       = document.getElementById('modalBalanceCard');
+            const $balanceIcon     = document.getElementById('modalBalanceIcon');
+            const $balanceDisplay  = document.getElementById('modalBalanceDisplay');
+            const $balanceTl       = document.getElementById('modalBalanceTl');
+            const $balanceStatus   = document.getElementById('modalBalanceStatus');
+            const $rateDisplay     = document.getElementById('modalRateDisplay');
+            const $reconcileBadge  = document.getElementById('modalReconcileBadge');
+            const $modeBadge       = document.getElementById('modalModeBadge');
 
-                        if (radioPayment) radioPayment.click();
-                    } else {
-                        if (modalStatus) {
-                            modalStatus.innerText = "Bakiye Yok";
-                            modalStatus.className = "badge badge-light-secondary fw-bold fs-7";
-                        }
-                        if (modalDisplay) modalDisplay.className = "fs-5 fw-bolder text-gray-600";
-                        if (radioCollection) radioCollection.click();
-                    }
+            const $rawBalanceHs    = document.getElementById('rawBalanceHS');
+            const $selProcesses    = document.getElementById('selectedProcesses');
+            const $bankAccountSel  = document.getElementById('bankAccountSel');
+            const $bankAccountHint = document.getElementById('bankAccountHint');
+            const $currencySelect  = document.getElementById('currencyType');
+            const $currencyHint    = document.getElementById('currencyHint');
+            const $rateInput       = document.getElementById('exchangeRate');
+            const $rateLabel       = document.getElementById('rateLabel');
+            const $rateHint        = document.getElementById('rateHint');
+            const $rateRefreshBtn  = document.getElementById('btnRefreshRate');
+            const $amountInput     = document.getElementById('paymentAmount');
+            const $convResult      = document.getElementById('conversionResult');
+            const $convUnit        = document.getElementById('conversionUnit');
+            const $btnPayAll       = document.getElementById('btnPayAll');
 
-                    const payInput = document.getElementById('paymentAmount');
-                    const convRes = document.getElementById('conversionResult');
-                    const selProcesses = document.getElementById('selectedProcesses');
+            const $targetCloseRow  = document.getElementById('targetCloseRow');
+            const $targetCloseInp  = document.getElementById('targetCloseInput');
+            const $btnFillTarget   = document.getElementById('btnFillTargetFromBalance');
+            const $adjustmentType  = document.getElementById('adjustmentType');
+            const $adjReasonRow    = document.getElementById('adjustmentReasonRow');
+            const $adjReason       = document.getElementById('adjustmentReason');
 
-                    if (selProcesses && !selProcesses.value) {
-                        if (payInput) payInput.value = '';
-                        if (convRes) convRes.innerText = '0.00';
-                    }
-                });
+            const $previewCard     = document.getElementById('previewCard');
+            const $previewStatus   = document.getElementById('previewStatus');
+            const $previewCollHs   = document.getElementById('previewCollectionHs');
+            const $previewCollTl   = document.getElementById('previewCollectionTl');
+            const $previewTargetHs = document.getElementById('previewTargetHs');
+            const $previewNewBal   = document.getElementById('previewNewBalance');
+            const $previewAdjBox   = document.getElementById('previewAdjustmentBox');
+            const $previewAdjHs    = document.getElementById('previewAdjustmentHs');
+            const $previewAdjTl    = document.getElementById('previewAdjustmentTl');
+            const $previewAdjLabel = document.getElementById('previewAdjustmentLabel');
 
-                modal.addEventListener('hidden.bs.modal', function () {
-                    document.getElementById('selectedProcesses').value = '';
-                });
+            const $btnSave         = document.getElementById('btnSaveDebtCollection');
+            const $radioCollection = document.querySelector('input[name="direction"][value="collection"]');
+            const $radioPayment    = document.querySelector('input[name="direction"][value="payment_to_customer"]');
+
+            // FAZ 22.7 — Accordion (Aşama 2 alanları) ve direction pill referansları
+            const $advToggle       = document.getElementById('btnAdvToggle');
+            const $advSection      = document.getElementById('advSection');
+            const $directionFull   = document.getElementById('directionFullRow');
+            const $directionPillRow= document.getElementById('directionPillRow');
+            const $directionPill   = document.getElementById('directionPill');
+            const $directionPillTx = document.getElementById('directionPillText');
+            const $directionChange = document.getElementById('directionChangeLink');
+
+            // ────────────────────────────────────────────────────────────
+            // UTILS
+            // ────────────────────────────────────────────────────────────
+            const fmtHs  = v => (Number(v) || 0).toLocaleString('tr-TR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' HS';
+            const fmtTl  = v => (Number(v) || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₺';
+            const fmtNum = (v, d=2) => (Number(v) || 0).toLocaleString('tr-TR', {minimumFractionDigits: d, maximumFractionDigits: d});
+            const parseDec = v => parseFloat(String(v || '0').replace(',', '.')) || 0;
+            const isCustomerMode = () => !($selProcesses?.value);
+
+            function getCurrentDirection() {
+                return document.querySelector('input[name="direction"]:checked')?.value || 'collection';
             }
 
-            const amountInput = document.getElementById('paymentAmount');
-            const currencySelect = document.getElementById('currencyType');
-            const rateInput = document.getElementById('exchangeRate');
+            function showToast(title, icon='info') {
+                Swal.fire({toast:true, position:'top-end', icon, title, showConfirmButton:false, timer:2200});
+            }
 
+            // FAZ 22.5 (UX-2) — Backend teknik mesajlarını kuyumcu diline çevir.
+            // Bilinen kalıpları yakalar; eşleşmezse orijinal mesajı döndürür.
+            function humanizeError(raw) {
+                if (!raw) return 'Bilinmeyen bir hata oluştu. Sayfayı yenileyip tekrar deneyin.';
+                const s = String(raw);
+                const map = [
+                    [/bank[_ ]account.*required|bank_account.*null|kasa.*zorunlu/i, 'Kasa seçimi zorunlu. Lütfen üstteki listeden bir kasa seçin.'],
+                    [/cashbox.*compatibility|kasa.*para birim|currency.*mismatch/i, 'Seçtiğiniz kasanın para birimi tahsilat para birimiyle uyuşmuyor. Aynı para biriminde bir kasa seçin.'],
+                    [/balance.*mismatch|balanceMismatch/i, 'Tutar denkliği sağlanamadı. Tutarı kontrol edip tekrar deneyin.'],
+                    [/has.*kuru.*yanıt|has rate.*not|exchange rate.*not/i, 'Anlık altın kuru alınamadı. Birkaç saniye sonra tekrar deneyin.'],
+                    [/fx.*not|kuru bulunamadı/i, 'Döviz kuru servisi yanıt vermedi. Tekrar deneyin.'],
+                    [/insufficient|yetersiz/i, 'Kasada yeterli bakiye yok.'],
+                    [/permission|forbidden|yetki/i, 'Bu işlem için yetkiniz yok.'],
+                    [/csrf|forbidden|403/i, 'Oturumunuz zaman aşımına uğramış olabilir. Sayfayı yenileyin.'],
+                    [/network|fetch failed|failed to fetch/i, 'Bağlantı hatası. İnternet bağlantınızı kontrol edip yeniden deneyin.']
+                ];
+                for (const [re, msg] of map) {
+                    if (re.test(s)) return msg;
+                }
+                return s;
+            }
+
+            // ────────────────────────────────────────────────────────────
+            // BAKİYE API (canlı SSOT)
+            // ────────────────────────────────────────────────────────────
+            async function loadBalance() {
+                try {
+                    const res = await fetch(URLS.balance, {credentials:'same-origin'});
+                    const json = await res.json();
+                    if (!json.result) throw new Error(json.error_msg || 'Bakiye alınamadı');
+
+                    state.openBalanceHs = parseDec(json.data.ledger_balance_hs);
+                    state.openBalanceTl = parseDec(json.data.ledger_balance_eur);
+                    state.hasRate       = parseDec(json.data.has_rate) || FALLBACK_HAS_RATE;
+
+                    // FAZ 38 — Mağaza ayarları (debt mode + overpayment varsayılan)
+                    state.debtCurrencyMode = (json.data.debt_currency_mode || 'HS').toUpperCase();
+                    state.allowOverpaymentDefault = !!json.data.allow_overpayment_default;
+                    applyStoreDebtPrefs();
+
+                    renderBalanceCard();
+                } catch (err) {
+                    state.openBalanceHs = 0;
+                    state.openBalanceTl = 0;
+                    if ($balanceStatus) {
+                        $balanceStatus.innerText = 'Bağlantı Hatası — Yenileyin';
+                        $balanceStatus.className = 'badge bg-light-danger text-danger fw-bold fs-8';
+                    }
+                }
+            }
+
+            // FAZ 38 — Mağaza Borç Modu + Fazla Tahsilat varsayılanını uygula.
+            // Sadece kullanıcı modal içinde bir tercih yapmadıysa (initial flag)
+            // mağaza ayarına göre seçimi konumlandırır; böylece kullanıcı el ile
+            // değiştirdiyse override etmez.
+            function applyStoreDebtPrefs() {
+                if (state._storePrefsApplied) return;
+                state._storePrefsApplied = true;
+
+                // 1) Para birimi varsayılanı: TL modu → "TL", HS modu → "HS"
+                if ($currencySelect && state.debtCurrencyMode === 'TL') {
+                    $currencySelect.value = 'TL';
+                    $currencySelect.dispatchEvent(new Event('change'));
+                } else if ($currencySelect && state.debtCurrencyMode === 'HS') {
+                    $currencySelect.value = 'HS';
+                    $currencySelect.dispatchEvent(new Event('change'));
+                }
+
+                // 2) Fazla Tahsilatı Kabul Et toggle
+                const $allowOver = document.getElementById('allowOverpaymentChk');
+                if ($allowOver) $allowOver.checked = !!state.allowOverpaymentDefault;
+            }
+
+            function renderBalanceCard() {
+                if ($rawBalanceHs) $rawBalanceHs.value = state.openBalanceHs;
+
+                if ($balanceDisplay) $balanceDisplay.innerText = fmtHs(Math.abs(state.openBalanceHs));
+                if ($balanceTl)      $balanceTl.innerText      = fmtTl(Math.abs(state.openBalanceTl));
+                if ($rateDisplay)    $rateDisplay.innerText    = fmtNum(state.hasRate, 2);
+
+                $modalCard?.classList.remove('is-debt', 'is-credit', 'is-zero');
+                if (Math.abs(state.openBalanceHs) <= 0.001) {
+                    $modalCard?.classList.add('is-zero');
+                    if ($balanceStatus) {
+                        $balanceStatus.innerText = 'Bakiye Yok';
+                        $balanceStatus.className = 'badge bg-light-secondary text-gray-700 fw-bold fs-8';
+                    }
+                    if ($balanceIcon)    $balanceIcon.className   = 'fa-solid fa-check-double fs-2x text-gray-600';
+                    if ($balanceDisplay) $balanceDisplay.style.color = '#5e6b7e';
+                } else if (state.openBalanceHs > 0) {
+                    $modalCard?.classList.add('is-debt');
+                    if ($balanceStatus) {
+                        $balanceStatus.innerText = 'Müşteri Borçlu';
+                        $balanceStatus.className = 'badge bg-light-danger text-danger fw-bold fs-8';
+                    }
+                    if ($balanceIcon)    $balanceIcon.className   = 'fa-solid fa-arrow-down fs-2x text-danger';
+                    if ($balanceDisplay) $balanceDisplay.style.color = '#b11e2b';
+                } else {
+                    $modalCard?.classList.add('is-credit');
+                    if ($balanceStatus) {
+                        $balanceStatus.innerText = 'Müşteri Alacaklı';
+                        $balanceStatus.className = 'badge bg-light-success text-success fw-bold fs-8';
+                    }
+                    if ($balanceIcon)    $balanceIcon.className   = 'fa-solid fa-arrow-up fs-2x text-success';
+                    if ($balanceDisplay) $balanceDisplay.style.color = '#1f8d3d';
+                }
+
+                // Statik alanlarla mutabakat kontrolü (rapor için)
+                const staticReceivable = parseDec("{{ customer.receivable_hs|default:'0'|stringformat:'f' }}");
+                const staticPayable    = parseDec("{{ customer.payable_hs|default:'0'|stringformat:'f' }}");
+                const staticSigned     = staticReceivable - staticPayable;
+                const drift            = Math.abs(staticSigned - state.openBalanceHs);
+                if ($reconcileBadge) {
+                    if (drift <= 0.005) {
+                        $reconcileBadge.innerHTML = '<span class="badge bg-light-success text-success fw-bold fs-8"><i class="fa-solid fa-shield-check me-1"></i>Bakiye tutuyor</span>';
+                    } else {
+                        $reconcileBadge.innerHTML = `<span class="badge bg-light-warning text-warning fw-bold fs-8" title="Özet ile defter farkı: ${drift.toFixed(3)} HS"><i class="fa-solid fa-triangle-exclamation me-1"></i>Fark: ${drift.toFixed(3)} HS</span>`;
+                    }
+                }
+
+                // Sayfa başındaki Mutabakat Banner'ını güncelle
+                renderPageReconcileBanner(staticSigned, state.openBalanceHs, drift);
+            }
+
+            function renderPageReconcileBanner(staticSigned, canonicalSigned, drift) {
+                const $row     = document.getElementById('reconcileBannerRow');
+                const $banner  = document.getElementById('reconcileBanner');
+                const $title   = document.getElementById('reconcileTitle');
+                const $detail  = document.getElementById('reconcileDetail');
+                const $delta   = document.getElementById('reconcileDelta');
+                if (!$row || !$banner) return;
+
+                $row.style.display = '';
+                $banner.classList.remove('reconcile-banner--ok','reconcile-banner--warn','reconcile-banner--err');
+
+                if (drift <= 0.005) {
+                    $banner.classList.add('reconcile-banner--ok');
+                    $banner.querySelector('i').className = 'fa-solid fa-shield-check';
+                    if ($title)  $title.innerText  = 'Bakiye Tutuyor';
+                    if ($detail) $detail.innerText = 'Hesap defteri ile özet rakamlar uyumlu — tutarlar tam tutuyor.';
+                    if ($delta) {
+                        $delta.className = 'badge bg-light-success text-success fw-bold fs-8';
+                        $delta.innerText = `±${drift.toFixed(3)} HS`;
+                    }
+                } else if (drift <= 0.5) {
+                    $banner.classList.add('reconcile-banner--warn');
+                    $banner.querySelector('i').className = 'fa-solid fa-triangle-exclamation';
+                    if ($title)  $title.innerText  = 'Küçük Bir Fark Var';
+                    if ($detail) $detail.innerHTML = `Özet rakam <b>${staticSigned.toFixed(3)} HS</b>, hesap defteri <b>${canonicalSigned.toFixed(3)} HS</b> diyor. Bir sonraki tahsilatta otomatik düzelir.`;
+                    if ($delta) {
+                        $delta.className = 'badge bg-light-warning text-warning fw-bold fs-8';
+                        $delta.innerText = `Δ ${drift.toFixed(3)} HS`;
+                    }
+                } else {
+                    $banner.classList.add('reconcile-banner--err');
+                    $banner.querySelector('i').className = 'fa-solid fa-circle-exclamation';
+                    if ($title)  $title.innerText  = 'DİKKAT: Bakiye Tutmuyor';
+                    if ($detail) $detail.innerHTML = `Özet rakam <b>${staticSigned.toFixed(3)} HS</b>, hesap defteri <b>${canonicalSigned.toFixed(3)} HS</b> — fark <b>${drift.toFixed(3)} HS</b>. Tüm Hesap Defteri'ni açıp hareketleri inceleyin.`;
+                    if ($delta) {
+                        $delta.className = 'badge bg-light-danger text-danger fw-bold fs-8';
+                        $delta.innerText = `Δ ${drift.toFixed(3)} HS`;
+                    }
+                }
+            }
+
+            // ────────────────────────────────────────────────────────────
+            // KASA / BANKA HESAPLARI
+            // ────────────────────────────────────────────────────────────
+            async function loadBankAccounts() {
+                try {
+                    const res = await fetch(URLS.bankAccounts, {credentials:'same-origin'});
+                    const json = await res.json();
+                    if (!json.result) throw new Error('Kasa listesi alınamadı');
+                    state.bankAccounts = json.data || [];
+                    renderBankAccountOptions();
+                } catch (err) {
+                    state.bankAccounts = [];
+                    $bankAccountSel.innerHTML = '<option value="">Kasa listesi alınamadı</option>';
+                    if ($bankAccountHint) $bankAccountHint.innerHTML = '<span class="text-danger">Banka/Kasa hesapları yüklenemedi.</span>';
+                }
+            }
+
+            function renderBankAccountOptions() {
+                const ccy = currentExpectedCashboxCurrency();
+                const direction = getCurrentDirection();
+                const accounts = state.bankAccounts;
+                $bankAccountSel.innerHTML = '';
+
+                if (!accounts.length) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.innerText = 'Aktif kasa bulunamadı';
+                    $bankAccountSel.appendChild(opt);
+                    if ($bankAccountHint) $bankAccountHint.innerHTML = '<span class="text-danger fw-bold">Bu mağazada aktif kasa tanımlı değil. Banka/Kasa Hesapları ekranından kasa açın.</span>';
+                    return;
+                }
+
+                const blank = document.createElement('option');
+                blank.value = '';
+                blank.innerText = 'Seçiniz…';
+                $bankAccountSel.appendChild(blank);
+
+                // FAZ 22.4 (UX-1) — Nakit-önce: CASH kasaları en üste, sonra POS,
+                // sonra BANK. Aynı tip içinde TRY önce, ardından döviz.
+                const typeRank = (t) => ({CASH:0, POS:1, BANK:2})[t] ?? 9;
+                const sorted = [...accounts].sort((a, b) => {
+                    const dt = typeRank(a.account_type) - typeRank(b.account_type);
+                    if (dt !== 0) return dt;
+                    const da = (a.currency || 'TRY') === 'TRY' ? 0 : 1;
+                    const db = (b.currency || 'TRY') === 'TRY' ? 0 : 1;
+                    if (da !== db) return da - db;
+                    return (a.name || '').localeCompare(b.name || '', 'tr');
+                });
+
+                let firstMatch = null;
+                sorted.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    const typeLbl = ({CASH:'💵 Nakit Kasa', POS:'💳 POS', BANK:'🏦 Banka'})[b.account_type] || b.account_type;
+                    opt.innerText = `${typeLbl} · ${b.name} · ${b.currency}`;
+                    opt.dataset.accountType = b.account_type;
+                    opt.dataset.currency = b.currency;
+                    const isMatch = (b.currency || 'TRY').toUpperCase() === ccy;
+                    if (!isMatch) opt.disabled = true;
+                    // Para birimi eşleşen ilk CASH kasası öncelikli; yoksa ilk eşleşen
+                    if (isMatch && !firstMatch) firstMatch = opt;
+                    $bankAccountSel.appendChild(opt);
+                });
+
+                if (firstMatch) firstMatch.selected = true;
+                updateBankAccountHint();
+            }
+
+            function currentExpectedCashboxCurrency() {
+                const c = $currencySelect?.value;
+                if (c === 'TL' || c === 'HS' || c === 'TRY') return 'TRY';
+                if (['USD','EUR','GBP'].includes(c)) return c;
+                return 'TRY';
+            }
+
+            function updateBankAccountHint() {
+                if (!$bankAccountHint) return;
+                const opt = $bankAccountSel.options[$bankAccountSel.selectedIndex];
+                if (!opt || !opt.value) {
+                    $bankAccountHint.innerHTML = '<span class="text-muted">Kasa seçimi zorunludur. Atomik defter yazımı bu kasa üzerinden yapılır.</span>';
+                    return;
+                }
+                const ccy = opt.dataset.currency || 'TRY';
+                $bankAccountHint.innerHTML = `<span class="pill-bank"><i class="fa-solid fa-vault fs-9"></i> ${opt.innerText}</span>`;
+            }
+
+            // ────────────────────────────────────────────────────────────
+            // PARA BİRİMİ / KUR yönetimi
+            // ────────────────────────────────────────────────────────────
+            // FAZ 22.3 — FX kur kaynağı `cari/fx-rates` endpoint'inden okunur.
+            // Önceden preview-close endpoint'i kullanılıyordu; artık kur servisi
+            // ile kur önizleme servisi ayrı.
+            // FAZ 33.4 — `state.hasRate` cari_balance'tan efektif kur (stored
+            // TL/HS) ile beslenir. cari_fx_rates yalnız piyasa ALIŞ kurunu
+            // bildiği için açık borç varken state.hasRate'i ezmez.
+            async function loadAllFxRates() {
+                // 1) Birincil kaynak: cari/fx-rates (StoreConfig manuel + exchange_rate_service)
+                try {
+                    const res = await fetch(URLS.fxRates, {credentials:'same-origin'});
+                    const json = await res.json();
+                    if (json.result) {
+                        const fx = json.data.fx_rates || {};
+                        ['USD','EUR','GBP'].forEach(c => {
+                            const v = parseDec(fx[c]);
+                            if (v > 0) state.fxRates[c] = v;
+                        });
+                        // Has kuru (piyasa ALIŞ) sadece state.hasRate boşsa kullan;
+                        // efektif kur cari_balance'tan geldiyse korunur.
+                        const hr = parseDec(json.data.has_rate);
+                        if (hr > 0 && !(state.hasRate > 0)) state.hasRate = hr;
+                    }
+                } catch (e) { /* sessizce yut — fallback değerler korunur */ }
+
+                // 2) FAZ 22.7 — Has kur 0 ise products/get-has-gold-prices fallback'i
+                //    Bu endpoint PriceService → Redis/DB → compute_store_has_tl
+                //    zincirinden geçer; cari/fx-rates'ten farklı bir veri yolu.
+                if (!(state.hasRate > 0)) {
+                    try {
+                        const res2 = await fetch(URLS.productHasPrices, {credentials:'same-origin'});
+                        const json2 = await res2.json();
+                        const sale = parseDec(json2.sale_hs_tl);
+                        if (sale > 0) state.hasRate = sale;
+                    } catch (e) { /* yine yut — UI kullanıcıya 0 göstereceği için bilinçli düşüş */ }
+                }
+            }
+
+            // FAZ 22.7 — Kullanıcı tetikli: kur servislerini yeniden çek.
+            async function refreshAllRates() {
+                if ($rateRefreshBtn) {
+                    $rateRefreshBtn.disabled = true;
+                    $rateRefreshBtn.classList.add('opacity-50');
+                }
+                await Promise.all([loadAllFxRates(), loadBalance()]);
+                await applyCurrencyChange();
+                if ($rateRefreshBtn) {
+                    $rateRefreshBtn.disabled = false;
+                    $rateRefreshBtn.classList.remove('opacity-50');
+                }
+                if (state.hasRate > 0) {
+                    showToast('Kur güncellendi: 1 gr Has = ' + fmtTl(state.hasRate), 'success');
+                } else {
+                    showToast('Kur servisi şu an cevap vermiyor. Birkaç saniye sonra tekrar deneyin.', 'warning');
+                }
+            }
+
+            async function fetchFxRate(currency) {
+                if (currency === 'TL' || currency === 'HS' || currency === 'TRY') {
+                    return state.hasRate;
+                }
+                if (state.fxRates[currency] && state.fxRates[currency] > 0) return state.fxRates[currency];
+                // Önbellekte yoksa toplu yenile
+                await loadAllFxRates();
+                return state.fxRates[currency] || 0;
+            }
+
+            async function applyCurrencyChange() {
+                const c = $currencySelect.value;
+                let rate;
+                // FAZ 22.7 — rateHint artık kullanıcıya kurun nereden geldiğini ve
+                // okuma yönünü açıklar. 0 ise kırmızı uyarı + Yenile teşviki.
+                const rateOk = (v) => v && v > 0;
+                if (c === 'TL') {
+                    $rateLabel.querySelector('span').innerText = 'Kur (Has Satış)';
+                    rate = state.hasRate;
+                    $rateInput.value = rate ? rate.toFixed(2) : '0';
+                    if ($rateHint) {
+                        $rateHint.innerHTML = rateOk(rate)
+                            ? '<i class="fa-solid fa-circle-check text-success me-1"></i>1 gr Has Altın = ' + fmtTl(rate) + ' (canlı kaynaktan)'
+                            : '<span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>Kur servisi 0 döndü — Yenile butonuna tıklayın.</span>';
+                    }
+                } else if (c === 'HS') {
+                    $rateLabel.querySelector('span').innerText = 'Kur (Has Satış)';
+                    rate = state.hasRate;
+                    $rateInput.value = rate ? rate.toFixed(2) : '0';
+                    if ($rateHint) {
+                        $rateHint.innerHTML = rateOk(rate)
+                            ? '<i class="fa-solid fa-circle-check text-success me-1"></i>1 gr Has Altın = ' + fmtTl(rate) + ' (canlı kaynaktan)'
+                            : '<span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>Kur servisi 0 döndü — Yenile butonuna tıklayın.</span>';
+                    }
+                } else {
+                    $rateLabel.querySelector('span').innerText = `Kur (1 ${c} = ? ₺)`;
+                    rate = await fetchFxRate(c);
+                    $rateInput.value = rate ? rate.toFixed(4) : '0';
+                    if ($rateHint) {
+                        $rateHint.innerHTML = rateOk(rate)
+                            ? `<i class="fa-solid fa-circle-check text-success me-1"></i>1 ${c} = ${fmtTl(rate)} (canlı kaynaktan)`
+                            : `<span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>${c} kuru bulunamadı — Yenile butonuna tıklayın.</span>`;
+                    }
+                }
+                if ($currencyHint) {
+                    // FAZ 22.7 (Fix #4) — HS seçimi için kullanıcıya neden TRY kasasının
+                    // listelendiği açıkça anlatılır; "neden Has kasa görmüyorum?" sorusu kapanır.
+                    if (c === 'HS') {
+                        $currencyHint.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Has Altın işlemi <b>TRY kasasına</b> kur üzerinden yazılır. Bu yüzden kasa listesinde TRY kasaları görünür.';
+                    } else if (c === 'TL') {
+                        $currencyHint.innerText = 'Türk Lirası nakit/havale tahsilatı';
+                    } else {
+                        $currencyHint.innerText = `${c} döviz tahsilatı (uygun ${c} kasası gerekir)`;
+                    }
+                }
+                renderBankAccountOptions();
+                updateConversion();
+                schedulePreview();
+            }
+
+            // ────────────────────────────────────────────────────────────
+            // CONVERSION (HS↔TL eşdeğer)
+            // ────────────────────────────────────────────────────────────
             function updateConversion() {
-                const val = parseFloat(amountInput.value) || 0;
-                const rate = parseFloat(rateInput.value) || 0;
-                const currency = currencySelect.value;
-
-                let result = 0;
-                let unit = '';
-
-                if (currency === 'TL') {
+                const val = parseDec($amountInput.value);
+                const rate = parseDec($rateInput.value);
+                const c = $currencySelect.value;
+                let result = 0, unit = '';
+                if (c === 'TL') {
                     unit = 'HS';
                     if (rate > 0) result = val / rate;
+                    if ($convResult) $convResult.innerText = fmtNum(result, 3);
+                } else if (c === 'HS') {
+                    unit = '₺';
+                    result = val * rate;
+                    if ($convResult) $convResult.innerText = fmtNum(result, 2);
                 } else {
                     unit = '₺';
                     result = val * rate;
+                    if ($convResult) $convResult.innerText = fmtNum(result, 2);
                 }
-
-                const resEl = document.getElementById('conversionResult');
-                const unitEl = document.getElementById('conversionUnit');
-
-                if (resEl) resEl.innerText = currency === 'TL' ? result.toFixed(3) : result.toFixed(2);
-                if (unitEl) unitEl.innerText = unit;
+                if ($convUnit) $convUnit.innerText = unit;
             }
 
-            if (amountInput) amountInput.addEventListener('input', updateConversion);
-            if (rateInput) rateInput.addEventListener('input', updateConversion);
-            if (currencySelect) currencySelect.addEventListener('change', updateConversion);
+            // ────────────────────────────────────────────────────────────
+            // CANLI ÖNİZLEME (Müşteri modunda backend API, Sepet modunda lokal)
+            // ────────────────────────────────────────────────────────────
+            function schedulePreview() {
+                clearTimeout(state.previewTimer);
+                state.previewTimer = setTimeout(runPreview, 280);
+            }
 
-            const btnPayAll = document.getElementById('btnPayAll');
-            if (btnPayAll) {
-                btnPayAll.addEventListener('click', function () {
-                    const currentHS = Math.abs(parseFloat(rawBalanceInput.value) || 0);
-                    const rate = parseFloat(rateInput.value) || 0;
-                    const currency = currencySelect.value;
+            async function runPreview() {
+                const amount = parseDec($amountInput.value);
+                const rate   = parseDec($rateInput.value);
+                const c      = $currencySelect.value;
+                const target = parseDec($targetCloseInp?.value);
+                const direction = getCurrentDirection();
 
-                    if (currentHS === 0) {
+                if (amount <= 0) {
+                    setPreview({collection_hs:0, collection_tl:0, target_hs:0, adjustment_hs:0, adjustment_tl:0, new_balance_hs:state.openBalanceHs});
+                    return;
+                }
+
+                if (isCustomerMode() && (c === 'TRY' || c === 'TL' || c === 'HS' || c === 'USD' || c === 'EUR' || c === 'GBP')) {
+                    // Backend canlı önizleme — CollectionService önizleme endpoint'i
+                    const apiC = (c === 'TL') ? 'TRY' : c;
+                    let url = `${URLS.preview}?amount=${encodeURIComponent(amount)}&currency=${apiC}`;
+                    if (target > 0) url += `&target_close_hs=${encodeURIComponent(target)}`;
+                    try {
+                        const res = await fetch(url, {credentials:'same-origin'});
+                        const json = await res.json();
+                        if (json.result) {
+                            const d = json.data;
+                            const newBalanceHs = state.openBalanceHs - parseDec(d.target_close_hs) * (direction === 'collection' ? 1 : -1);
+                            setPreview({
+                                collection_hs: parseDec(d.collection_hs),
+                                collection_tl: parseDec(d.collection_tl),
+                                target_hs:     parseDec(d.target_close_hs),
+                                adjustment_hs: parseDec(d.adjustment_hs),
+                                adjustment_tl: parseDec(d.adjustment_tl),
+                                new_balance_hs: newBalanceHs,
+                                // FAZ 33 — Overpayment alanları (cari/preview-close response'undan).
+                                has_overpayment:        !!d.has_overpayment,
+                                overpayment_tl:         parseDec(d.overpayment_tl),
+                                overpayment_pct_of_debt: d.overpayment_pct_of_debt || '0',
+                                overpayment_band:       d.overpayment_band || '',
+                                source: 'api'
+                            });
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                // Lokal hesap (sepet modu veya API hatası)
+                let collection_hs = 0, collection_tl = 0;
+                if (c === 'TL' || c === 'TRY') {
+                    collection_tl = amount;
+                    if (rate > 0) collection_hs = amount / rate;
+                } else if (c === 'HS') {
+                    collection_hs = amount;
+                    collection_tl = amount * rate;
+                } else {
+                    collection_tl = amount * rate;
+                    if (state.hasRate > 0) collection_hs = collection_tl / state.hasRate;
+                }
+                const target_hs = target > 0 ? target : collection_hs;
+                const adjustment_hs = target_hs - collection_hs;
+                const adjustment_tl = adjustment_hs * (state.hasRate || rate);
+                const newBalanceHs = state.openBalanceHs - target_hs * (direction === 'collection' ? 1 : -1);
+                setPreview({
+                    collection_hs, collection_tl,
+                    target_hs, adjustment_hs, adjustment_tl,
+                    new_balance_hs: newBalanceHs,
+                    source: 'local'
+                });
+            }
+
+            function setPreview(p) {
+                state.lastPreview = p;
+                if ($previewCollHs)   $previewCollHs.innerText   = fmtHs(p.collection_hs);
+                if ($previewCollTl)   $previewCollTl.innerText   = fmtTl(p.collection_tl);
+                if ($previewTargetHs) $previewTargetHs.innerText = fmtHs(p.target_hs);
+                if ($previewNewBal) {
+                    const bal = p.new_balance_hs;
+                    $previewNewBal.innerText = (bal > 0.001 ? '+' : (bal < -0.001 ? '−' : '')) + fmtHs(Math.abs(bal));
+                    $previewNewBal.classList.remove('text-pos','text-neg');
+                    if (bal > 0.001)  $previewNewBal.classList.add('text-neg');
+                    if (bal < -0.001) $previewNewBal.classList.add('text-pos');
+                }
+                if ($previewStatus) $previewStatus.innerText = p.source === 'api' ? 'Canlı backend hesabı' : 'Lokal tahmin';
+
+                if (Math.abs(p.adjustment_hs) > 0.001) {
+                    $previewAdjBox.style.display = '';
+                    if ($previewAdjHs) $previewAdjHs.innerText = (p.adjustment_hs > 0 ? '+' : '−') + fmtHs(Math.abs(p.adjustment_hs));
+                    if ($previewAdjTl) $previewAdjTl.innerText = fmtTl(Math.abs(p.adjustment_tl));
+                    if ($previewAdjLabel) {
+                        const at = $adjustmentType?.value;
+                        $previewAdjLabel.innerText = at ? `→ ${$adjustmentType.options[$adjustmentType.selectedIndex].text}` : 'Fark Tipi seçilmeli';
+                    }
+                } else {
+                    $previewAdjBox.style.display = 'none';
+                }
+
+                // FAZ 33 — Overpayment göstergesi (cari_detail.html simetrisi).
+                // Backend has_overpayment=true döndürdüğünde toggle uyarısı + tutar.
+                const $overBox = document.getElementById('previewOverpaymentBox');
+                const $overTl  = document.getElementById('previewOverpaymentTl');
+                const $overPct = document.getElementById('previewOverpaymentPct');
+                const $overBand = document.getElementById('previewOverpaymentBand');
+                const $allowOverChk = document.getElementById('allowOverpaymentChk');
+                if ($overBox) {
+                    if (p.has_overpayment && p.overpayment_tl > 0) {
+                        $overBox.style.display = '';
+                        if ($overTl)  $overTl.innerText  = fmtTl(p.overpayment_tl);
+                        if ($overPct) $overPct.innerText = p.overpayment_pct_of_debt;
+                        if ($overBand) $overBand.innerText = p.overpayment_band || '—';
+                        // Border rengini toggle durumuna göre güncelle: kabul
+                        // edilmemişse kırmızı uyarı, edilmişse yeşil onay.
+                        $overBox.classList.remove('border-success', 'border-danger');
+                        $overBox.classList.add($allowOverChk?.checked ? 'border-success' : 'border-danger');
+                    } else {
+                        $overBox.style.display = 'none';
+                    }
+                }
+            }
+
+            // ────────────────────────────────────────────────────────────
+            // MODE / DOM TOGGLE
+            // ────────────────────────────────────────────────────────────
+            function applyMode() {
+                state.mode = isCustomerMode() ? 'customer' : 'basket';
+                if ($modeBadge) {
+                    if (state.mode === 'basket') {
+                        $modeBadge.className = 'mode-pill mode-pill--basket';
+                        $modeBadge.innerHTML = '<i class="fa-solid fa-list-check fs-9"></i> Sepet Modu';
+                    } else {
+                        $modeBadge.className = 'mode-pill mode-pill--customer';
+                        $modeBadge.innerHTML = '<i class="fa-solid fa-user fs-9"></i> Müşteri Modu';
+                    }
+                }
+                // Sepet modunda multi-currency kapatılır (legacy backend desteklemiyor)
+                Array.from($currencySelect.options).forEach(opt => {
+                    if (opt.dataset.customerOnly === '1') opt.disabled = (state.mode === 'basket');
+                });
+                if (state.mode === 'basket' && ['USD','EUR','GBP'].includes($currencySelect.value)) {
+                    $currencySelect.value = 'HS';
+                }
+                // Sepet modunda kapatma hedefi gizlenir (process'lere otomatik dağıtılır)
+                if ($targetCloseRow) $targetCloseRow.style.display = (state.mode === 'basket') ? 'none' : '';
+            }
+
+            // ────────────────────────────────────────────────────────────
+            // EVENT BINDINGS
+            // ────────────────────────────────────────────────────────────
+            $modal.addEventListener('show.bs.modal', async function () {
+                applyMode();
+                // Sıfırla
+                if (state.mode === 'customer') {
+                    if ($amountInput) $amountInput.value = '';
+                    if ($targetCloseInp) $targetCloseInp.value = '';
+                    if ($adjustmentType) $adjustmentType.value = '';
+                    if ($adjReason) $adjReason.value = '';
+                    if ($adjReasonRow) $adjReasonRow.style.display = 'none';
+                    state.basketBaseHs = 0;
+                } else {
+                    // FAZ 22.7 — Sepet modunda data-basket-hs attribute'undan stabil HS okunur.
+                    // Bu değer kullanıcı para birimi/kuru değiştirse bile sabit kalır.
+                    state.basketBaseHs = parseDec($selProcesses?.getAttribute('data-basket-hs')) || parseDec($amountInput?.value);
+                }
+                await Promise.all([loadBalance(), loadBankAccounts(), loadAllFxRates()]);
+                await applyCurrencyChange();
+                // Yön: müşteri borçluysa tahsilat, alacaklıysa ödeme — sepet modu başlangıçta kendi yönünü zaten ayarladı
+                if (state.mode === 'customer') {
+                    if (state.openBalanceHs > 0.001 && $radioCollection) $radioCollection.click();
+                    else if (state.openBalanceHs < -0.001 && $radioPayment) $radioPayment.click();
+                }
+                // FAZ 22.7 — Bakiye net (≥0.001 HS) ise yön rozeti gösterilir, büyük kartlar gizlenir.
+                // Sıfır bakiyede kullanıcının manuel seçim yapması gerektiği için kartlar açık kalır.
+                applyDirectionCollapsed(Math.abs(state.openBalanceHs) > 0.001);
+                // FAZ 22.7 — Accordion her açılışta kapalı başlar (temel akış sade).
+                setAdvOpen(false);
+                schedulePreview();
+            });
+
+            $modal.addEventListener('hidden.bs.modal', function () {
+                if ($selProcesses) {
+                    $selProcesses.value = '';
+                    $selProcesses.removeAttribute('data-basket-hs');
+                }
+                state.basketBaseHs = 0;
+                // FAZ 33 — Modal her kapanışta overpayment toggle'ı sıfırla.
+                // Sonraki tahsilatta yanlışlıkla aktif kalmaması için.
+                const _ovChk = document.getElementById('allowOverpaymentChk');
+                if (_ovChk) _ovChk.checked = false;
+                const _ovBox = document.getElementById('previewOverpaymentBox');
+                if (_ovBox) _ovBox.style.display = 'none';
+            });
+
+            // FAZ 33 — Toggle değişince önizlemeyi tazele (yalnızca kart border
+            // rengi değişir; backend yeniden çağrılmaz çünkü has_overpayment
+            // verisi zaten state.lastPreview'da).
+            document.getElementById('allowOverpaymentChk')?.addEventListener('change', function () {
+                if (state.lastPreview) setPreview(state.lastPreview);
+            });
+
+            // FAZ 22.7 — Accordion toggle (Aşama 2 alanlarını aç/kapat)
+            function setAdvOpen(isOpen) {
+                if (!$advSection || !$advToggle) return;
+                if (isOpen) {
+                    $advSection.classList.add('is-open');
+                    $advToggle.setAttribute('aria-expanded', 'true');
+                    const lbl = $advToggle.querySelector('.text-muted');
+                    if (lbl) lbl.innerText = '— Kapatmak için tıklayın';
+                } else {
+                    $advSection.classList.remove('is-open');
+                    $advToggle.setAttribute('aria-expanded', 'false');
+                    const lbl = $advToggle.querySelector('.text-muted');
+                    if (lbl) lbl.innerText = '— Açmak için tıklayın';
+                }
+            }
+            $advToggle?.addEventListener('click', function () {
+                const next = $advToggle.getAttribute('aria-expanded') !== 'true';
+                setAdvOpen(next);
+            });
+
+            // FAZ 22.7 — Direction pill: bakiye sıfır değilse büyük seçim kartlarını
+            // gizleyip yön rozetini gösteririm. Kullanıcı "Değiştir"'e tıklarsa açılır.
+            function syncDirectionPill() {
+                if (!$directionPill || !$directionPillTx) return;
+                const dir = getCurrentDirection();
+                if (dir === 'collection') {
+                    $directionPill.classList.remove('direction-pill--payment');
+                    $directionPill.classList.add('direction-pill--collection');
+                    $directionPillTx.innerText = 'Tahsilat Yap (Kasaya GİRİŞ)';
+                    const ic = $directionPill.querySelector('i');
+                    if (ic) ic.className = 'fa-solid fa-arrow-down-to-line';
+                } else {
+                    $directionPill.classList.remove('direction-pill--collection');
+                    $directionPill.classList.add('direction-pill--payment');
+                    $directionPillTx.innerText = 'Ödeme Yap (Kasadan ÇIKIŞ)';
+                    const ic = $directionPill.querySelector('i');
+                    if (ic) ic.className = 'fa-solid fa-arrow-up-from-bracket';
+                }
+            }
+            function applyDirectionCollapsed(collapse) {
+                if (!$directionFull || !$directionPillRow) return;
+                if (collapse) {
+                    $directionFull.style.display = 'none';
+                    $directionPillRow.style.display = '';
+                } else {
+                    $directionFull.style.display = '';
+                    $directionPillRow.style.display = 'none';
+                }
+                syncDirectionPill();
+            }
+            $directionChange?.addEventListener('click', function () { applyDirectionCollapsed(false); });
+            document.querySelectorAll('input[name="direction"]').forEach(r => r.addEventListener('change', syncDirectionPill));
+
+            $currencySelect?.addEventListener('change', applyCurrencyChange);
+            $bankAccountSel?.addEventListener('change', updateBankAccountHint);
+            // FAZ 22.7 — $rateInput readonly olduğundan input event'i kaldırıldı.
+            // Tutar / kapama hedefi değiştiğinde önizleme tetiklenir.
+            [$amountInput, $targetCloseInp].forEach(el => el?.addEventListener('input', () => { updateConversion(); schedulePreview(); }));
+            $rateRefreshBtn?.addEventListener('click', refreshAllRates);
+            document.querySelectorAll('input[name="direction"]').forEach(r => r.addEventListener('change', schedulePreview));
+            $adjustmentType?.addEventListener('change', function () {
+                // FAZ 22.10 — "Fark Nedeni" alanı kaldırıldı; row görünürlüğü artık no-op.
+                schedulePreview();
+            });
+
+            // Tüm tutarı doldur (akıllı: sepet modunda seçili HS, müşteri modunda bakiye HS)
+            $btnPayAll?.addEventListener('click', function () {
+                const direction = getCurrentDirection();
+                let openHs;
+                if (state.mode === 'basket') {
+                    // FAZ 22.7 (Fix #5) — Sepet modu sabit basketBaseHs'ten okur.
+                    // Önceden $amountInput.value okunuyordu ve para birimi TL'ye değiştirildiğinde
+                    // çift dönüşüm hatası oluşabiliyordu (HS×rate'i tekrar HS gibi yorumlama).
+                    openHs = state.basketBaseHs > 0 ? state.basketBaseHs : parseDec($amountInput.value);
+                } else {
+                    openHs = Math.abs(state.openBalanceHs);
+                }
+                if (openHs < 0.001) {
+                    showToast('Açık bakiye yok.', 'info');
+                    return;
+                }
+                const c = $currencySelect.value;
+                const rate = parseDec($rateInput.value);
+                let amount;
+                if (c === 'HS') amount = openHs;
+                else if (c === 'TL') {
+                    // FAZ 33.4 — Müşteri modunda STORED TL'yi doğrudan kullan.
+                    // openHs × rate hesabı (eski yöntem) anlık ALIŞ kuru ile
+                    // 95.000 yerine 94.622 dolduruyordu (sahte overpayment).
+                    // Stored amount_eur borç yazıldığı kuru korur → bire bir kapama.
+                    if (state.mode !== 'basket' && Math.abs(state.openBalanceTl) > 0.01) {
+                        amount = Math.abs(state.openBalanceTl);
+                    } else {
+                        amount = rate > 0 ? Math.ceil(openHs * rate * 100) / 100 : 0;
+                    }
+                }
+                else amount = (rate > 0 && state.hasRate > 0) ? Math.ceil((openHs * state.hasRate / rate) * 100) / 100 : 0;
+                if (!amount) { Swal.fire('Hata', 'Lütfen geçerli bir kur girin.', 'warning'); return; }
+                $amountInput.value = amount;
+                updateConversion();
+                schedulePreview();
+            });
+
+            // Tüm Borcu Kapat — kapama hedefini açık borç tutarıyla doldur (yalnız müşteri modu)
+            $btnFillTarget?.addEventListener('click', function () {
+                const open = Math.abs(state.openBalanceHs);
+                if (open < 0.001) { showToast('Açık bakiye yok.', 'info'); return; }
+                $targetCloseInp.value = open.toFixed(3);
+                schedulePreview();
+            });
+
+            // ────────────────────────────────────────────────────────────
+            // SAVE — Mode'a göre endpoint dispatch
+            // ────────────────────────────────────────────────────────────
+            $btnSave?.addEventListener('click', async function () {
+                const btn = this;
+                const direction = getCurrentDirection();
+                const amount = parseDec($amountInput.value);
+                const bankId = $bankAccountSel.value;
+                const c = $currencySelect.value;
+
+                if (amount <= 0) { Swal.fire('Uyarı', 'Lütfen geçerli bir tutar girin.', 'warning'); return; }
+                if (!bankId) { Swal.fire('Uyarı', 'Lütfen kasa/banka hesabı seçin.', 'warning'); return; }
+
+                // FAZ 22.10 — "Fark Nedeni" zorunluluğu kaldırıldı. Tip seçimi yeterli;
+                // kullanıcı isterse Açıklama alanını kullanır.
+
+                btn.setAttribute('data-kt-indicator', 'on');
+                btn.disabled = true;
+
+                try {
+                    let url, payload;
+                    // FAZ 37 — Yön bazlı dispatch.
+                    // CollectionService yalnızca tahsilat (kasaya GİRİŞ) yapar;
+                    // "Ödeme Yap" (kasadan ÇIKIŞ) için legacy `save_debt_collection`
+                    // kullanılır (direction='payment_to_customer' destekli).
+                    // Müşteri modunda ödeme yön'ünde de legacy'ye düşeriz.
+                    const _isPayment = (direction === 'payment_to_customer');
+                    if (isCustomerMode() && !_isPayment) {
+                        // ── Müşteri Modu + Tahsilat → cari/collect (CollectionService) ──
+                        url = URLS.cariCollect;
+                        const apiCurrency = (c === 'TL') ? 'TRY' : c;
+                        payload = new URLSearchParams({
+                            bank_account_id: bankId,
+                            amount: String(amount),
+                            currency: apiCurrency
+                        });
+                        const target = parseDec($targetCloseInp.value);
+                        if (target > 0) payload.append('target_close_hs', String(target));
+                        // FAZ 33 — Fazla Tahsilatı Kabul Et toggle.
+                        // Backend (CollectionService) allow_overpayment=True iken
+                        // aşan tutarı CashboxLedger + IncomeExpenseLedger.OTHER_INCOME
+                        // satırlarına yazar.
+                        const _allowOver = !!document.getElementById('allowOverpaymentChk')?.checked;
+                        payload.append('allow_overpayment', _allowOver ? 'true' : 'false');
+                        if ($adjustmentType.value) {
+                            payload.append('adjustment_type', $adjustmentType.value);
+                            // FAZ 22.10 — Açıklama alanı varsa onu reason olarak yolla;
+                            // boşsa backend otomatik tip-bazlı varsayılanı kullanır.
+                            const $desc = $form?.querySelector('textarea[name="description"]');
+                            const descTxt = ($desc && ($desc.value || '').trim()) || '';
+                            if (descTxt) payload.append('adjustment_reason', descTxt);
+                        }
+                    } else {
+                        // ── Sepet Modu VEYA Müşteri Modu+Ödeme → save-debt-collection ──
+                        // Legacy endpoint hem direction='collection' hem
+                        // 'payment_to_customer' destekler; CashboxLedger.EXPENSE
+                        // bu yolla yazılır (FAZ 14 + FAZ 36).
+                        url = URLS.legacyCollect;
+                        payload = new FormData($form);
+                    }
+
+                    const opts = {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' }
+                    };
+                    if (payload instanceof URLSearchParams) {
+                        opts.body = payload;
+                        opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                    } else {
+                        opts.body = payload;
+                    }
+                    const res  = await fetch(url, opts);
+                    const json = await res.json();
+
+                    if (!json.result) {
                         Swal.fire({
-                            toast: true,
-                            position: 'top-end',
-                            icon: 'info',
-                            title: 'Bakiye zaten sıfır.',
-                            showConfirmButton: false,
-                            timer: 1500
+                            icon: 'error',
+                            title: 'İşlem yapılamadı',
+                            html: `<div class="text-start">${humanizeError(json.error_msg).replace(/\n/g,'<br>')}</div>`,
+                            confirmButtonText: 'Tamam'
                         });
                         return;
                     }
 
-                    let finalAmount = 0;
-
-                    if (currency === 'TL') {
-                        if (rate > 0) {
-                            finalAmount = currentHS * rate;
-                            finalAmount = Math.ceil(finalAmount * 100) / 100;
-                        } else {
-                            Swal.fire('Hata', 'Lütfen geçerli bir kur giriniz.', 'warning');
-                            return;
-                        }
+                    // FAZ 22.10 — Backend `pending_approval` döndürüyorsa kullanıcı admin değil
+                    // → modal-içi açıklayıcı uyarı; aksi halde sade başarı.
+                    const pending = !!(json.data && json.data.pending_approval);
+                    if (pending) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Tahsilat kaydedildi — fark fişi onay bekliyor',
+                            html: '<div class="text-start fs-7">Tutar tahsilat olarak yazıldı, ancak fark fişi (kur farkı / iskonto / silme) için yetkili kullanıcı onayı gerekiyor. <b>Admin rolü</b> ile giriş yapan biri Cari Hesap Merkezi → Onay Bekleyenler ekranından tek tıkla onaylayabilir.</div>',
+                            confirmButtonText: 'Tamam'
+                        }).then(() => {
+                            bootstrap.Modal.getInstance($modal)?.hide();
+                            location.reload();
+                        });
                     } else {
-                        finalAmount = currentHS;
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Tahsilat kaydedildi',
+                            html: '<div class="text-muted fs-7">Kasa girişi, müşteri bakiyesi ve ödeme kaydı birlikte yazıldı.</div>',
+                            confirmButtonText: 'Tamam',
+                            timer: 1800,
+                            timerProgressBar: true
+                        }).then(() => {
+                            bootstrap.Modal.getInstance($modal)?.hide();
+                            location.reload();
+                        });
                     }
+                } catch (err) {
+                    Swal.fire('Bağlantı Hatası', humanizeError(err && err.message || err), 'error');
+                } finally {
+                    btn.removeAttribute('data-kt-indicator');
+                    btn.disabled = false;
+                }
+            });
 
-                    amountInput.value = finalAmount;
-                    updateConversion();
+            // ────────────────────────────────────────────────────────────
+            // İLK YÜK — Sayfa açılır açılmaz mutabakat banner için bakiyeyi getir
+            // ────────────────────────────────────────────────────────────
+            document.addEventListener('DOMContentLoaded', function () {
+                // Banner için sessiz prefetch (modal açılışında tekrar çağrılır, cache değil — fresh)
+                loadBalance();
+            });
+        })();
+    </script>
+
+    <!-- ─────────────────────────────────────────────────────────────────────
+         FAZ 37 — KPI artık STORED TL (FAZ 33.3 SSOT) gösterir.
+         Eski FAZ 22.8 bloğu (`refreshKpiBalanceTl`) `balance_hs × anlık_kur`
+         override yaparak stored TL'yi eziyordu → Müşteriler listesi (stored)
+         ile detay (anlık) tutarsız görünüyordu. Blok kaldırıldı; backend
+         render'ı (Σ signed amount_eur) tek SSOT.
+    ───────────────────────────────────────────────────────────────────────── -->
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         FAZ 49 — Ürün/Hurda ile Tahsilat ve Ödeme Modalı JS
+         ═════════════════════════════════════════════════════════════════════ -->
+    <script>
+        (function () {
+            'use strict';
+
+            const CUSTOMER_ID = "{{ customer.id }}";
+            const PP_URLS = {
+                productSearch: "{% url 'customers:cari-product-search' %}",
+                bankAccounts: "{% url 'customers:cari-bank-accounts' %}",
+                balance: "{% url 'customers:cari-balance' customer.id %}",
+                fxRates: "{% url 'customers:cari-fx-rates' %}",
+                save: "{% url 'customers:cari-collect-with-products' customer.id %}",
+            };
+
+            // ───────── State
+            const state = {
+                direction: 'collect',  // 'collect' | 'pay'
+                kind: 'product',       // 'product' | 'scrap' | 'bracelet'
+                hasRate: 0,            // 1 gr Has = X TL
+                fxRates: { USD: 0, EUR: 0, GBP: 0 },
+                balanceHs: 0,          // pozitif = müşteri borçlu, negatif = alacaklı
+                balanceTl: 0,
+                bankAccounts: [],
+                basket: [],            // [{kind, product_id?, name, mileage?, gram, pieces, hs_value, tl_value}]
+                searchTimer: null,
+                saving: false,
+            };
+
+            // ───────── Helpers
+            function fmtHs(v) {
+                const n = parseFloat(v) || 0;
+                return n.toLocaleString('tr-TR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' HS';
+            }
+            function fmtTl(v) {
+                const n = parseFloat(v) || 0;
+                return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+            }
+            function fmtGr(v) {
+                const n = parseFloat(v) || 0;
+                return n.toLocaleString('tr-TR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+            }
+            function dec(v) {
+                if (v === '' || v === null || v === undefined) return 0;
+                const s = String(v).replace(',', '.');
+                const n = parseFloat(s);
+                return isNaN(n) ? 0 : n;
+            }
+            function getCsrf() {
+                const el = document.querySelector('input[name=csrfmiddlewaretoken]');
+                return el ? el.value : '';
+            }
+
+            // ───────── DOM Refs
+            const $modal = document.getElementById('productPaymentModal');
+            const $balanceCard = document.getElementById('pp-balance-card');
+            const $balHs = document.getElementById('pp-balance-hs');
+            const $balTl = document.getElementById('pp-balance-tl');
+            const $rate = document.getElementById('pp-has-rate');
+            const $dirHint = document.getElementById('pp-dir-hint');
+            const $saveBtn = document.getElementById('pp-save-btn');
+
+            // ───────── Modal açılışı
+            $modal.addEventListener('show.bs.modal', async function () {
+                resetState();
+                await loadBalance();
+                await loadRates();
+                await loadBankAccounts();
+                renderUi();
+            });
+
+            function resetState() {
+                state.direction = 'collect';
+                state.kind = 'product';
+                state.basket = [];
+                state.saving = false;
+                clearItemForms();
+                document.querySelectorAll('.pp-direction-pill').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                const $collectBtn = document.getElementById('pp-dir-collect');
+                $collectBtn.classList.add('active');
+                $collectBtn.setAttribute('aria-pressed', 'true');
+                document.querySelectorAll('.pp-kind-tabs .btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('.pp-kind-tabs .btn[data-kind="product"]').classList.add('active');
+                showFormForKind('product');
+                document.getElementById('pp-description').value = '';
+                document.getElementById('pp-cash-amount').value = '0';
+                document.getElementById('pp-cash-currency').value = 'TRY';
+            }
+
+            function clearItemForms() {
+                document.getElementById('pp-product-q').value = '';
+                document.getElementById('pp-product-id').value = '';
+                document.getElementById('pp-product-name').value = '';
+                document.getElementById('pp-product-mileage').value = '';
+                document.getElementById('pp-product-isgrambullion').value = '';
+                document.getElementById('pp-product-stockgram').value = '';
+                document.getElementById('pp-product-stockpieces').value = '';
+                document.getElementById('pp-product-unitgram').value = '';
+                document.getElementById('pp-product-wac').value = '';
+                document.getElementById('pp-product-buyhs').value = '';
+                document.getElementById('pp-product-salehs').value = '';
+                document.getElementById('pp-product-pieces').value = '0';
+                document.getElementById('pp-product-gram').value = '0';
+                document.getElementById('pp-product-hs').value = '0';
+                document.getElementById('pp-product-tl').value = '0';
+                document.getElementById('pp-product-selected').textContent = 'Henüz ürün seçilmedi.';
+                document.getElementById('pp-product-results').classList.add('d-none');
+
+                document.getElementById('pp-scrap-name').value = '';
+                document.getElementById('pp-scrap-mileage').value = '916';
+                document.getElementById('pp-scrap-gram').value = '0';
+                document.getElementById('pp-scrap-hs').value = '0';
+                document.getElementById('pp-scrap-tl').value = '0';
+
+                document.getElementById('pp-bracelet-name').value = '';
+                document.getElementById('pp-bracelet-mileage').value = '916';
+                document.getElementById('pp-bracelet-gram').value = '0';
+                document.getElementById('pp-bracelet-hs').value = '0';
+                document.getElementById('pp-bracelet-tl').value = '0';
+            }
+
+            async function loadBalance() {
+                // FAZ 49 fix: cari-balance endpoint 'ledger_balance_hs/tl' alan adlarını
+                // döndürüyor (balance_hs/tl DEĞİL). Endpoint ayrıca efektif `has_rate`
+                // sağlıyor — cari TL = stored TL × stored kur olduğundan, tahsilat
+                // ekranı da aynı efektif kuru kullanmalı (FAZ 33.4 simetri).
+                try {
+                    const r = await fetch(PP_URLS.balance);
+                    const j = await r.json();
+                    if (j.result && j.data) {
+                        state.balanceHs = parseFloat(j.data.ledger_balance_hs || 0);
+                        state.balanceTl = parseFloat(j.data.ledger_balance_eur || 0);
+                        const rateFromBalance = parseFloat(j.data.has_rate || 0);
+                        if (rateFromBalance > 0) state.hasRate = rateFromBalance;
+                    }
+                } catch (e) { console.warn('balance fetch fail', e); }
+            }
+
+            async function loadRates() {
+                try {
+                    const r = await fetch(PP_URLS.fxRates);
+                    const j = await r.json();
+                    if (j.result && j.data) {
+                        state.hasRate = parseFloat(j.data.has_buy_eur || j.data.has_rate || 0);
+                        state.fxRates.USD = parseFloat(j.data.usd_to_tl || 0);
+                        state.fxRates.EUR = parseFloat(j.data.eur_to_tl || 0);
+                        state.fxRates.GBP = parseFloat(j.data.gbp_to_tl || 0);
+                    }
+                } catch (e) { console.warn('rates fetch fail', e); }
+            }
+
+            async function loadBankAccounts() {
+                try {
+                    const r = await fetch(PP_URLS.bankAccounts);
+                    const j = await r.json();
+                    state.bankAccounts = (j.data || j.accounts || []);
+                    renderBankAccounts();
+                } catch (e) { console.warn('bank accounts fetch fail', e); }
+            }
+
+            function renderBankAccounts() {
+                const $sel = document.getElementById('pp-cash-bank');
+                $sel.innerHTML = '<option value="">— Yok (sadece ürün ile) —</option>';
+                state.bankAccounts.forEach(acc => {
+                    const id = acc.id;
+                    const name = acc.name || acc.bank_account_name || acc.label || ('Kasa #' + id);
+                    const cur = acc.currency || 'TRY';
+                    const type = acc.account_type || acc.type || '';
+                    $sel.insertAdjacentHTML('beforeend',
+                        `<option value="${id}" data-currency="${cur}">${name} · ${type} · ${cur}</option>`);
                 });
             }
 
-            const btnSave = document.getElementById('btnSaveDebtCollection');
-            if (btnSave) {
-                btnSave.addEventListener('click', function () {
-                    const btn = this;
-                    const form = document.getElementById('debtCollectionForm');
+            // ───────── UI Render
+            function renderUi() {
+                // Bakiye kartı
+                $balanceCard.classList.remove('is-debt', 'is-credit');
+                if (state.balanceHs > 0.0005) {
+                    $balanceCard.classList.add('is-debt');
+                    $balHs.textContent = '↓ ' + fmtHs(state.balanceHs);
+                    $balHs.style.color = '#b11e2b';
+                } else if (state.balanceHs < -0.0005) {
+                    $balanceCard.classList.add('is-credit');
+                    $balHs.textContent = '↑ ' + fmtHs(Math.abs(state.balanceHs));
+                    $balHs.style.color = '#1f8d3d';
+                } else {
+                    $balHs.textContent = fmtHs(0);
+                    $balHs.style.color = '#666';
+                }
+                $balTl.textContent = '≈ ' + fmtTl(Math.abs(state.balanceTl));
+                $rate.textContent = state.hasRate.toLocaleString('tr-TR', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                }) + ' ₺/gr';
 
-                    if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
-                        Swal.fire('Uyarı', 'Lütfen geçerli bir tutar giriniz.', 'warning');
-                        return;
+                // Yön bilgisi & cash bölümü görünürlüğü
+                const $cashSection = document.getElementById('pp-cash-section');
+                if (state.direction === 'collect') {
+                    $dirHint.innerHTML = '<i class="fa-solid fa-circle-info text-muted"></i> ' +
+                        'Müşteri çeyrek altın, hurda, bilezik vb. getirir; stoğa girer ve borcu azalır. ' +
+                        'Kalan için nakit ekleyebilirsiniz.';
+                    $cashSection.classList.remove('d-none');
+                    document.getElementById('pp-tab-scrap').classList.remove('d-none');
+                    document.getElementById('pp-tab-bracelet').classList.remove('d-none');
+                } else {
+                    $dirHint.innerHTML = '<i class="fa-solid fa-circle-info text-muted"></i> ' +
+                        'Mağaza müşteriye ürün verir (örn. çeyrek altın, hurda, bilezik) ve müşterinin alacağı azalır. ' +
+                        'Yalnız mevcut stoktan ürün seçilebilir.';
+                    $cashSection.classList.add('d-none');
+                    // Pay yönünde sadece "Mevcut Ürün" kalemi yazılabilir
+                    document.getElementById('pp-tab-scrap').classList.add('d-none');
+                    document.getElementById('pp-tab-bracelet').classList.add('d-none');
+                    if (state.kind !== 'product') {
+                        state.kind = 'product';
+                        document.querySelectorAll('.pp-kind-tabs .btn').forEach(b => b.classList.remove('active'));
+                        document.querySelector('.pp-kind-tabs .btn[data-kind="product"]').classList.add('active');
+                        showFormForKind('product');
                     }
+                }
 
-                    const formData = new FormData(form);
+                renderBasket();
+                updateSummary();
+            }
 
-                    btn.setAttribute('data-kt-indicator', 'on');
-                    btn.disabled = true;
+            // ───────── Yön & kind switch
+            document.querySelectorAll('.pp-direction-pill').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    state.direction = this.dataset.direction;
+                    document.querySelectorAll('.pp-direction-pill').forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                    this.classList.add('active');
+                    this.setAttribute('aria-pressed', 'true');
+                    renderUi();
+                    // Yön değişti → ALIŞ ↔ SATIŞ HAS yansısın (eğer ürün seçili ise)
+                    if (document.getElementById('pp-product-id').value) {
+                        recalcProductHsTl();
+                    }
+                });
+            });
+            document.querySelectorAll('.pp-kind-tabs .btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    state.kind = this.dataset.kind;
+                    document.querySelectorAll('.pp-kind-tabs .btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    showFormForKind(state.kind);
+                });
+            });
+            function showFormForKind(kind) {
+                document.getElementById('pp-form-product').classList.toggle('d-none', kind !== 'product');
+                document.getElementById('pp-form-scrap').classList.toggle('d-none', kind !== 'scrap');
+                document.getElementById('pp-form-bracelet').classList.toggle('d-none', kind !== 'bracelet');
+            }
 
-                    $.ajax({
-                        url: "{% url 'customers:save_debt_collection' %}",
-                        type: "POST",
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function (response) {
-                            btn.removeAttribute('data-kt-indicator');
-                            btn.disabled = false;
-
-                            if (response.result) {
-                                Swal.fire({
-                                    text: "İşlem başarıyla kaydedildi.",
-                                    icon: "success",
-                                    buttonsStyling: false,
-                                    confirmButtonText: "Tamam",
-                                    customClass: {confirmButton: "btn btn-primary"}
-                                }).then(function () {
-                                    $('#debtCollectionModal').modal('hide');
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire({
-                                    text: response.error_msg || "Bir hata oluştu.",
-                                    icon: "error",
-                                    buttonsStyling: false,
-                                    confirmButtonText: "Tamam",
-                                    customClass: {confirmButton: "btn btn-danger"}
-                                });
-                            }
-                        },
-                        error: function () {
-                            btn.removeAttribute('data-kt-indicator');
-                            btn.disabled = false;
-                            Swal.fire({
-                                text: "Sunucu hatası oluştu.",
-                                icon: "error",
-                                buttonsStyling: false,
-                                confirmButtonText: "Tamam",
-                                customClass: {confirmButton: "btn btn-danger"}
-                            });
-                        }
+            // ───────── Ürün arama (debounced)
+            const $pq = document.getElementById('pp-product-q');
+            const $presults = document.getElementById('pp-product-results');
+            $pq.addEventListener('input', function () {
+                clearTimeout(state.searchTimer);
+                const q = this.value.trim();
+                if (!q || q.length < 1) {
+                    $presults.classList.add('d-none');
+                    return;
+                }
+                state.searchTimer = setTimeout(() => searchProducts(q), 250);
+            });
+            async function searchProducts(q) {
+                try {
+                    const onlyInStock = (state.direction === 'pay') ? 'true' : 'false';
+                    const url = `${PP_URLS.productSearch}?q=${encodeURIComponent(q)}&only_in_stock=${onlyInStock}&limit=20`;
+                    const r = await fetch(url);
+                    const j = await r.json();
+                    renderSearchResults(j.items || []);
+                } catch (e) {
+                    console.warn('product search fail', e);
+                }
+            }
+            function renderSearchResults(items) {
+                if (!items.length) {
+                    $presults.innerHTML = '<div class="item disabled">Sonuç bulunamadı.</div>';
+                    $presults.classList.remove('d-none');
+                    return;
+                }
+                $presults.innerHTML = items.map(it => {
+                    const stockTxt = it.is_gram_bullion
+                        ? `${fmtGr(it.stock_gram)} gr`
+                        : `${it.stock_pieces} ad`;
+                    const meta = `${it.category} · ${it.mileage || '-'} milyem · Stok: ${stockTxt}`;
+                    const disabled = (state.direction === 'pay' &&
+                        parseFloat(it.stock_gram) <= 0 && parseInt(it.stock_pieces) <= 0);
+                    return `<div class="item ${disabled ? 'disabled' : ''}" data-product='${JSON.stringify(it)}'>
+                        <strong>${it.name}</strong>
+                        <span class="meta">${meta}</span>
+                    </div>`;
+                }).join('');
+                $presults.classList.remove('d-none');
+                $presults.querySelectorAll('.item:not(.disabled)').forEach(el => {
+                    el.addEventListener('click', function () {
+                        try {
+                            const p = JSON.parse(this.dataset.product);
+                            selectProduct(p);
+                        } catch (e) { console.error(e); }
                     });
                 });
             }
-        });
+            // FAZ 49 fix v3 — Adet bazlı ürünlerde Products.{buy,sale}_price_hs SSOT.
+            // Çeyrek/Yarım/Reşat gibi ürünler API kuru × ağırlık ile periyodik
+            // güncellenip Products tablosuna ADET BAŞINA HS olarak kaydediliyor
+            // (örn. Eski Çeyrek alış 1.626, satış 1.630). Tahsilat ekranı bu
+            // değeri doğrudan okur — gram/milyem hesabı yapmaz. Yön bazında:
+            //   collect (müşteriden alıyoruz) → ALIŞ HAS (mağaza alış fiyatı)
+            //   pay     (müşteriye veriyoruz) → SATIŞ HAS (mağaza satış fiyatı)
+            function selectProduct(p) {
+                document.getElementById('pp-product-id').value = p.id;
+                document.getElementById('pp-product-name').value = p.name;
+                document.getElementById('pp-product-mileage').value = parseInt(p.mileage) || 0;
+                document.getElementById('pp-product-isgrambullion').value = p.is_gram_bullion ? '1' : '0';
+                document.getElementById('pp-product-stockgram').value = p.stock_gram || 0;
+                document.getElementById('pp-product-stockpieces').value = p.stock_pieces || 0;
+                document.getElementById('pp-product-unitgram').value = parseFloat(p.gram_unit) || 0;
+                document.getElementById('pp-product-wac').value = p.wac_hs || 0;
+                document.getElementById('pp-product-buyhs').value = p.buy_price_hs || 0;
+                document.getElementById('pp-product-salehs').value = p.sale_price_hs || 0;
+                $pq.value = p.name;
+
+                const buyHs = parseFloat(p.buy_price_hs) || 0;
+                const saleHs = parseFloat(p.sale_price_hs) || 0;
+                const stockTxt = p.is_gram_bullion
+                    ? fmtGr(p.stock_gram) + ' gr'
+                    : p.stock_pieces + ' ad';
+                let priceTxt = '';
+                if (!p.is_gram_bullion && (buyHs > 0 || saleHs > 0)) {
+                    priceTxt = ` · Alış: <strong>${buyHs.toFixed(3)}</strong> HS/ad · Satış: <strong>${saleHs.toFixed(3)}</strong> HS/ad`;
+                }
+                let metaWarn = '';
+                const canCompute = (buyHs > 0 || saleHs > 0)
+                    || ((parseInt(p.mileage) || 0) > 0 && (parseFloat(p.gram_unit) || 0) > 0)
+                    || ((parseFloat(p.wac_hs) || 0) > 0);
+                if (!canCompute) {
+                    metaWarn = '<div class="text-warning fs-8 mt-1"><i class="fa-solid fa-triangle-exclamation"></i> ' +
+                               'Bu ürünün <strong>Alış/Satış HAS</strong> ve gram/milyem bilgisi yok. ' +
+                               '<a href="/products/index" target="_blank" class="text-decoration-underline">Ürünler sayfasından</a> ' +
+                               'fiyatları güncelleyin veya <em>HS</em> alanına elle girin.</div>';
+                }
+                document.getElementById('pp-product-selected').innerHTML =
+                    `<i class="fa-solid fa-check-circle text-success"></i> <strong>${p.name}</strong> seçildi · ` +
+                    `Stok: ${stockTxt}${priceTxt}` + metaWarn;
+                $presults.classList.add('d-none');
+
+                // Adet bazlı ürünlerde pieces default 1
+                if (!p.is_gram_bullion) {
+                    const $pieces = document.getElementById('pp-product-pieces');
+                    if (parseInt($pieces.value) <= 0) $pieces.value = '1';
+                }
+                recalcProductHsTl();
+
+                if (p.is_gram_bullion) {
+                    document.getElementById('pp-product-gram').focus();
+                } else {
+                    document.getElementById('pp-product-pieces').focus();
+                }
+            }
+
+            // ───────── Otomatik HS/TL hesabı (ürün için)
+            // FAZ 49 fix v3 — Doğru mimari: Adet bazlı ürünlerde Products tablosu
+            // zaten ADET BAŞINA HS taşıyor (buy_price_hs / sale_price_hs).
+            // API kuru × ağırlık ile periyodik güncelleniyor. JS bu değeri
+            // doğrudan çarpar — gram/milyem hesabına gerek yok.
+            //   collect (müşteriden alıyoruz)  → ALIŞ HAS
+            //   pay     (müşteriye veriyoruz)  → SATIŞ HAS
+            // Gram bazlı külçe (is_gram_bullion=true) için: gram × milyem / 1000.
+            function recalcProductHsTl() {
+                const isGramBullion = document.getElementById('pp-product-isgrambullion').value === '1';
+                const mileage = parseFloat(document.getElementById('pp-product-mileage').value) || 0;
+                const unitGram = parseFloat(document.getElementById('pp-product-unitgram').value) || 0;
+                const wacHs = parseFloat(document.getElementById('pp-product-wac').value) || 0;
+                const buyHs = parseFloat(document.getElementById('pp-product-buyhs').value) || 0;
+                const saleHs = parseFloat(document.getElementById('pp-product-salehs').value) || 0;
+                const pieces = parseInt(document.getElementById('pp-product-pieces').value) || 0;
+                let gram = parseFloat(document.getElementById('pp-product-gram').value) || 0;
+
+                // Yön bazlı per-piece price seçimi
+                const perPieceHs = state.direction === 'pay' ? saleHs : buyHs;
+
+                let hs = 0;
+
+                if (!isGramBullion && pieces > 0 && perPieceHs > 0) {
+                    // 1. TERCİH (adet bazlı SSOT): pieces × Products.{buy,sale}_price_hs
+                    hs = pieces * perPieceHs;
+                    // Bilgilendirme amaçlı gram alanını da doldur
+                    if (unitGram > 0) {
+                        gram = pieces * unitGram;
+                        document.getElementById('pp-product-gram').value = gram.toFixed(3);
+                    }
+                } else if (mileage > 0 && (gram > 0 || (pieces > 0 && unitGram > 0))) {
+                    // 2. TERCİH (gram bazlı külçe veya adet+unitGram): saf altın eşdeğeri
+                    if (!isGramBullion && pieces > 0 && unitGram > 0) {
+                        gram = pieces * unitGram;
+                        document.getElementById('pp-product-gram').value = gram.toFixed(3);
+                    }
+                    hs = (gram * mileage / 1000);
+                } else if (wacHs > 0) {
+                    // 3. TERCİH (WAC fallback — fiyat alanı boş, mileage de yok)
+                    if (!isGramBullion && pieces > 0) {
+                        hs = unitGram > 0 ? (pieces * unitGram * wacHs) : (pieces * wacHs);
+                    } else if (gram > 0) {
+                        hs = gram * wacHs;
+                    }
+                }
+
+                if (hs > 0) {
+                    document.getElementById('pp-product-hs').value = hs.toFixed(3);
+                    document.getElementById('pp-product-tl').value = (hs * state.hasRate).toFixed(2);
+                }
+            }
+            ['pp-product-pieces', 'pp-product-gram'].forEach(id => {
+                document.getElementById(id).addEventListener('input', recalcProductHsTl);
+            });
+            // HS değiştirilirse TL otomatik
+            document.getElementById('pp-product-hs').addEventListener('input', function () {
+                const hs = dec(this.value);
+                document.getElementById('pp-product-tl').value = (hs * state.hasRate).toFixed(2);
+            });
+
+            // Hurda/Bilezik için otomatik HS/TL
+            function bindAutoHsTl(prefix) {
+                const $gram = document.getElementById(`pp-${prefix}-gram`);
+                const $mil = document.getElementById(`pp-${prefix}-mileage`);
+                const $hs = document.getElementById(`pp-${prefix}-hs`);
+                const $tl = document.getElementById(`pp-${prefix}-tl`);
+                function recalc() {
+                    const g = dec($gram.value);
+                    const m = dec($mil.value);
+                    if (g > 0 && m > 0) {
+                        const hs = g * m / 1000;
+                        $hs.value = hs.toFixed(3);
+                        $tl.value = (hs * state.hasRate).toFixed(2);
+                    }
+                }
+                $gram.addEventListener('input', recalc);
+                $mil.addEventListener('input', recalc);
+                $hs.addEventListener('input', function () {
+                    $tl.value = (dec(this.value) * state.hasRate).toFixed(2);
+                });
+            }
+            bindAutoHsTl('scrap');
+            bindAutoHsTl('bracelet');
+
+            // Hurda ayar adı seçimi → milyem otomatik
+            document.getElementById('pp-scrap-name').addEventListener('change', function () {
+                const map = { '24 Ayar': 995, '22 Ayar': 916, '21 Ayar': 875, '18 Ayar': 750, '14 Ayar': 585, '8 Ayar': 333 };
+                const m = map[this.value];
+                if (m) {
+                    document.getElementById('pp-scrap-mileage').value = m;
+                    // tetikle
+                    document.getElementById('pp-scrap-mileage').dispatchEvent(new Event('input'));
+                }
+            });
+
+            // ───────── Sepete ekleme handler'ları
+            document.getElementById('pp-add-product').addEventListener('click', function () {
+                const id = document.getElementById('pp-product-id').value;
+                const name = document.getElementById('pp-product-name').value;
+                const mileage = parseInt(document.getElementById('pp-product-mileage').value) || 0;
+                const pieces = parseInt(document.getElementById('pp-product-pieces').value) || 0;
+                const gram = dec(document.getElementById('pp-product-gram').value);
+                const hs = dec(document.getElementById('pp-product-hs').value);
+                const tl = dec(document.getElementById('pp-product-tl').value);
+
+                if (!id) {
+                    Swal.fire({ icon: 'warning', text: 'Önce bir ürün seçin.' });
+                    return;
+                }
+                if (gram <= 0 && pieces <= 0) {
+                    Swal.fire({ icon: 'warning', text: 'Adet veya gram girin.' });
+                    return;
+                }
+                if (hs <= 0) {
+                    // FAZ 49 fix v3 — Adet bazlı ürünlerde Products.{buy,sale}_price_hs
+                    // beklenen SSOT. Hata mesajı kullanıcıyı doğru çözüm yoluna
+                    // (Ürünler sayfasından fiyat güncelleme) yönlendirir.
+                    const buyHs = parseFloat(document.getElementById('pp-product-buyhs').value) || 0;
+                    const saleHs = parseFloat(document.getElementById('pp-product-salehs').value) || 0;
+                    const dirLabel = state.direction === 'pay' ? 'Satış' : 'Alış';
+                    const need = state.direction === 'pay' ? saleHs : buyHs;
+                    let msg;
+                    if (pieces > 0 && need <= 0) {
+                        msg = `Bu ürünün <strong>${dirLabel} HAS</strong> fiyatı tanımlı değil. ` +
+                              `<a href="/products/index" target="_blank" class="text-decoration-underline">Ürünler sayfasından</a> ` +
+                              `fiyatları güncelleyin; her açılışta sistem otomatik hesaplayacaktır.<br><br>` +
+                              `<em>Geçici çözüm:</em> Has (HS) alanına değeri elle girebilirsiniz.`;
+                    } else {
+                        msg = 'Bu ürün için fiyat veya gram/milyem bilgisi eksik.<br><br>' +
+                              '<strong>Çözüm:</strong> <em>Has (HS)</em> alanına saf altın eşdeğerini elle girin.';
+                    }
+                    Swal.fire({ icon: 'warning', title: 'HS değeri hesaplanamadı', html: msg });
+                    return;
+                }
+                // Pay yönünde stok kontrolü
+                if (state.direction === 'pay') {
+                    const stockGram = dec(document.getElementById('pp-product-stockgram').value);
+                    const stockPcs = parseInt(document.getElementById('pp-product-stockpieces').value) || 0;
+                    if (gram > stockGram + 0.0005) {
+                        Swal.fire({ icon: 'error', text: `Yetersiz stok: ${stockGram} gr mevcut, ${gram} gr istenen.` });
+                        return;
+                    }
+                    if (pieces > stockPcs) {
+                        Swal.fire({ icon: 'error', text: `Yetersiz stok: ${stockPcs} adet mevcut, ${pieces} adet istenen.` });
+                        return;
+                    }
+                }
+                state.basket.push({
+                    kind: 'product', product_id: id, name, mileage,
+                    gram, pieces, hs_value: hs, tl_value: tl,
+                });
+                clearItemForms();
+                renderBasket();
+                updateSummary();
+            });
+
+            document.getElementById('pp-add-scrap').addEventListener('click', function () {
+                const name = document.getElementById('pp-scrap-name').value || '';
+                const mileage = parseInt(document.getElementById('pp-scrap-mileage').value) || 0;
+                const gram = dec(document.getElementById('pp-scrap-gram').value);
+                const hs = dec(document.getElementById('pp-scrap-hs').value);
+                const tl = dec(document.getElementById('pp-scrap-tl').value);
+
+                if (!name) { Swal.fire({ icon: 'warning', text: 'Ayar adı seçin.' }); return; }
+                if (mileage <= 0) { Swal.fire({ icon: 'warning', text: 'Milyem pozitif olmalı.' }); return; }
+                if (gram <= 0) { Swal.fire({ icon: 'warning', text: 'Gram pozitif olmalı.' }); return; }
+                if (hs <= 0) { Swal.fire({ icon: 'warning', text: 'HS değeri pozitif olmalı.' }); return; }
+
+                state.basket.push({
+                    kind: 'scrap', name, mileage,
+                    gram, pieces: 0, hs_value: hs, tl_value: tl,
+                });
+                clearItemForms();
+                renderBasket();
+                updateSummary();
+            });
+
+            document.getElementById('pp-add-bracelet').addEventListener('click', function () {
+                const name = document.getElementById('pp-bracelet-name').value.trim() || '';
+                const mileage = parseInt(document.getElementById('pp-bracelet-mileage').value) || 0;
+                const gram = dec(document.getElementById('pp-bracelet-gram').value);
+                const hs = dec(document.getElementById('pp-bracelet-hs').value);
+                const tl = dec(document.getElementById('pp-bracelet-tl').value);
+
+                if (!name) { Swal.fire({ icon: 'warning', text: 'Bilezik adı girin.' }); return; }
+                if (mileage <= 0) { Swal.fire({ icon: 'warning', text: 'Milyem pozitif olmalı.' }); return; }
+                if (gram <= 0) { Swal.fire({ icon: 'warning', text: 'Gram pozitif olmalı.' }); return; }
+                if (hs <= 0) { Swal.fire({ icon: 'warning', text: 'HS değeri pozitif olmalı.' }); return; }
+
+                state.basket.push({
+                    kind: 'bracelet', name, mileage,
+                    gram, pieces: 1, hs_value: hs, tl_value: tl,
+                });
+                clearItemForms();
+                renderBasket();
+                updateSummary();
+            });
+
+            // ───────── Sepet render
+            function renderBasket() {
+                const $tb = document.getElementById('pp-basket-tbody');
+                document.getElementById('pp-basket-count').textContent = state.basket.length;
+                if (state.basket.length === 0) {
+                    $tb.innerHTML = `<tr><td colspan="8" class="pp-basket-empty">Henüz sepete kalem eklenmedi.</td></tr>`;
+                    $saveBtn.disabled = true;
+                    return;
+                }
+                const kindLabel = { product: '🪙 Ürün', scrap: '♻ Hurda', bracelet: '🔗 Bilezik' };
+                $tb.innerHTML = state.basket.map((it, idx) => `
+                    <tr>
+                        <td class="text-muted">${idx + 1}</td>
+                        <td><span class="badge bg-light text-dark">${kindLabel[it.kind]}</span></td>
+                        <td><strong>${it.name}</strong>${it.mileage ? ` <span class="text-muted small">· ${it.mileage} milyem</span>` : ''}</td>
+                        <td class="text-end">${it.pieces || '-'}</td>
+                        <td class="text-end">${fmtGr(it.gram)}</td>
+                        <td class="text-end fw-bold text-warning">${fmtGr(it.hs_value)}</td>
+                        <td class="text-end">${fmtTl(it.tl_value)}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-icon btn-light-danger pp-remove" data-idx="${idx}"
+                                    title="Kaldır">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                $tb.querySelectorAll('.pp-remove').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        state.basket.splice(parseInt(this.dataset.idx), 1);
+                        renderBasket();
+                        updateSummary();
+                    });
+                });
+                $saveBtn.disabled = false;
+            }
+
+            // ───────── Özet hesabı
+            function updateSummary() {
+                const totalHs = state.basket.reduce((s, it) => s + parseFloat(it.hs_value || 0), 0);
+                const totalTl = state.basket.reduce((s, it) => s + parseFloat(it.tl_value || 0), 0);
+                document.getElementById('pp-total-hs').textContent = fmtHs(totalHs);
+                document.getElementById('pp-total-tl').textContent = fmtTl(totalTl);
+
+                // Cash kısmı (sadece collect)
+                let cashHs = 0;
+                if (state.direction === 'collect') {
+                    const cashAmt = dec(document.getElementById('pp-cash-amount').value);
+                    const cashCur = document.getElementById('pp-cash-currency').value;
+                    if (cashAmt > 0 && state.hasRate > 0) {
+                        if (cashCur === 'TRY') cashHs = cashAmt / state.hasRate;
+                        else if (cashCur === 'HS') cashHs = cashAmt;
+                        else if (state.fxRates[cashCur] > 0) cashHs = (cashAmt * state.fxRates[cashCur]) / state.hasRate;
+                    }
+                }
+                // Yeni bakiye projeksiyonu
+                let projected;
+                if (state.direction === 'collect') {
+                    projected = state.balanceHs - totalHs - cashHs;
+                } else {
+                    projected = state.balanceHs + totalHs;
+                }
+                const $proj = document.getElementById('pp-projected-balance');
+                if (projected > 0.0005) {
+                    $proj.innerHTML = `<span style="color:#b11e2b;">↓ ${fmtHs(projected)} (Borçlu)</span>`;
+                } else if (projected < -0.0005) {
+                    $proj.innerHTML = `<span style="color:#1f8d3d;">↑ ${fmtHs(Math.abs(projected))} (Alacaklı)</span>`;
+                } else {
+                    $proj.innerHTML = `<span style="color:#1f8d3d;">${fmtHs(0)} (Kapandı)</span>`;
+                }
+            }
+
+            // Cash alanları değişince özet güncelle
+            ['pp-cash-amount', 'pp-cash-currency'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateSummary);
+                document.getElementById(id).addEventListener('change', updateSummary);
+            });
+
+            // "Kalanı Otomatik Doldur" butonu — sepet HS toplamı sonrası kalan borç kadar TRY nakit ekler
+            document.getElementById('pp-fill-remaining').addEventListener('click', function () {
+                if (state.direction !== 'collect') return;
+                const totalHs = state.basket.reduce((s, it) => s + parseFloat(it.hs_value || 0), 0);
+                const remainingHs = state.balanceHs - totalHs;
+                if (remainingHs <= 0.0005) {
+                    Swal.fire({ icon: 'info', text: 'Sepet, müşterinin borcunu zaten karşılıyor. Kalan nakit gerekmez.' });
+                    document.getElementById('pp-cash-amount').value = '0';
+                    updateSummary();
+                    return;
+                }
+                if (state.hasRate <= 0) {
+                    Swal.fire({ icon: 'warning', text: 'Has kuru alınamadı; manuel girin.' });
+                    return;
+                }
+                const remTl = (remainingHs * state.hasRate).toFixed(2);
+                document.getElementById('pp-cash-currency').value = 'TRY';
+                document.getElementById('pp-cash-amount').value = remTl;
+                if (state.bankAccounts.length > 0) {
+                    const $sel = document.getElementById('pp-cash-bank');
+                    if (!$sel.value) {
+                        // İlk TRY kasayı seç
+                        const tryAcc = state.bankAccounts.find(a => (a.currency || 'TRY') === 'TRY');
+                        if (tryAcc) $sel.value = tryAcc.id;
+                    }
+                }
+                updateSummary();
+            });
+
+            // ───────── Kaydet
+            $saveBtn.addEventListener('click', async function () {
+                if (state.saving) return;
+                if (state.basket.length === 0) {
+                    Swal.fire({ icon: 'warning', text: 'Sepet boş.' });
+                    return;
+                }
+
+                const cashAmt = (state.direction === 'collect')
+                    ? dec(document.getElementById('pp-cash-amount').value) : 0;
+                const cashCur = document.getElementById('pp-cash-currency').value;
+                const bankAccountId = document.getElementById('pp-cash-bank').value;
+
+                if (state.direction === 'collect' && cashAmt > 0 && !bankAccountId) {
+                    Swal.fire({ icon: 'warning', text: 'Nakit tutar girdiniz; kasa seçin.' });
+                    return;
+                }
+
+                const payload = {
+                    direction: state.direction,
+                    items: state.basket,
+                    cash_amount: cashAmt || 0,
+                    cash_currency: cashCur,
+                    bank_account_id: bankAccountId || null,
+                    description: document.getElementById('pp-description').value || '',
+                };
+
+                // Onay
+                const totalHs = state.basket.reduce((s, it) => s + parseFloat(it.hs_value || 0), 0);
+                const dirLabel = state.direction === 'collect' ? 'Tahsilat' : 'Ödeme';
+                const cashLine = (state.direction === 'collect' && cashAmt > 0)
+                    ? `<br>+ Nakit: <b>${fmtTl(cashAmt)} ${cashCur === 'TRY' ? '' : cashCur}</b>` : '';
+                const ok = await Swal.fire({
+                    title: `${dirLabel} Onayı`,
+                    html: `Sepet: <b>${state.basket.length} kalem</b> · <b>${fmtHs(totalHs)}</b>${cashLine}<br><br>İşlemi onaylıyor musunuz?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Evet, Kaydet',
+                    cancelButtonText: 'İptal',
+                });
+                if (!ok.isConfirmed) return;
+
+                state.saving = true;
+                $saveBtn.disabled = true;
+                $saveBtn.querySelector('.indicator-label').classList.add('d-none');
+                $saveBtn.querySelector('.indicator-progress').classList.remove('d-none');
+
+                try {
+                    const r = await fetch(PP_URLS.save, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCsrf(),
+                        },
+                        body: JSON.stringify(payload),
+                    });
+                    const j = await r.json();
+                    if (!r.ok || !j.result) {
+                        throw new Error(j.error_msg || `HTTP ${r.status}`);
+                    }
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'İşlem Tamamlandı',
+                        html: `İşlem No: <b>${j.data.process_no}</b><br>` +
+                              `Toplam Kalem: <b>${j.data.items.length}</b> · <b>${fmtHs(j.data.total_items_hs)}</b><br>` +
+                              (parseFloat(j.data.cash_hs) > 0
+                                 ? `Nakit: <b>${fmtHs(j.data.cash_hs)}</b><br>` : '') +
+                              `Yeni Bakiye: <b>${fmtHs(j.data.new_balance_hs)}</b>`,
+                        timer: 4000,
+                    });
+                    bootstrap.Modal.getInstance($modal).hide();
+                    // Sayfa verisini yenile
+                    if (typeof loadBalance === 'function') { try { loadBalance(); } catch (_) {} }
+                    setTimeout(() => window.location.reload(), 600);
+                } catch (e) {
+                    Swal.fire({ icon: 'error', title: 'Hata', text: e.message });
+                } finally {
+                    state.saving = false;
+                    $saveBtn.disabled = false;
+                    $saveBtn.querySelector('.indicator-label').classList.remove('d-none');
+                    $saveBtn.querySelector('.indicator-progress').classList.add('d-none');
+                }
+            });
+
+        })();
     </script>
+
 {% endblock footer %}

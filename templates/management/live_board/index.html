@@ -102,7 +102,7 @@
         .live-header {
             background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
             border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
+            padding: 0.5rem 1.25rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -118,10 +118,10 @@
         }
 
         .logo-icon {
-            width: 54px;
-            height: 54px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, var(--accent-gold) 0%, #D4A000 100%);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -144,7 +144,7 @@
         }
 
         .logo-icon i {
-            font-size: 1.75rem;
+            font-size: 1.3rem;
             color: var(--bg-primary);
         }
 
@@ -152,24 +152,24 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            line-height: 1.2;
+            line-height: 1.15;
         }
 
         .logo-title {
-            font-size: 1.4rem;
+            font-size: 1.05rem;
             font-weight: 800;
             color: #fff;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.4px;
             text-transform: uppercase;
             line-height: 1;
             margin-bottom: 2px;
         }
 
         .logo-subtitle {
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             line-height: 1;
         }
 
@@ -197,10 +197,10 @@
         .market-status {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
+            gap: 0.4rem;
+            padding: 0.3rem 0.7rem;
             background: var(--success-bg);
-            border-radius: 20px;
+            border-radius: 14px;
             border: 1px solid rgba(63, 185, 80, 0.2);
         }
 
@@ -237,20 +237,20 @@
 
         .time-display {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 2rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: #fff;
-            letter-spacing: -1px;
+            letter-spacing: -0.6px;
             line-height: 1;
         }
 
         .time-display .seconds {
             color: var(--accent-gold);
-            font-size: 1.2rem;
+            font-size: 0.95rem;
         }
 
         .date-display {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: var(--text-secondary);
             margin-top: 2px;
         }
@@ -259,14 +259,15 @@
         .btn-theme-toggle {
             background: transparent;
             border: 1px solid var(--border-color);
-            padding: 10px 16px;
+            padding: 6px 12px;
             border-radius: 8px;
             color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
+            font-size: 0.78rem;
         }
 
         .btn-fullscreen:hover,
@@ -279,15 +280,15 @@
         .header-action-link {
             background: transparent;
             border: 1px solid var(--border-color);
-            padding: 10px 16px;
+            padding: 6px 12px;
             border-radius: 8px;
             color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
+            gap: 0.4rem;
+            font-size: 0.72rem;
             text-decoration: none;
             font-family: 'Inter', sans-serif;
             font-weight: 500;
@@ -359,9 +360,9 @@
         .ticker-item {
             display: flex;
             align-items: center;
-            padding: 0.75rem 2rem;
+            padding: 0.45rem 1.25rem;
             border-right: 1px solid var(--border-color);
-            gap: 1rem;
+            gap: 0.75rem;
             white-space: nowrap;
             transition: background 0.2s;
         }
@@ -371,16 +372,16 @@
         }
 
         .ticker-name {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
         }
 
         .ticker-price {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: 700;
             color: var(--accent-gold);
         }
@@ -407,13 +408,13 @@
         }
 
         .main-content {
-            padding: 1.5rem 2rem;
+            padding: 0.85rem 1.25rem;
         }
 
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
+            gap: 0.85rem;
         }
 
         @media (max-width: 1200px) {
@@ -424,11 +425,11 @@
 
         .price-card {
             background: var(--glass-bg);
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
             overflow: hidden;
             backdrop-filter: blur(10px);
-            height: 340px;
+            height: 290px;
             display: flex;
             flex-direction: column;
         }
@@ -437,7 +438,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
+            padding: 0.55rem 0.95rem;
             background: linear-gradient(180deg, rgba(245, 184, 0, 0.05) 0%, transparent 100%);
             border-bottom: 1px solid var(--border-color);
             flex-shrink: 0;
@@ -470,13 +471,13 @@
         }
 
         .card-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
         }
 
         .card-icon.gold {
@@ -500,28 +501,28 @@
         }
 
         .card-title-text h3 {
-            font-size: 0.9rem;
+            font-size: 0.78rem;
             font-weight: 700;
             color: #fff;
             margin: 0;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
         }
 
         .card-title-text span {
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             color: var(--text-muted);
         }
 
         .card-badge {
-            font-size: 0.65rem;
-            padding: 4px 10px;
-            border-radius: 12px;
+            font-size: 0.58rem;
+            padding: 3px 8px;
+            border-radius: 10px;
             background: var(--accent-gold-dim);
             color: var(--accent-gold);
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
         }
 
         .price-table {
@@ -537,12 +538,12 @@
         }
 
         .price-table th {
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0.75rem 1rem;
+            letter-spacing: 0.4px;
+            padding: 0.5rem 0.75rem;
             text-align: right;
             border-bottom: 1px solid var(--border-color);
         }
@@ -554,7 +555,7 @@
         .price-table tbody tr {
             transition: all 0.2s;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            height: 55px;
+            height: 36px;
         }
 
         [data-theme="light"] .price-table tbody tr {
@@ -570,25 +571,25 @@
         }
 
         .price-table td {
-            padding: 0 1rem;
+            padding: 0 0.75rem;
             vertical-align: middle;
         }
 
         .price-table td:first-child {
             font-weight: 600;
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.78rem;
         }
 
         .price-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: 600;
             text-align: right;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 5px;
+            gap: 4px;
         }
 
         .price-value.buy {
@@ -618,13 +619,13 @@
 
         .change-badge {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 6px;
+            padding: 2px 7px;
+            border-radius: 5px;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .change-badge.up {
@@ -658,8 +659,8 @@
         .summary-bar {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            gap: 0.7rem;
+            margin-bottom: 0.85rem;
         }
 
         @media (max-width: 992px) {
@@ -671,8 +672,8 @@
         .summary-item {
             background: var(--glass-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            padding: 0.55rem 0.85rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -684,26 +685,26 @@
         }
 
         .summary-label {
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            letter-spacing: 0.4px;
+            margin-bottom: 2px;
         }
 
         .summary-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.3rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: var(--accent-gold);
         }
 
         .summary-change {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+            font-size: 0.68rem;
             font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 3px 8px;
+            border-radius: 6px;
         }
 
         .summary-change.up {
@@ -1041,32 +1042,39 @@
             const json = await res.json();
 
             if (json.status === 'success') {
-                renderTable('goldTable', json.data.gold);
+                // FAZ 20 (2026-04-30): Defensive — backend bos array dondurebilir
+                // (kullanici tum urunleri gizledi). Spread operatoru undefined
+                // uzerinde TypeError firlatir; her dizi icin fallback uygula.
+                var d = json.data || {};
+                var goldArr = d.gold || [];
+                var coinsArr = d.coins || [];
+                var currencyArr = d.currency || [];
+                var othersArr = d.others || [];
+
+                renderTable('goldTable', goldArr);
 
                 var coinsEl = document.getElementById('coinsTable');
                 if (coinsEl) {
-                    renderTable('coinsTable', json.data.coins);
+                    renderTable('coinsTable', coinsArr);
                 }
 
                 var currencyEl = document.getElementById('currencyTable');
                 if (currencyEl) {
-                    renderTable('currencyTable', json.data.currency);
+                    renderTable('currencyTable', currencyArr);
                 }
 
-                renderTable('othersTable', json.data.others);
+                renderTable('othersTable', othersArr);
 
-                updateSummaryBar(json.data);
+                updateSummaryBar(d);
 
-                allPricesForTicker = [
-                    ...json.data.gold,
-                    ...json.data.coins,
-                    ...json.data.currency,
-                    ...json.data.others
-                ];
+                allPricesForTicker = [].concat(goldArr, coinsArr, currencyArr, othersArr);
                 renderTicker();
 
-                document.getElementById('lastUpdate').textContent =
-                    new Date().toLocaleTimeString('tr-TR');
+                var lastUpdateEl = document.getElementById('lastUpdate');
+                if (lastUpdateEl) {
+                    lastUpdateEl.textContent =
+                        new Date().toLocaleTimeString('tr-TR');
+                }
             }
         } catch (err) {
             console.error('Veri cekme hatasi:', err);
@@ -1097,8 +1105,8 @@
 
         let html = '';
         items.forEach(item => {
-            const buy = parseFloat(item.buy_price_tl || 0);
-            const sell = parseFloat(item.sale_price_tl || 0);
+            const buy = parseFloat(item.buy_price_eur || 0);
+            const sell = parseFloat(item.sale_price_eur || 0);
             const change = parseFloat(item.profit || 0);
             const isUp = change >= 0;
             const key = item.name;
@@ -1144,30 +1152,34 @@
     /* =============================================
        SUMMARY BAR
        ============================================= */
+    // FAZ 20 (2026-04-30): Defensive null-check. Kullanici Has Altin / ONS /
+    // USD / EUR kartlarini gizlerse data.gold / data.currency arrayleri bos
+    // gelir; .find(...) undefined doner. Eski kod TypeError firlatmiyordu ama
+    // gizlenmis kart eski degerini gostermeye devam ediyordu. Simdi gizli
+    // ise "—" gosteriyor (kullaniciya gorsel uyari).
     function updateSummaryBar(data) {
-        const gold = data.gold.find(i => i.name === 'Has Altin');
-        if (gold) {
-            document.getElementById('summaryGold').textContent = formatNumber(gold.sale_price_tl);
-            updateChangeElement('summaryGoldChange', gold.profit);
+        var goldArr = (data && data.gold) || [];
+        var currArr = (data && data.currency) || [];
+
+        function _setSummary(elId, changeId, item) {
+            var el = document.getElementById(elId);
+            var changeEl = document.getElementById(changeId);
+            if (item) {
+                if (el) el.textContent = formatNumber(item.sale_price_eur);
+                updateChangeElement(changeId, item.profit);
+            } else {
+                if (el) el.textContent = '—';
+                if (changeEl) {
+                    changeEl.textContent = '';
+                    changeEl.className = 'summary-change';
+                }
+            }
         }
 
-        const ons = data.gold.find(i => i.name === 'ONS');
-        if (ons) {
-            document.getElementById('summaryOns').textContent = formatNumber(ons.sale_price_tl);
-            updateChangeElement('summaryOnsChange', ons.profit);
-        }
-
-        const usd = data.currency.find(i => i.name === 'USD');
-        if (usd) {
-            document.getElementById('summaryUsd').textContent = formatNumber(usd.sale_price_tl);
-            updateChangeElement('summaryUsdChange', usd.profit);
-        }
-
-        const eur = data.currency.find(i => i.name === 'EUR');
-        if (eur) {
-            document.getElementById('summaryEur').textContent = formatNumber(eur.sale_price_tl);
-            updateChangeElement('summaryEurChange', eur.profit);
-        }
+        _setSummary('summaryGold', 'summaryGoldChange', goldArr.find(i => i && i.name === 'Has Altin'));
+        _setSummary('summaryOns', 'summaryOnsChange', goldArr.find(i => i && i.name === 'ONS'));
+        _setSummary('summaryUsd', 'summaryUsdChange', currArr.find(i => i && i.name === 'USD'));
+        _setSummary('summaryEur', 'summaryEurChange', currArr.find(i => i && i.name === 'EUR'));
     }
 
     function updateChangeElement(elementId, profit) {
@@ -1190,7 +1202,7 @@
         const items = [...allPricesForTicker, ...allPricesForTicker];
 
         items.forEach(item => {
-            const sell = parseFloat(item.sale_price_tl || 0);
+            const sell = parseFloat(item.sale_price_eur || 0);
             const change = parseFloat(item.profit || 0);
             const isUp = change >= 0;
 

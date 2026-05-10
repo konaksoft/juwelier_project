@@ -213,7 +213,7 @@ class Command(BaseCommand):
                     piece_labor="0",
                     buy_price_hs=has_maliyet,
                     sale_price_hs=has_maliyet * decimal.Decimal(1.2),
-                    sale_price_tl=0,
+                    sale_price_eur=0,
                     profit=random.uniform(10.0, 35.0),
                     image="default/default.png",
                     is_active=True,

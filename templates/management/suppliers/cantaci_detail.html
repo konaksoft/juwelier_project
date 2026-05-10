@@ -4,396 +4,289 @@
 {% block header %}
     <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
     <style>
-        :root {
-            --bg-dark-gradient: linear-gradient(135deg, #0F1B2B 0%, #1A253A 50%, #22314A 100%);
-            --card-bg: linear-gradient(135deg, rgba(26, 37, 58, .90), rgba(34, 49, 74, .90));
-            --accent-gold: #FFD700;
-            --accent-gold-hover: #FFB400;
-            --text-primary: #ffffff;
-            --text-muted: #a1a5b7;
-            --border-gold-subtle: rgba(255, 215, 0, .15);
-            --danger-red: #ff4d4f;
-            --success-green: #28c76f;
+        /* ─────────────────────────────────────────────────────────────── */
+        /* FAZ 32 — Standart Metronic light theme (customers/detail.html ile */
+        /* hizalı). Önceki dark gradient mimarisi kaldırıldı.              */
+        /* ─────────────────────────────────────────────────────────────── */
+
+        .kpi {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid #e9eef5;
+            background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+            box-shadow: 0 4px 12px rgba(18, 38, 63, 0.05);
+            transition: transform .18s ease, box-shadow .18s ease;
+            height: 74px;
         }
 
-        body, .app-main, .wrapper {
-            background: var(--bg-dark-gradient) !important;
-            color: var(--text-primary);
+        .kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 38, 63, 0.08);
         }
 
-        .supplier-detail-container { padding: 1.5rem; }
-
-        .kp-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-gold-subtle);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(12px);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .kpi-card {
-            background: rgba(15, 27, 43, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        .kpi__icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 12px;
-            padding: 1.25rem;
-            height: 100%;
-            transition: all 0.3s ease;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .kpi-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--accent-gold);
-            background: rgba(255, 215, 0, 0.05);
+        .kpi__body {
+            line-height: 1.15;
+            min-width: 0;
         }
 
-        .kpi-icon {
-            width: 45px; height: 45px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; margin-bottom: 0.75rem;
+        .kpi__label {
+            font-size: .82rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            opacity: .85;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .kpi-label {
-            color: var(--text-muted);
-            font-size: 0.8rem; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.5px;
+        .kpi__value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: .01em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .kpi-value {
-            color: var(--text-primary);
-            font-size: 1.35rem; font-weight: 700;
-            margin-top: 0.25rem;
+        .kpi--red .kpi__icon { background: rgba(220, 53, 69, .12); color: #dc3545; }
+        .kpi--red .kpi__label,
+        .kpi--red .kpi__value { color: #b11e2b; }
+
+        .kpi--green .kpi__icon { background: rgba(40, 167, 69, .12); color: #28a745; }
+        .kpi--green .kpi__label,
+        .kpi--green .kpi__value { color: #1f8d3d; }
+
+        .kpi--blue .kpi__icon { background: rgba(0, 123, 255, .12); color: #007bff; }
+        .kpi--blue .kpi__label { color: #1661c1; }
+        .kpi--blue .kpi__value { color: #1661c1; }
+
+        .kpi--gold .kpi__icon { background: rgba(255, 193, 7, .14); color: #b8860b; }
+        .kpi--gold .kpi__label { color: #8a6d0a; }
+        .kpi--gold .kpi__value { color: #8a6d0a; }
+
+        .kpi--gold.kpi--neg .kpi__icon { background: rgba(220, 53, 69, .12); color: #dc3545; }
+        .kpi--gold.kpi--neg .kpi__label,
+        .kpi--gold.kpi--neg .kpi__value { color: #b11e2b; }
+
+        .kpi--gold.kpi--pos .kpi__icon { background: rgba(40, 167, 69, .12); color: #28a745; }
+        .kpi--gold.kpi--pos .kpi__label,
+        .kpi--gold.kpi--pos .kpi__value { color: #1f8d3d; }
+
+        .person-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #f6f8fb;
+            border: 1px dashed #d8dee8;
+            border-radius: 12px;
+            padding: 8px 14px;
         }
 
-        .kpi-sub { font-size: 0.75rem; margin-top: 0.25rem; opacity: 0.8; }
-
-        .text-pos { color: var(--success-green) !important; }
-        .text-neg { color: var(--danger-red) !important; }
-        .text-gold { color: var(--accent-gold) !important; }
-
-        .nav-line-tabs .nav-item .nav-link {
-            color: var(--text-muted);
-            border-bottom: 2px solid transparent;
-            padding-bottom: 1rem; font-size: 1rem; font-weight: 600;
+        .person-card .person-card__avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 123, 255, .12);
+            color: #1661c1;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .nav-line-tabs .nav-item .nav-link.active,
-        .nav-line-tabs .nav-item .nav-link:hover {
-            color: var(--accent-gold);
-            border-bottom-color: var(--accent-gold);
+        .person-card .person-card__label {
+            font-size: .72rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #6c757d;
         }
 
-        .table.ops-table thead th {
-            color: var(--accent-gold);
-            text-transform: uppercase; font-size: 0.8rem;
-            border-bottom: 1px solid var(--border-gold-subtle);
-            padding-bottom: 1rem;
-        }
-
-        .table.ops-table tbody td {
-            color: var(--text-primary);
-            padding: 1rem 0.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            vertical-align: middle;
-        }
-
-        .table.ops-table tbody tr:hover { background: rgba(255, 215, 0, 0.02); }
-
-        .plasiyer-box {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px; padding: 0.75rem 1rem;
-            display: flex; align-items: center; gap: 1rem;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-        }
-
-        /* Modal Dark Theme */
-        .modal-cantaci .modal-content {
-            background: #1A253A;
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            color: var(--text-primary);
-        }
-        .modal-cantaci .modal-header {
-            border-bottom: 1px solid var(--border-gold-subtle);
-        }
-        .modal-cantaci .form-control,
-        .modal-cantaci .form-select {
-            background: rgba(15, 27, 43, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
-        .modal-cantaci .form-label { color: var(--text-muted); font-weight: 600; }
-
-        .btn-cantaci-action {
-            background: linear-gradient(135deg, rgba(34, 49, 74, .6), rgba(46, 60, 84, .6));
-            border: 1px solid rgba(255, 215, 0, .15);
-            color: var(--text-primary);
-            padding: .5rem 1rem; font-weight: 600;
-            border-radius: 10px; transition: all .3s ease;
-        }
-        .btn-cantaci-action:hover {
-            border-color: rgba(255, 215, 0, .4);
-            background: rgba(255, 215, 0, 0.08);
-            color: #fff;
+        .person-card .person-card__name {
+            font-weight: 700;
+            color: #1f2a3a;
         }
     </style>
 {% endblock header %}
 
 {% block body %}
-    <div class="supplier-detail-container">
+    <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="app-container container-xxl">
 
-        <!-- HEADER KARTI -->
-        <div class="kp-card">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
-                <div class="d-flex align-items-center">
-                    <div class="symbol symbol-70px me-5">
-                        <div class="symbol-label"
-                             style="background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.2);">
-                            <i class="bi bi-bag-check fs-1 text-gold"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h1 class="text-white fw-bolder mb-1">
-                            {{ record.company_name }}
-                            <span class="badge bg-light-info text-info ms-2 fs-8">Cantaci</span>
-                        </h1>
-                        <div class="d-flex flex-wrap gap-3 fs-7 fw-bold text-muted">
-                            <span class="d-flex align-items-center"><i class="bi bi-geo-alt me-1"></i> {{ record.city.name|default:"-" }}</span>
-                            <span class="d-flex align-items-center"><i class="bi bi-telephone me-1"></i> {{ record.phone|default:"-" }}</span>
-                            {% if record.is_active %}
-                                <span class="badge badge-light-success border border-success border-opacity-25">AKTIF</span>
-                            {% else %}
-                                <span class="badge badge-light-danger border border-danger border-opacity-25">PASIF</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+                    <!-- HEADER KARTI -->
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-body pt-7 pb-5">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4">
 
-                <div class="plasiyer-box">
-                    <div class="symbol symbol-40px symbol-circle">
-                        <span class="symbol-label bg-light-info text-info fw-bold">C</span>
-                    </div>
-                    <div>
-                        <div class="fs-8 text-muted fw-bold text-uppercase">Yetkili Kisi</div>
-                        <div class="fs-6 fw-bolder text-white">{{ record.person_name|default:"Belirtilmemis" }} {{ record.person_surname }}</div>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-cantaci-action" data-bs-toggle="modal" data-bs-target="#cantaciIslemModal">
-                        <i class="bi bi-plus-circle me-1"></i> Yeni Islem
-                    </button>
-                    <a href="{% url 'suppliers:cantaci-export' record.id %}?format=pdf" target="_blank"
-                       class="btn btn-sm btn-cantaci-action">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-                    </a>
-                    <a href="{% url 'suppliers:cantaci-export' record.id %}?format=excel" target="_blank"
-                       class="btn btn-sm btn-cantaci-action">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
-                    </a>
-                    <a href="{% url 'suppliers:index' %}" class="btn btn-sm btn-light-warning">
-                        <i class="bi bi-arrow-return-left me-1"></i> Listeye Don
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- OZET KPI KARTLARI -->
-        <div class="row g-4 mb-6">
-            <div class="col-6 col-xl-3">
-                <div class="kpi-card">
-                    <div class="kpi-icon" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
-                        <i class="bi bi-box-arrow-up"></i>
-                    </div>
-                    <div class="kpi-label">Toplam Hurda Verildi</div>
-                    <div class="kpi-value text-white">{{ toplam_hurda_gram|floatformat:3 }} <small class="fs-6 text-muted">Gr</small></div>
-                    <div class="kpi-sub text-danger">{{ toplam_hurda_has|floatformat:3 }} HAS</div>
-                </div>
-            </div>
-
-            <div class="col-6 col-xl-3">
-                <div class="kpi-card">
-                    <div class="kpi-icon" style="background: rgba(40, 199, 111, 0.1); color: #28c76f;">
-                        <i class="bi bi-box-arrow-in-down"></i>
-                    </div>
-                    <div class="kpi-label">Toplam Urun Alindi</div>
-                    <div class="kpi-value text-white">{{ toplam_urun_gram|floatformat:3 }} <small class="fs-6 text-muted">Gr</small></div>
-                    <div class="kpi-sub text-success">{{ toplam_urun_has|floatformat:3 }} HAS</div>
-                </div>
-            </div>
-
-            <div class="col-6 col-xl-3">
-                <div class="kpi-card">
-                    <div class="kpi-icon" style="background: rgba(255, 215, 0, 0.1); color: #FFD700;">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                    <div class="kpi-label">Net Bakiye (HAS)</div>
-                    <div class="kpi-value {% if net_bakiye_has >= 0 %}text-pos{% else %}text-neg{% endif %}">
-                        {{ net_bakiye_has|floatformat:3 }} <small class="fs-6 text-muted">HAS</small>
-                    </div>
-                    <div class="kpi-sub {% if net_bakiye_has >= 0 %}text-success{% else %}text-danger{% endif %}">
-                        {% if net_bakiye_has > 0 %}Cantaci Borclu{% elif net_bakiye_has < 0 %}Biz Borcluyuz{% else %}Dengede{% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-xl-3">
-                <div class="kpi-card">
-                    <div class="kpi-icon" style="background: rgba(57, 136, 255, 0.1); color: #3988ff;">
-                        <i class="bi bi-cash-coin"></i>
-                    </div>
-                    <div class="kpi-label">Odeme/Tahsilat (TL)</div>
-                    <div class="kpi-value text-white">{{ toplam_odeme_tl|floatformat:2 }} <small class="fs-6 text-muted">TL</small></div>
-                    <div class="kpi-sub text-muted">{{ toplam_islem }} Islem</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- HAREKETLER TABLOSU -->
-        <div class="kp-card px-0 pt-0 pb-2">
-            <div class="px-6 pt-4 pb-3 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-10 d-flex justify-content-between align-items-center">
-                <h4 class="text-white fw-bold mb-0"><i class="bi bi-list-columns-reverse text-gold me-2"></i>Islem Gecmisi</h4>
-                <div class="d-flex gap-2">
-                    <select id="fCantaciType" class="form-select form-select-sm w-180px bg-dark border-secondary text-white">
-                        <option value="">Tum Islemler</option>
-                        <option value="HURDA_VERILDI">Hurda Verildi</option>
-                        <option value="URUN_ALINDI">Urun Alindi</option>
-                        <option value="ODEME">Odeme</option>
-                        <option value="TAHSILAT">Tahsilat</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="px-6 py-4">
-                <div class="table-responsive">
-                    <table id="cantaciTable" class="table ops-table align-middle">
-                        <thead>
-                        <tr>
-                            <th>Tarih</th>
-                            <th>Islem Tipi</th>
-                            <th>Aciklama</th>
-                            <th class="text-end">Gram</th>
-                            <th class="text-end">HAS Degeri</th>
-                            <th class="text-end">Tutar (TL)</th>
-                        </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- YENI ISLEM MODALI -->
-    <div class="modal fade modal-cantaci" id="cantaciIslemModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header py-3">
-                    <h5 class="modal-title text-white"><i class="bi bi-plus-circle text-gold me-2"></i>Yeni Cantaci Islemi</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form id="cantaciIslemForm">
-                        {% csrf_token %}
-
-                        <!-- Islem Tipi Secimi -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <label class="form-label">Islem Tipi</label>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-cantaci-action flex-fill cantaci-type-btn active" data-type="HURDA_VERILDI">
-                                        <i class="bi bi-box-arrow-up me-1"></i> Hurda Verildi
-                                    </button>
-                                    <button type="button" class="btn btn-cantaci-action flex-fill cantaci-type-btn" data-type="URUN_ALINDI">
-                                        <i class="bi bi-box-arrow-in-down me-1"></i> Urun Alindi
-                                    </button>
-                                    <button type="button" class="btn btn-cantaci-action flex-fill cantaci-type-btn" data-type="ODEME">
-                                        <i class="bi bi-cash me-1"></i> Odeme / Tahsilat
-                                    </button>
+                                <!-- Sol: Firma kimliği -->
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-60px me-4">
+                                        <div class="symbol-label bg-light-info">
+                                            <i class="bi bi-bag-check fs-1 text-info"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h1 class="text-gray-900 fw-bold mb-1 fs-2">
+                                            {{ record.company_name }}
+                                            <span class="badge badge-light-info ms-2 fs-8">Çantacı</span>
+                                        </h1>
+                                        <div class="d-flex flex-wrap gap-3 fs-7 text-gray-600">
+                                            <span class="d-flex align-items-center"><i class="bi bi-geo-alt me-1"></i>{{ record.city.name|default:"-" }}</span>
+                                            <span class="d-flex align-items-center"><i class="bi bi-telephone me-1"></i>{{ record.phone|default:"-" }}</span>
+                                            {% if record.is_active %}
+                                                <span class="badge badge-light-success">Aktif</span>
+                                            {% else %}
+                                                <span class="badge badge-light-danger">Pasif</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                                <input type="hidden" name="cantaci_tx_type" id="cantaci_tx_type" value="HURDA_VERILDI">
+
+                                <!-- Orta: Yetkili kişi -->
+                                <div class="person-card">
+                                    <div class="person-card__avatar">C</div>
+                                    <div>
+                                        <div class="person-card__label">Yetkili Kişi</div>
+                                        <div class="person-card__name">{{ record.person_name|default:"Belirtilmemiş" }} {{ record.person_surname }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Sağ: Aksiyonlar -->
+                                <!-- FAZ 32 — "Yeni İşlem" butonu kaldırıldı.            -->
+                                <!-- Çantacı işlemleri Toptan modülünden yürütülmektedir. -->
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{% url 'suppliers:cantaci-export' record.id %}?format=pdf" target="_blank"
+                                       class="btn btn-sm btn-light-danger">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                                    </a>
+                                    <a href="{% url 'suppliers:cantaci-export' record.id %}?format=excel" target="_blank"
+                                       class="btn btn-sm btn-light-success">
+                                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                                    </a>
+                                    <a href="{% url 'suppliers:index' %}" class="btn btn-sm btn-light">
+                                        <i class="bi bi-arrow-return-left me-1"></i> Listeye Dön
+                                    </a>
+                                </div>
+
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Hurda / Urun Alanlari -->
-                        <div id="altin_fields">
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Altin Ayari</label>
-                                    <select class="form-select" id="cantaci_ayar" name="ayar">
-                                        <option value="" disabled selected>Seciniz</option>
-                                        <option value="995" data-mil="995">Has / 995</option>
-                                        <option value="916" data-mil="916">22 Ayar</option>
-                                        <option value="875" data-mil="875">21 Ayar</option>
-                                        <option value="750" data-mil="750">18 Ayar</option>
-                                        <option value="585" data-mil="585">14 Ayar</option>
-                                        <option value="333" data-mil="333">8 Ayar</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Milyem</label>
-                                    <input type="number" class="form-control" id="cantaci_milyem" name="milyem">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Gram</label>
-                                    <input type="number" step="0.001" class="form-control" id="cantaci_gram" name="gram">
-                                </div>
-                            </div>
+                    <!-- ÖZET KPI KARTLARI -->
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-body py-6">
+                            <div class="row g-3">
 
-                            <div class="d-flex justify-content-between align-items-center p-3 mb-3"
-                                 style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px;">
-                                <span class="small fw-bold text-muted">Hesaplanan HAS:</span>
-                                <strong class="text-warning fs-5" id="cantaci_calc_has">0.000</strong>
-                            </div>
-                        </div>
+                                <div class="col-6 col-xl-3">
+                                    <div class="kpi kpi--red">
+                                        <div class="kpi__icon"><i class="bi bi-box-arrow-up"></i></div>
+                                        <div class="kpi__body">
+                                            <div class="kpi__label">Toplam Hurda Verildi</div>
+                                            <div class="kpi__value">{{ toplam_hurda_gram|floatformat:3 }} Gr</div>
+                                            <div class="text-muted fs-9 mt-1">{{ toplam_hurda_has|floatformat:3 }} HAS</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- Odeme / Tahsilat Alanlari -->
-                        <div id="odeme_fields" style="display:none;">
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Yon</label>
-                                    <select class="form-select" id="cantaci_odeme_yon" name="odeme_yon">
-                                        <option value="ODEME">Odeme (Biz Oduyoruz)</option>
-                                        <option value="TAHSILAT">Tahsilat (Biz Aliyoruz)</option>
-                                    </select>
+                                <div class="col-6 col-xl-3">
+                                    <div class="kpi kpi--green">
+                                        <div class="kpi__icon"><i class="bi bi-box-arrow-in-down"></i></div>
+                                        <div class="kpi__body">
+                                            <div class="kpi__label">Toplam Ürün Alındı</div>
+                                            <div class="kpi__value">{{ toplam_urun_gram|floatformat:3 }} Gr</div>
+                                            <div class="text-muted fs-9 mt-1">{{ toplam_urun_has|floatformat:3 }} HAS</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Tutar</label>
-                                    <input type="number" step="0.01" class="form-control" id="cantaci_odeme_tutar" name="odeme_tutar">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Para Birimi</label>
-                                    <select class="form-select" id="cantaci_odeme_currency" name="odeme_currency">
-                                        <option value="TRY">TL</option>
-                                        <option value="HS">HAS</option>
-                                        <option value="USD">USD</option>
-                                        <option value="EUR">EUR</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Ortak: Aciklama -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label">Aciklama (Opsiyonel)</label>
-                                <textarea class="form-control" name="description" rows="2" id="cantaci_description"></textarea>
+                                <div class="col-6 col-xl-3">
+                                    <div class="kpi kpi--gold {% if net_bakiye_has > 0 %}kpi--pos{% elif net_bakiye_has < 0 %}kpi--neg{% endif %}">
+                                        <div class="kpi__icon"><i class="bi bi-wallet2"></i></div>
+                                        <div class="kpi__body">
+                                            <div class="kpi__label">Net Bakiye (HAS)</div>
+                                            <div class="kpi__value">{{ net_bakiye_has|floatformat:3 }} HAS</div>
+                                            <div class="text-muted fs-9 mt-1">
+                                                {% if net_bakiye_has > 0 %}Çantacı borçlu
+                                                {% elif net_bakiye_has < 0 %}Biz borçluyuz
+                                                {% else %}Dengede{% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-6 col-xl-3">
+                                    <div class="kpi kpi--blue">
+                                        <div class="kpi__icon"><i class="bi bi-cash-coin"></i></div>
+                                        <div class="kpi__body">
+                                            <div class="kpi__label">Ödeme / Tahsilat (TL)</div>
+                                            <div class="kpi__value">{{ toplam_odeme_tl|floatformat:2 }} ₺</div>
+                                            <div class="text-muted fs-9 mt-1">{{ toplam_islem }} İşlem</div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer border-top border-secondary border-opacity-25">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Iptal</button>
-                    <button type="button" class="btn btn-warning text-dark fw-bold" id="btnSaveCantaciIslem">
-                        <i class="bi bi-check-circle me-1"></i> Kaydet
-                    </button>
+                    </div>
+
+                    <!-- HAREKETLER TABLOSU -->
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <h3 class="fw-bold m-0"><i class="bi bi-list-columns-reverse text-primary me-2"></i>İşlem Geçmişi</h3>
+                            </div>
+                            <div class="card-toolbar">
+                                <select id="fCantaciType" class="form-select form-select-sm w-200px">
+                                    <option value="">Tüm İşlemler</option>
+                                    <option value="HURDA_VERILDI">Hurda Verildi</option>
+                                    <option value="URUN_ALINDI">Ürün Alındı</option>
+                                    <option value="ODEME">Ödeme</option>
+                                    <option value="TAHSILAT">Tahsilat</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body py-5">
+                            <div class="table-responsive">
+                                <table id="cantaciTable" class="table align-middle table-row-dashed fs-6 gy-4">
+                                    <thead>
+                                    <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                        <th>Tarih</th>
+                                        <th>İşlem Tipi</th>
+                                        <th>Açıklama</th>
+                                        <th class="text-end">Gram</th>
+                                        <th class="text-end">HAS Değeri</th>
+                                        <th class="text-end">Tutar (TL)</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="text-gray-800 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- FAZ 32 — `#cantaciIslemModal` (Yeni Çantacı İşlemi) modalı kaldırıldı. -->
+    <!-- Çantacı işlemleri Toptan (Wholesale) modülü üzerinden yürütülür.       -->
 
 {% endblock body %}
 
@@ -404,50 +297,11 @@
     <script>
         const CANTACI_ID = "{{ record.id }}";
         const URL_HAREKETLER = "{% url 'suppliers:cantaci-hareketler' %}";
-        const URL_ISLEM_EKLE = "{% url 'suppliers:cantaci-islem-ekle' %}";
+        // FAZ 32 — URL_ISLEM_EKLE sabiti kaldırıldı (endpoint silindi).
 
         const fmt = (n, d = 2) => new Intl.NumberFormat('tr-TR', {
             minimumFractionDigits: d, maximumFractionDigits: d
         }).format(n || 0);
-
-        // --- ISLEM TIPI SECIMI ---
-        $('.cantaci-type-btn').click(function () {
-            $('.cantaci-type-btn').removeClass('active').css({
-                'background': '', 'color': '', 'border-color': ''
-            });
-            $(this).addClass('active').css({
-                'background': 'linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover))',
-                'color': '#0F1B2B',
-                'border-color': 'transparent'
-            });
-
-            const type = $(this).data('type');
-            $('#cantaci_tx_type').val(type);
-
-            if (type === 'ODEME') {
-                $('#altin_fields').hide();
-                $('#odeme_fields').show();
-            } else {
-                $('#altin_fields').show();
-                $('#odeme_fields').hide();
-            }
-        });
-
-        // --- AYAR SECILDIGINDE MILYEM OTOMATIK ---
-        $('#cantaci_ayar').change(function () {
-            const mil = $(this).find(':selected').data('mil');
-            if (mil) $('#cantaci_milyem').val(mil);
-            calcCantaciHas();
-        });
-
-        $('#cantaci_milyem, #cantaci_gram').on('input', calcCantaciHas);
-
-        function calcCantaciHas() {
-            const g = parseFloat($('#cantaci_gram').val()) || 0;
-            const m = parseFloat($('#cantaci_milyem').val()) || 0;
-            const has = (g * m) / 1000;
-            $('#cantaci_calc_has').text(has.toFixed(3));
-        }
 
         // --- HAREKETLER TABLOSU ---
         let table;
@@ -468,132 +322,59 @@
                 columns: [
                     {
                         data: 'created_on',
-                        render: d => `<span class="text-white fw-bold fs-7">${d}</span>`
+                        render: d => `<span class="text-gray-800 fw-semibold fs-7">${d}</span>`
                     },
                     {
                         data: 'cantaci_tx_type',
                         render: function (d) {
+                            // FAZ 21 / Bug 4 — TOPTAN_ENTRY/TOPTAN_EXIT pseudo
+                            // tipleri toptan ekranindan yapilan alis/satis
+                            // hareketlerini gosterir (cantaci_tx_type alani DB'de NULL).
                             const map = {
                                 'HURDA_VERILDI': ['bi-box-arrow-up', 'danger', 'Hurda Verildi'],
-                                'URUN_ALINDI': ['bi-box-arrow-in-down', 'success', 'Urun Alindi'],
-                                'ODEME': ['bi-cash', 'warning', 'Odeme'],
-                                'TAHSILAT': ['bi-cash-coin', 'info', 'Tahsilat']
+                                'URUN_ALINDI': ['bi-box-arrow-in-down', 'success', 'Ürün Alındı'],
+                                'ODEME': ['bi-cash', 'warning', 'Ödeme'],
+                                'TAHSILAT': ['bi-cash-coin', 'info', 'Tahsilat'],
+                                'TOPTAN_ENTRY': ['bi-arrow-down-circle', 'primary', 'Toptan Alış'],
+                                'TOPTAN_EXIT': ['bi-arrow-up-circle', 'dark', 'Toptan Satış']
                             };
                             const [icon, color, label] = map[d] || ['bi-question', 'secondary', d || '-'];
-                            return `<span class="badge badge-light-${color} fw-bolder px-2 py-1"><i class="bi ${icon} me-1"></i>${label}</span>`;
+                            return `<span class="badge badge-light-${color} fw-bold px-2 py-1"><i class="bi ${icon} me-1"></i>${label}</span>`;
                         }
                     },
-                    { data: 'description', defaultContent: '-', render: d => `<span class="text-muted fs-7">${d || '-'}</span>` },
+                    { data: 'description', defaultContent: '-', render: d => `<span class="text-gray-600 fs-7">${d || '-'}</span>` },
                     {
                         data: 'quantity_gram', className: 'text-end',
-                        render: d => d > 0 ? `<span class="text-gold fw-bold">${fmt(d, 3)}</span> <small class="text-muted">Gr</small>` : '-'
+                        render: d => d > 0 ? `<span class="text-gray-900 fw-bold">${fmt(d, 3)}</span> <small class="text-muted">Gr</small>` : '-'
                     },
                     {
                         data: 'amount_hs', className: 'text-end',
-                        render: d => d > 0 ? `<span class="text-white fw-bolder">${fmt(d, 3)}</span> <small class="text-muted">HAS</small>` : '-'
+                        render: d => d > 0 ? `<span class="text-gray-900 fw-bold">${fmt(d, 3)}</span> <small class="text-muted">HAS</small>` : '-'
                     },
                     {
-                        data: 'amount_tl', className: 'text-end',
-                        render: d => d > 0 ? `<span class="text-white fw-bolder">${fmt(d, 2)}</span> <small class="text-muted">TL</small>` : '-'
+                        data: 'amount_eur', className: 'text-end',
+                        render: d => d > 0 ? `<span class="text-gray-900 fw-bold">${fmt(d, 2)}</span> <small class="text-muted">₺</small>` : '-'
                     }
                 ],
                 language: {
-                    zeroRecords: "Henuz islem yapilmamis",
-                    processing: "Yukleniyor...",
+                    zeroRecords: "Henüz işlem yapılmamış",
+                    processing: "Yükleniyor...",
                     paginate: { next: ">", previous: "<" }
                 },
                 dom: 'rt<"d-flex justify-content-between mt-3"ip>'
             });
         }
 
-        // --- ISLEM KAYDET ---
-        $('#btnSaveCantaciIslem').click(function () {
-            const $btn = $(this);
-            const txType = $('#cantaci_tx_type').val();
-
-            // Validasyon
-            if (txType === 'ODEME') {
-                const tutar = parseFloat($('#cantaci_odeme_tutar').val());
-                if (!tutar || tutar <= 0) {
-                    Swal.fire('Hata', 'Lutfen gecerli bir tutar giriniz.', 'warning');
-                    return;
-                }
-            } else {
-                const gram = parseFloat($('#cantaci_gram').val());
-                if (!gram || gram <= 0) {
-                    Swal.fire('Hata', 'Lutfen gecerli bir gram giriniz.', 'warning');
-                    return;
-                }
-            }
-
-            $btn.prop('disabled', true);
-
-            const fd = new FormData($('#cantaciIslemForm')[0]);
-            fd.append('supplier_id', CANTACI_ID);
-
-            $.ajax({
-                url: URL_ISLEM_EKLE,
-                type: 'POST',
-                data: fd,
-                processData: false,
-                contentType: false,
-                success: function (res) {
-                    $btn.prop('disabled', false);
-                    if (res.result) {
-                        $('#cantaciIslemModal').modal('hide');
-                        table.ajax.reload(null, false);
-                        // KPI kartlarini guncelle
-                        if (res.kpi) {
-                            updateKpiCards(res.kpi);
-                        } else {
-                            location.reload();
-                        }
-                        Swal.fire({
-                            toast: true, position: 'top-end', icon: 'success',
-                            title: 'Islem Kaydedildi', showConfirmButton: false, timer: 1500
-                        });
-                    } else {
-                        Swal.fire('Hata', res.error_msg || 'Bir hata olustu', 'error');
-                    }
-                },
-                error: function () {
-                    $btn.prop('disabled', false);
-                    Swal.fire('Hata', 'Sunucu hatasi', 'error');
-                }
-            });
-        });
-
-        function updateKpiCards(kpi) {
-            // Sayfayi yenilemeden KPI kartlarini guncelle (opsiyonel)
-            location.reload();
-        }
-
-        // --- MODAL RESET ---
-        $('#cantaciIslemModal').on('hidden.bs.modal', function () {
-            $('#cantaciIslemForm')[0].reset();
-            $('#cantaci_tx_type').val('HURDA_VERILDI');
-            $('#cantaci_calc_has').text('0.000');
-            $('#altin_fields').show();
-            $('#odeme_fields').hide();
-            $('.cantaci-type-btn').removeClass('active').css({'background': '', 'color': '', 'border-color': ''});
-            $('.cantaci-type-btn[data-type="HURDA_VERILDI"]').addClass('active').css({
-                'background': 'linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover))',
-                'color': '#0F1B2B', 'border-color': 'transparent'
-            });
-        });
+        // FAZ 32 — Modal kaydet, reset ve type-button highlight handler'ları
+        // tamamen kaldırıldı. Çantacı işlem girişi Toptan modülünden yapılır.
 
         // --- FILTRE ---
         $('#fCantaciType').on('change', function () {
-            table.ajax.reload();
+            if (table) table.ajax.reload();
         });
 
         $(document).ready(function () {
             initCantaciTable();
-            // Ilk acildiginda aktif butonu vurgula
-            $('.cantaci-type-btn[data-type="HURDA_VERILDI"]').css({
-                'background': 'linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover))',
-                'color': '#0F1B2B', 'border-color': 'transparent'
-            });
         });
     </script>
 {% endblock footer %}

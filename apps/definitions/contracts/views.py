@@ -103,44 +103,74 @@ def _prepare_scope_data(process):
     Sözleşme için modül/paket kapsam verilerini hazırlar.
 
     Mantık:
-    - process.package varsa → Paket bazlı müşteri: tüm paketler ile
-      karşılaştırma tablosu oluşturulur (build_module_scope_table).
-    - process.package yoksa → Paketsiz müşteri: sadece satın alınan
-      modüller ve özellikleri listelenir (build_proposal_module_table).
+    - process.package varsa → Paket bazlı müşteri: müşteri-odaklı ABC
+      pattern'li yetkiler ile sözleşme kapsam tablosu (Faz 59).
+    - process.package yok ama teklifte paket kalemi var → Teklif paket
+      bazlı kabul edilir (Yol B / Faz 58): aynı sözleşme kapsam tablosu.
+    - process.package da yok teklifte paket de yok → Paketsiz müşteri:
+      sadece satın alınan modüller ve özellikleri listelenir
+      (build_proposal_module_table).
+
+    Faz 59 değişikliği: Paket bazlı senaryoda artık build_module_scope_table
+    yerine build_contract_scope_table kullanılır. Eski fonksiyon SaaSModule
+    M2M üzerinden gezdiği için müşteriye teknik kodlar (add_custody vb.)
+    gösteriyor + müşteri-odaklı ABC permission'larının çoğunu kaçırıyordu.
 
     Returns:
         dict: {
-            'packages': list,       # Package nesneleri (paket modu için)
-            'module_rows': list,    # Modül/permission satırları
-            'display_mode': str,    # 'package' veya 'module'
+            'packages': list,           # Package nesneleri (paket/sözleşme modu)
+            'module_rows': list,        # Permission satırları (modül modu) /
+                                        # düz permission satırları (sözleşme modu)
+            'display_mode': str,        # 'package' veya 'module'
+            'is_contract_view': bool,   # Faz 59: True ise template düz tablo
+                                        # render eder (ABC pattern listesi)
         }
     """
     packages = []
     module_rows = []
     display_mode = 'module'
+    is_contract_view = False
 
     if not process.proposal:
         return {
             'packages': packages,
             'module_rows': module_rows,
             'display_mode': display_mode,
+            'is_contract_view': is_contract_view,
         }
 
+    from apps.crm.packages.services import (
+        build_contract_scope_table,
+        build_proposal_module_table,
+    )
+
     if process.package:
-        # Paket bazlı müşteri → Paket karşılaştırma tablosu
-        from apps.crm.packages.services import build_module_scope_table
-        packages, module_rows = build_module_scope_table()
+        # Paket bazlı müşteri → Sözleşme kapsam tablosu (ABC pattern)
+        packages, module_rows = build_contract_scope_table()
         display_mode = 'package'
+        is_contract_view = True
     else:
-        # Paketsiz müşteri → Satın alınan modüller tablosu
-        from apps.crm.packages.services import build_proposal_module_table
-        module_rows = build_proposal_module_table(process.proposal)
-        display_mode = 'module'
+        # Yol B (Faz 58): process.package boş — teklif kalemlerinde paket var mı?
+        proposal_package_ids = list(
+            process.proposal.items.filter(package__isnull=False)
+            .values_list('package_id', flat=True).distinct()
+        )
+
+        if proposal_package_ids:
+            # Teklif paket içeriyor → sözleşme kapsam tablosu
+            packages, module_rows = build_contract_scope_table()
+            display_mode = 'package'
+            is_contract_view = True
+        else:
+            # Saf modül teklifi → satın alınan modüller tablosu
+            module_rows = build_proposal_module_table(process.proposal)
+            display_mode = 'module'
 
     return {
         'packages': packages,
         'module_rows': module_rows,
         'display_mode': display_mode,
+        'is_contract_view': is_contract_view,
     }
 
 
@@ -164,6 +194,7 @@ def public_contract_view(request, token):
         'packages': scope_data['packages'],
         'module_rows': scope_data['module_rows'],
         'display_mode': scope_data['display_mode'],
+        'is_contract_view': scope_data.get('is_contract_view', False),
     }
     return render(request, 'management/definitions/contracts/public_sign_page.html', ctx)
 
@@ -284,6 +315,7 @@ def public_confirm_contract(request):
             'packages': scope_data['packages'],
             'module_rows': scope_data['module_rows'],
             'display_mode': scope_data['display_mode'],
+            'is_contract_view': scope_data.get('is_contract_view', False),
             'logo_base64': logo_base64,
             'pagesize': 'A4',
         }
@@ -698,6 +730,7 @@ def download_signed_contract_pdf(request, token):
         'packages': scope_data['packages'],
         'module_rows': scope_data['module_rows'],
         'display_mode': scope_data['display_mode'],
+        'is_contract_view': scope_data.get('is_contract_view', False),
         'pagesize': 'A4',
         'logo_base64': logo_base64,
     }
@@ -766,6 +799,7 @@ def resend_contract_mail(request):
             'packages': scope_data['packages'],
             'module_rows': scope_data['module_rows'],
             'display_mode': scope_data['display_mode'],
+            'is_contract_view': scope_data.get('is_contract_view', False),
             'logo_base64': logo_base64,
             'pagesize': 'A4',
         }

@@ -2,15 +2,16 @@
 import logging
 import re
 from decimal import Decimal, ROUND_HALF_UP
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.db.models import (
     Q, OuterRef, Subquery, CharField, DecimalField, IntegerField,
-    Exists, F, Count,
+    Exists, F, Count, Sum, Case, When, Value, Window, BooleanField,
 )
 from django.db.models.functions import Greatest, Coalesce
 
@@ -269,6 +270,19 @@ def update_scrap_pool_weighted_mileage(product, store, new_gram: Decimal, new_mi
         'snapshot var ama stok 0' ile 'snapshot yok' arasında ayrım
         yapamıyordu. 'is not None' ile bu ayrım netleştirildi.
 
+    UAT BULGU 1 (2026-04-29) — STALE INSTANCE FIX:
+        Çoklu hurda girişinde (örn. complete_process_wholesale döngüsü)
+        loop'taki her Process satırının `p.product` farklı bir Python
+        instance olabilir. İlk iter DB'yi UPDATE eder ve sadece KENDI
+        parametre instance'ına yazar; ikinci iter ise BAŞKA bir Python
+        instance taşır ve `product.product_mileage` üzerinden stale
+        değer (genellikle 0 veya başlangıç milyemi) okur. Sonuç: ELSE
+        dalına düşüp ikinci satırın milyemini havuza tek başına ezer
+        (ağırlıklı ortalama yapılmaz).
+        Çözüm: `current_mileage` parametre instance'ından DEĞİL,
+        DB'den taze okunur. Aynı atomik blok içinde önceki iter'ın
+        UPDATE'i artık ikinci iter tarafından doğru görülür.
+
     Returns: (new_mileage_int, new_buy_price_hs) tuple — ileride loglama için.
     """
     try:
@@ -293,7 +307,18 @@ def update_scrap_pool_weighted_mileage(product, store, new_gram: Decimal, new_mi
         if (snap and snap.stock_gram is not None)
         else Decimal('0')
     )
-    current_mileage = Decimal(product.product_mileage or 0)
+    # UAT BULGU 1 (2026-04-29): current_mileage parametre instance'ından
+    # değil, DB'den taze okunur. Çoklu girişte loop'taki stale instance
+    # (önceki iter'ın UPDATE'ini görmemiş olan) milyemi sıfırlamasın.
+    fresh_mileage_row = (
+        Products.objects
+        .filter(id=product.id)
+        .values('product_mileage')
+        .first()
+    )
+    current_mileage = Decimal(
+        (fresh_mileage_row and fresh_mileage_row.get('product_mileage')) or 0
+    )
     total_gram_after = current_gram + new_gram
 
     if total_gram_after > 0 and current_gram > 0 and current_mileage > 0:
@@ -429,6 +454,21 @@ def recalculate_scrap_pool_mileage_after_cancel(product, store):
             (avg_hs * Decimal('1000')).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
         ))
         new_buy_price_hs = d_quantize(new_mileage / Decimal('1000'), 3)
+    elif total_gram > 0:
+        # FAZ 15 / WAC FALLBACK GUARD:
+        # Aktif giriş gramı var ama unit_cost_hs hep 0 (legacy retail veri —
+        # complete_process'in unit_cost_hs geçirmediği eski kayıtlar). Bu
+        # durumda milyemi sıfırlamak iş hatasıdır — Products.product_mileage'da
+        # tutulan mevcut WAC'ı koru. Yeni veriler retail_views.py FAZ 15 fix'i
+        # ile doğru unit_cost_hs yazacağı için bu dal sadece eski stale data
+        # için tetiklenir.
+        _existing_mileage = Decimal(str(getattr(product, 'product_mileage', 0) or 0))
+        if _existing_mileage > 0:
+            new_mileage = _existing_mileage
+            new_buy_price_hs = d_quantize(new_mileage / Decimal('1000'), 3)
+        else:
+            new_mileage = Decimal('0')
+            new_buy_price_hs = Decimal('0.000')
     else:
         # Tüm girişler iptal edilmiş veya giriş yok → milyem 0, fiyat 0
         new_mileage = Decimal('0')
@@ -451,6 +491,33 @@ def recalculate_scrap_pool_mileage_after_cancel(product, store):
     product.product_mileage = new_mileage
     product.buy_price_hs = new_buy_price_hs
     product.sale_price_hs = new_buy_price_hs
+
+    # ── FAZ C2 — WAC TUTARLILIK SANITY KONTROLÜ ──────────────────────
+    # recalculate WAC'ı hizaladıktan sonra anomalileri tespit edip uyarır.
+    # Otomatik düzeltme YOK; yalnızca operasyonel sinyal (logger.warning).
+    #   1) snap_gram > total_gram  → snapshot'ta phantom gram (ledger'a göre fazla)
+    #   2) snap_gram > 0 & WAC == 0 → orphan WAC (giriş kaynağı kaybolmuş)
+    try:
+        fresh_snap = StockSnapshot.objects.filter(
+            product=product, store=store,
+        ).only('stock_gram', 'weighted_avg_cost_hs').first()
+        if fresh_snap is not None:
+            snap_gram = Decimal(str(fresh_snap.stock_gram or 0))
+            tolerance = Decimal('0.001')
+            if snap_gram > total_gram + tolerance:
+                logger.warning(
+                    "WAC_SANITY: stock_gram=%s > toplam_aktif_giris=%s "
+                    "(product=%s store=%s) — phantom stock olabilir.",
+                    snap_gram, total_gram, product.id, store.id,
+                )
+            if snap_gram > tolerance and new_buy_price_hs <= 0:
+                logger.warning(
+                    "WAC_SANITY: stock_gram=%s ama WAC=0 (product=%s store=%s) "
+                    "— aktif girişler arasında unit_cost_hs eksik olabilir.",
+                    snap_gram, product.id, store.id,
+                )
+    except Exception as _sanity_err:
+        logger.error("WAC_SANITY hurda: kontrol başarısız: %s", _sanity_err)
 
     return {
         'new_mileage': int(new_mileage),
@@ -585,7 +652,7 @@ def merge_scrap_pool_duplicates(store, category=None, material_type='GOLD'):
                             store=store, product=primary,
                             stock_gram=d_gram, stock_pieces=d_pcs,
                             weighted_avg_cost_hs=d_wac,
-                            weighted_avg_cost_tl=Decimal(str(d_snap.weighted_avg_cost_tl or 0)),
+                            weighted_avg_cost_eur=Decimal(str(d_snap.weighted_avg_cost_eur or 0)),
                         )
                     else:
                         p_gram = Decimal(str(p_snap.stock_gram or 0))
@@ -903,18 +970,18 @@ def scrap_add(request):
                 return 'HS'
 
     # FAZ 3: Has Altın kurunu Products tablosundan güvenli şekilde al
-    _hs_rate_tl = Decimal('0')
+    _hs_rate_eur = Decimal('0')
     try:
         hs_product = Products.objects.filter(name__icontains='Has Altın').first()
-        if hs_product and hs_product.buy_price_tl:
-            _hs_rate_tl = Decimal(str(hs_product.buy_price_tl))
+        if hs_product and hs_product.buy_price_eur:
+            _hs_rate_eur = Decimal(str(hs_product.buy_price_eur))
     except Exception:
         pass
 
     # TL maliyet hesapla
-    unit_cost_tl = Decimal('0.00')
-    if _hs_rate_tl > 0 and buy_price_hs > 0:
-        unit_cost_tl = (buy_price_hs * _hs_rate_tl).quantize(Decimal('0.01'))
+    unit_cost_eur = Decimal('0.00')
+    if _hs_rate_eur > 0 and buy_price_hs > 0:
+        unit_cost_eur = (buy_price_hs * _hs_rate_eur).quantize(Decimal('0.01'))
 
     # ------------------------------------------------------------------
     # ONARIM FAZI 4 / ADIM 1 — BENZERSIZ sp_process_no (TEDARIKCISIZ DAHIL)
@@ -1057,8 +1124,8 @@ def scrap_add(request):
             ref_type=_stock_ref_type,
             ref_id=sp_process_no,
             unit_cost_hs=buy_price_hs,
-            unit_cost_tl=unit_cost_tl,
-            hs_rate_tl=_hs_rate_tl,
+            unit_cost_eur=unit_cost_eur,
+            hs_rate_eur=_hs_rate_eur,
             user=request.user,
             notes=f"Hurda stok girişi: {int(product_mileage)} milyem → havuz milyemi {log_pool_mileage}",
         )
@@ -1100,8 +1167,8 @@ def scrap_add(request):
             ref_type=_stock_ref_type,
             ref_id=sp_process_no,
             unit_cost_hs=buy_price_hs,
-            unit_cost_tl=unit_cost_tl,
-            hs_rate_tl=_hs_rate_tl,
+            unit_cost_eur=unit_cost_eur,
+            hs_rate_eur=_hs_rate_eur,
             user=request.user,
             notes=f"Yeni hurda havuzu: {name}",
         )
@@ -1148,8 +1215,8 @@ def scrap_add(request):
                     piece=0,
                     gram=gram,
                     price_hs=total_has_value,
-                    unit_price=unit_cost_tl,
-                    amount=(unit_cost_tl * gram).quantize(Decimal('0.01')),
+                    unit_price=unit_cost_eur,
+                    amount=(unit_cost_eur * gram).quantize(Decimal('0.01')),
                     is_status='COMPLETED',
                     is_deleted=False,
                 )
@@ -1166,8 +1233,8 @@ def scrap_add(request):
                 piece=0,
                 gram=gram,
                 price_hs=total_has_value,
-                unit_price=unit_cost_tl,
-                amount=(unit_cost_tl * gram).quantize(Decimal('0.01')),
+                unit_price=unit_cost_eur,
+                amount=(unit_cost_eur * gram).quantize(Decimal('0.01')),
                 is_status='COMPLETED',
                 is_deleted=False,
             )
@@ -1185,8 +1252,8 @@ def scrap_add(request):
             piece=0,
             gram=gram,
             price_hs=total_has_value,
-            unit_price=unit_cost_tl,
-            amount=(unit_cost_tl * gram).quantize(Decimal('0.01')),
+            unit_price=unit_cost_eur,
+            amount=(unit_cost_eur * gram).quantize(Decimal('0.01')),
             is_status='COMPLETED',
             is_deleted=False,
         )
@@ -1281,12 +1348,35 @@ def get_all(request):
             .values('c')[:1]
         )
 
+        # UX İyileştirme — Tek-kaynaklı havuzlar için ana tabloda tedarikçi adı.
+        # Çoklu kaynaklı havuzlarda frontend "Karma havuz" gösterir; bu yüzden
+        # backend her zaman son aktif PURCHASE'ın tedarikçisini döner — UI'a
+        # yorum bırakılır.
+        primary_supplier_sq = (
+            Process.objects
+            .filter(
+                store_id=store_id,
+                product_id=OuterRef('product_id'),
+                transaction_type='PURCHASE',
+                is_status='COMPLETED',
+                is_deleted=False,
+            )
+            .order_by('-date', '-id')
+            .values('supplier__company_name')[:1]
+        )
+
         # FAZ 6: StockSnapshot'tan stok gram okuma (Products.gram yerine)
         snap_sq = StockSnapshot.objects.filter(
             product_id=OuterRef('product_id'),
             store_id=store_id
         )
         inv_weight_sq = snap_sq.values('stock_gram')[:1]
+        # FAZ 50.1 — Custody-only havuz görünürlüğü:
+        # Yalnız emanet (CUSTODY_IN) ile oluşturulmuş havuzlarda stock_gram=0
+        # kalır; ghost filter bu havuzu hatalı şekilde gizliyordu. custody_gram
+        # subquery'si eklenerek "emanet var ama stoğa alınmamış" havuzlar da
+        # ghost filtresinden muaf tutulur.
+        inv_custody_sq = snap_sq.values('custody_gram')[:1]
 
         # ------------------------------------------------------------------
         # ONARIM FAZI 7 / ADIM 4 — IN_PROGRESS MUAFİYETİ (Toptan-Hurda Köprüsü)
@@ -1297,11 +1387,21 @@ def get_all(request):
         # False olur ve ghost filtresi havuzu listeden gizler → kullanıcı
         # eklediği hurdayı kaybolmuş zannediyor (Bulgu 2). Aktif IN_PROGRESS
         # Process'i bulunan havuzlar ghost filtresinden muaf tutulur.
+        #
+        # UAT BULGU 4 (2026-04-29) DARALTMA:
+        #   Muafiyet YALNIZCA `process_type='WHOLESALE'` için geçerli.
+        #   Perakende sepete eklenen ama tamamlanmamış scrap PURCHASE'lar
+        #   da IN_PROGRESS olduğu için bu muafiyetten yararlanıyor ve
+        #   hurda ana sayfasında "hayalet" olarak görünüyordu. Perakende
+        #   akışı sepetten ayrılırsa kayıt boşa düşmeli — ana listede
+        #   görünmemeli. Sadece toptan iş akışındaki iki-faz commit
+        #   penceresi muafiyete tabi.
         # ------------------------------------------------------------------
         in_progress_q = Process.objects.filter(
             store_id=store_id,
             product_id=OuterRef('product_id'),
             transaction_type='PURCHASE',
+            process_type='WHOLESALE',
             is_status='IN_PROGRESS',
             is_deleted=False,
         )
@@ -1311,10 +1411,12 @@ def get_all(request):
             has_in_progress=Exists(in_progress_q),
             last_sale_process_no=Subquery(last_sale_sq, output_field=CharField()),
             inv_stock_gram=Subquery(inv_weight_sq, output_field=DecimalField()),
+            inv_custody_gram=Subquery(inv_custody_sq, output_field=DecimalField()),
             active_purchase_count=Coalesce(
                 Subquery(active_purchase_count_sq, output_field=IntegerField()),
                 0,
             ),
+            primary_supplier_name=Subquery(primary_supplier_sq, output_field=CharField()),
         )
 
         # ------------------------------------------------------------------
@@ -1323,9 +1425,10 @@ def get_all(request):
         # "İşlemler > İptal" akışı `Scraps.is_deleted=True` yapmadığı için
         # tamamen iptal edilmiş havuzlarda Scraps satırı listede kalıyor
         # (stok=0, milyem=0). Bu kayıtlar için üç durum vardır:
-        #   - Hiç satış olmamış + stok=0 + IN_PROGRESS yok → HAYALET → GIZLE
+        #   - Hiç satış olmamış + stok=0 + custody=0 + IN_PROGRESS yok → HAYALET → GIZLE
         #   - Satış geçmişi var (ever_sold=True) → tarihsel bilgi → GOSTER
         #   - IN_PROGRESS toptan kaydı var (FAZ 7 / ADIM 4) → GOSTER
+        #   - Emanet (custody_gram > 0) var (FAZ 50.1) → GOSTER
         # Aynı havuza yeni hurda eklendiğinde stock_gram > 0 olur ve
         # otomatik tekrar görünür hale gelir (BUG 1 reset ile birlikte).
         # ------------------------------------------------------------------
@@ -1333,6 +1436,7 @@ def get_all(request):
             Q(ever_sold=False)
             & Q(has_in_progress=False)
             & (Q(inv_stock_gram__lte=Decimal('0')) | Q(inv_stock_gram__isnull=True))
+            & (Q(inv_custody_gram__lte=Decimal('0')) | Q(inv_custody_gram__isnull=True))
         )
 
         filtered_records = qs.count()
@@ -1374,13 +1478,26 @@ def get_all(request):
             except Exception:
                 inv_gram_dec = Decimal('0')
 
+            # FAZ 50.1 — Custody (emanet) gram bilgisi: ghost filter'dan muaf
+            # tutulan custody-only havuzlarda kullanıcının "0 gr" görmesinin
+            # önüne geçilir; frontend bu değeri ayrı bir badge ile gösterir.
+            inv_custody = getattr(s, 'inv_custody_gram', None) or Decimal('0')
+            try:
+                inv_custody_dec = Decimal(str(inv_custody))
+            except Exception:
+                inv_custody_dec = Decimal('0')
+
             # UAT-1B / UAT-2 — Çoklu kaynak (havuz) sinyali
             _active_count = int(getattr(s, 'active_purchase_count', 0) or 0)
+            _primary_supplier = getattr(s, 'primary_supplier_name', None) or ''
             data.append({
                 'id': s.id,
                 'product__name': p.name,
                 'product__is_completed': bool(p.is_completed),
                 'product__gram': d_fmt(inv_gram_dec, 3),
+                # FAZ 50.1 — Emanet gram (custody_gram) ek alan
+                'custody_gram': d_fmt(inv_custody_dec, 3),
+                'has_custody': inv_custody_dec > Decimal('0.0005'),
                 # ONARIM FAZI 6 / BUG 2A: d_fmt(value, 0) tam sayılarda
                 # trailing-zero strip yaptığı için 590 → "59" üretiyordu.
                 # Milyem her zaman tam sayıdır; doğrudan int() kullanılır.
@@ -1396,6 +1513,11 @@ def get_all(request):
                 # gizler, kullanıcıyı havuz detay modalına yönlendirir.
                 'active_purchase_count': _active_count,
                 'is_multi_source_pool': _active_count > 1,
+
+                # UX — Ana tabloda ayar adı altına yansıtılacak tedarikçi etiketi.
+                # Tek kaynaklı havuzda gerçek tedarikçi (veya boşsa "Tedarikçisiz");
+                # çoklu kaynaklıda template "Karma havuz" gösterir.
+                'primary_supplier_name': _primary_supplier,
             })
 
         return JsonResponse({
@@ -1453,13 +1575,18 @@ def get_pool_sources(request):
 
         proc_list = []
         for p in procs:
+            _gram_val = float(p.gram or 0)
+            _price_hs_val = float(p.price_hs or 0)
+            _unit_hs = (_price_hs_val / _gram_val) if _gram_val > 0 else 0.0
             proc_list.append({
                 'process_no': p.process_no or '',
                 'supplier_id': str(p.supplier_id) if p.supplier_id else None,
                 'supplier_name': (p.supplier.company_name if p.supplier_id and p.supplier else 'Tedarikçisiz'),
-                'gram': float(p.gram or 0),
-                'price_hs': float(p.price_hs or 0),
+                'gram': _gram_val,
+                'price_hs': _price_hs_val,
+                'price_hs_per_gram': round(_unit_hs, 3),
                 'date': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '',
+                'date_short': p.date.strftime('%d %b %Y') if p.date else '',
                 'product_id': str(p.product_id),
                 'scrap_id': scrap_by_product.get(str(p.product_id), ''),
             })
@@ -1516,36 +1643,62 @@ def get_pool_contents(request):
 
         sources = []
         sum_active_proc_gram = Decimal('0')
+        sum_total_price_hs = Decimal('0')
         for proc in procs:
             pg = Decimal(str(proc.gram or 0))
+            ph = Decimal(str(proc.price_hs or 0))
             sum_active_proc_gram += pg
+            sum_total_price_hs += ph
             s_name = (proc.supplier.company_name if proc.supplier_id and proc.supplier else None)
+            unit_hs = (ph / pg) if pg > 0 else Decimal('0')
             sources.append({
                 'supplier_name': s_name,
                 'supplier_id': str(proc.supplier_id) if proc.supplier_id else None,
                 'gram': float(pg),
+                'price_hs': float(ph),
+                'price_hs_per_gram': float(unit_hs.quantize(Decimal('0.001'))),
                 'process_no': proc.process_no or '',
                 'date': proc.date.strftime('%d.%m.%Y %H:%M') if proc.date else '',
+                'date_short': proc.date.strftime('%d %b %Y') if proc.date else '',
                 'label': (s_name if s_name else 'Tedarikçisiz'),
             })
 
         # Geriye dönük: eski (Process'siz) tedarikçisiz açılış stoğu varsa göster
         no_supplier_gram = total_snap_gram - sum_active_proc_gram
         if no_supplier_gram > Decimal('0.0009'):
+            # WAC üzerinden tahmini birim/toplam (geçmiş kayıtlar için yaklaşık değer)
+            try:
+                snap_wac = Decimal(str(snap.weighted_avg_cost_hs)) if snap and snap.weighted_avg_cost_hs else Decimal('0')
+            except Exception:
+                snap_wac = Decimal('0')
+            est_unit = snap_wac
+            est_total = (no_supplier_gram * est_unit) if est_unit > 0 else Decimal('0')
             sources.append({
                 'supplier_name': None,
                 'supplier_id': None,
                 'gram': float(no_supplier_gram),
+                'price_hs': float(est_total.quantize(Decimal('0.001'))) if est_total else 0.0,
+                'price_hs_per_gram': float(est_unit.quantize(Decimal('0.001'))) if est_unit else 0.0,
                 'process_no': None,
                 'date': None,
+                'date_short': None,
                 'label': 'Tedarikçisiz (Açılış Stoğu - Geçmiş)',
+                'is_estimated': True,
             })
+
+        # Havuz WAC (ağırlıklı ortalama birim Hs/gr) — UI footer için
+        try:
+            pool_wac = Decimal(str(snap.weighted_avg_cost_hs)) if snap and snap.weighted_avg_cost_hs else Decimal('0')
+        except Exception:
+            pool_wac = Decimal('0')
 
         return JsonResponse({
             'result': True,
             'pool_name': p.name,
             'pool_milyem': int(p.product_mileage or 0),
             'total_gram': float(total_snap_gram),
+            'total_price_hs': float(sum_total_price_hs.quantize(Decimal('0.001'))),
+            'pool_wac_hs_per_gram': float(pool_wac.quantize(Decimal('0.001'))) if pool_wac else 0.0,
             'sources': sources,
         })
     except Exception as e:
@@ -1558,6 +1711,7 @@ def get_pool_contents(request):
 @require_http_methods(["POST"])
 @role_required('SCRAPS_DELETE')
 @transaction.atomic
+@transaction.atomic
 def delete(request):
     """
     Hurda silme akışı — havuz (pool) güvenlik kontrolü dahil.
@@ -1567,28 +1721,51 @@ def delete(request):
          edilir, havuzun kalan bölümü korunur.
       B. 'selected_process_no' yoksa:
          1. Bağlı Process kayıtları bulunur
-         2. Tek kayıt → tamamı iptal (cancel_stock_entry)
+         2. Tek kayıt → tamamı iptal (cancel_scrap_purchase)
          3. Birden fazla kayıt → MULTI_SOURCE_POOL hatası (frontend modal açar)
          4. Kayıt yoksa → mevcut stoğu RETURN_OUT ile düş (geriye dönük)
          5. Stok sıfırsa Products + Scraps soft-delete
 
-    ONARIM FAZI 4 / ADIM 3 (BUG B FIX):
-        Eski kod: SupplierLedger.update(is_active=False) — reversal yok,
-        balance audit trail kopuyor. Yeni kod: cancel_stock_entry kullanır;
-        StockLedger reversal + SupplierLedger reversal + soft-disable atomik.
+    REFACTOR (Hurda İptal SSOT):
+        _cancel_single_process yerine merkezi cancel_scrap_purchase kullanılır.
+        Tüm akış @transaction.atomic içinde — herhangi bir adım başarısız
+        olursa hiçbir değişiklik kayıt altına alınmaz.
     """
     from apps.stock_management.services.stock_service import InsufficientStockError
+    from apps.scraps.services.cancel_scrap_service import (
+        cancel_scrap_purchase,
+        CancelNotAllowedError,
+        CancelScrapError,
+    )
 
     ids = request.POST.getlist('ids[]') or []
     selected_process_no = (request.POST.get('selected_process_no') or '').strip()
+    selected_ledger_id = (request.POST.get('selected_ledger_id') or '').strip()
     force = (request.POST.get('force') or '').lower() in ('1', 'true', 'yes')
     store = request.user.store
 
+    # ─────────────────────────────────────────────────────────────────────
+    # FAZ 13.1 — Tedarikçisiz/Legacy iptal fix:
+    # Detay sayfasında bazı satırlarda Process kaydı eksik veya process_no
+    # boş olabilir (FAZ 4 öncesi tedarikçisiz açılış stokları). Bu durumda
+    # frontend `selected_ledger_id` (StockLedger.id) gönderir; bizden
+    # o spesifik StockLedger satırının ref_type+ref_id'sini türetip
+    # selected_process_no'ya yazmamız gerekir → mevcut MOD A akışı
+    # cancel_stock_entry'i doğru ref ile çağırır.
+    # ─────────────────────────────────────────────────────────────────────
+    if not selected_process_no and selected_ledger_id:
+        try:
+            _ledger_row = StockLedger.objects.get(id=selected_ledger_id, store=store)
+            if _ledger_row.ref_id:
+                selected_process_no = _ledger_row.ref_id.strip()
+        except StockLedger.DoesNotExist:
+            pass
+
     try:
-        _hs_rate_tl = Decimal('0')
+        _hs_rate_eur = Decimal('0')
         try:
             _hs_data = PriceService.get_price('GOLD_24K')
-            _hs_rate_tl = Decimal(str(_hs_data.get('buy_tl', Decimal('0'))))
+            _hs_rate_eur = Decimal(str(_hs_data.get('buy_tl', Decimal('0'))))
         except Exception:
             pass
 
@@ -1621,16 +1798,45 @@ def delete(request):
                     None
                 )
                 if target_proc is None:
-                    return JsonResponse({
-                        'result': False, 'error': True,
-                        'error_msg': f"Seçilen işlem bulunamadı: {selected_process_no}",
-                    }, status=400)
-
-                # Sadece hedef process'i geri sar (BUG B FIX)
-                _cancel_single_process(
-                    proc=target_proc, product=p, store=store,
-                    user=request.user,
-                )
+                    # FAZ 13.1 — Legacy/Process'siz iptal fallback:
+                    # Detay sayfasından gelen ledger_id, Process tablosunda
+                    # eşleşme bulamayabilir (ör. eski tedarikçisiz açılış stoğu
+                    # FAZ 4 öncesi yazılmış). Bu durumda doğrudan StockLedger
+                    # ref_type/ref_id ile cancel_stock_entry çağırıp satırı reverse
+                    # ederiz — Process kaydı olmadığı için reverse_supplier_ledger
+                    # zaten False olur, audit trail bütünlüğü korunur.
+                    if selected_ledger_id:
+                        try:
+                            _row = StockLedger.objects.get(
+                                id=selected_ledger_id, store=store, product=p,
+                            )
+                            cancel_stock_entry(
+                                ref_type=_row.ref_type or 'scrap_add',
+                                ref_id=_row.ref_id,
+                                user=request.user,
+                                reverse_supplier_ledger=False,
+                                notes=f"Hurda legacy iptal: {p.name} (ledger {_row.id})",
+                            )
+                            try:
+                                recalculate_scrap_pool_mileage_after_cancel(p, store)
+                            except Exception as _e:
+                                logger.error(f"recalculate after legacy cancel failed: {_e}")
+                        except StockLedger.DoesNotExist:
+                            return JsonResponse({
+                                'result': False, 'error': True,
+                                'error_msg': f"Ledger satırı bulunamadı: {selected_ledger_id}",
+                            }, status=400)
+                    else:
+                        return JsonResponse({
+                            'result': False, 'error': True,
+                            'error_msg': f"Seçilen işlem bulunamadı: {selected_process_no}",
+                        }, status=400)
+                else:
+                    # Merkezi servis: stok + cari + process status atomik
+                    cancel_scrap_purchase(
+                        process_id=target_proc.id,
+                        user=request.user,
+                    )
 
                 # Havuzda hâlâ başka kaynaklar varsa → Products/Scraps silinmez;
                 # Snapshot gramı 0'a indiyse soft-delete yapılır.
@@ -1663,8 +1869,8 @@ def delete(request):
 
                 # Tek kaynak veya force=True → tüm Process kayıtlarını iptal et
                 for proc in linked_procs:
-                    _cancel_single_process(
-                        proc=proc, product=p, store=store,
+                    cancel_scrap_purchase(
+                        process_id=proc.id,
                         user=request.user,
                     )
 
@@ -1683,8 +1889,8 @@ def delete(request):
                                 ref_type='scrap_delete',
                                 ref_id=str(s.id),
                                 unit_cost_hs=snap.weighted_avg_cost_hs,
-                                unit_cost_tl=snap.weighted_avg_cost_tl,
-                                hs_rate_tl=_hs_rate_tl,
+                                unit_cost_eur=snap.weighted_avg_cost_eur,
+                                hs_rate_eur=_hs_rate_eur,
                                 user=request.user,
                                 notes=f"Hurda silindi (proc yok): {p.name}",
                             )
@@ -1706,11 +1912,13 @@ def delete(request):
             pass
 
         return JsonResponse({'result': True})
+    except (CancelNotAllowedError, CancelScrapError) as e:
+        return JsonResponse({'result': False, 'error': True, 'error_msg': str(e)}, status=400)
     except Exception as e:
         return JsonResponse({'result': False, 'error': True, 'error_msg': str(e)}, status=500)
 
 
-def _cancel_single_process(*, proc, product, store, user):
+def _cancel_single_process(*, proc, product, store, user, skip_recalculate=False):
     """
     Tek bir alış Process kaydını güvenli biçimde iptal eder.
 
@@ -1728,6 +1936,12 @@ def _cancel_single_process(*, proc, product, store, user):
         scrap_add artık StockLedger.ref_id = sp_process_no yazıyor, bu da
         Process.process_no ile bire bir eşleşiyor → cancel_stock_entry
         StockLedger'ı doğru bulup geri sarabiliyor.
+
+    FAZ C1 — Toplu iptal optimizasyonu:
+        skip_recalculate=True ise WAC/milyem geri hesaplama ATLANMAZ; çağıran
+        (örn. pool_bulk_cancel) döngü sonunda toplu olarak bir kez çağırır.
+        Bu sayede N işlemde N+1 yerine 1 recalculate çağrısı yapılır.
+        Default False → tekil iptal (delete view) davranışı korunur.
     """
     if not proc.process_no:
         # process_no yoksa cancel_stock_entry çağrılamaz; legacy davranışa düş
@@ -1837,15 +2051,19 @@ def _cancel_single_process(*, proc, product, store, user):
     # ilkesi gereği) eski değeri tutuyor. Havuz kalanlarına göre
     # ağırlıklı ortalama yeniden hesaplanır ve atomic UPDATE ile yazılır.
     # Tüm girişler iptal edilmişse milyem 0'a düşer.
+    #
+    # FAZ C1: skip_recalculate=True ise toplu iptal akışı (pool_bulk_cancel)
+    # döngü sonunda tek seferde recalculate çağırır → N+1 → 1.
     # ------------------------------------------------------------------
-    try:
-        recalculate_scrap_pool_mileage_after_cancel(product=product, store=store)
-    except Exception as _wac_err:
-        logger.error(
-            "scrap_cancel: recalculate_scrap_pool_mileage_after_cancel başarısız "
-            "(proc_no=%s, product_id=%s): %s",
-            proc.process_no, product.id, _wac_err,
-        )
+    if not skip_recalculate:
+        try:
+            recalculate_scrap_pool_mileage_after_cancel(product=product, store=store)
+        except Exception as _wac_err:
+            logger.error(
+                "scrap_cancel: recalculate_scrap_pool_mileage_after_cancel başarısız "
+                "(proc_no=%s, product_id=%s): %s",
+                proc.process_no, product.id, _wac_err,
+            )
 
 
 # ----------------- durum değiştir -----------------
@@ -1867,3 +2085,821 @@ def change_status(request):
         return JsonResponse({'result': True})
     except Exception as e:
         return JsonResponse({'result': False, 'error': True, 'error_msg': str(e)}, status=500)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ONARIM FAZI 12 — Hurda Havuz Detay Sayfası (Pool Detail & Ledger Page)
+# ═════════════════════════════════════════════════════════════════════════════
+# 3 yıllık kullanım simülasyonunda Modal yaklaşımı binlerce satırda
+# yönetilmez hale geliyor. Her havuzun kendi URL'li sayfası açılır:
+#   /scraps/pool/<scrap_id>/
+#
+# Bu sayfa:
+#   - Hero: Güncel Gram, WAC, Toplam Değer, İşlem Sayısı
+#   - Filtre: Tarih aralığı, tedarikçi, işlem tipi, arama
+#   - Tablo: StockLedger satırları + running balance (Window function)
+#   - Satır içi iptal: mevcut /scraps/delete?selected_process_no=... endpoint'i
+#
+# ÖNEMLİ: İş kuralı/WAC/StockLedger semantiği DEĞİŞMEDİ. Bu sayfa salt
+# okunur (read-only) bir görünüm + mevcut iptal endpoint'inin yeniden
+# kullanımıdır.
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@login_required(login_url='login')
+def pool_detail(request, scrap_id):
+    """
+    Hurda havuzunun tam sayfa detay görünümü.
+
+    URL: /scraps/pool/<uuid:scrap_id>/
+    Template: management/scraps/pool_detail.html
+
+    Context'e havuzun kimlik bilgisi + hero metrikleri konur; işlem
+    geçmişi tablosu DataTables üzerinden `pool_ledger` endpoint'inden
+    asenkron yüklenir.
+
+    UX FAZ A1 — Son işlem iptal edildiğinde 404 yerine nazik yönlendirme:
+        Havuz boşaldığında (Scraps.is_deleted=True veya Products.is_active=False)
+        404 göstermek yerine kullanıcı, malzeme tipine uygun ana listeye
+        yönlendirilir; messages framework'ü base.html'deki SweetAlert
+        bildirimini tetikler. Audit trail dokunulmaz; havuz DB'de korunur.
+    """
+    store = request.user.store
+    scrap = (Scraps.objects
+             .select_related('product')
+             .filter(id=scrap_id, store=store)
+             .first())
+
+    # Havuz hiç bulunamadı, soft-delete edilmiş veya bağlı ürün arşivlendiyse
+    # → 404 yerine listeye yönlendirme + bilgi mesajı.
+    if (scrap is None
+            or scrap.is_deleted
+            or scrap.product is None
+            or not scrap.product.is_active):
+        view_material_type = 'GOLD'
+        if scrap and scrap.product and scrap.product.material_type:
+            view_material_type = (scrap.product.material_type or 'GOLD').upper()
+        target_url_name = ('scraps:silver_index'
+                           if view_material_type == 'SILVER'
+                           else 'scraps:index')
+        if scrap is None:
+            messages.warning(
+                request,
+                "Aradığınız hurda havuzu bulunamadı. Ana listeye yönlendirildiniz."
+            )
+        else:
+            messages.info(
+                request,
+                "Bu havuzda iptal edilmemiş işlem kalmadığı için ana listeye "
+                "yönlendirildiniz."
+            )
+        return redirect(target_url_name)
+
+    p = scrap.product
+
+    snap = StockSnapshot.objects.filter(product=p, store=store).first()
+
+    # Hero metrikleri
+    current_gram = Decimal(str(snap.stock_gram)) if snap and snap.stock_gram else Decimal('0')
+    wac_hs = Decimal(str(snap.weighted_avg_cost_hs)) if snap and snap.weighted_avg_cost_hs else Decimal('0')
+    total_value_hs = (current_gram * wac_hs).quantize(Decimal('0.001'))
+
+    # Toplam ledger satır sayısı (sayfanın "İşlem Sayısı" kartı)
+    ledger_count = StockLedger.objects.filter(product=p, store=store).count()
+
+    # Son işlem tarihi (sekonder kart)
+    last_entry = (StockLedger.objects
+                  .filter(product=p, store=store)
+                  .order_by('-created_on')
+                  .first())
+    last_activity_date = last_entry.created_on if last_entry else None
+
+    # Toplam satılan (Hs) — REVERSAL hariç SALE satırları toplamı
+    total_sold_hs_data = (StockLedger.objects
+                          .filter(product=p, store=store, reason=StockLedger.Reason.SALE)
+                          .aggregate(total=Coalesce(Sum(F('quantity_gram') * F('unit_cost_hs')),
+                                                    Value(Decimal('0')),
+                                                    output_field=DecimalField())))
+    total_sold_hs = total_sold_hs_data.get('total') or Decimal('0')
+
+    # Tedarikçi listesi (filtre dropdown'u için — sadece bu havuza giriş yapanlar)
+    supplier_ids = (Process.objects
+                    .filter(product=p, store=store,
+                            transaction_type='PURCHASE',
+                            is_status='COMPLETED', is_deleted=False,
+                            supplier__isnull=False)
+                    .values_list('supplier_id', flat=True).distinct())
+    suppliers = list(Suppliers.objects.filter(id__in=supplier_ids)
+                     .order_by('company_name')
+                     .values('id', 'company_name'))
+
+    # Aktif iptal edilebilir PURCHASE sayısı — "Toplu İptal" butonu için
+    active_purchase_count = Process.objects.filter(
+        product=p, store=store,
+        transaction_type='PURCHASE',
+        is_status='COMPLETED',
+        is_deleted=False,
+    ).count()
+
+    # Varsayılan tarih filtresi: son 30 gün
+    # Eski (iptal edilmiş + REVERSAL) verileri otomatik gizler; kullanıcı
+    # "Tüm Geçmişi Göster" butonuyla bu filtreyi tek tıkla kaldırır.
+    from datetime import date, timedelta
+    today_iso = date.today().isoformat()
+    default_date_from = (date.today() - timedelta(days=30)).isoformat()
+
+    view_material_type = (p.material_type or 'GOLD').upper()
+
+    context = {
+        'page_heading': f'{p.name} Havuzu',
+        'scrap_id': str(scrap.id),
+        'product_id': str(p.id),
+        'pool_name': p.name,
+        'pool_milyem': int(p.product_mileage or 0),
+        'view_material_type': view_material_type,
+        'is_active': bool(p.is_active),
+        'is_completed': bool(p.is_completed),
+
+        # Hero kartlar
+        'current_gram': d_fmt(current_gram, 3),
+        'wac_hs': d_fmt(wac_hs, 3),
+        'total_value_hs': d_fmt(total_value_hs, 3),
+        'ledger_count': ledger_count,
+        'total_sold_hs': d_fmt(total_sold_hs, 3),
+        'last_activity_date': last_activity_date.strftime('%d %b %Y · %H:%M') if last_activity_date else '-',
+
+        # Filtre dropdown'u
+        'suppliers': suppliers,
+
+        # Material type'a göre liste sayfasına dönüş URL'i
+        'back_url': reverse('scraps:silver_index') if view_material_type == 'SILVER'
+                    else reverse('scraps:index'),
+        'back_label': 'Gümüş' if view_material_type == 'SILVER' else 'Altın',
+
+        # Toplu iptal butonu için aktif kayıt sayısı
+        'active_purchase_count': active_purchase_count,
+
+        # Varsayılan "yakın zaman" tarih filtresi (son 30 gün)
+        'default_date_from': default_date_from,
+        'default_date_to': today_iso,
+
+        # FAZ 22 — Active Stock Origin View
+        # pool_is_empty: Havuz fiziksel olarak boş mu? Empty-state banner'ı tetikler.
+        # Audit trail SAKLI; sadece UI'da "havuz şu an boş" mesajı gösterilir.
+        'pool_is_empty': (current_gram <= Decimal('0')),
+    }
+    return render(request, 'management/scraps/pool_detail.html', context)
+
+
+@login_required(login_url='login')
+@require_http_methods(["GET"])
+def pool_process_detail(request, scrap_id, process_no):
+    """
+    FAZ 22 — Tek bir işlemin (Process veya legacy ledger satırı) detay JSON'u.
+
+    URL: /scraps/pool/<uuid:scrap_id>/process/<str:process_no>/
+    Havuz detay sayfasındaki "İşlem Numarası" sütununa tıklandığında modal
+    içinde stok giriş/çıkışının tüm bağlamını gösterir.
+
+    Döner:
+      - Process (varsa): tarih, supplier/customer, gram, milyem, iscilik_milyem,
+        açıklama, transaction_type, kullanıcı.
+      - StockLedger satırları: orijinal + reversal (varsa). Her satır için
+        direction, reason, gram, unit_cost_hs, total_hs, ref_type, notes.
+      - has_reversal: bu işlemin iptal edilip edilmediği.
+
+    Yalnızca read-only; hiçbir veri değiştirmez. Append-Only mimariyle uyumlu.
+    """
+    store = request.user.store
+    try:
+        scrap = Scraps.objects.select_related('product').get(
+            id=scrap_id, store=store, is_deleted=False,
+        )
+    except Scraps.DoesNotExist:
+        return JsonResponse({'error': True, 'error_msg': 'Havuz bulunamadı.'}, status=404)
+
+    product = scrap.product
+    if not product:
+        return JsonResponse({'error': True, 'error_msg': 'Havuza bağlı ürün yok.'}, status=404)
+
+    process_no = (process_no or '').strip()
+    if not process_no:
+        return JsonResponse({'error': True, 'error_msg': 'İşlem numarası eksik.'}, status=400)
+
+    # Process eşleştirme (tedarikçili/müşterili işlemler için)
+    proc = (Process.objects
+            .select_related('supplier', 'customer', 'created_by')
+            .filter(product=product, store=store, process_no=process_no)
+            .first())
+
+    # StockLedger satırları (orijinal + tüm reversal'lar)
+    ledger_rows = list(
+        StockLedger.objects
+        .filter(product=product, store=store, ref_id=process_no)
+        .select_related('created_by')
+        .order_by('created_on', 'id')
+    )
+
+    if not proc and not ledger_rows:
+        return JsonResponse({
+            'error': True,
+            'error_msg': 'Bu işleme ait kayıt bulunamadı.',
+        }, status=404)
+
+    # Process bilgisi
+    process_info = None
+    if proc:
+        if proc.supplier_id and proc.supplier:
+            _source_name = proc.supplier.company_name
+            _source_kind = 'supplier'
+        elif proc.customer_id and proc.customer:
+            _source_name = (
+                f"{proc.customer.first_name or ''} {proc.customer.last_name or ''}"
+            ).strip() or 'Müşteri'
+            _source_kind = 'customer'
+        else:
+            _source_name = 'Tedarikçisiz'
+            _source_kind = 'none'
+
+        _iscilik = None
+        try:
+            _ism = getattr(proc, 'iscilik_milyem', None)
+            if _ism is not None and Decimal(str(_ism)) > 0:
+                _iscilik = d_fmt(Decimal(str(_ism)), 2)
+        except Exception:
+            _iscilik = None
+
+        process_info = {
+            'process_no': proc.process_no,
+            'transaction_type': proc.transaction_type or '-',
+            'date': proc.date.strftime('%d %b %Y · %H:%M') if proc.date else '-',
+            'date_iso': proc.date.isoformat() if proc.date else None,
+            'source_name': _source_name,
+            'source_kind': _source_kind,
+            'gram': d_fmt(Decimal(str(proc.gram or 0)), 3),
+            'milyem': int(getattr(proc, 'process_mileage', 0) or 0),
+            'iscilik_milyem': _iscilik,
+            'is_status': proc.is_status or '-',
+            'is_deleted': bool(proc.is_deleted),
+            'created_by': (proc.created_by.get_full_name() or proc.created_by.username
+                           if proc.created_by_id and proc.created_by else '-'),
+        }
+
+    # Ledger satır listesi
+    REASON_LABELS = {
+        'PURCHASE': 'Tedarikçi Alışı',
+        'SALE': 'Satış',
+        'RETURN_IN': 'Satış İadesi',
+        'RETURN_OUT': 'Alış İadesi',
+        'CONV_OUT': 'Dönüşüm Çıkışı',
+        'CONV_IN': 'Dönüşüm Girişi',
+        'XFER_OUT': 'Transfer Çıkış',
+        'XFER_IN': 'Transfer Giriş',
+        'ADJ_PLUS': 'Düzeltme (+)',
+        'ADJ_MINUS': 'Düzeltme (-)',
+        'INITIAL': 'Açılış Stoğu',
+        'SCRAP_MELT': 'Eritme/Fire',
+        'REPAIR_IN': 'Tamir Giriş',
+        'REPAIR_OUT': 'Tamir Çıkış',
+    }
+    ledger_payload = []
+    has_reversal = False
+    for lr in ledger_rows:
+        _rt = lr.ref_type or ''
+        _is_rev = _rt.endswith('_cancel')
+        if _is_rev:
+            has_reversal = True
+        _g = Decimal(str(lr.quantity_gram or 0))
+        _u = Decimal(str(lr.unit_cost_hs or 0))
+        ledger_payload.append({
+            'id': str(lr.id),
+            'date': lr.created_on.strftime('%d %b %Y · %H:%M') if lr.created_on else '-',
+            'direction': lr.direction,
+            'reason': lr.reason,
+            'reason_label': 'İPTAL ('+REASON_LABELS.get(lr.reason, lr.reason)+')' if _is_rev
+                            else REASON_LABELS.get(lr.reason, lr.reason),
+            'is_reversal': _is_rev,
+            'gram': d_fmt(_g, 3),
+            'unit_hs': d_fmt(_u, 3) if _u > 0 else '-',
+            'total_hs': d_fmt((_g * _u).quantize(Decimal('0.001')), 3) if _u > 0 else '-',
+            'ref_type': _rt or '-',
+            'notes': (lr.notes or '')[:240],
+            'created_by': (lr.created_by.get_full_name() or lr.created_by.username
+                           if lr.created_by_id and lr.created_by else '-'),
+        })
+
+    return JsonResponse({
+        'result': True,
+        'process_no': process_no,
+        'process': process_info,
+        'ledger_rows': ledger_payload,
+        'has_reversal': has_reversal,
+        'pool_name': product.name,
+    })
+
+
+@login_required(login_url='login')
+@require_http_methods(["GET"])
+def pool_ledger(request, scrap_id):
+    """
+    Havuza ait StockLedger satırlarını DataTables formatında döner.
+
+    Her satır:
+      - tarih, yön (IN/OUT), reason kodu, gram (işaretli)
+      - birim Hs, toplam Hs (gram × unit_cost_hs)
+      - tedarikçi/müşteri etiketi (Process üzerinden)
+      - referans no (process_no), notes (kısa)
+      - running balance (Window: Sum(signed_gram) PARTITION ed by product, ORDER BY created_on)
+      - is_cancelled flag (aynı ref_id ile REVERSAL var mı?)
+      - can_cancel flag (sadece aktif PURCHASE satırlarında True)
+
+    Filtreler (query params):
+      date_from, date_to (YYYY-MM-DD)
+      direction (IN/OUT)
+      reason (PURCHASE, SALE, REVERSAL, ...)
+      supplier_id (UUID)
+      hide_cancelled (1/0)
+      search (text)
+    """
+    store = request.user.store
+    try:
+        scrap = Scraps.objects.select_related('product').get(
+            id=scrap_id, store=store, is_deleted=False,
+        )
+    except Scraps.DoesNotExist:
+        return JsonResponse({'error': True, 'error_msg': 'Havuz bulunamadı.'}, status=404)
+
+    product = scrap.product
+    if not product:
+        return JsonResponse({'error': True, 'error_msg': 'Havuza bağlı ürün yok.'}, status=404)
+
+    try:
+        draw = int(request.GET.get('draw', 1))
+        length = int(request.GET.get('length', 50))
+        start = int(request.GET.get('start', 0))
+    except ValueError:
+        draw, length, start = 1, 50, 0
+
+    # ─── Base queryset (running balance için TÜM satırlar gerekli) ───
+    base_qs = StockLedger.objects.filter(product=product, store=store)
+    total_records = base_qs.count()
+
+    # Running balance Window function ile annotate edilir.
+    # signed_gram: IN → +gram, OUT → -gram
+    annotated = base_qs.annotate(
+        signed_gram=Case(
+            When(direction='IN', then=F('quantity_gram')),
+            default=-F('quantity_gram'),
+            output_field=DecimalField(max_digits=14, decimal_places=4),
+        ),
+    ).annotate(
+        running_balance=Window(
+            expression=Sum('signed_gram'),
+            order_by=F('created_on').asc(),
+        ),
+    )
+
+    # ─── Filtreler ───
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
+    direction_f = (request.GET.get('direction') or '').strip().upper()
+    reason_f = (request.GET.get('reason') or '').strip().upper()
+    supplier_id_f = (request.GET.get('supplier_id') or '').strip()
+    hide_cancelled = (request.GET.get('hide_cancelled') or '').strip() in ('1', 'true', 'yes')
+    # FAZ 22 — "Aktif Stok Kaynağı Görünümü" (Active Stock Origin View)
+    # show_consumed: FIFO ile tüketilmiş (içeride hiç gramı kalmamış) IN satırlarını
+    #   ekrandan gizle/göster. Varsayılan: gizli. Kullanıcının havuz detay sayfasında
+    #   yalnızca "şu an içeride duran altının kaynağı" görünür; tüketilmiş kayıtlar
+    #   "Tüketilmişi Göster" toggle'ı ile listeye eklenir. VERİTABANINDAN HİÇBİR
+    #   ŞEY SİLİNMEZ — sadece view filtreleme uygulanır (Append-Only mimari korunur).
+    show_consumed = (request.GET.get('show_consumed') or '').strip() in ('1', 'true', 'yes')
+    search_value = (request.GET.get('search[value]') or request.GET.get('search') or '').strip()
+
+    # Window fonksiyonu olduğu için filter'ları subquery üzerinden uygulamamız
+    # gerekir — yoksa balance "filtrelenmiş set"e göre hesaplanır (yanlış).
+    # Bu yüzden running_balance'ı önce annotate edip, sonra ID'lere göre filtreleyeceğiz.
+    filtered_ids_qs = base_qs.all()
+    if date_from:
+        filtered_ids_qs = filtered_ids_qs.filter(created_on__date__gte=date_from)
+    if date_to:
+        filtered_ids_qs = filtered_ids_qs.filter(created_on__date__lte=date_to)
+    if direction_f in ('IN', 'OUT'):
+        filtered_ids_qs = filtered_ids_qs.filter(direction=direction_f)
+    if reason_f:
+        filtered_ids_qs = filtered_ids_qs.filter(reason=reason_f)
+    if supplier_id_f:
+        # Tedarikçi filtresi: ref_id, supplier_id'nin process_no'sunu eşliyor
+        proc_nos = Process.objects.filter(
+            product=product, store=store,
+            supplier_id=supplier_id_f,
+        ).values_list('process_no', flat=True)
+        filtered_ids_qs = filtered_ids_qs.filter(ref_id__in=list(proc_nos))
+    if search_value:
+        # process_no, notes veya tedarikçi adı içinde ara
+        proc_nos_match = Process.objects.filter(
+            product=product, store=store,
+            supplier__company_name__icontains=search_value,
+        ).values_list('process_no', flat=True)
+        filtered_ids_qs = filtered_ids_qs.filter(
+            Q(ref_id__icontains=search_value) |
+            Q(notes__icontains=search_value) |
+            Q(ref_id__in=list(proc_nos_match))
+        )
+
+    # ─── İPTAL TESPİTİ — SAĞLAM REF_TYPE TABANLI (FAZ 15) ───
+    # cancel_service.py kuralı: reversal kayıtları DAİMA
+    # ref_type=f"{orig_ref_type}_cancel" ile yazılır ve ref_id ORİJİNAL ile
+    # aynı kalır. Bu yüzden bir orijinal kaydın iptal edilip edilmediğini
+    # belirlemenin tek güvenilir yolu, aynı (ref_type, ref_id) üzerinde
+    # `_cancel` suffix'li bir OUT satırı olup olmadığına bakmaktır.
+    #
+    # Eski tespit `notes__icontains='IPTAL'` kullanıyordu — cancel_service
+    # notes formatı tutarsız (eski legacy kayıtlarda 'IPTAL' yok). Bu yüzden
+    # zaten iptal edilmiş satırlar 'Aktif' olarak görünüyordu ve İptal
+    # butonu çift-iptal denemesi → InsufficientStockError üretiyordu.
+    reversal_pairs_qs = base_qs.filter(
+        ref_type__endswith='_cancel'
+    ).values_list('ref_type', 'ref_id')
+    reversed_originals = set()  # (orig_ref_type, ref_id) çiftleri
+    reversal_ref_ids = set()    # geriye dönük uyumluluk: sadece ref_id seti
+    for _rt, _rid in reversal_pairs_qs:
+        if _rt and _rt.endswith('_cancel'):
+            _orig_rt = _rt[:-len('_cancel')]
+            reversed_originals.add((_orig_rt, _rid))
+            if _rid:
+                reversal_ref_ids.add(_rid)
+
+    if hide_cancelled:
+        # 1) Reversal satırlarının kendisini gizle (ref_type sonunda '_cancel')
+        filtered_ids_qs = filtered_ids_qs.exclude(ref_type__endswith='_cancel')
+        # 2) Reverse edilmiş orijinal satırları gizle: aynı (ref_type, ref_id)
+        #    çiftine sahip orijinaller. Tek SQL'de yapamadığımız için Python
+        #    set ile filter sonrası ID elemesi kullanılır.
+        if reversed_originals:
+            _hidden_ids = list(
+                filtered_ids_qs.filter(
+                    direction='IN',
+                    ref_id__in=list(reversal_ref_ids),
+                ).values_list('id', flat=True)
+            )
+            if _hidden_ids:
+                # Hangi ID'lerin gizleneceğini Python tarafında daralt
+                _all_match_rows = list(
+                    StockLedger.objects.filter(id__in=_hidden_ids)
+                    .values('id', 'ref_type', 'ref_id')
+                )
+                _drop_ids = [
+                    r['id'] for r in _all_match_rows
+                    if (r['ref_type'], r['ref_id']) in reversed_originals
+                ]
+                if _drop_ids:
+                    filtered_ids_qs = filtered_ids_qs.exclude(id__in=_drop_ids)
+
+    # ─── FAZ 22 — FIFO TÜKETİM HESABI (Active Stock Origin View) ───
+    # Her IN satırı için: bu girişin kaç gramı hâlâ havuzda duruyor?
+    #
+    # Algoritma:
+    #   1. Aktif IN satırları (REVERSAL OLMAYAN ve REVERSE EDİLMEMİŞ) kronolojik
+    #      sıraya dizilir (eski → yeni). FIFO mantığı: en eski giriş önce tüketilir.
+    #   2. İptal edilmiş IN satırları (reversed_originals'da olanlar): remaining=0,
+    #      original=quantity_gram. Bu satırlar FIFO havuzuna girmez; reversal OUT
+    #      satırı zaten ayrı yazılmıştır ve net OUT toplamına dahil edilmemelidir.
+    #   3. Net OUT toplamı = tüm OUT satırları - reversal OUT'lar (_cancel suffix'li).
+    #      Reversal OUT'ları, iptal edilen IN'leri zaten sıfırladığımız için iki
+    #      kez sayılmamalıdır. Bağımsız iadeler/satışlar (ref_type='process') net
+    #      OUT'a dahildir.
+    #   4. Net OUT, aktif IN satırlarına en eskisinden başlayarak dağıtılır.
+    #      Her IN için consumed = min(remaining_pool_out, original_gram).
+    #
+    # Sonuç: pool_remaining_map = {ledger.id: Decimal('remaining_gram')}
+    # IN olmayan satırlar (OUT, reversal vb.) için remaining_gram anlamsızdır;
+    # map'e eklenmezler.
+    pool_remaining_map = {}        # ledger.id -> Decimal remaining_gram
+    pool_original_map = {}         # ledger.id -> Decimal original_gram
+    consumed_in_ids = set()        # remaining == 0 olan IN ledger.id'leri
+
+    _all_in_rows = list(
+        base_qs.filter(direction='IN')
+        .order_by('created_on', 'id')
+        .values('id', 'ref_type', 'ref_id', 'quantity_gram')
+    )
+
+    # Net OUT toplamı: reversal'lar hariç tüm çıkışlar.
+    _net_out_agg = (
+        base_qs.filter(direction='OUT')
+        .exclude(ref_type__endswith='_cancel')
+        .aggregate(total=Coalesce(Sum('quantity_gram'),
+                                   Value(Decimal('0')),
+                                   output_field=DecimalField()))
+    )
+    _remaining_pool_out = Decimal(str(_net_out_agg.get('total') or 0))
+
+    for _in in _all_in_rows:
+        _in_id = _in['id']
+        _in_rt = _in['ref_type'] or ''
+        _in_rid = _in['ref_id']
+        _in_gram = Decimal(str(_in['quantity_gram'] or 0))
+        pool_original_map[_in_id] = _in_gram
+
+        # Reversal IN satırı (kendisi bir _cancel) — havuza giriş değil, OUT'un
+        # iadesi. FIFO için anlamsız; remaining=0 atanır.
+        if _in_rt.endswith('_cancel'):
+            pool_remaining_map[_in_id] = Decimal('0')
+            consumed_in_ids.add(_in_id)
+            continue
+
+        # İptal edilmiş orijinal IN: reversal OUT zaten yazılmış, FIFO dışı.
+        if (_in_rt, _in_rid) in reversed_originals:
+            pool_remaining_map[_in_id] = Decimal('0')
+            consumed_in_ids.add(_in_id)
+            continue
+
+        # Aktif IN: FIFO dağıtımı.
+        if _remaining_pool_out >= _in_gram:
+            _remaining_pool_out -= _in_gram
+            pool_remaining_map[_in_id] = Decimal('0')
+            consumed_in_ids.add(_in_id)
+        elif _remaining_pool_out > 0:
+            _remaining = _in_gram - _remaining_pool_out
+            _remaining_pool_out = Decimal('0')
+            pool_remaining_map[_in_id] = _remaining
+        else:
+            pool_remaining_map[_in_id] = _in_gram
+
+    # Tüketilmiş kayıtları gizle (varsayılan davranış).
+    # show_consumed=True → kullanıcı toggle ile geçmişi açtı; gizleme yok.
+    if not show_consumed and consumed_in_ids:
+        filtered_ids_qs = filtered_ids_qs.exclude(id__in=list(consumed_in_ids))
+
+    filtered_ids = list(filtered_ids_qs.values_list('id', flat=True))
+    filtered_records = len(filtered_ids)
+
+    # Şimdi annotated set'inden bu ID'leri çek (running balance korunur)
+    # Sıralama: en yeniler önce
+    rows_qs = annotated.filter(id__in=filtered_ids).order_by('-created_on', '-id')
+
+    # Sayfalama
+    if length != -1:
+        rows_qs = rows_qs[start:start + length]
+
+    # ─── Process eşleşmesi (supplier, price_hs için) ───
+    page_ref_ids = [r.ref_id for r in rows_qs if r.ref_id]
+    proc_map = {}
+    if page_ref_ids:
+        procs = Process.objects.filter(
+            product=product, store=store,
+            process_no__in=page_ref_ids,
+        ).select_related('supplier', 'customer')
+        for pr in procs:
+            proc_map[pr.process_no] = pr
+
+    # ─── Etiket sözlükleri ───
+    REASON_LABELS = {
+        'PURCHASE': ('Tedarikçi Alışı', 'success'),
+        'SALE': ('Satış', 'primary'),
+        'RETURN_IN': ('Satış İadesi', 'info'),
+        'RETURN_OUT': ('Alış İadesi', 'warning'),
+        'CONV_OUT': ('Dönüşüm Çıkışı', 'warning'),
+        'CONV_IN': ('Dönüşüm Girişi', 'info'),
+        'XFER_OUT': ('Transfer Çıkış', 'warning'),
+        'XFER_IN': ('Transfer Giriş', 'info'),
+        'ADJ_PLUS': ('Düzeltme (+)', 'info'),
+        'ADJ_MINUS': ('Düzeltme (-)', 'warning'),
+        'INITIAL': ('Açılış Stoğu', 'secondary'),
+        'SCRAP_MELT': ('Eritme/Fire', 'danger'),
+        'REPAIR_IN': ('Tamir Giriş', 'info'),
+        'REPAIR_OUT': ('Tamir Çıkış', 'warning'),
+    }
+
+    data = []
+    for row in rows_qs:
+        gram = Decimal(str(row.quantity_gram or 0))
+        unit_hs = Decimal(str(row.unit_cost_hs or 0))
+        total_hs = (gram * unit_hs).quantize(Decimal('0.001'))
+        signed_gram = gram if row.direction == 'IN' else -gram
+        # FAZ 15 — Sağlam tespit:
+        #   is_cancellation: bu satırın kendisi bir REVERSAL mı? (ref_type *_cancel)
+        #   is_cancelled:    bu satır bir orijinal ve karşılık gelen REVERSAL var mı?
+        _row_ref_type = row.ref_type or ''
+        is_cancellation = _row_ref_type.endswith('_cancel')
+        is_cancelled = (
+            (not is_cancellation)
+            and ((_row_ref_type, row.ref_id) in reversed_originals)
+        )
+
+        proc = proc_map.get(row.ref_id) if row.ref_id else None
+        supplier_name = ''
+        source_kind = ''
+        if proc:
+            if proc.supplier_id and proc.supplier:
+                supplier_name = proc.supplier.company_name
+                source_kind = 'supplier'
+            elif proc.customer_id and proc.customer:
+                supplier_name = (
+                    f"{proc.customer.first_name or ''} {proc.customer.last_name or ''}"
+                ).strip() or 'Müşteri'
+                source_kind = 'customer'
+            else:
+                supplier_name = 'Tedarikçisiz'
+                source_kind = 'none'
+        else:
+            # Process eşleşmesi yoksa: ref_type'a göre etiket
+            if row.ref_type == 'initial':
+                supplier_name = 'Açılış Stoğu'
+                source_kind = 'initial'
+            elif row.ref_type == 'adjustment':
+                supplier_name = 'Manuel Düzeltme'
+                source_kind = 'adjustment'
+            elif row.ref_type == 'conversion':
+                supplier_name = 'Dönüşüm İşlemi'
+                source_kind = 'conversion'
+            else:
+                supplier_name = '-'
+                source_kind = 'none'
+
+        if is_cancellation:
+            type_label = 'İPTAL'
+            type_color = 'danger'
+        else:
+            type_label, type_color = REASON_LABELS.get(
+                row.reason, (row.reason, 'secondary')
+            )
+
+        # ─── FAZ 22 — FIFO Tüketim Bilgisi ───
+        # remaining_gram: Bu girişin kaç gramı hâlâ havuzda duruyor (FIFO).
+        # is_consumed: Tamamen tüketilmiş mi? (remaining == 0)
+        # original_gram: Orijinal giriş miktarı (alış sırasında).
+        _orig_gram = pool_original_map.get(row.id, gram)
+        _remaining = pool_remaining_map.get(row.id)
+        if _remaining is None:
+            # IN olmayan satırlar (OUT, reversal vb.) için anlamsız; None bırakırız.
+            remaining_gram_val = None
+            is_consumed = False
+            is_partial = False
+        else:
+            remaining_gram_val = _remaining
+            is_consumed = (_remaining <= Decimal('0'))
+            is_partial = (_remaining > Decimal('0')) and (_remaining < _orig_gram)
+
+        # Sadece havuzda HÂLÂ AKTİF GRAMI BULUNAN PURCHASE satırları iptal edilebilir.
+        # FAZ 22 — Tüketilmiş (FIFO ile içeride hiç gramı kalmamış) PURCHASE'larda
+        # iptal butonu gösterilmez; çünkü cancel_service o satırı revert etmeye
+        # kalkışırsa "Insufficient stock" hatası üretir (havuzda gram yok).
+        # Bu sayede kuyumcuya yanıltıcı buton gösterilmez ve kullanıcı sadece
+        # gerçekten geri alınabilir, stoku hâlâ etkileyen işlemleri iptal eder.
+        # FAZ 13.1: Process kaydı zorunluluğu KALDIRILDI — tedarikçisiz/legacy
+        # girişlerde Process olmayabilir; frontend ledger_id ile iptal eder.
+        can_cancel = (
+            row.reason == 'PURCHASE'
+            and row.direction == 'IN'
+            and not is_cancelled
+            and not is_cancellation
+            and bool(row.ref_id)
+            and remaining_gram_val is not None
+            and remaining_gram_val > Decimal('0')
+        )
+
+        # Running balance Window field'ından
+        running_bal = Decimal(str(row.running_balance or 0))
+
+        # FAZ 19 / Bulgu B — İlgili Process'in işçilik milyemini ledger satırına ekle
+        _iscilik_milyem_val = None
+        if proc is not None:
+            try:
+                _ism = getattr(proc, 'iscilik_milyem', None)
+                if _ism is not None and Decimal(str(_ism)) > 0:
+                    _iscilik_milyem_val = d_fmt(Decimal(str(_ism)), 2)
+            except Exception:
+                _iscilik_milyem_val = None
+
+        data.append({
+            'id': str(row.id),
+            'ledger_id': str(row.id),  # FAZ 13.1 — frontend fallback için
+            'date_iso': row.created_on.isoformat() if row.created_on else None,
+            'date_short': row.created_on.strftime('%d %b %Y · %H:%M') if row.created_on else '-',
+            'direction': row.direction,
+            'reason': row.reason,
+            'type_label': type_label,
+            'type_color': type_color,
+            'is_cancellation': is_cancellation,
+            'is_cancelled': is_cancelled,
+            'source_name': supplier_name,
+            'source_kind': source_kind,
+            'gram_signed': d_fmt(signed_gram, 3),
+            'gram_abs': d_fmt(gram, 3),
+            'unit_hs': d_fmt(unit_hs, 3) if unit_hs > 0 else '-',
+            'total_hs': d_fmt(total_hs, 3) if total_hs > 0 else '-',
+            'running_balance': d_fmt(running_bal, 3),
+            'ref_no': row.ref_id or '-',
+            'ref_no_short': (row.ref_id[-6:] if row.ref_id else '-'),
+            'ref_type': row.ref_type or '-',
+            'notes': (row.notes or '')[:120],
+            'can_cancel': can_cancel,
+            'process_no': proc.process_no if proc else None,
+            'iscilik_milyem': _iscilik_milyem_val,
+            # FAZ 22 — FIFO tüketim bilgisi (Active Stock Origin View)
+            'original_gram': d_fmt(_orig_gram, 3) if remaining_gram_val is not None else None,
+            'remaining_gram': d_fmt(remaining_gram_val, 3) if remaining_gram_val is not None else None,
+            'is_consumed': is_consumed,
+            'is_partial': is_partial,
+        })
+
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': filtered_records,
+        'data': data,
+    })
+
+
+@login_required(login_url='login')
+@require_http_methods(["POST"])
+@role_required('SCRAPS_DELETE')
+@transaction.atomic
+@transaction.atomic
+def pool_bulk_cancel(request, scrap_id):
+    """
+    Havuzdaki TÜM aktif PURCHASE Process kayıtlarını tek seferde iptal eder.
+
+    Her bir kayıt için merkezi `cancel_scrap_purchase` servisi çağrılır:
+      - StockLedger'a REVERSAL satırı yazılır (append-only KORUNUR)
+      - SupplierLedger orijinal kaydı is_active=False (cari sıfırlanır)
+      - WAC + product_mileage döngü sonunda TEK recalculate ile hizalanır
+
+    @transaction.atomic: Döngüdeki herhangi bir Process iptali başarısız
+    olursa TÜM işlem geri alınır — yarı iptal durumu oluşmaz.
+
+    Audit trail TAM korunur: HİÇBİR satır silinmez, geçmişte iptal
+    rozetiyle ekstrede kalır.
+    """
+    from apps.scraps.services.cancel_scrap_service import (
+        cancel_scrap_purchase,
+        CancelNotAllowedError,
+        CancelScrapError,
+    )
+
+    store = request.user.store
+    try:
+        scrap = Scraps.objects.select_related('product').get(
+            id=scrap_id, store=store, is_deleted=False,
+        )
+    except Scraps.DoesNotExist:
+        return JsonResponse({'result': False, 'error_msg': 'Havuz bulunamadı.'}, status=404)
+
+    product = scrap.product
+    if not product:
+        return JsonResponse({'result': False, 'error_msg': 'Havuza bağlı ürün yok.'}, status=404)
+
+    # Aktif (iptal edilmemiş, tamamlanmış) PURCHASE Process kayıtları
+    active_procs = list(
+        Process.objects.filter(
+            product=product, store=store,
+            transaction_type='PURCHASE',
+            is_status='COMPLETED',
+            is_deleted=False,
+        ).order_by('-date')
+    )
+
+    if not active_procs:
+        return JsonResponse({
+            'result': False,
+            'error_msg': 'Bu havuzda iptal edilebilecek aktif işlem yok.',
+        })
+
+    cancelled_count = 0
+    total_cancelled_gram = Decimal('0')
+
+    # skip_recalculate=True: döngü içinde N kez değil, sonda 1 kez recalculate.
+    for proc in active_procs:
+        cancel_scrap_purchase(
+            process_id=proc.id,
+            user=request.user,
+            skip_recalculate=True,
+        )
+        cancelled_count += 1
+        total_cancelled_gram += Decimal(str(proc.gram or 0))
+
+    # Toplu iptal sonrası WAC ve milyem'i TEK seferde recalculate et.
+    try:
+        recalculate_scrap_pool_mileage_after_cancel(product, store)
+    except Exception as e:
+        logger.error(f"pool_bulk_cancel: final recalculate failed: {e}")
+
+    # Snapshot gramı 0'a indiyse havuzu soft-delete yap
+    snap = StockSnapshot.objects.filter(product=product, store=store).first()
+    pool_archived = False
+    if snap and snap.stock_gram <= Decimal('0'):
+        Products.objects.filter(id=product.id).update(is_active=False)
+        scrap.is_deleted = True
+        scrap.is_active = False
+        scrap.save(update_fields=['is_deleted', 'is_active'])
+        pool_archived = True
+
+    return JsonResponse({
+        'result': True,
+        'cancelled_count': cancelled_count,
+        'failed_count': 0,
+        'errors': [],
+        'total_cancelled_gram': str(total_cancelled_gram.quantize(Decimal('0.001'))),
+        'pool_archived': pool_archived,
+    })

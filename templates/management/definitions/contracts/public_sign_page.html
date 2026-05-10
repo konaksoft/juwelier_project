@@ -229,8 +229,52 @@
 
             {% if module_rows %}
 
-                {% if display_mode == 'package' %}
-                {# ═══════ PAKET MODU: Karşılaştırma Tablosu ═══════ #}
+                {% if is_contract_view %}
+                <!-- ═══════ SÖZLEŞME MODU (Faz 59): ABC Pattern Düz Tablo ═══════ -->
+                <div class="table-responsive">
+                    <table class="package-table">
+                        <thead>
+                        <tr>
+                            <th>ÖZELLİK</th>
+                            {% for pkg in packages %}
+                                <th class="text-center">
+                                    {{ pkg.name|upper }}
+                                    {% if process.package and pkg.id == process.package.id %}
+                                        <br><span class="badge bg-success small mt-1">SEÇİLEN</span>
+                                    {% endif %}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in module_rows %}
+                            <tr>
+                                <td style="padding-left: 12px; font-weight: 500;">{{ row.permission.name }}</td>
+                                {% for cell in row.cells %}
+                                    <td>
+                                        {% if cell.available %}
+                                            <div class="status-badge status-available" title="Dahil">
+                                                <i class="fa-solid fa-check"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="status-badge status-unavailable" title="Dahil Değil">
+                                                <i class="fa-solid fa-minus"></i>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if cell.note %}
+                                            <span class="note-text">{{ cell.note }}</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% elif display_mode == 'package' %}
+                <!-- ═══════ PAKET MODU: Karşılaştırma Tablosu (legacy) ═══════ -->
                 <div class="table-responsive">
                     <table class="package-table">
                         <thead>
@@ -281,7 +325,7 @@
                 </div>
 
                 {% else %}
-                {# ═══════ MODÜL MODU: Satın Alınan Modüller Tablosu ═══════ #}
+                <!-- ═══════ MODÜL MODU: Satın Alınan Modüller Tablosu ═══════ -->
                 <div class="table-responsive">
                     <table class="package-table">
                         <thead>

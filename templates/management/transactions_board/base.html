@@ -2100,10 +2100,10 @@
                 {% if request.user|menu_allowed:'ABC1015D' %}
                     {icon: 'fa-users', text: 'Müşteriler', url: "{% url 'customers:index' %}"},
                 {% endif %}
-                {# Sidebar'da Markalar (ABC1014) yoktu, ancak eski kodda vardı. Eğer sidebar ile birebir aynı olacaksa burası boş kalmalı, aksi takdirde aşağıyı açabilirsiniz #}
-                {# {% if request.user|menu_allowed:'ABC1014D' %} #}
-                {#    {icon: 'fa-tags', text: 'Markalar', url: "{% url 'brands:index' %}"}, #}
-                {# {% endif %} #}
+                <!-- Sidebar'da Markalar (ABC1014) yoktu, ancak eski kodda vardı. Eğer sidebar ile birebir aynı olacaksa burası boş kalmalı, aksi takdirde aşağıyı açabilirsiniz -->
+                <!-- {% if request.user|menu_allowed:'ABC1014D' %} -->
+                <!--    {icon: 'fa-tags', text: 'Markalar', url: "{% url 'brands:index' %}"}, -->
+                <!-- {% endif %} -->
                 {% if request.user|menu_allowed:'ABC1016D'  %}
                     {
                         icon: 'fa-store-alt',
@@ -2707,5 +2707,8 @@
 </script>
 {% block footer %}
 {% endblock footer %}
+{% if request.user.is_authenticated %}
+    {% include 'management/_partials/process_xray_modal.html' %}
+{% endif %}
 </body>
 </html>

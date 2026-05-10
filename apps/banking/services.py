@@ -36,8 +36,7 @@ from django.utils.dateparse import parse_datetime
 
 from apps.banking.models import BankTransaction, BankAccount
 from apps.customers.models import Customers
-from apps.invoices.esurec_client import ESurecClient
-from apps.invoices.models import Invoice
+# ESurecClient ve Invoice kaldırıldı — invoices app Juwelier Plus'ta yok
 
 log = logging.getLogger(__name__)
 
@@ -446,6 +445,22 @@ class ESurecBankingClient:
                     if not api_id:
                         continue
 
+                    # FAZ A.1 / GAP-07 — e-Süreç UUID'sini parse et
+                    # esurec_id eski sürüm yanıtlarda olmayabilir; UUID
+                    # formatı bozuksa sessizce None bırakılır (alan nullable).
+                    raw_esurec_id = txn.get('esurec_id') or txn.get('esurecId')
+                    parsed_esurec_uuid = None
+                    if raw_esurec_id:
+                        try:
+                            import uuid as _uuid_mod
+                            parsed_esurec_uuid = _uuid_mod.UUID(str(raw_esurec_id))
+                        except (ValueError, AttributeError, TypeError):
+                            log.warning(
+                                "[Banking] esurec_id parse edilemedi (api_id=%s, raw=%r)",
+                                api_id, raw_esurec_id,
+                            )
+                            parsed_esurec_uuid = None
+
                     try:
                         BankTransaction.objects.update_or_create(
                             store=store,
@@ -475,6 +490,8 @@ class ESurecBankingClient:
                                 'mysoft_transaction_type':   txn.get('mysoftTransactionType') or '',
                                 'is_succeed':               txn.get('succeed', True),
                                 'api_message':              txn.get('message') or '',
+                                # FAZ A.1 / GAP-07: e-Süreç iç UUID referansı
+                                'esurec_transaction_id':    parsed_esurec_uuid,
                             }
                         )
                         synced += 1
@@ -517,35 +534,142 @@ class ESurecBankingClient:
             return {'result': False, 'msg': 'e-Süreç mark-read yanıt vermedi.'}
         return resp
 
-    def reconcile_transaction(self, bank_txn_id: str, invoice_id: str, store) -> dict:
+    # ────────────────────────────────────────────────────────────────────
+    # FAZ A.2 / GAP-02 — FATURALANDI BİLDİRİMİ
+    # ────────────────────────────────────────────────────────────────────
+
+    def mark_invoiced(
+        self,
+        store,
+        esurec_transaction_ids: list,
+        esurec_invoice_id: str = '',
+        kp_invoice_id: str = '',
+        kp_invoice_no: str = '',
+    ) -> dict:
         """
-        KP-10: Banka hareketi ile faturayı mutabık kılar.
-        e-Süreç'te reconcile endpoint'i varsa çağırır, yoksa lokalde eşleştirir.
+        e-Süreç tarafında belirtilen banka hareketleri için
+        BankTransaction.is_invoiced=True bayrağını yazar.
+
+        Bu çağrı, KP'de bir BankTransaction üzerinden Invoice oluşturulduktan
+        SONRA yapılmalıdır. e-Süreç tarafının aynı hareketi tekrar
+        faturalama adayı olarak görmesini engeller (mükerrer fatura
+        koruması — GAP-02).
 
         Args:
-            bank_txn_id: BankTransaction UUID
-            invoice_id: Invoice UUID
-            store: Stores model instance
+            store: KP Stores instance
+            esurec_transaction_ids: e-Süreç BankTransaction.id (UUID) listesi
+            esurec_invoice_id: e-Süreç Invoice.id — KP'nin /invoice/send/
+                akışında elde edebildiği UUID. Verilirse linked_invoice
+                doldurulur. Boş bırakılabilir.
+            kp_invoice_id: KP Invoice UUID (audit için, e-Süreç saklamaz)
+            kp_invoice_no: KP fatura numarası (audit için)
 
         Returns:
-            {'result': True/False, 'msg': str}
+            { 'result': bool, 'msg': str, 'updated': int, 'already_invoiced': int,
+              'linked_invoice': str|None }
+
+        Hatalar fırlatılmaz; başarısızlık durumunda result=False döner.
         """
+        if not esurec_transaction_ids:
+            return {
+                'result': True,
+                'msg': 'esurec_transaction_ids listesi boş — bildirim atlandı.',
+                'updated': 0,
+            }
+
+        seller_vkn = self._get_seller_vkn(store)
+        raw_token = self._get_tenant_token(store)
+
+        # Token yoksa sessiz başarısızlık (KP iş akışı bloklanmamalı)
+        if not raw_token:
+            log.warning(
+                "[Banking mark-invoiced] Token yok, atlanıyor: store=%s, ids=%s",
+                getattr(store, 'id', '?'), len(esurec_transaction_ids),
+            )
+            return {
+                'result': False,
+                'msg': 'Tenant token yok; mark-invoiced bildirimi atlandı.',
+                'updated': 0,
+                'retryable': False,
+            }
+
+        # UUID listesini string'e normalize et
+        ids_payload = []
+        for raw in esurec_transaction_ids:
+            if raw is None:
+                continue
+            ids_payload.append(str(raw))
+
+        if not ids_payload:
+            return {
+                'result': True,
+                'msg': 'Geçerli esurec_transaction_id bulunamadı.',
+                'updated': 0,
+            }
+
+        payload = {
+            'seller_vkn': seller_vkn,
+            'esurec_transaction_ids': ids_payload,
+        }
+        if esurec_invoice_id:
+            payload['esurec_invoice_id'] = str(esurec_invoice_id)
+        if kp_invoice_id:
+            payload['kp_invoice_id'] = str(kp_invoice_id)
+        if kp_invoice_no:
+            payload['kp_invoice_no'] = str(kp_invoice_no)
+
         try:
-            txn = BankTransaction.objects.get(id=bank_txn_id, store=store)
-            invoice = Invoice.objects.get(id=invoice_id, store=store, is_deleted=False)
-        except (BankTransaction.DoesNotExist, Invoice.DoesNotExist) as e:
-            return {'result': False, 'msg': f'Kayıt bulunamadı: {type(e).__name__}'}
+            resp = self._client._request(
+                'POST', '/api/v1/external/banking/mark-invoiced/', payload,
+                extra_headers={'X-Tenant-Token': raw_token},
+            )
+        except Exception as exc:
+            log.error(
+                "[Banking mark-invoiced] _request exception: %s (store=%s)",
+                exc, getattr(store, 'id', '?'),
+            )
+            return {
+                'result': False,
+                'msg': f'mark-invoiced çağrısı başarısız: {type(exc).__name__}',
+                'updated': 0,
+                'retryable': True,
+            }
 
-        # Lokalde bağla
-        with db_transaction.atomic():
-            txn.invoice = invoice
-            txn.payment_status = BankTransaction.PaymentStatus.PAID
-            txn.match_status = BankTransaction.MatchStatus.MANUAL_MATCHED
-            txn.save(update_fields=[
-                'invoice', 'payment_status', 'match_status', 'updated_on',
-            ])
+        if not resp:
+            return {
+                'result': False,
+                'msg': 'e-Süreç mark-invoiced yanıt vermedi.',
+                'updated': 0,
+                'retryable': True,
+            }
 
-        return {'result': True, 'msg': f'Banka hareketi fatura {invoice.invoice_no} ile eşleştirildi.'}
+        # Yanıt formatı: { success: true, count: N, updated: N, ... } veya
+        # { success: false, error: {...} }
+        is_success = resp.get('success', False) or resp.get('result', False)
+        if not is_success:
+            error_msg = (
+                (resp.get('error', {}).get('message', '') if isinstance(resp.get('error'), dict) else '')
+                or resp.get('message', '')
+                or resp.get('error_msg', '')
+                or 'mark-invoiced başarısız.'
+            )
+            return {
+                'result': False,
+                'msg': error_msg,
+                'updated': 0,
+            }
+
+        return {
+            'result': True,
+            'msg': resp.get('message', 'mark-invoiced başarılı.'),
+            'updated': resp.get('updated', 0),
+            'already_invoiced': resp.get('already_invoiced', 0),
+            'linked_invoice': resp.get('linked_invoice'),
+        }
+
+    def reconcile_transaction(self, bank_txn_id: str, invoice_id: str, store) -> dict:
+        """Stub — invoices app bu projede yok."""
+        return {'result': False, 'msg': 'Fatura mutabakatı bu projede devre dışı.'}
 
 
 # ============================================================================
@@ -737,204 +861,36 @@ class CariMatchingService:
 
 
 # ============================================================================
-# 3. InvoiceAutoService
+# 3. InvoiceAutoService — STUB (invoices app kaldırıldı — Juwelier Plus)
 # ============================================================================
 
 class InvoiceAutoService:
     """
-    Eşleştirilen banka hareketinden otomatik e-fatura oluşturur
-    ve e-Süreç'e gönderir.
-
-    İdempotency: bank_txn.invoice FK dolu ise tekrar fatura kesilmez.
-    Kısmi/fazla ödeme: grand_total = amount (gelen tutar), payment_status güncellenir.
+    Stub — invoices app Juwelier Plus'ta mevcut değil.
     """
-
-    # Varsayılan KDV oranı (kuyumcu satışı için %20)
-    DEFAULT_VAT_RATE = Decimal('20.00')
-    # Varsayılan ürün açıklaması
-    DEFAULT_ITEM_DESC = 'Havale/EFT Tahsilatı'
 
     def __init__(self, store, user=None):
         self.store = store
         self.user = user
 
-    def _get_company(self):
-        """Mağazanın Company nesnesini döner."""
-        return getattr(self.store, 'company', None)
-
     def can_create_invoice(self, bank_txn: BankTransaction) -> tuple:
-        """
-        Fatura oluşturulabilir mi?
-        Döner: (bool, str) — (oluşturulabilir_mi, neden)
-        """
-        if bank_txn.invoice_id:
-            return False, 'Bu harekete zaten fatura bağlı (idempotency koruması).'
-        if not bank_txn.is_incoming:
-            return False, 'Sadece gelen (borç) hareketler için fatura kesilebilir.'
-        if not bank_txn.customer_id:
-            return False, 'Harekete cari müşteri atanmamış.'
-        if bank_txn.amount <= 0:
-            return False, 'İşlem tutarı sıfır veya negatif.'
-        return True, ''
+        """Stub."""
+        return False, 'Fatura servisi bu projede devre dışı.'
 
     def create_and_send(self, bank_txn: BankTransaction,
                         vat_rate: Decimal = None,
                         item_description: str = '',
                         auto_send_to_gib: bool = True) -> dict:
-        """
-        1. Invoice oluştur
-        2. e-Süreç'e taslak gönder
-        3. (auto_send_to_gib=True ise) GİB'e gönder
+        """Stub — invoices app bu projede yok."""
+        return {'result': False, 'msg': 'Fatura servisi bu projede devre dışı.', 'invoice_id': None, 'invoice_no': None, 'esurec_id': None}
 
-        İdempotency: bank_txn.invoice zaten doluysa işlem atlanır.
+    def _create_invoice(self, bank_txn: BankTransaction, vat_rate: Decimal, item_desc: str):
+        """Stub."""
+        return None
 
-        Döner:
-          {
-            'result': bool,
-            'invoice_id': str|None,
-            'invoice_no': str|None,
-            'esurec_id': str|None,
-            'msg': str,
-          }
-        """
-        can, reason = self.can_create_invoice(bank_txn)
-        if not can:
-            return {'result': False, 'msg': reason, 'invoice_id': None}
-
-        vat_rate = vat_rate or self.DEFAULT_VAT_RATE
-        item_desc = item_description or self.DEFAULT_ITEM_DESC
-
-        try:
-            with db_transaction.atomic():
-                invoice = self._create_invoice(bank_txn, vat_rate, item_desc)
-                # Harekete faturayı bağla
-                bank_txn.invoice = invoice
-                bank_txn.payment_status = BankTransaction.PaymentStatus.PAID
-                bank_txn.save(update_fields=['invoice', 'payment_status', 'updated_on'])
-
-        except Exception as e:
-            log.exception(f"[Banking] Fatura oluşturma hatası (txn={bank_txn.id}): {e}")
-            return {'result': False, 'msg': f'Fatura oluşturulamadı: {str(e)[:300]}', 'invoice_id': None}
-
-        result = {
-            'result': True,
-            'invoice_id': str(invoice.id),
-            'invoice_no': invoice.invoice_no,
-            'esurec_id': None,
-            'msg': f'Fatura oluşturuldu: {invoice.invoice_no}',
-        }
-
-        # --- e-Süreç'e gönder ---
-        if auto_send_to_gib:
-            esurec_result = self._send_to_esurec_and_gib(invoice)
-            result.update(esurec_result)
-
-        return result
-
-    def _create_invoice(self, bank_txn: BankTransaction, vat_rate: Decimal, item_desc: str) -> Invoice:
-        """
-        Invoice ve InvoiceItem nesnelerini oluşturur.
-        KDV dahil tutar = bank_txn.amount, KDV oranına göre matrah hesaplanır.
-        """
-        from apps.invoices.models import InvoiceItem
-
-        company = self._get_company()
-
-        # Tutar hesaplamaları (KDV dahil tutardan matrah çıkar)
-        amount_incl = Decimal(str(bank_txn.amount))
-        vat_divisor = Decimal('1') + (vat_rate / Decimal('100'))
-        amount_excl = (amount_incl / vat_divisor).quantize(Decimal('0.01'))
-        vat_amount = (amount_incl - amount_excl).quantize(Decimal('0.01'))
-
-        # Fatura numarası üret
-        invoice_no, seq_obj = Invoice.next_number_for(
-            store=self.store,
-            invoice_date=bank_txn.doc_date or timezone.now(),
-        )
-        if seq_obj:
-            seq_obj.last_no = int(invoice_no.split('-')[-1]) if '-' in invoice_no else int(invoice_no[-9:])
-            seq_obj.save(update_fields=['last_no'])
-
-        invoice = Invoice(
-            store=self.store,
-            customer=bank_txn.customer,
-            invoice_no=invoice_no,
-            sequence_no=0,
-            invoice_type=Invoice.Type.SALE,
-            doc_class=Invoice.DocumentClass.E_ARCHIVE,
-            scenario=Invoice.Scenario.EARSIV,
-            status=Invoice.Status.DRAFT,
-            currency='TRY',
-            issue_date=bank_txn.doc_date or timezone.now(),
-            subtotal=amount_excl,
-            discount_total=Decimal('0.00'),
-            tax_total=vat_amount,
-            grand_total=amount_incl,
-            paid_total=amount_incl,
-            notes=(
-                f"Banka hareketi otomatik faturası.\n"
-                f"Referans: {bank_txn.doc_no or ''}\n"
-                f"Banka: {bank_txn.bank_name or ''}\n"
-                f"İşlem tarihi: {bank_txn.doc_date}"
-            ),
-        )
-        invoice.full_clean(exclude=['sequence_no', 'document_number', 'ettn', 'gib_uuid'])
-        invoice.save()
-
-        # Sequence_no güncelle
-        seq_no = int(invoice_no.split('-')[-1]) if '-' in invoice_no else int(str(invoice_no)[-9:])
-        invoice.sequence_no = seq_no
-        invoice.save(update_fields=['sequence_no'])
-
-        # Fatura kalemi
-        InvoiceItem.objects.create(
-            invoice=invoice,
-            description=item_desc,
-            quantity=Decimal('1.00'),
-            unit_price=amount_excl,
-            vat_rate=vat_rate,
-            discount_rate=Decimal('0.00'),
-            discount_amount=Decimal('0.00'),
-            total_excl_vat=amount_excl,
-            vat_amount=vat_amount,
-            total_incl_vat=amount_incl,
-        )
-
-        invoice.recompute_totals(save=True)
-        return invoice
-
-    def _send_to_esurec_and_gib(self, invoice: Invoice) -> dict:
-        """
-        e-Süreç'e taslak oluştur → GİB'e gönder (senkron akış).
-        """
-        try:
-            from apps.invoices.esurec_views import _sync_send_to_gib
-
-            result = _sync_send_to_gib(self.store, [str(invoice.id)])
-            import json
-            data = json.loads(result.content)
-
-            if data.get('result'):
-                details = data.get('details', [{}])
-                esurec_id = details[0].get('esurec_id', '') if details else ''
-                return {
-                    'result': True,
-                    'esurec_id': esurec_id,
-                    'msg': f'Fatura GİB\'e gönderildi: {invoice.invoice_no}',
-                }
-            else:
-                return {
-                    'result': False,
-                    'esurec_id': None,
-                    'msg': data.get('msg', 'GİB gönderimi başarısız.'),
-                }
-        except Exception as e:
-            log.exception(f"[Banking] GİB gönderim hatası (invoice={invoice.id}): {e}")
-            return {
-                'result': False,
-                'esurec_id': None,
-                'msg': f'GİB gönderim hatası: {str(e)[:200]}',
-            }
+    def _send_to_esurec_and_gib(self, invoice) -> dict:
+        """Stub."""
+        return {'result': False, 'esurec_id': None, 'msg': 'Fatura servisi bu projede devre dışı.'}
 
 
 # ============================================================================
@@ -943,49 +899,18 @@ class InvoiceAutoService:
 
 class PaymentStatusService:
     """
-    Fatura bazlı ödeme durumunu hesaplar.
-    Birden fazla banka hareketi aynı faturaya bağlanabilir.
+    Stub — invoices app Juwelier Plus'ta mevcut değil.
     """
 
     @staticmethod
-    def compute_for_invoice(invoice: Invoice) -> str:
-        """
-        Faturaya bağlı banka hareketlerinin toplam tutarından ödeme durumunu hesaplar.
-        Döner: 'PAID' | 'PARTIAL' | 'UNPAID' | 'OVERPAID'
-        """
-        from django.db.models import Sum
-        total_paid = invoice.bank_transactions.filter(
-            match_status__in=[
-                BankTransaction.MatchStatus.AUTO_MATCHED,
-                BankTransaction.MatchStatus.MANUAL_MATCHED,
-            ]
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-
-        grand = invoice.grand_total or Decimal('0')
-
-        if total_paid <= 0:
-            return 'UNPAID'
-        elif total_paid >= grand:
-            return 'OVERPAID' if total_paid > grand + Decimal('0.05') else 'PAID'
-        else:
-            return 'PARTIAL'
+    def compute_for_invoice(invoice) -> str:
+        """Stub — her zaman 'UNPAID' döner."""
+        return 'UNPAID'
 
     @classmethod
-    def update_invoice(cls, invoice: Invoice):
-        """Ödeme durumunu hesaplayıp kayıt eder."""
-        status = cls.compute_for_invoice(invoice)
-        # Invoice modelinin paid_total alanını güncelle
-        # compute_for_invoice ile AYNI filtreyi kullan — sadece eşleşmiş hareketler
-        from django.db.models import Sum
-        total_paid = invoice.bank_transactions.filter(
-            match_status__in=[
-                BankTransaction.MatchStatus.AUTO_MATCHED,
-                BankTransaction.MatchStatus.MANUAL_MATCHED,
-            ]
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-        invoice.paid_total = total_paid
-        invoice.save(update_fields=['paid_total', 'updated_on'])
-        return status
+    def update_invoice(cls, invoice):
+        """Stub — işlem yapmaz."""
+        return 'UNPAID'
 
 
 # ============================================================================
@@ -1019,6 +944,26 @@ class EsurecHealthCheckService:
 
     def __init__(self, store):
         self.store = store
+
+    @staticmethod
+    def _parse_iso_dt(raw):
+        """
+        ISO 8601 datetime string'ini timezone-aware datetime'a parse eder.
+        Geçersizse None döner (exception fırlatmaz).
+        """
+        if not raw:
+            return None
+        try:
+            from django.utils.dateparse import parse_datetime
+            dt = parse_datetime(str(raw))
+            if dt is None:
+                return None
+            # Naive ise Django timezone aware'e çek
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt, timezone.get_default_timezone())
+            return dt
+        except Exception:
+            return None
 
     def check(self, force: bool = False) -> dict:
         """
@@ -1182,16 +1127,29 @@ class EsurecHealthCheckService:
         if data.get('success'):
             modules = data.get('modules', {})
             dealer_info = data.get('dealer', {})
+            token_info = data.get('token', {}) or {}
 
             efatura = modules.get('efatura_active', False)
             banking = modules.get('banking_active', False)
             esurec_uuid = dealer_info.get('id')
+
+            # ── FAZ B.3 / GAP-05 — token bloğunu parse et ────────────
+            remote_status = (token_info.get('status') or '').upper().strip() or None
+            remote_susp = token_info.get('suspension_count')
+            remote_expires_at = self._parse_iso_dt(token_info.get('expires_at'))
+            remote_status_changed_at = self._parse_iso_dt(
+                token_info.get('last_status_change_at')
+            )
 
             cred.update_health(
                 status='OK',
                 efatura=efatura,
                 banking=banking,
                 esurec_uuid=esurec_uuid,
+                remote_token_status=remote_status,
+                remote_suspension_count=remote_susp,
+                remote_status_changed_at=remote_status_changed_at,
+                remote_token_expires_at=remote_expires_at,
             )
 
             return {
@@ -1205,6 +1163,15 @@ class EsurecHealthCheckService:
                     cred.last_health_check_at.isoformat()
                     if cred.last_health_check_at else None
                 ),
+                # FAZ B.3 — UI'a token bilgisi de döndür
+                'token': {
+                    'status': remote_status,
+                    'is_active': bool(token_info.get('is_active')),
+                    'expires_at': token_info.get('expires_at'),
+                    'expires_soon': bool(token_info.get('expires_soon')),
+                    'suspension_count': int(remote_susp or 0),
+                    'warning': cred.remote_token_warning,
+                },
                 'msg': data.get('message', 'Bağlantı başarılı.'),
             }
 
@@ -1872,6 +1839,37 @@ CURRENCY_FROM_PRODUCT_NAME = {
 }
 
 
+# ────────────────────────────────────────────────────────────────────────
+# DÖVİZ SSOT — Tek Doğruluk Kaynağı (Faz 13: Kasa Çoklu-Döviz Düzeltme)
+# ────────────────────────────────────────────────────────────────────────
+# Aşağıdaki sabitler proje genelinde TEK kaynak olarak kullanılmalıdır.
+# fast_views, retail_views, wholesale_views, bank_views bu sabitleri import eder.
+# Yeni bir döviz eklenecekse YALNIZCA bu blokta güncelleme yapılır.
+
+# Kod → Ürün adı (örn. 'USD' → 'USDTRY'): kur okuma için kullanılır.
+PRODUCT_NAME_FROM_CURRENCY = {code: name for name, code in CURRENCY_FROM_PRODUCT_NAME.items()}
+
+# Geçerli döviz kodları kümesi (TRY dahil). reference whitelist için kullanılır.
+SUPPORTED_FX_CURRENCIES = frozenset(set(CURRENCY_FROM_PRODUCT_NAME.values()) | {'TRY'})
+
+# Sentinel kur değerleri — FX kasası "Bakiye Düzeltme" / sentinel-rate akışı için.
+# Yazma ve okuma yolları aynı haritayı kullanmalıdır (yazma-okuma desync engeli).
+FX_SENTINEL_MAP = {
+    'USD': Decimal('0.01'),
+    'EUR': Decimal('0.02'),
+    'GBP': Decimal('0.03'),
+    'CHF': Decimal('0.04'),
+    'CAD': Decimal('0.05'),
+    'AUD': Decimal('0.06'),
+    'JPY': Decimal('0.07'),
+    'QAR': Decimal('0.08'),
+    'SAR': Decimal('0.09'),
+}
+
+# Ters harita: kayıtlı sentinel kur → döviz kodu (okuma yolu).
+FX_SENTINEL_REVERSE_MAP = {float(rate): code for code, rate in FX_SENTINEL_MAP.items()}
+
+
 def get_currency_code_from_product(product) -> Optional[str]:
     """
     is_currency=True olan bir ürünün döviz kodunu döndürür.
@@ -1890,6 +1888,34 @@ def get_currency_code_from_product(product) -> Optional[str]:
     # Fallback: prefix yakala (USDTRY-Custom gibi varyasyonlar için)
     for prefix, code in CURRENCY_FROM_PRODUCT_NAME.items():
         if name_key.startswith(prefix):
+            return code
+    return None
+
+
+def detect_currency_from_name(name) -> Optional[str]:
+    """
+    Ürün/string adından döviz kodunu çıkarır (Products instance gerektirmeden).
+
+    SUPPORTED_FX_CURRENCIES içindeki tüm kodlar için prefix taraması yapar
+    (USDTRY → USD, SARTRY → SAR, AUDTRY → AUD ...).
+
+    Args:
+        name: str — ürün adı veya benzeri string
+
+    Returns:
+        'USD', 'EUR' vb. veya None (eşleşme yoksa).
+    """
+    if not name:
+        return None
+    key = str(name).upper().strip()
+    if key in CURRENCY_FROM_PRODUCT_NAME:
+        return CURRENCY_FROM_PRODUCT_NAME[key]
+    for prefix, code in CURRENCY_FROM_PRODUCT_NAME.items():
+        if key.startswith(prefix):
+            return code
+    # Tam kod ile başlıyorsa (örn. "USD ..." varyasyonları) → ilgili kodu döndür.
+    for code in CURRENCY_FROM_PRODUCT_NAME.values():
+        if key.startswith(code):
             return code
     return None
 

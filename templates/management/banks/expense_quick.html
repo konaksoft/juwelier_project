@@ -1,0 +1,809 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{# ============================================================================
+   FAZ 65 — Hızlı Gider Girişi (Yeniden Tasarım)
+   FAZ 61 mimarisi korundu. Tasarım yeniden yazıldı:
+     • app-toolbar başlık (kart yok) + sağ aksiyon butonları
+     • 4 KPI satırı (bugün / bu ay / sayı / en yüksek kategori)
+     • Birincil giriş kartı — border-top primary
+     • Bekleyen liste kartı — border-top warning
+     • Tüm renkler kp-custom.css üzerinden CSS değişkenlerine bağlı (dark mode uyumlu)
+   JS akışı (Tab/Enter/Ctrl+Enter, sessionStorage, modal) DEĞİŞMEDİ.
+   ============================================================================ #}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5">
+
+                {% if no_store %}
+                    <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Hesabınıza bağlı mağaza bulunamadı. Yöneticiyle iletişime geçin.
+                        </div>
+                    </div>
+                {% else %}
+
+                    {# ───── Üst Toolbar (kart yok, app-toolbar standardı) ───── #}
+                    <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 w-100">
+                            <div>
+                                <h1 class="page-heading text-dark fw-bold fs-2 my-0 d-flex align-items-center">
+                                    <i class="bi bi-pencil-square me-2 text-warning fs-1"></i>
+                                    Hızlı Gider Girişi
+                                </h1>
+                                <div class="text-muted fs-7 fw-semibold mt-1">
+                                    Defter gibi hızlı:
+                                    <kbd>Tab</kbd> ile alanlar arası geç,
+                                    <kbd>Enter</kbd> ile satırı bekleyenlere ekle,
+                                    <kbd>Ctrl</kbd>+<kbd>Enter</kbd> ile tümünü kaydet.
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{% url 'bank-management:expense_categories' %}"
+                                   class="btn btn-sm btn-light-secondary fw-bold">
+                                    <i class="bi bi-tags me-1"></i> Kategoriler
+                                </a>
+                                <a href="{% url 'bank-management:expense_report' %}"
+                                   class="btn btn-sm btn-light-info fw-bold">
+                                    <i class="bi bi-graph-up me-1"></i> Rapor
+                                </a>
+                                <a href="{% url 'bank-management:index' %}"
+                                   class="btn btn-sm btn-light fw-bold">
+                                    <i class="bi bi-arrow-left me-1"></i> Kasalar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── KPI Satırı (4 kart) ───── #}
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="eq-kpi eq-kpi--red">
+                                <div class="eq-kpi__icon">
+                                    <i class="bi bi-calendar-day"></i>
+                                </div>
+                                <div class="eq-kpi__body">
+                                    <div class="eq-kpi__label">Bugün Gider</div>
+                                    <div class="eq-kpi__value" id="kpiTodayAmount">— TL</div>
+                                    <div class="eq-kpi__sub" id="kpiTodaySub">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="eq-kpi eq-kpi--blue">
+                                <div class="eq-kpi__icon">
+                                    <i class="bi bi-list-check"></i>
+                                </div>
+                                <div class="eq-kpi__body">
+                                    <div class="eq-kpi__label">Bugün Satır</div>
+                                    <div class="eq-kpi__value" id="kpiTodayCount">—</div>
+                                    <div class="eq-kpi__sub">girilen kayıt</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="eq-kpi eq-kpi--red">
+                                <div class="eq-kpi__icon">
+                                    <i class="bi bi-calendar-month"></i>
+                                </div>
+                                <div class="eq-kpi__body">
+                                    <div class="eq-kpi__label">Bu Ay Toplam</div>
+                                    <div class="eq-kpi__value" id="kpiMonthAmount">— TL</div>
+                                    <div class="eq-kpi__sub" id="kpiMonthSub">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="eq-kpi eq-kpi--warning">
+                                <div class="eq-kpi__icon">
+                                    <i class="bi bi-trophy"></i>
+                                </div>
+                                <div class="eq-kpi__body">
+                                    <div class="eq-kpi__label">En Yüksek Kategori</div>
+                                    <div class="eq-kpi__value" id="kpiTopCategoryName">—</div>
+                                    <div class="eq-kpi__sub" id="kpiTopCategoryAmount">bu ay</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── Birincil Giriş Kartı ───── #}
+                    <div class="card eq-card eq-card--input mb-4">
+                        <div class="card-body p-4 p-md-5">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <h3 class="fw-bold fs-5 my-0 d-flex align-items-center">
+                                    <i class="bi bi-plus-circle text-primary me-2"></i>
+                                    Yeni Satır
+                                </h3>
+                                <span class="text-muted fs-8">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Kasa bir kez seçilir, tarayıcı hatırlar.
+                                </span>
+                            </div>
+
+                            <div class="eq-input-row">
+                                <div class="eq-col-cashbox">
+                                    <label class="form-label fw-semibold mb-1 fs-7">
+                                        <i class="bi bi-wallet2 me-1 text-success"></i>Kasa
+                                    </label>
+                                    <select id="qrAccount" class="form-select form-select-solid form-select-sm">
+                                        <option value="">— Seçin —</option>
+                                        {% for a in accounts %}
+                                            <option value="{{ a.id }}"
+                                                    data-type="{{ a.account_type }}"
+                                                    data-currency="{{ a.currency }}">
+                                                {{ a.name }} [{{ a.account_type }}]
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="eq-col-cat">
+                                    <label class="form-label fw-semibold mb-1 fs-7">
+                                        <i class="bi bi-tag me-1 text-primary"></i>Kategori
+                                    </label>
+                                    <select id="qrCategory" class="form-select form-select-solid form-select-sm">
+                                        <option value="">— Seçin —</option>
+                                        {% for c in categories %}
+                                            <option value="{{ c.id }}"
+                                                    data-color="{{ c.color_css }}"
+                                                    data-icon="{{ c.icon }}"
+                                                    data-short="{{ c.short_code }}">
+                                                {{ c.name }}{% if c.short_code %} ({{ c.short_code }}){% endif %}
+                                            </option>
+                                        {% endfor %}
+                                        <option value="__new__">+ Yeni Kategori…</option>
+                                    </select>
+                                </div>
+
+                                <div class="eq-col-amount">
+                                    <label class="form-label fw-semibold mb-1 fs-7">
+                                        <i class="bi bi-cash-coin me-1 text-danger"></i>Tutar (TL)
+                                    </label>
+                                    <input type="text" id="qrAmount" inputmode="decimal"
+                                           class="form-control form-control-solid form-control-sm eq-amount-input"
+                                           placeholder="0,00">
+                                </div>
+
+                                <div class="eq-col-desc">
+                                    <label class="form-label fw-semibold mb-1 fs-7">
+                                        <i class="bi bi-pencil me-1 text-muted"></i>Açıklama
+                                        <span class="text-muted fs-8 ms-1">(opsiyonel)</span>
+                                    </label>
+                                    <input type="text" id="qrDescription" maxlength="200"
+                                           class="form-control form-control-solid form-control-sm"
+                                           placeholder="Ek not...">
+                                </div>
+
+                                <div class="eq-col-add">
+                                    <label class="form-label fw-semibold mb-1 fs-7 d-block invisible">.</label>
+                                    <button type="button" id="btnAddRow"
+                                            class="btn btn-primary btn-sm w-100 fw-bold"
+                                            title="Satırı bekleyenlere ekle (Enter)">
+                                        <i class="bi bi-plus-lg me-1"></i> Ekle
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 eq-keyboard-hint">
+                                <kbd>Tab</kbd> alanlar arası ·
+                                <kbd>Enter</kbd> bekleyenlere ekle ·
+                                <kbd>Ctrl</kbd>+<kbd>Enter</kbd> tümünü kaydet ·
+                                <kbd>Esc</kbd> satırı temizle
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── Bekleyen Satırlar Kartı ───── #}
+                    <div class="card eq-card eq-card--pending">
+                        <div class="card-body p-4 p-md-5">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <h3 class="fw-bold fs-5 my-0 d-flex align-items-center">
+                                    <i class="bi bi-list-check text-warning me-2"></i>
+                                    Bekleyen Satırlar
+                                    <span id="pendingCountBadge"
+                                          class="badge bg-light-primary ms-2">0</span>
+                                </h3>
+                                <div class="d-flex gap-2">
+                                    <button type="button" id="btnClearAll"
+                                            class="btn btn-sm btn-light-danger fw-bold">
+                                        <i class="bi bi-trash me-1"></i> Temizle
+                                    </button>
+                                    <button type="button" id="btnSaveAll"
+                                            class="btn btn-sm btn-success fw-bold" disabled>
+                                        <i class="bi bi-check2-circle me-1"></i>
+                                        Tümünü Kaydet
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="pendingList">
+                                <div class="eq-empty-state" id="emptyState">
+                                    <i class="bi bi-inbox fs-2x"></i>
+                                    <div class="mt-2 fw-semibold">Henüz satır eklenmedi.</div>
+                                    <div class="fs-8">Yukarıdaki formdan başlayın — Tab + Enter ile saniyeler içinde N satır.</div>
+                                </div>
+                            </div>
+
+                            <div class="eq-total-strip">
+                                <span class="eq-ts-label">
+                                    <i class="bi bi-calculator me-1"></i>Toplam
+                                </span>
+                                <span class="eq-ts-value" id="totalDisplay">0,00 TL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {# ───── Yeni Kategori Inline Modal ───── #}
+    <div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-450px">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-tag-fill text-primary me-2"></i>Yeni Kategori Ekle
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Kategori Adı *</label>
+                        <input type="text" id="ncName" class="form-control form-control-solid"
+                               placeholder="Örn: Tamir Bedeli" maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Kısa Kod
+                            <span class="text-muted fs-8">(opsiyonel)</span>
+                        </label>
+                        <input type="text" id="ncShortCode" class="form-control form-control-solid"
+                               placeholder="TMR" maxlength="10">
+                    </div>
+                </div>
+                <div class="modal-footer py-3">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" id="btnSaveNewCategory" class="btn btn-primary btn-sm fw-bold">
+                        <i class="bi bi-check-lg me-1"></i> Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        "use strict";
+
+        // ═══════════════════════════════════════════════════════════════════
+        // FAZ 61: Hızlı Gider Girişi — JS Logic (FAZ 65'te DEĞİŞMEDİ)
+        // FAZ 65: Üst KPI satırı için ek fetch + render
+        //
+        // RULE 6 (Defensive DOM) — null-check + optional chaining
+        // RULE 9 (Locale & NaN) — virgül→nokta + isFinite guard
+        // ═══════════════════════════════════════════════════════════════════
+        (function () {
+
+            const URLS = {
+                bulkSave: "{% url 'bank-management:expense_bulk_save' %}",
+                catSave: "{% url 'bank-management:expense_categories_save' %}",
+                catOptions: "{% url 'bank-management:expense_categories_options' %}",
+                todayKpi: "{% url 'bank-management:expense_today_kpi' %}"
+            };
+            const CSRF = (document.querySelector("input[name='csrfmiddlewaretoken']") || {}).value || '';
+
+            // Mağaza yoksa erken çıkış
+            const qrCat = document.getElementById('qrCategory');
+            const qrAmt = document.getElementById('qrAmount');
+            const qrDesc = document.getElementById('qrDescription');
+            const qrAcct = document.getElementById('qrAccount');
+            const btnAdd = document.getElementById('btnAddRow');
+            const btnClear = document.getElementById('btnClearAll');
+            const btnSave = document.getElementById('btnSaveAll');
+            const pendingList = document.getElementById('pendingList');
+            const emptyState = document.getElementById('emptyState');
+            const countBadge = document.getElementById('pendingCountBadge');
+            const totalDisplay = document.getElementById('totalDisplay');
+
+            // FAZ 65: KPI öğeleri (opsiyonel — sayfa render olmamış olabilir)
+            const kpiTodayAmount = document.getElementById('kpiTodayAmount');
+            const kpiTodayCount = document.getElementById('kpiTodayCount');
+            const kpiTodaySub = document.getElementById('kpiTodaySub');
+            const kpiMonthAmount = document.getElementById('kpiMonthAmount');
+            const kpiMonthSub = document.getElementById('kpiMonthSub');
+            const kpiTopCategoryName = document.getElementById('kpiTopCategoryName');
+            const kpiTopCategoryAmount = document.getElementById('kpiTopCategoryAmount');
+
+            if (!qrCat || !qrAmt || !qrAcct || !btnAdd) {
+                return;  // Sayfa render olmamış (no_store durumu)
+            }
+
+            // ── State ──
+            const _state = {
+                pending: [],  // {tmpId, categoryId, categoryName, amount, description, accountId, accountName, accountType}
+                lastAccountId: null  // sessionStorage'dan yüklenebilir
+            };
+
+            // Son kullanılan kasa hatırlama (kuyumcu hızı için)
+            try {
+                const remembered = sessionStorage.getItem('expense_last_account');
+                if (remembered) {
+                    _state.lastAccountId = remembered;
+                    if (qrAcct.querySelector(`option[value="${remembered}"]`)) {
+                        qrAcct.value = remembered;
+                    }
+                }
+            } catch (e) { /* sessionStorage yok */ }
+
+            // ── Yardımcılar ──
+            function fmtTL(num) {
+                if (!isFinite(num)) return '0,00';
+                return Number(num).toLocaleString('tr-TR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            function parseAmount(raw) {
+                if (raw == null) return NaN;
+                const s = String(raw).replace(/\./g, '').replace(',', '.').trim();
+                const v = parseFloat(s);
+                return isFinite(v) ? v : NaN;
+            }
+
+            function _csrfHeaders() {
+                return {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF
+                };
+            }
+
+            function showError(msg) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: msg,
+                        confirmButtonText: 'Tamam'
+                    });
+                } else {
+                    alert(msg);
+                }
+            }
+
+            function showSuccess(msg) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: msg,
+                        timer: 2200,
+                        showConfirmButton: false
+                    });
+                }
+            }
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            // ── Render ──
+            function renderPending() {
+                const cnt = _state.pending.length;
+                if (countBadge) countBadge.textContent = String(cnt);
+
+                if (btnSave) btnSave.disabled = cnt === 0;
+
+                let total = 0;
+                _state.pending.forEach(r => {
+                    if (isFinite(r.amount)) total += r.amount;
+                });
+                if (totalDisplay) totalDisplay.textContent = fmtTL(total) + ' TL';
+
+                if (cnt === 0) {
+                    if (emptyState) emptyState.style.display = '';
+                    pendingList.querySelectorAll('.eq-pending-row').forEach(el => el.remove());
+                    return;
+                }
+
+                if (emptyState) emptyState.style.display = 'none';
+                pendingList.querySelectorAll('.eq-pending-row').forEach(el => el.remove());
+
+                _state.pending.forEach((r, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'eq-pending-row';
+                    div.dataset.tmpId = r.tmpId;
+                    const catBadge = r.categoryId
+                        ? `<span class="eq-pr-cat" title="${escapeHtml(r.categoryName || '')}">
+                                ${r.categoryIcon ? '<i class="bi ' + escapeHtml(r.categoryIcon) + '"></i>' : ''}
+                                ${escapeHtml(r.categoryName || 'Kategori')}
+                           </span>`
+                        : `<span class="eq-pr-cat eq-pr-cat--empty">— Kategorisiz —</span>`;
+                    const cashboxType = r.accountType || 'CASH';
+                    const cashboxIcon = cashboxType === 'BANK' ? 'bi-bank'
+                        : (cashboxType === 'POS' ? 'bi-credit-card' : 'bi-wallet2');
+                    div.innerHTML = `
+                        <div class="eq-pr-idx">${idx + 1}</div>
+                        <div>${catBadge}</div>
+                        <div class="eq-pr-amount">${fmtTL(r.amount)} TL</div>
+                        <div class="eq-pr-desc" title="${escapeHtml(r.description || '')}">${escapeHtml(r.description || '—')}</div>
+                        <div class="eq-pr-cashbox">
+                            <span class="eq-cashbox-badge eq-cashbox-badge--${escapeHtml(cashboxType)}">
+                                <i class="bi ${cashboxIcon}"></i>
+                                ${escapeHtml(r.accountName || '')}
+                            </span>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="eq-pr-del" title="Sil" data-tmpid="${r.tmpId}">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    `;
+                    pendingList.appendChild(div);
+                });
+            }
+
+            // ── Aksiyonlar ──
+            function clearActiveRow() {
+                qrCat.value = '';
+                qrAmt.value = '';
+                qrDesc.value = '';
+                // Kasa hatırlanır; bilerek sıfırlanmaz
+                qrCat.focus();
+            }
+
+            function addRow() {
+                if (qrCat.value === '__new__') {
+                    qrCat.value = '';
+                    openNewCategoryModal();
+                    return;
+                }
+
+                const amount = parseAmount(qrAmt.value);
+                const accountId = qrAcct.value;
+                const categoryId = qrCat.value || null;
+                const description = (qrDesc.value || '').trim();
+
+                if (!isFinite(amount) || amount <= 0) {
+                    showError('Lütfen pozitif bir tutar girin.');
+                    qrAmt.focus();
+                    return;
+                }
+
+                if (!accountId) {
+                    showError('Lütfen bir kasa seçin.');
+                    qrAcct.focus();
+                    return;
+                }
+
+                if (!categoryId && !description) {
+                    showError('Kategori seçmediyseniz açıklama zorunludur.');
+                    qrCat.focus();
+                    return;
+                }
+
+                let categoryName = '', categoryColor = '', categoryIcon = '';
+                if (categoryId) {
+                    const opt = qrCat.querySelector(`option[value="${categoryId}"]`);
+                    if (opt) {
+                        categoryName = (opt.textContent || '').trim().split(' (')[0];
+                        categoryColor = opt.dataset.color || '';
+                        categoryIcon = opt.dataset.icon || '';
+                    }
+                }
+
+                let accountName = '', accountType = 'CASH';
+                const aOpt = qrAcct.querySelector(`option[value="${accountId}"]`);
+                if (aOpt) {
+                    accountName = (aOpt.textContent || '').trim();
+                    accountType = aOpt.dataset.type || 'CASH';
+                }
+
+                _state.pending.push({
+                    tmpId: 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    categoryId: categoryId,
+                    categoryName: categoryName,
+                    categoryColor: categoryColor,
+                    categoryIcon: categoryIcon,
+                    amount: amount,
+                    description: description,
+                    accountId: accountId,
+                    accountName: accountName,
+                    accountType: accountType
+                });
+
+                // Kasayı session'a yaz
+                try {
+                    sessionStorage.setItem('expense_last_account', accountId);
+                } catch (e) { /* ignore */ }
+
+                renderPending();
+                clearActiveRow();
+            }
+
+            function removeRow(tmpId) {
+                _state.pending = _state.pending.filter(r => r.tmpId !== tmpId);
+                renderPending();
+            }
+
+            function clearAll() {
+                if (_state.pending.length === 0) return;
+                if (!confirm('Tüm bekleyen satırlar silinsin mi?')) return;
+                _state.pending = [];
+                renderPending();
+            }
+
+            async function saveAll() {
+                if (_state.pending.length === 0) return;
+
+                const payload = {
+                    entries: _state.pending.map(r => ({
+                        account_id: r.accountId,
+                        category_id: r.categoryId,
+                        amount: String(r.amount),
+                        description: r.description || '',
+                        currency: 'TRY'
+                    }))
+                };
+
+                btnSave.disabled = true;
+                btnSave.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Kaydediliyor...';
+
+                try {
+                    const resp = await fetch(URLS.bulkSave, {
+                        method: 'POST',
+                        headers: _csrfHeaders(),
+                        body: JSON.stringify(payload),
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'Kayıt sırasında bir hata oluştu.');
+                        return;
+                    }
+                    showSuccess(data.msg || `${_state.pending.length} satır kaydedildi.`);
+                    _state.pending = [];
+                    renderPending();
+                    clearActiveRow();
+                    loadKpi();  // FAZ 65: KPI'ları yeni kayıtla güncelle
+                } catch (err) {
+                    showError('Sunucuyla iletişim kurulamadı. Lütfen tekrar deneyin.');
+                    console.error(err);
+                } finally {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Tümünü Kaydet';
+                }
+            }
+
+            // ── Yeni Kategori Modal ──
+            function openNewCategoryModal() {
+                const modalEl = document.getElementById('newCategoryModal');
+                if (!modalEl || !window.bootstrap) {
+                    const name = prompt('Yeni kategori adı:');
+                    if (name) saveNewCategory(name, '');
+                    return;
+                }
+                const ncName = document.getElementById('ncName');
+                const ncShort = document.getElementById('ncShortCode');
+                if (ncName) ncName.value = '';
+                if (ncShort) ncShort.value = '';
+                const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+                m.show();
+                setTimeout(() => ncName?.focus(), 200);
+            }
+
+            async function saveNewCategory(name, shortCode) {
+                if (!name) return;
+                try {
+                    const fd = new FormData();
+                    fd.append('name', name);
+                    fd.append('short_code', shortCode || '');
+                    fd.append('csrfmiddlewaretoken', CSRF);
+
+                    const resp = await fetch(URLS.catSave, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'Kategori kaydedilemedi.');
+                        return;
+                    }
+
+                    // Dropdown'a ekle ve seç
+                    const newId = data.id;
+                    const opt = document.createElement('option');
+                    opt.value = newId;
+                    opt.textContent = shortCode ? `${name} (${shortCode})` : name;
+                    // "+ Yeni Kategori..." opsiyonundan önce ekle
+                    const newOpt = qrCat.querySelector('option[value="__new__"]');
+                    if (newOpt) {
+                        qrCat.insertBefore(opt, newOpt);
+                    } else {
+                        qrCat.appendChild(opt);
+                    }
+                    qrCat.value = newId;
+
+                    const modalEl = document.getElementById('newCategoryModal');
+                    if (modalEl && window.bootstrap) {
+                        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                    }
+                    qrAmt.focus();
+                } catch (err) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                    console.error(err);
+                }
+            }
+
+            // ── FAZ 65: KPI Yükleme ──
+            async function loadKpi() {
+                if (!kpiTodayAmount) return;  // KPI satırı render olmamış
+                try {
+                    const resp = await fetch(URLS.todayKpi, {
+                        method: 'GET',
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) return;
+
+                    const today = data.today || {};
+                    const month = data.month || {};
+                    const top = data.top_category;
+
+                    if (kpiTodayAmount) {
+                        kpiTodayAmount.textContent = fmtTL(parseFloat(today.total_tl || 0)) + ' TL';
+                    }
+                    if (kpiTodayCount) {
+                        kpiTodayCount.textContent = String(today.count || 0);
+                    }
+                    if (kpiTodaySub) {
+                        const c = parseInt(today.count || 0, 10);
+                        kpiTodaySub.textContent = c > 0 ? `${c} kayıt` : 'Henüz kayıt yok';
+                    }
+                    if (kpiMonthAmount) {
+                        kpiMonthAmount.textContent = fmtTL(parseFloat(month.total_tl || 0)) + ' TL';
+                    }
+                    if (kpiMonthSub) {
+                        const mc = parseInt(month.count || 0, 10);
+                        kpiMonthSub.textContent = mc > 0 ? `${mc} kayıt bu ay` : ' ';
+                    }
+                    if (kpiTopCategoryName && kpiTopCategoryAmount) {
+                        if (top && top.name) {
+                            kpiTopCategoryName.textContent = top.name;
+                            kpiTopCategoryAmount.textContent =
+                                fmtTL(parseFloat(top.total_tl || 0)) + ' TL';
+                            kpiTopCategoryAmount.title = 'Bu ayki en yüksek kategori toplamı';
+                        } else {
+                            kpiTopCategoryName.textContent = '—';
+                            kpiTopCategoryAmount.textContent = 'Bu ay henüz veri yok';
+                        }
+                    }
+                } catch (err) {
+                    // Sessiz fail — KPI kritik değil, ana akışı bozmaz
+                    console.warn('KPI yüklenemedi:', err);
+                }
+            }
+
+            // ── Klavye Navigasyonu ──
+            function bindKeyboard() {
+                // Aktif satır içinde Enter → addRow
+                [qrCat, qrAmt, qrDesc, qrAcct].forEach(el => {
+                    el.addEventListener('keydown', (e) => {
+                        // Ctrl+Enter → tümünü kaydet (her yerden çalışır)
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            e.preventDefault();
+                            saveAll();
+                            return;
+                        }
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            clearActiveRow();
+                            return;
+                        }
+                        if (e.key === 'Enter') {
+                            // Kategori dropdown'unda __new__ seçiliyse modal aç
+                            if (el === qrCat && qrCat.value === '__new__') {
+                                e.preventDefault();
+                                qrCat.value = '';
+                                openNewCategoryModal();
+                                return;
+                            }
+                            // Açıklama alanında veya tutar dolu ve hesap seçiliyse → ekle
+                            const hasAmount = isFinite(parseAmount(qrAmt.value)) && parseAmount(qrAmt.value) > 0;
+                            const hasAccount = !!qrAcct.value;
+                            if (el === qrAmt && hasAmount) {
+                                e.preventDefault();
+                                if (!qrAcct.value) {
+                                    qrAcct.focus();
+                                } else if (!qrDesc.value && !qrCat.value) {
+                                    qrDesc.focus();
+                                } else {
+                                    addRow();
+                                    qrCat.focus();
+                                }
+                                return;
+                            }
+                            if (el === qrDesc && hasAmount && hasAccount) {
+                                e.preventDefault();
+                                addRow();
+                                qrCat.focus();
+                                return;
+                            }
+                            if (el === qrAcct && hasAmount && hasAccount) {
+                                e.preventDefault();
+                                addRow();
+                                qrCat.focus();
+                                return;
+                            }
+                        }
+                    });
+                });
+
+                // Kategori değişimi: __new__ seçildiyse modal aç
+                qrCat.addEventListener('change', () => {
+                    if (qrCat.value === '__new__') {
+                        qrCat.value = '';
+                        openNewCategoryModal();
+                    }
+                });
+
+                // Tutar alanına virgül desteği — kullanıcı yazarken müdahale yok (RULE 7)
+                // Sadece blur'da format
+                qrAmt.addEventListener('blur', () => {
+                    const v = parseAmount(qrAmt.value);
+                    if (isFinite(v) && v > 0) {
+                        qrAmt.value = v.toFixed(2).replace('.', ',');
+                    }
+                });
+
+                // Pending list silme delegasyonu
+                pendingList.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.eq-pr-del');
+                    if (!btn) return;
+                    const tmpId = btn.dataset.tmpid;
+                    if (tmpId) removeRow(tmpId);
+                });
+
+                btnAdd.addEventListener('click', addRow);
+                btnClear.addEventListener('click', clearAll);
+                btnSave.addEventListener('click', saveAll);
+
+                const btnSaveNewCat = document.getElementById('btnSaveNewCategory');
+                if (btnSaveNewCat) {
+                    btnSaveNewCat.addEventListener('click', () => {
+                        const ncName = document.getElementById('ncName');
+                        const ncShort = document.getElementById('ncShortCode');
+                        const name = (ncName?.value || '').trim();
+                        const shortCode = (ncShort?.value || '').trim();
+                        if (!name) {
+                            showError('Kategori adı zorunludur.');
+                            ncName?.focus();
+                            return;
+                        }
+                        saveNewCategory(name, shortCode);
+                    });
+                }
+            }
+
+            // ── Init ──
+            bindKeyboard();
+            renderPending();
+            loadKpi();  // FAZ 65: KPI ilk yükleme
+            qrCat.focus();
+        })();
+    </script>
+{% endblock footer %}

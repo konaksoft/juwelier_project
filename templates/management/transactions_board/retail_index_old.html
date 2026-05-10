@@ -2081,11 +2081,11 @@
                                 </div>
                                 <input type="hidden" id="operationType" name="operationType" value="SALE"/>
 
-                                {# ─────────────────────────────────────────────────────────── #}
-                                {# FAZ S3 (PIVOT 2026-04-23): METAL FİYAT PANELİ (Altın/Gümüş) #}
-                                {# Mevcut akış DOKUNULMADI; sadece wrapper id'si #metalPricePanel #}
-                                {# WATCH/DIAMOND ürün açıldığında JS bu paneli gizler.           #}
-                                {# ─────────────────────────────────────────────────────────── #}
+                                <!-- ─────────────────────────────────────────────────────────── -->
+                                <!-- FAZ S3 (PIVOT 2026-04-23): METAL FİYAT PANELİ (Altın/Gümüş) -->
+                                <!-- Mevcut akış DOKUNULMADI; sadece wrapper id'si #metalPricePanel -->
+                                <!-- WATCH/DIAMOND ürün açıldığında JS bu paneli gizler.           -->
+                                <!-- ─────────────────────────────────────────────────────────── -->
                                 <div class="row" id="metalPricePanel">
                                     <div class="col-lg-4 col-md-4 col-4">
                                         <div class="mb-3">
@@ -2113,13 +2113,13 @@
                                     </div>
                                 </div>
 
-                                {# ─────────────────────────────────────────────────────────── #}
-                                {# FAZ S3 (PIVOT 2026-04-23): DÖVİZ FİYAT PANELİ (Saat/Pırlanta)#}
-                                {# Default GİZLİ (display:none). WATCH/DIAMOND seçilince açılır.#}
-                                {# Formül: fx_unit_price × fx_daily_rate = fx_unit_price_tl    #}
-                                {#         fx_unit_price_tl × piece     = fx_total_tl          #}
-                                {# Form submit'te hidden #unit_price ve #total_price doldurulur. #}
-                                {# ─────────────────────────────────────────────────────────── #}
+                                <!-- ─────────────────────────────────────────────────────────── -->
+                                <!-- FAZ S3 (PIVOT 2026-04-23): DÖVİZ FİYAT PANELİ (Saat/Pırlanta)-->
+                                <!-- Default GİZLİ (display:none). WATCH/DIAMOND seçilince açılır.-->
+                                <!-- Formül: fx_unit_price × fx_daily_rate = fx_unit_price_tl    -->
+                                <!--         fx_unit_price_tl × piece     = fx_total_tl          -->
+                                <!-- Form submit'te hidden #unit_price ve #total_price doldurulur. -->
+                                <!-- ─────────────────────────────────────────────────────────── -->
                                 <div class="row" id="foreignPricePanel" style="display: none;">
                                     <div class="col-12 mb-2">
                                         <small class="text-muted">
@@ -2362,7 +2362,7 @@
 
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <span class="payment-label">Altın / Mal Bedeli</span>
-                                                <span id="payment_amount_tl"
+                                                <span id="payment_amount_eur"
                                                       class="total_amount2 d-inline-block">0.00</span>
                                             </div>
 
@@ -3625,10 +3625,10 @@
                     .toggleClass(' text-success', netTl < 0).toggleClass('text-danger', netTl >= 0);
 
                 const netColor = $('#netTotalTl').hasClass('text-danger') ? 'text-danger' : 'text-success';
-                $('#payment_amount_tl').removeClass('text-danger text-success').addClass(netColor);
+                $('#payment_amount_eur').removeClass('text-danger text-success').addClass(netColor);
                 $('#payment_amount_hs').removeClass('text-danger text-success').addClass(netColor);
 
-                $('#payment_amount_tl').text(KPMoney.fmtMoney(goodsAmountOnly));
+                $('#payment_amount_eur').text(KPMoney.fmtMoney(goodsAmountOnly));
                 $('#payment_labor_tl').text(KPMoney.fmtMoney(totLabor));
                 $('#payment_vat_tl').text(KPMoney.fmtMoney(vatFromLabor));
                 $('#payment_grand_total_tl').text(KPMoney.fmtMoney(grandTotalTl));
@@ -4089,7 +4089,7 @@
 
             filtered.forEach(p => {
                 // Marj Uygulaması
-                let displaySale = parseFloat(p.sale_price_tl || 0);
+                let displaySale = parseFloat(p.sale_price_eur || 0);
                 if (PRICE_MARGIN_PERCENT > 0 && displaySale > 0) {
                     displaySale = displaySale * (1 + (PRICE_MARGIN_PERCENT / 100));
                 }
@@ -4101,7 +4101,7 @@
                     // FAZ S2 (PIVOT 2026-04-23): Material context'i global'e ata,
                     // openPopup kendisi material_type'a göre branch yapar.
                     if (window.__setForeignContext) window.__setForeignContext(p);
-                    openPopup(p.id, p.name, p.buy_price_hs, p.sale_price_hs, displaySale, p.buy_price_tl, p.is_gram_bullion, p.barcode);
+                    openPopup(p.id, p.name, p.buy_price_hs, p.sale_price_hs, displaySale, p.buy_price_eur, p.is_gram_bullion, p.barcode);
                 };
                 ul.appendChild(li);
             });
@@ -4875,8 +4875,8 @@
                             displayName,
                             product.buy_price_hs,
                             product.sale_price_hs,
-                            product.sale_price_tl,
-                            product.buy_price_tl,
+                            product.sale_price_eur,
+                            product.buy_price_eur,
                             !!product.is_gram_bullion,
                             pseudoBarcode,
                             isBrc,
@@ -5355,8 +5355,8 @@
                     (x.name || '').toLowerCase().includes('has altın') ||
                     (x.name || '').toLowerCase().includes('has 24')
                 );
-                // Burada p.sale_price_tl, Has Altın'ın TL satış fiyatıdır.
-                if (p) return parseFloat(p.sale_price_tl || 0);
+                // Burada p.sale_price_eur, Has Altın'ın TL satış fiyatıdır.
+                if (p) return parseFloat(p.sale_price_eur || 0);
             }
 
             return 0; // Bulunamazsa 0 döner, hesaplama yapılmaz.
@@ -6235,16 +6235,16 @@
         })
     </script>
 
-    {# ═══════════════════════════════════════════════════════════════════════════ #}
-    {# FAZ S2 + S4 + S5 (PIVOT 2026-04-23): Çoklu Maden Satış Mantığı            #}
-    {# - openPopup wrapper (monkey-patch): WATCH/DIAMOND ise foreign panel açılır #}
-    {# - recalcAllForeign(): döviz × kur = TL hesabı (çift yönlü)                 #}
-    {# - FX rate cache: /products/get-fx-rates 1 kez çekilir, kullanıcı override   #}
-    {# - Form submit interceptor: hidden #unit_price/#total_price/#sale_price_hs   #}
-    {#   alanlarını backend için doldurur (mevcut kontrat aynen)                  #}
-    {# Mevcut metal akışı (GOLD/SILVER) HİÇ DOKUNULMADI — sadece WATCH/DIAMOND'da #}
-    {# branch alınır.                                                              #}
-    {# ═══════════════════════════════════════════════════════════════════════════ #}
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- FAZ S2 + S4 + S5 (PIVOT 2026-04-23): Çoklu Maden Satış Mantığı            -->
+    <!-- - openPopup wrapper (monkey-patch): WATCH/DIAMOND ise foreign panel açılır -->
+    <!-- - recalcAllForeign(): döviz × kur = TL hesabı (çift yönlü)                 -->
+    <!-- - FX rate cache: /products/get-fx-rates 1 kez çekilir, kullanıcı override   -->
+    <!-- - Form submit interceptor: hidden #unit_price/#total_price/#sale_price_hs   -->
+    <!--   alanlarını backend için doldurur (mevcut kontrat aynen)                  -->
+    <!-- Mevcut metal akışı (GOLD/SILVER) HİÇ DOKUNULMADI — sadece WATCH/DIAMOND'da -->
+    <!-- branch alınır.                                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
     <script>
     (function () {
         'use strict';
@@ -6266,7 +6266,7 @@
                 material_type:        mt,
                 sale_currency:        productData.sale_currency || null,
                 sale_price_foreign:   parseFloat(productData.sale_price_foreign || 0),
-                weighted_buy_price_tl: parseFloat(productData.weighted_buy_price_tl || 0),
+                weighted_buy_price_eur: parseFloat(productData.weighted_buy_price_eur || 0),
                 mount_karat:          productData.mount_karat || null,
                 mount_gram:           parseFloat(productData.mount_gram || 0),
                 mount_metal:          productData.mount_metal || null,

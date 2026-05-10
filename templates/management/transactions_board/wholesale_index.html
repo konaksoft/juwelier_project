@@ -96,41 +96,83 @@
         }
 
 
-        /* ─── ANLIK FİŞ YAZDIR ─── */
+        /* ════════════════════════════════════════════════════════════
+           FAZ 40 REV-1 — TEDARİKÇİ FİŞİ RENK SİSTEMİ
+           • Header: sayfanın dark paleti ile uyumlu slate (#1e293b)
+           • Bakiye kartı: BORÇ kırmızı ton / ALACAK yeşil ton (JS'den arka plan da set edilir)
+           • Tabloda sade koyu-gri, tutar bold koyu
+           ════════════════════════════════════════════════════════════ */
+        .fis-header { margin-bottom: 1rem; }
+        /* Firma adı: koyu slate — beyaz body'e düzgün oturur */
+        .fis-header h4 { font-size: 1.15rem; color: #1e293b; font-weight: 800; }
+        .fis-section-title {
+            font-size: .78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; color: #64748b;
+            display: flex; align-items: center; gap: .4rem;
+        }
+        .fis-balance-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin: .75rem 0; }
+        /* Kart zemini ve rengi JS tarafından dinamik set edilir (borç=kırmızı ton, alacak=yeşil ton) */
+        .fis-balance-card {
+            flex: 1 1 130px; text-align: center;
+            border-radius: 10px; padding: .75rem .6rem;
+            /* varsayılan: nötr */
+            background: #f8fafc; border: 1px solid #e2e8f0;
+        }
+        /* cur/val/lbl renkleri JS'den inline style ile verilecek — class rengi kaldırıldı */
+        .fis-balance-card .cur { font-weight: 800; font-size: .9rem; letter-spacing: .5px; opacity: .75; }
+        .fis-balance-card .val { font-size: 1.3rem; font-weight: 800; margin-top: 3px; }
+        .fis-balance-card .lbl { font-size: .7rem; font-weight: 700; margin-top: 3px; letter-spacing: .4px; opacity: .9; }
+        /* Hareket tablosu */
+        .fis-move-table { background: #fff; border-radius: 8px; overflow: hidden; }
+        .fis-move-table th {
+            color: #64748b; text-transform: uppercase; font-size: .72rem;
+            border-bottom: 2px solid #e2e8f0; padding: .5rem .6rem;
+            background: #f8fafc; font-weight: 700; letter-spacing: .4px;
+        }
+        .fis-move-table td {
+            color: #334155; padding: .55rem .6rem; font-size: .85rem;
+            border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+        }
+        .fis-move-table tbody tr:nth-child(odd)  { background: #ffffff; }
+        .fis-move-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .fis-move-table tbody tr:hover           { background: #f0f9ff; }
+        .fis-tip-badge {
+            font-size: .72rem; font-weight: 700; padding: .2rem .5rem;
+            border-radius: 5px; letter-spacing: .2px;
+        }
+        /* Tutar: koyu bold — herhangi bir arka plan üzerinde net okunur */
+        .fis-amount-cell { color: #1e293b; font-weight: 700; }
+
+        /* ────────────────────────────────────────────────────────────
+           PRINT CSS — A5 ve 80mm Termal için tek blok
+           Modal dışındaki her şeyi gizle, fiş alanını sayfaya yerleştir.
+           ──────────────────────────────────────────────────────────── */
         @media print {
+            @page { size: 80mm auto; margin: 4mm; }
+            html, body { background: #fff !important; }
             body * { visibility: hidden !important; }
             #fisPrintArea, #fisPrintArea * { visibility: visible !important; }
             #fisPrintArea {
                 position: absolute; left: 0; top: 0;
-                width: 100%; padding: 15px;
+                width: 100%; padding: 0;
                 background: #fff !important; color: #000 !important;
+                box-shadow: none !important; border: none !important;
             }
-            #fisPrintArea .fis-header { border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
-            #fisPrintArea .fis-balance-row { border: 1px solid #333; }
-            #fisPrintArea table th { background: #eee !important; color: #000 !important; }
-            .modal-footer, .btn-close { display: none !important; }
-        }
-
-        /* Fiş modal stiller */
-        .fis-header { margin-bottom: 1rem; }
-        .fis-header h4 { font-size: 1.1rem; }
-        .fis-balance-grid { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
-        .fis-balance-card {
-            flex: 1 1 120px; text-align: center;
-            background: rgba(15, 27, 43, 0.6);
-            border: 1px solid rgba(255, 215, 0, .15);
-            border-radius: 10px; padding: .6rem .5rem;
-        }
-        .fis-balance-card .cur { color: #FFD700; font-weight: 800; font-size: .95rem; }
-        .fis-balance-card .val { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
-        .fis-balance-card .lbl { font-size: .7rem; font-weight: 600; opacity: .8; margin-top: 2px; }
-        .fis-move-table th {
-            color: #FFD700; text-transform: uppercase; font-size: .75rem;
-            border-bottom: 1px solid rgba(255, 215, 0, .15); padding: .5rem .3rem;
-        }
-        .fis-move-table td {
-            color: #fff; padding: .45rem .3rem; font-size: .82rem;
-            border-bottom: 1px solid rgba(255, 255, 255, .05);
+            /* Modal kabuğunu görsel olarak nötrleştir — overlay ve gölge yok */
+            #fisModal { background: transparent !important; }
+            #fisModal .modal-dialog,
+            #fisModal .modal-content { background: #fff !important; border: none !important; box-shadow: none !important; }
+            #fisModal .modal-header { background: #fff !important; color: #000 !important; border-bottom: 2px solid #000 !important; }
+            #fisModal .modal-body { padding: 0 !important; }
+            #fisModal .modal-footer, #fisModal .btn-close { display: none !important; }
+            .fis-balance-card { background: #fff !important; border: 1px solid #000 !important; }
+            .fis-balance-card .cur { color: #000 !important; }
+            .fis-balance-card .val { color: #000 !important; }
+            .fis-balance-card .lbl { color: #000 !important; }
+            .fis-move-table th { background: #f0f0f0 !important; color: #000 !important; border-bottom: 1px solid #000 !important; }
+            .fis-move-table td { color: #000 !important; border-bottom: 1px solid #ccc !important; }
+            .fis-tip-badge { background: transparent !important; color: #000 !important; border: 1px solid #000 !important; }
+            .fis-amount-cell { color: #000 !important; }
         }
 
         /* FAZ 23: Disabled label for currency product sale restriction */
@@ -1737,14 +1779,10 @@
                                      id="action-buttons-wrapper" style="gap: 0.4rem; overflow-x: auto;">
                                     <input type="hidden" id="cash_status">
 
-                                    <button type="button" id="btnOpenScrapModal" class="custom-button action-btn">
-                                        <i class="fas fa-recycle"></i> Hurda/Mal Giriş
-                                    </button>
-                                    <button type="button" id="btnOpenScrapMultiModal" class="custom-button action-btn">
-                                        <i class="fas fa-layer-group"></i> Çoklu Hurda
-                                    </button>
-                                    <button type="button" id="btnOpenBraceletModal" class="custom-button action-btn">
-                                        <i class="fas fa-ring"></i> Bilezik Giriş
+                                    <!-- FAZ 18 — Birleşik Mal Giriş: 3 ayrı buton (Hurda/Mal, Çoklu Hurda, Bilezik) tek butonla değiştirildi.
+                                         Tek modal içinde ürün tipi seçimi + çoklu giriş sepeti + tek seferde toplu kaydet. -->
+                                    <button type="button" id="btnOpenUnifiedEntry" class="custom-button action-btn">
+                                        <i class="fas fa-layer-group"></i> Mal Giriş
                                     </button>
                                     <input type="radio" id="cash_in_btn" name="cash_select"
                                            class="hidden-checkbox"
@@ -1905,29 +1943,38 @@
         </div>
     </div>
 
-    <!-- ─── ANLIK TEDARİKÇİ İŞLEM FİŞİ MODALI ─── -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- FAZ 40 — ANLIK TEDARİKÇİ İŞLEM FİŞİ (LIGHT THEME)                -->
+    <!-- Çantacı/Tedarikçi farkı: ledger backend'i; UI tek light şablon.  -->
+    <!-- Yazdırma 80mm termal + A5 için optimize (yukarıdaki @media print)-->
+    <!-- ════════════════════════════════════════════════════════════════ -->
     <div class="modal fade" id="fisModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content" style="background: #1A253A; border: 1px solid rgba(255,215,0,.2); color: #fff;">
-                <div class="modal-header bg-dark text-warning py-2 border-bottom border-secondary border-opacity-25">
-                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Tedarikçi İşlem Fişi</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background:#ffffff; border:1px solid #334155; color:#1e293b; overflow:hidden;">
+                <!-- Header: sayfanın dark paleti ile uyumlu slate — beyaz body ile sert geçiş yapmaz -->
+                <div class="modal-header py-2 px-4" style="background:#1e293b; border-bottom:none;">
+                    <h5 class="modal-title fw-bold text-white">
+                        <i class="bi bi-receipt me-2 text-white opacity-75"></i>Tedarikçi İşlem Fişi
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body p-0" id="fisPrintArea">
 
                     <!-- Fiş İçeriği (AJAX ile doldurulur) -->
                     <div id="fisContent" style="display:none;">
 
-                        <!-- Üst: Firma Bilgisi -->
-                        <div class="fis-header p-3 pb-2" style="border-bottom: 1px dashed rgba(255,215,0,.2);">
+                        <!-- Üst: Firma Bilgisi — body arka planı #fff, yazılar slate ailesinden -->
+                        <div class="fis-header p-3 pb-2" style="border-bottom:1px solid #e2e8f0;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h4 class="text-warning fw-bold mb-1" id="fisCompanyName"></h4>
+                                    <h4 class="fw-bold mb-1" id="fisCompanyName"></h4>
                                     <div class="text-muted small" id="fisContactInfo"></div>
                                 </div>
                                 <div class="text-end">
-                                    <div class="badge bg-dark border border-secondary fs-8 mb-1" id="fisFisNo"></div>
-                                    <div class="text-muted small" id="fisTarih"></div>
+                                    <!-- Fiş No: slate koyu arka plan — header ile uyumlu -->
+                                    <div class="badge fw-bold fs-8 mb-1" id="fisFisNo"
+                                         style="background:#334155; color:#fff; letter-spacing:.5px;"></div>
+                                    <div class="text-muted small mt-1" id="fisTarih"></div>
                                     <span class="badge mt-1" id="fisAccountBadge"></span>
                                 </div>
                             </div>
@@ -1939,16 +1986,15 @@
                         <div class="px-3 py-2" id="fisPendingSection" style="display:none;">
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-hourglass-split text-warning me-2"></i>
-                                <span class="fw-bold text-warning small text-uppercase">
+                                <span class="fw-bold small text-uppercase fis-section-title">
                                     Onay Bekleyen Sepet
                                     <span class="badge bg-warning text-dark ms-2" id="fisPendingBadge">TASLAK</span>
                                 </span>
                             </div>
-                            <div class="alert bg-dark border border-warning border-opacity-25 py-2 px-3 mb-2"
-                                 style="border-radius: 6px;">
-                                <div class="text-muted fs-9">
+                            <div class="alert alert-warning py-2 px-3 mb-2" style="border-radius: 6px;">
+                                <div class="fs-9">
                                     Aşağıdaki tutarlar sepetinizde duruyor; onaylanırsa cariye yansıyacak.
-                                    <strong class="text-white">Tedarikçi carisi henüz değişmedi.</strong>
+                                    <strong>Tedarikçi carisi henüz değişmedi.</strong>
                                 </div>
                             </div>
                             <div id="fisPendingTotals" class="fis-balance-grid"></div>
@@ -1957,8 +2003,8 @@
                         <!-- Orta: Bakiye Kartları -->
                         <div class="px-3 py-2">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-wallet2 text-warning me-2"></i>
-                                <span class="fw-bold text-white small text-uppercase">Güncel Bakiye</span>
+                                <i class="bi bi-wallet2 text-primary me-2"></i>
+                                <span class="fw-bold small text-uppercase fis-section-title">Güncel Bakiye</span>
                                 <span class="badge bg-success ms-2 fs-9" id="fisStatusBadge"
                                       style="display:none;">TAMAMLANMIŞ</span>
                             </div>
@@ -1971,8 +2017,8 @@
                         <!-- Alt: Son Hareketler -->
                         <div class="px-3 pb-3">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-clock-history text-warning me-2"></i>
-                                <span class="fw-bold text-white small text-uppercase">Son Hareketler</span>
+                                <i class="bi bi-clock-history text-primary me-2"></i>
+                                <span class="fw-bold small text-uppercase fis-section-title">Son Hareketler</span>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm fis-move-table mb-0">
@@ -1995,17 +2041,19 @@
 
                     <!-- Yükleniyor Spinner -->
                     <div id="fisLoading" class="text-center py-5">
-                        <div class="spinner-border text-warning" role="status"></div>
+                        <div class="spinner-border text-primary" role="status"></div>
                         <div class="text-muted mt-2 small">Fiş verisi yükleniyor...</div>
                     </div>
 
                 </div>
-                <div class="modal-footer border-top border-secondary border-opacity-25 py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Kapat</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" id="btnFisDetay">
+                <div class="modal-footer py-2" style="background:#f8f9fa; border-top:1px solid #dee2e6;">
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Kapat
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnFisDetay">
                         <i class="bi bi-box-arrow-up-right me-1"></i> Detay Sayfası
                     </button>
-                    <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" id="btnFisPrint">
+                    <button type="button" class="btn btn-sm btn-primary fw-bold" id="btnFisPrint">
                         <i class="bi bi-printer me-1"></i> Yazdır
                     </button>
                 </div>
@@ -2128,186 +2176,171 @@
             </form>
         </div>
     </div>
-    <div class="modal fade" id="scrapModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-warning py-2">
-                    <h5 class="modal-title"><i class="fas fa-recycle me-2"></i>Hurda/Mal Giriş</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form id="scrapWholesaleForm">
-                        {% csrf_token %}
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label for="ws_scrap_name" class="form-label">Altın Ayarı</label>
-                                    <select class="form-select" id="ws_scrap_name" name="scrap_name" required>
-                                        <option value="" selected disabled>Seçiniz</option>
-                                        <option value="Has" data-mil="995">Has / 995</option>
-                                        <option value="22 Ayar" data-mil="916">22 Ayar</option>
-                                        <option value="21 Ayar" data-mil="875">21 Ayar</option>
-                                        <option value="18 Ayar" data-mil="750">18 Ayar</option>
-                                        <option value="14 Ayar" data-mil="585">14 Ayar</option>
-                                        <option value="8 Ayar" data-mil="333">8 Ayar</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <div class="mb-3">
-                                    <label for="ws_scrap_mileage" class="form-label">Milyem</label>
-                                    <input type="number" class="form-control" id="ws_scrap_mileage"
-                                           name="product_mileage" required>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="mb-3">
-                                    <label for="ws_scrap_gram" class="form-label">Gram</label>
-                                    <input type="number" step="0.01" class="form-control" id="ws_scrap_gram" name="gram"
-                                           required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center p-3 mb-0"
-                             style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
-                            <span class="small font-weight-bold">Hesaplanan Has:</span>
-                            <strong class="text-warning fs-5" id="ws_scrap_calc_has">0.00</strong>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="btnSaveWholesaleScrap" class="btn btn-submit">Listeye Ekle</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- ÇOKLU HURDA MODAL -->
-    <div class="modal fade" id="scrapMultiModal" tabindex="-1" aria-hidden="true">
+    <!-- ========================================================================
+       FAZ 18 — BIRLESIK MAL GIRIS MODAL (UNIFIED ENTRY)
+       ------------------------------------------------------------------------
+       Onceki uc ayri modal (#scrapModal, #scrapMultiModal, #braceletModal)
+       tek bir modal ile degistirildi. Akis:
+         1. Kullanici "Mal Giris" butonuna tiklar -> modal acilir.
+         2. Urun Tipi dropdown ile Hurda / Bilezik secer.
+         3. Form alanlari tipe gore d-none ile toggle edilir.
+         4. "Sepete Ekle" butonu form satirini bellekteki pending listeye ekler;
+            modal KAPANMAZ; form sifirlanir; pending tablosu yenilenir.
+         5. "Tumunu Kaydet" butonu pending listeyi sirayla ilgili backend
+            endpoint'ine POST eder (per-item async/await), sonra modali kapatir
+            ve loadTable() ile sayfa listesini yeniler.
+       Backend endpoint'leri DEGISMEDI:
+         - /process/add-scrap-to-wholesale       (Hurda)
+         - /process/add-bracelet-to-wholesale    (Bilezik)
+       ======================================================================== -->
+    <div class="modal fade" id="unifiedEntryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-dark text-warning py-2">
-                    <h5 class="modal-title"><i class="fas fa-layer-group me-2"></i>Çoklu Hurda/Mal Giriş</h5>
+                    <h5 class="modal-title">
+                        <i class="fas fa-layer-group me-2"></i>Mal Giriş (Hurda / Bilezik)
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <form id="scrapMultiForm">
-                        {% csrf_token %}
-                        <table class="table table-sm table-borderless" id="scrapMultiTable">
-                            <thead>
-                            <tr class="text-warning" style="font-size: .85rem;">
-                                <th style="width: 30%;">Altın Ayarı</th>
-                                <th style="width: 20%;">Milyem</th>
-                                <th style="width: 20%;">Gram</th>
-                                <th style="width: 20%;">HAS</th>
-                                <th style="width: 10%;"></th>
-                            </tr>
-                            </thead>
-                            <tbody id="scrapMultiRows">
-                            <tr class="scrap-multi-row">
-                                <td>
-                                    <select class="form-select form-select-sm sm-ayar" required>
-                                        <option value="" disabled selected>Seçiniz</option>
-                                        <option value="995" data-mil="995">Has / 995</option>
-                                        <option value="916" data-mil="916">22 Ayar</option>
-                                        <option value="875" data-mil="875">21 Ayar</option>
-                                        <option value="750" data-mil="750">18 Ayar</option>
-                                        <option value="585" data-mil="585">14 Ayar</option>
-                                        <option value="333" data-mil="333">8 Ayar</option>
-                                    </select>
-                                </td>
-                                <td><input type="number" class="form-control form-control-sm sm-milyem" required></td>
-                                <td><input type="number" step="0.01" class="form-control form-control-sm sm-gram" required></td>
-                                <td><span class="sm-has text-warning fw-bold">0.000</span></td>
-                                <td></td>
-                            </tr>
-                            </tbody>
-                        </table>
 
-                        <button type="button" id="btnAddScrapRow" class="btn btn-sm btn-outline-warning mt-2">
-                            <i class="fas fa-plus me-1"></i> Satır Ekle
+                    <!-- --- URUN TIPI SECIMI --- -->
+                    <div class="row mb-3">
+                        <div class="col-12 col-md-4">
+                            <label for="ue_entry_type" class="form-label">Ürün Tipi</label>
+                            <select class="form-select" id="ue_entry_type">
+                                <option value="hurda" selected>Hurda</option>
+                                <option value="bilezik">Bilezik</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- --- HURDA FORM ALANLARI --- -->
+                    <div id="ue_scrap_fields">
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-3">
+                                <label for="ue_scrap_name" class="form-label">Altın Ayarı</label>
+                                <select class="form-select" id="ue_scrap_name">
+                                    <option value="" selected disabled>Seçiniz</option>
+                                    <option value="Has" data-mil="995">Has / 995</option>
+                                    <option value="22 Ayar" data-mil="916">22 Ayar</option>
+                                    <option value="21 Ayar" data-mil="875">21 Ayar</option>
+                                    <option value="18 Ayar" data-mil="750">18 Ayar</option>
+                                    <option value="14 Ayar" data-mil="585">14 Ayar</option>
+                                    <option value="10 Ayar" data-mil="416">10 Ayar</option>
+                                    <option value="8 Ayar" data-mil="333">8 Ayar</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="ue_scrap_mileage" class="form-label">Milyem</label>
+                                <input type="number" class="form-control" id="ue_scrap_mileage" min="1" max="1000">
+                            </div>
+                            <!-- FAZ 19.1 — İşçilik Milyem milyemin yanında -->
+                            <div class="col-6 col-md-3">
+                                <label for="ue_scrap_iscilik" class="form-label">
+                                    İşçilik <span class="text-muted small">(ops.)</span>
+                                </label>
+                                <input type="number" step="0.01" class="form-control"
+                                       id="ue_scrap_iscilik" min="0" max="1000"
+                                       placeholder="">
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label for="ue_scrap_gram" class="form-label">Gram</label>
+                                <input type="number" step="0.01" class="form-control" id="ue_scrap_gram" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- --- BILEZIK FORM ALANLARI (varsayilan gizli) --- -->
+                    <div id="ue_bracelet_fields" class="d-none">
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-4">
+                                <label for="ue_bracelet_name" class="form-label">Ürün Adı (Örn: Adana Burma)</label>
+                                <input type="text" class="form-control" id="ue_bracelet_name">
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <label for="ue_bracelet_rate" class="form-label">Ayar</label>
+                                <select class="form-select" id="ue_bracelet_rate">
+                                    <option value="" selected disabled>Ayar</option>
+                                    <option value="995">24 / Has</option>
+                                    <option value="916">22 Ayar</option>
+                                    <option value="585">14 Ayar</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label for="ue_bracelet_mileage" class="form-label">Milyem</label>
+                                <input type="number" class="form-control" id="ue_bracelet_mileage" min="1" max="1000">
+                            </div>
+                            <!-- FAZ 19.1 — İşçilik Milyem milyemin yanında -->
+                            <div class="col-6 col-md-2">
+                                <label for="ue_bracelet_iscilik" class="form-label">
+                                    İşçilik <span class="text-muted small">(ops.)</span>
+                                </label>
+                                <input type="number" step="0.01" class="form-control"
+                                       id="ue_bracelet_iscilik" min="0" max="1000"
+                                       placeholder="">
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <label for="ue_bracelet_gram" class="form-label">Gram</label>
+                                <input type="number" step="0.01" class="form-control" id="ue_bracelet_gram" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- --- HESAPLANAN HAS + EKLE --- -->
+                    <div class="d-flex justify-content-between align-items-center p-3 mb-3"
+                         style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
+                        <span class="small fw-bold">Hesaplanan Has:</span>
+                        <strong class="text-warning fs-5" id="ue_calc_has">0.000</strong>
+                        <button type="button" id="btnUnifiedAddRow" class="btn btn-sm btn-warning text-dark fw-bold ms-3">
+                            <i class="fas fa-plus me-1"></i> Sepete Ekle
                         </button>
+                    </div>
 
-                        <div class="d-flex justify-content-between align-items-center p-3 mt-3"
-                             style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
-                            <span class="small fw-bold">Toplam Gram:</span>
-                            <strong class="text-white fs-5" id="sm_total_gram">0.00</strong>
-                            <span class="small fw-bold ms-3">Toplam HAS:</span>
-                            <strong class="text-warning fs-5" id="sm_total_has">0.000</strong>
+                    <!-- --- PENDING ITEMS SEPETI --- -->
+                    <div class="mt-2">
+                        <label class="form-label small text-muted mb-1">Eklenecek Satırlar</label>
+                        <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                            <table class="table table-sm table-borderless mb-0">
+                                <thead>
+                                <tr class="text-warning" style="font-size: .8rem;">
+                                    <th style="width: 10%;">Tip</th>
+                                    <th style="width: 24%;">Ad</th>
+                                    <th style="width: 24%;">Milyem / İşçilik</th>
+                                    <th style="width: 12%;">Gram</th>
+                                    <th style="width: 20%;">Has</th>
+                                    <th style="width: 10%;"></th>
+                                </tr>
+                                </thead>
+                                <tbody id="ue_pending_rows">
+                                <tr id="ue_empty_row">
+                                    <td colspan="6" class="text-center text-muted small py-3">
+                                        Henüz satır eklenmedi. Yukarıdan ürün tipi seçip "Sepete Ekle" deyin.
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </form>
+
+                        <div class="d-flex justify-content-end align-items-center p-2 mt-2"
+                             style="background: rgba(15, 27, 43, 0.6); border-radius: 8px; color: var(--text-primary); gap: 1rem;">
+                            <span class="small">Toplam Gram: <strong id="ue_total_gram">0.00</strong></span>
+                            <span class="small">Toplam Has: <strong class="text-warning" id="ue_total_has">0.000</strong></span>
+                        </div>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
-                    <button type="button" id="btnSaveScrapMulti" class="btn btn-submit">Tümünü Listeye Ekle</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button" id="btnUnifiedSaveAll" class="btn btn-submit">
+                        <i class="fas fa-check me-1"></i> Tümünü Kaydet
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="modal fade" id="braceletModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-warning py-2">
-                    <h5 class="modal-title"><i class="fas fa-ring me-2"></i>Bilezik Giriş</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form id="braceletWholesaleForm">
-                        {% csrf_token %}
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <div class="mb-3">
-                                    <label for="ws_bracelet_name" class="form-label">Ürün Adı (Örn: Adana Burma)</label>
-                                    <input type="text" class="form-control" id="ws_bracelet_name" name="bracelet_name"
-                                           required>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="mb-3">
-                                    <label for="ws_bracelet_rate" class="form-label">Ayar</label>
-                                    <select class="form-select" id="ws_bracelet_rate" required>
-                                        <option value="" selected disabled>Ayar Seçiniz</option>
-                                        <option value="995">24 Ayar / Has</option>
-                                        <option value="916">22 Ayar</option>
-                                        <option value="585">14 Ayar</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <div class="mb-3">
-                                    <label for="ws_bracelet_mileage" class="form-label">Milyem</label>
-                                    <input type="number" class="form-control" id="ws_bracelet_mileage"
-                                           name="product_mileage" required>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="mb-3">
-                                    <label for="ws_bracelet_gram" class="form-label">Gram</label>
-                                    <input type="number" step="0.01" class="form-control" id="ws_bracelet_gram"
-                                           name="gram" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center p-3 mb-0"
-                             style="background: rgba(15, 27, 43, 0.8); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: var(--text-primary);">
-                            <span class="small font-weight-bold">Hesaplanan Has:</span>
-                            <strong class="text-warning fs-5" id="ws_bracelet_calc_has">0.00</strong>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="btnSaveWholesaleBracelet" class="btn btn-submit">Listeye Ekle</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- CSRF token'i AJAX icin sabit isimli bir form araciligiyla sayfada hazir tutuyoruz. -->
+    <form id="ue_csrf_form" style="display:none;">{% csrf_token %}</form>
 
     <input type="hidden" id="wholesale_process_no" value="{{ wholesale_process_no }}"/>
     <input type="hidden" id="buy_hs_tl" value="{{ buy_hs_tl }}"/>
@@ -2518,7 +2551,12 @@
 
                 d.data.forEach((c, i) => {
                     cl.append(`<li class="category-item${i ? '' : ' selected'}">${c.name}</li>`);
-                    if (!i) renderProducts(c.products);
+                    if (!i) {
+                        renderProducts(c.products);
+                        // FAZ 70: Sayfa ilk açılışında default seçili kategori
+                        // Hurda/Bilezik ise kısıtlamayı hemen uygula.
+                        applyWholesaleEntryRestriction(_wholesaleIsRestrictedCategory(c.name));
+                    }
                 });
 
                 // FAZ 23: "Kasalar" sanal kategorisini ekle
@@ -2537,9 +2575,15 @@
 
                 if ($this.data('kasalar')) {
                     renderBankAccounts();
+                    // FAZ 70: Kasalar sanal kategorisi — Giriş/Çıkış her ikisi de serbest.
+                    applyWholesaleEntryRestriction(false);
                 } else {
                     const i = $this.index();
-                    if (cats[i]) renderProducts(cats[i].products);
+                    if (cats[i]) {
+                        renderProducts(cats[i].products);
+                        // FAZ 70: Hurda/Bilezik → Giriş kısıtla; diğerleri → kaldır.
+                        applyWholesaleEntryRestriction(_wholesaleIsRestrictedCategory(cats[i].name));
+                    }
                 }
             });
         }
@@ -2554,7 +2598,7 @@
                 var stok;
                 if (isDoviz) {
                     // Döviz ürünlerinde "adet" anlamsız, alış kurunu göster
-                    var buyTl = parseFloat(p.buy_price_tl) || 0;
+                    var buyTl = parseFloat(p.buy_price_eur) || 0;
                     stok = buyTl > 0 ? ('₺' + buyTl.toLocaleString('tr-TR', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 4
@@ -3059,6 +3103,45 @@
         const STORE_USE_MANUEL_HAS = "{{ store_config.use_manual_has_calculation|yesno:'true,false' }}" === "true";
         const STORE_HAS_PRICING_CHAMBER = "{{ store_config.active_pricing_chamber_id|default:'' }}" !== "None" && "{{ store_config.active_pricing_chamber_id|default:'' }}" !== "";
 
+        // ─────────────────────────────────────────────────────────────────────
+        // FAZ 70 (2026-05-09): TOPTAN GİRİŞ KISITLAMASI
+        // Hurda / Bilezik kategorileri seçiliyken "Giriş" (cash_in_btn) radio'su
+        // disabled olur; yalnızca "Mal Giriş" (btnOpenUnifiedEntry) aktif kalır.
+        // "Çıkış" her zaman serbest — satış akışı bu kategorilerde de geçerli.
+        // Mevcut .disabled-label CSS zaten var (FAZ 23, satır ~179); ayrıca ekleme gerekmez.
+        // ─────────────────────────────────────────────────────────────────────
+        function _wholesaleIsRestrictedCategory(name) {
+            if (!name) return false;
+            const n = String(name).toLocaleLowerCase('tr');
+            return n.indexOf('hurda') >= 0 || n.indexOf('bilezik') >= 0;
+        }
+
+        function _wholesaleGetSelectedCategoryName() {
+            const el = document.querySelector('#categoryToptanList .category-item.selected');
+            return el ? (el.innerText || '').trim() : '';
+        }
+
+        function applyWholesaleEntryRestriction(restricted) {
+            const $inRadio = $('#cash_in_btn');
+            const $inLabel = $('label[for="cash_in_btn"]');
+            const $outRadio = $('#cash_out_btn');
+
+            if (restricted) {
+                $inRadio.prop('disabled', true);
+                $inLabel.addClass('disabled-label');
+
+                // Giriş seçiliyken kısıtlama devreye girdi ise Çıkış'a geç.
+                // Bu olmadan cash_status=1 (PURCHASE) hidden input'ta kalır ve
+                // form submit edilen her kalemde Hurda PURCHASE olarak kaydedilir.
+                if ($inRadio.prop('checked')) {
+                    $outRadio.prop('checked', true).trigger('change');
+                }
+            } else {
+                $inRadio.prop('disabled', false);
+                $inLabel.removeClass('disabled-label');
+            }
+        }
+
         // --- ÜRÜN SEÇİMİ VE HESAPLAMA ---
         function isForeignCurrency(cur) {
             cur = (cur || '').toUpperCase();
@@ -3187,7 +3270,7 @@
 
             $('#rate').val(
                 cur === 'TRY' ? 1 :
-                    isCurrency ? (p.sale_price_tl ?? '') : ''
+                    isCurrency ? (p.sale_price_eur ?? '') : ''
             );
             $('#total_tl').val('');
 
@@ -3213,6 +3296,16 @@
             computeTotals();
         }
 
+        // FAZ 21 / Bug 1 — Toplam Has çift yönlü giriş guard'ı.
+        // Sorun: backFromTotal sonunda computeTotals çağrılıyor; bu da
+        // $('#total_has').val(...) ile kullanıcının yazdığı field'ı
+        // her tuş vuruşunda üzerine yazıp cursor pozisyonunu sona alıyor →
+        // kullanıcı "6.5" yazamıyor, "6" yazınca field "6.000" oluyor.
+        // Çözüm: _isBackCalc flag'i ile computeTotals total_has yazmayı
+        // atlasın; backFromTotal kendi setlemesini yapsın (price_hs sonradan
+        // input event tetiklemediği için circular yok).
+        let _isBackCalc = false;
+
         function computeTotals() {
             if (!currentProduct) return;
 
@@ -3233,12 +3326,16 @@
 
             if (currentProduct.isGram) {
                 const totHas = wgt && mly ? (wgt * mly) / 1000 : 0;
-                $('#total_has').val(totHas ? fmt(totHas, 3) : '');
+                if (!_isBackCalc) {
+                    $('#total_has').val(totHas ? fmt(totHas, 3) : '');
+                }
                 return;
             }
 
             const totHas = qty && unitH ? qty * unitH : 0;
-            $('#total_has').val(totHas ? fmt(totHas, 3) : '');
+            if (!_isBackCalc) {
+                $('#total_has').val(totHas ? fmt(totHas, 3) : '');
+            }
         }
 
         function backFromTotal() {
@@ -3248,14 +3345,23 @@
             const tot = toNum($('#total_has').val());
             if (!tot) return;
 
-            if (currentProduct.isGram) {
-                const mly = toNum($('#product_mileage').val());
-                if (mly) $('#weight').val(fmt((tot * 1000) / mly, 3));
-            } else {
-                const qty = toNum($('#qty').val());
-                if (qty) $('#price_hs').val(fmt(tot / qty, 3));
+            // Guard: computeTotals'ın total_has'ı geri yazmasını engelle.
+            // Yalnızca Birim Has (price_hs) veya Gram (weight) güncellensin.
+            _isBackCalc = true;
+            try {
+                if (currentProduct.isGram) {
+                    const mly = toNum($('#product_mileage').val());
+                    if (mly) $('#weight').val(fmt((tot * 1000) / mly, 3));
+                } else {
+                    const qty = toNum($('#qty').val());
+                    if (qty) $('#price_hs').val(fmt(tot / qty, 3));
+                }
+                // computeTotals sırasında total_has'a dokunulmayacak,
+                // ama TRY/FX olabileceği için tutar hesabı için yine çağrılır.
+                computeTotals();
+            } finally {
+                _isBackCalc = false;
             }
-            computeTotals();
         }
 
         $('#qty, #price_hs, #rate').on('input', computeTotals);
@@ -3380,9 +3486,9 @@
                     $('#fisTarih').text(d.fis_tarih);
 
                     if (d.is_cantaci) {
-                        $('#fisAccountBadge').text('Çantacı').attr('class', 'badge mt-1 bg-info');
+                        $('#fisAccountBadge').text('Çantacı').attr('class', 'badge mt-1 bg-light-info text-info');
                     } else {
-                        $('#fisAccountBadge').text('Tedarikçi').attr('class', 'badge mt-1 bg-secondary');
+                        $('#fisAccountBadge').text('Tedarikçi').attr('class', 'badge mt-1 bg-light-primary text-primary');
                     }
 
                     // ── FAZ 11 / SYNC-01 + SYNC-02: Taslak Sepet Özeti ──
@@ -3392,22 +3498,27 @@
                     const pb = d.pending_basket || {};
                     if (pb.has_pending && pb.totals && pb.totals.length) {
                         pb.totals.forEach(t => {
-                            let color = t.net > 0 ? '#ffd54f' : (t.net < 0 ? '#ff8a80' : '#a1a5b7');
-                            let dirLabel = t.net > 0 ? 'BORÇ' : (t.net < 0 ? 'ALACAK' : 'DENGEDE');
+                            // Taslak sepet — amber ton (henüz onaylanmadı uyarısı)
+                            const dirLabel = t.net > 0 ? 'BORÇ' : (t.net < 0 ? 'ALACAK' : 'DENGEDE');
                             $pendingTotals.append(`
-                                <div class="fis-balance-card" style="border: 1px dashed rgba(255,193,7,.4);">
-                                    <div class="cur">${t.currency}</div>
-                                    <div class="val" style="color:${color}">${Math.abs(t.net).toFixed(2)}</div>
-                                    <div class="lbl" style="color:${color}">SEPETTE — ${dirLabel}</div>
+                                <div class="fis-balance-card"
+                                     style="background:#fffbeb; border:1px dashed #f59e0b;">
+                                    <div class="cur" style="color:#92400e">${t.currency}</div>
+                                    <div class="val" style="color:#92400e">${Math.abs(t.net).toFixed(2)}</div>
+                                    <div class="lbl" style="color:#92400e">SEPETTE — ${dirLabel}</div>
                                 </div>
                             `);
                         });
                         $('#fisPendingBadge').text('TASLAK (' + pb.rows_count + ' kalem)');
                         $pendingSec.show();
-                        $statusBadge.text('TASLAK FİŞ AÇIK').removeClass('bg-success').addClass('bg-warning text-dark').show();
+                        $statusBadge.text('TASLAK FİŞ AÇIK')
+                            .removeClass('bg-success bg-light-success text-success')
+                            .addClass('bg-light-warning text-warning').show();
                     } else {
                         $pendingSec.hide();
-                        $statusBadge.text('TAMAMLANMIŞ').removeClass('bg-warning text-dark').addClass('bg-success').show();
+                        $statusBadge.text('TAMAMLANMIŞ')
+                            .removeClass('bg-warning bg-light-warning text-warning text-dark')
+                            .addClass('bg-light-success text-success').show();
                     }
 
                     // ── Bakiye Kartları ──
@@ -3417,13 +3528,24 @@
                     } else {
                         $('#fisNoBalance').hide();
                         d.balances.forEach(b => {
-                            let color = b.net > 0 ? '#28c76f' : (b.net < 0 ? '#ff4d4f' : '#a1a5b7');
-                            let lbl = b.net > 0 ? 'ALACAKLIYIZ' : (b.net < 0 ? 'BORÇLUYUZ' : 'DENGEDE');
+                            // Tüm kart tek ton — arka plan + border + yazı aynı renk ailesinden
+                            let cardBg, cardBorder, textColor, lbl;
+                            if (b.net > 0) {
+                                cardBg = '#f0fdf4'; cardBorder = '#86efac';
+                                textColor = '#15803d'; lbl = 'ALACAKLIYIZ';
+                            } else if (b.net < 0) {
+                                cardBg = '#fff5f5'; cardBorder = '#fca5a5';
+                                textColor = '#dc2626'; lbl = 'BORÇLUYUZ';
+                            } else {
+                                cardBg = '#f8fafc'; cardBorder = '#cbd5e1';
+                                textColor = '#475569'; lbl = 'DENGEDE';
+                            }
                             balCont.append(`
-                                <div class="fis-balance-card">
-                                    <div class="cur">${b.currency}</div>
-                                    <div class="val" style="color:${color}">${Math.abs(b.net).toFixed(2)}</div>
-                                    <div class="lbl" style="color:${color}">${lbl}</div>
+                                <div class="fis-balance-card"
+                                     style="background:${cardBg}; border-color:${cardBorder};">
+                                    <div class="cur" style="color:${textColor}">${b.currency}</div>
+                                    <div class="val" style="color:${textColor}">${Math.abs(b.net).toFixed(2)}</div>
+                                    <div class="lbl" style="color:${textColor}">${lbl}</div>
                                 </div>
                             `);
                         });
@@ -3436,13 +3558,27 @@
                     } else {
                         $('#fisNoMovements').hide();
                         d.movements.forEach(m => {
-                            let icon = m.yon === 'ENTRY' ? '<i class="bi bi-arrow-down-short text-danger"></i>' : '<i class="bi bi-arrow-up-short text-success"></i>';
+                            const tipUpper = String(m.tip || '').toUpperCase();
+                            // FAZ 40 — light-tone badge sınıfları
+                            let badgeClass = 'bg-light text-secondary';
+                            if (tipUpper.indexOf('ALIM') !== -1 || tipUpper.indexOf('PURCHASE') !== -1) {
+                                badgeClass = 'bg-light-warning text-warning';
+                            } else if (tipUpper.indexOf('ÖDEME') !== -1 || tipUpper.indexOf('PAYMENT') !== -1 || tipUpper.indexOf('TAHSIL') !== -1) {
+                                badgeClass = 'bg-light-info text-info';
+                            } else if (tipUpper.indexOf('İPTAL') !== -1 || tipUpper.indexOf('CANCEL') !== -1) {
+                                badgeClass = 'bg-light-secondary text-secondary';
+                            } else if (tipUpper.indexOf('SATIŞ') !== -1 || tipUpper.indexOf('SALE') !== -1) {
+                                badgeClass = 'bg-light-success text-success';
+                            }
+                            const arrow = m.yon === 'ENTRY'
+                                ? '<i class="bi bi-arrow-down-short text-success me-1"></i>'
+                                : '<i class="bi bi-arrow-up-short text-danger me-1"></i>';
                             movCont.append(`
                                 <tr>
-                                    <td class="text-nowrap">${m.tarih}</td>
-                                    <td>${icon} ${m.tip}</td>
+                                    <td class="text-nowrap text-muted small">${m.tarih}</td>
+                                    <td>${arrow}<span class="fis-tip-badge ${badgeClass}">${m.tip}</span></td>
                                     <td class="text-end text-nowrap">${m.miktar}</td>
-                                    <td class="text-end text-nowrap fw-bold">${m.tutar}</td>
+                                    <td class="text-end text-nowrap fis-amount-cell">${m.tutar}</td>
                                 </tr>
                             `);
                         });
@@ -3499,6 +3635,12 @@
             // Çıkış butonunu yeniden aktif et (döviz ürünü disable etmişse)
             $('#cash_out_btn').prop('disabled', false);
             $('label[for="cash_out_btn"]').removeClass('disabled-label');
+            // FAZ 70: Form sıfırlandıktan sonra seçili kategori hâlâ Hurda/Bilezik
+            // olabilir. applyWholesaleEntryRestriction yeniden çağrılmazsa Giriş
+            // radio'su enable kalır ve cash_status=1 ile submit açık kapı oluşturur.
+            applyWholesaleEntryRestriction(
+                _wholesaleIsRestrictedCategory(_wholesaleGetSelectedCategoryName())
+            );
         }
 
         $('#btnComplete').off('click').on('click', function () {
@@ -4006,298 +4148,444 @@
         });
     </script>
     <script>
-        // --- MODAL AÇMA ---
-        $('#btnOpenScrapModal').click(function () {
-            $('#scrapWholesaleForm')[0].reset();
-            $('#ws_scrap_calc_has').text('0.00');
-            $('#scrapModal').modal('show');
-        });
+        /* ====================================================================
+           FAZ 18 — BIRLESIK MAL GIRIS MODAL (UNIFIED ENTRY) — JS
+           --------------------------------------------------------------------
+           Onceki uc bagimsiz akis (scrap, scrap-multi, bilezik) tek bir
+           in-memory pending sepete birlestirildi. Form alanlari urun tipine
+           gore d-none ile toggle ediliyor. "Sepete Ekle" tiklamasinda modal
+           KAPATILMAZ, yalnizca form sifirlanip pending tabloya satir
+           eklenir. "Tumunu Kaydet" pending listeyi sirayla mevcut backend
+           endpoint'lerine POST eder; tek seferde basarili sonuclar icin
+           toast gosterilir, hatali olanlar listede kalir.
 
-        $('#btnOpenBraceletModal').click(function () {
-            $('#braceletWholesaleForm')[0].reset();
-            $('#ws_bracelet_calc_has').text('0.00');
-            $('#braceletModal').modal('show');
-        });
-
-        // --- HURDA HESAPLAMA & SELECT ---
-        $('#ws_scrap_name').change(function () {
-            const mil = $(this).find(':selected').data('mil');
-            if (mil) $('#ws_scrap_mileage').val(mil);
-            calcScrapHas();
-        });
-
-        $('#ws_scrap_mileage, #ws_scrap_gram').on('input', function () {
-            calcScrapHas();
-        });
-
-        function calcScrapHas() {
-            const g = parseFloat($('#ws_scrap_gram').val()) || 0;
-            const m = parseFloat($('#ws_scrap_mileage').val()) || 0;
-
-            // Toplam Has
-            const res = (g * m) / 1000;
-            $('#ws_scrap_calc_has').text(res.toFixed(3));
-        }
-
-        // --- BİLEZİK HESAPLAMA ---
-        $('#ws_bracelet_rate').change(function () {
-            $('#ws_bracelet_mileage').val($(this).val());
-            calcBraceletHas();
-        });
-
-        $('#ws_bracelet_mileage, #ws_bracelet_gram').on('input', function () {
-            calcBraceletHas();
-        });
-
-        function calcBraceletHas() {
-            const g = parseFloat($('#ws_bracelet_gram').val()) || 0;
-            const m = parseFloat($('#ws_bracelet_mileage').val()) || 0;
-
-            // Toplam Has
-            const res = (g * m) / 1000;
-            $('#ws_bracelet_calc_has').text(res.toFixed(3));
-        }
-
-        // --- AJAX: HURDA KAYDET ---
-        $('#btnSaveWholesaleScrap').click(function () {
-            const $btn = $(this);
-            const gram = $('#ws_scrap_gram').val();
-
-            if (!gram || gram <= 0) {
-                Swal.fire('Hata', 'Lütfen geçerli bir gram giriniz.', 'warning');
-                return;
+           Kurallar (CLAUDE.md):
+            - KURAL 6: Tum DOM erisimleri null-check + try/catch.
+            - KURAL 7: Auto-correct yalnizca DIGER input'lara yazilir; aktif
+              input'a yazilmaz (cursor korumasi).
+            - KURAL 9: parseFloat sonrasi isFinite kontrolu + locale comma fix.
+            - Backend endpoint'leri DEGISMEDI:
+                /process/add-scrap-to-wholesale  /process/add-bracelet-to-wholesale
+           ==================================================================== */
+        (function () {
+            // ---------- Yardimci Fonksiyonlar ----------
+            function $id(id) { return document.getElementById(id); }
+            function safeNum(raw) {
+                if (raw === null || raw === undefined) return 0;
+                var s = String(raw).trim().replace(',', '.');
+                if (!s) return 0;
+                var n = parseFloat(s);
+                return isFinite(n) ? n : 0;
+            }
+            function getCsrfToken() {
+                try {
+                    var inp = document.querySelector('#ue_csrf_form input[name="csrfmiddlewaretoken"]');
+                    return inp ? inp.value : '';
+                } catch (e) { return ''; }
+            }
+            function getProcessNo() {
+                var el = $id('wholesale_process_no');
+                return el ? (el.value || '') : '';
+            }
+            function setProcessNo(v) {
+                var el = $id('wholesale_process_no');
+                if (el && v) el.value = v;
             }
 
-            const fd = new FormData($('#scrapWholesaleForm')[0]);
-            // Mevcut işlem numarasını ekle (eğer varsa)
-            fd.append('wholesale_process_no', $('#wholesale_process_no').val());
+            // ---------- Pending Sepet (in-memory) ----------
+            // Yapi: { type: 'hurda'|'bilezik', name, mileage, gram, has,
+            //         scrap_name?, bracelet_name?, bracelet_rate?, _id }
+            var pending = [];
+            var seq = 0;
 
-            $btn.prop('disabled', true);
-
-            $.ajax({
-                url: '/process/add-scrap-to-wholesale',
-                type: 'POST',
-                data: fd,
-                processData: false,
-                contentType: false,
-                success: function (res) {
-                    $btn.prop('disabled', false);
-                    if (res.result) {
-                        $('#scrapModal').modal('hide');
-                        // İşlem numarasını güncelle
-                        $('#wholesale_process_no').val(res.wholesale_process_no);
-                        // Tabloyu yenile (Mevcut fonksiyonun)
-                        loadTable();
-                        Swal.fire({
-                            toast: true, position: 'top-end', icon: 'success',
-                            title: 'Hurda Eklendi', showConfirmButton: false, timer: 1500
-                        });
-                    } else {
-                        Swal.fire('Hata', res.error_msg, 'error');
-                    }
-                },
-                error: function (err) {
-                    $btn.prop('disabled', false);
-                    Swal.fire('Hata', 'Sunucu hatası', 'error');
-                }
-            });
-        });
-
-        // --- AJAX: BİLEZİK KAYDET ---
-        $('#btnSaveWholesaleBracelet').click(function () {
-            const $btn = $(this);
-            const name = $('#ws_bracelet_name').val();
-            const gram = $('#ws_bracelet_gram').val();
-
-            if (!name || !gram) {
-                Swal.fire('Hata', 'İsim ve Gram alanları zorunludur.', 'warning');
-                return;
-            }
-
-            const fd = new FormData($('#braceletWholesaleForm')[0]);
-            fd.append('wholesale_process_no', $('#wholesale_process_no').val());
-
-            $btn.prop('disabled', true);
-
-            $.ajax({
-                url: '/process/add-bracelet-to-wholesale',
-                type: 'POST',
-                data: fd,
-                processData: false,
-                contentType: false,
-                success: function (res) {
-                    $btn.prop('disabled', false);
-                    if (res.result) {
-                        $('#braceletModal').modal('hide');
-                        $('#wholesale_process_no').val(res.wholesale_process_no);
-                        loadTable(); // Tabloyu yenile
-                        Swal.fire({
-                            toast: true, position: 'top-end', icon: 'success',
-                            title: 'Bilezik Eklendi', showConfirmButton: false, timer: 1500
-                        });
-                    } else {
-                        Swal.fire('Hata', res.error_msg, 'error');
-                    }
-                },
-                error: function (err) {
-                    $btn.prop('disabled', false);
-                    Swal.fire('Hata', 'Sunucu hatası', 'error');
-                }
-            });
-        });
-
-        // Modallar kapandığında sadece formu ve has alanını sıfırlıyoruz. (Fiyatlar çıkarıldı)
-        $('#scrapModal').on('hidden.bs.modal', function () {
-            $('#scrapWholesaleForm')[0].reset();
-            $('#ws_scrap_calc_has').text('0.00');
-        });
-
-        $('#braceletModal').on('hidden.bs.modal', function () {
-            $('#braceletWholesaleForm')[0].reset();
-            $('#ws_bracelet_calc_has').text('0.00');
-        });
-
-        // ============================================================
-        // ÇOKLU HURDA MODAL JS
-        // ============================================================
-
-        // Modal Aç
-        $('#btnOpenScrapMultiModal').click(function () {
-            // Tabloyu sıfırla, tek satır bırak
-            $('#scrapMultiRows').html($('#scrapMultiRows tr:first').clone().wrap('<div>').parent().html());
-            resetMultiRow($('#scrapMultiRows tr:first'));
-            recalcMultiTotals();
-            $('#scrapMultiModal').modal('show');
-        });
-
-        function resetMultiRow($row) {
-            $row.find('.sm-ayar').val('');
-            $row.find('.sm-milyem').val('');
-            $row.find('.sm-gram').val('');
-            $row.find('.sm-has').text('0.000');
-        }
-
-        // Satır Ekle
-        $('#btnAddScrapRow').click(function () {
-            const $first = $('#scrapMultiRows tr:first');
-            const $clone = $first.clone();
-            resetMultiRow($clone);
-            // Sil butonu ekle (ilk satırda yok)
-            $clone.find('td:last').html(
-                '<button type="button" class="btn btn-icon btn-sm btn-light-danger btn-remove-scrap-row">' +
-                '<i class="fas fa-times"></i></button>'
-            );
-            $('#scrapMultiRows').append($clone);
-            bindMultiRowEvents($clone);
-        });
-
-        // Satır Sil
-        $(document).on('click', '.btn-remove-scrap-row', function () {
-            $(this).closest('tr').remove();
-            recalcMultiTotals();
-        });
-
-        // Ayar seçilince milyem otomatik doldur
-        function bindMultiRowEvents($row) {
-            // Zaten document event delegation kullanacağız
-        }
-
-        $(document).on('change', '.sm-ayar', function () {
-            const mil = $(this).find(':selected').data('mil');
-            const $row = $(this).closest('tr');
-            if (mil) $row.find('.sm-milyem').val(mil);
-            calcMultiRowHas($row);
-        });
-
-        $(document).on('input', '.sm-milyem, .sm-gram', function () {
-            calcMultiRowHas($(this).closest('tr'));
-        });
-
-        function calcMultiRowHas($row) {
-            const g = parseFloat($row.find('.sm-gram').val()) || 0;
-            const m = parseFloat($row.find('.sm-milyem').val()) || 0;
-            const has = (g * m) / 1000;
-            $row.find('.sm-has').text(has.toFixed(3));
-            recalcMultiTotals();
-        }
-
-        function recalcMultiTotals() {
-            let totalGram = 0, totalHas = 0;
-            $('#scrapMultiRows tr').each(function () {
-                totalGram += parseFloat($(this).find('.sm-gram').val()) || 0;
-                const m = parseFloat($(this).find('.sm-milyem').val()) || 0;
-                const g = parseFloat($(this).find('.sm-gram').val()) || 0;
-                totalHas += (g * m) / 1000;
-            });
-            $('#sm_total_gram').text(totalGram.toFixed(2));
-            $('#sm_total_has').text(totalHas.toFixed(3));
-        }
-
-        // Kaydet (AJAX)
-        $('#btnSaveScrapMulti').click(function () {
-            const $btn = $(this);
-            const rows = [];
-
-            let valid = true;
-            $('#scrapMultiRows tr').each(function () {
-                const milyem = $(this).find('.sm-milyem').val();
-                const gram = $(this).find('.sm-gram').val();
-                const name = $(this).find('.sm-ayar option:selected').text();
-
-                if (!milyem || !gram || parseFloat(gram) <= 0) {
-                    valid = false;
-                    return false; // break
-                }
-                rows.push({
-                    product_mileage: milyem,
-                    gram: gram,
-                    scrap_name: name !== 'Seçiniz' ? name : ''
+            function resetForm() {
+                // Aktif input'u sifirlamamak icin (KURAL 7) yalnizca pasif
+                // alanlari temizliyoruz; yine de "Sepete Ekle"den sonra
+                // formun tamamini sifirliyoruz cunku focus zaten butona gecti.
+                var ids = [
+                    'ue_scrap_name', 'ue_scrap_mileage', 'ue_scrap_gram',
+                    'ue_bracelet_name', 'ue_bracelet_rate',
+                    'ue_bracelet_mileage', 'ue_bracelet_gram'
+                ];
+                ids.forEach(function (id) {
+                    var el = $id(id);
+                    if (!el) return;
+                    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+                    else el.value = '';
                 });
-            });
-
-            if (!valid || rows.length === 0) {
-                Swal.fire('Hata', 'Tüm satırlarda geçerli milyem ve gram girilmelidir.', 'warning');
-                return;
+                var has = $id('ue_calc_has');
+                if (has) has.textContent = '0.000';
             }
 
-            $btn.prop('disabled', true);
+            function fullReset() {
+                pending = [];
+                seq = 0;
+                renderPending();
+                resetForm();
+                var sel = $id('ue_entry_type');
+                if (sel) sel.value = 'hurda';
+                toggleFields('hurda');
+            }
 
-            $.ajax({
-                url: '/process/add-scrap-multi-to-wholesale',
-                type: 'POST',
-                contentType: 'application/json',
-                headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                data: JSON.stringify({
-                    wholesale_process_no: $('#wholesale_process_no').val(),
-                    rows: rows
-                }),
-                success: function (res) {
-                    $btn.prop('disabled', false);
-                    if (res.result) {
-                        $('#scrapMultiModal').modal('hide');
-                        $('#wholesale_process_no').val(res.wholesale_process_no);
-                        loadTable();
-                        Swal.fire({
-                            toast: true, position: 'top-end', icon: 'success',
-                            title: res.rows_count + ' hurda satırı eklendi',
-                            showConfirmButton: false, timer: 2000
-                        });
+            // ---------- Tip Toggle ----------
+            function toggleFields(type) {
+                var s = $id('ue_scrap_fields');
+                var b = $id('ue_bracelet_fields');
+                if (!s || !b) return;
+                if (type === 'bilezik') {
+                    s.classList.add('d-none');
+                    b.classList.remove('d-none');
+                } else {
+                    s.classList.remove('d-none');
+                    b.classList.add('d-none');
+                }
+                recalcCurrentHas();
+            }
+
+            // ---------- Has Hesaplama (KURAL 7: aktif input'a yazma yok) ----------
+            // FAZ 19.1 — İşçilik milyem has hesabına dahil: has = g * (m + iscilik) / 1000
+            function recalcCurrentHas() {
+                try {
+                    var type = ($id('ue_entry_type') || {}).value || 'hurda';
+                    var g, m, iscilik;
+                    if (type === 'bilezik') {
+                        g = safeNum(($id('ue_bracelet_gram') || {}).value);
+                        m = safeNum(($id('ue_bracelet_mileage') || {}).value);
+                        iscilik = safeNum(($id('ue_bracelet_iscilik') || {}).value);
                     } else {
-                        Swal.fire('Hata', res.error_msg, 'error');
+                        g = safeNum(($id('ue_scrap_gram') || {}).value);
+                        m = safeNum(($id('ue_scrap_mileage') || {}).value);
+                        iscilik = safeNum(($id('ue_scrap_iscilik') || {}).value);
                     }
-                },
-                error: function () {
-                    $btn.prop('disabled', false);
-                    Swal.fire('Hata', 'Sunucu hatası', 'error');
+                    var has = (g * (m + iscilik)) / 1000;
+                    if (!isFinite(has)) has = 0;
+                    var out = $id('ue_calc_has');
+                    if (out) out.textContent = has.toFixed(3);
+                } catch (e) { /* silent */ }
+            }
+
+            // ---------- Pending Render ----------
+            // FAZ 19.1 — Milyem hücresinde malzeme ve işçilik ayrı badge ile gösterilir.
+            function renderPending() {
+                var tbody = $id('ue_pending_rows');
+                if (!tbody) return;
+                if (pending.length === 0) {
+                    tbody.innerHTML = '<tr id="ue_empty_row"><td colspan="6" class="text-center text-muted small py-3">' +
+                        'Henüz satır eklenmedi. Yukarıdan ürün tipi seçip "Sepete Ekle" deyin.</td></tr>';
+                    var tg = $id('ue_total_gram'); if (tg) tg.textContent = '0.00';
+                    var th = $id('ue_total_has'); if (th) th.textContent = '0.000';
+                    return;
+                }
+                var html = '';
+                var totG = 0, totH = 0;
+                pending.forEach(function (it) {
+                    totG += safeNum(it.gram);
+                    totH += safeNum(it.has);
+                    var tipBadge = it.type === 'bilezik'
+                        ? '<span class="badge bg-info text-dark">Bilezik</span>'
+                        : '<span class="badge bg-warning text-dark">Hurda</span>';
+                    var iscNum = safeNum(it.iscilik_milyem);
+                    var milCell = '<span class="badge bg-secondary">' + (it.mileage || '-') + ' m</span>';
+                    if (iscNum > 0) {
+                        milCell += ' <span class="badge bg-warning text-dark ms-1" ' +
+                            'title="İşçilik milyem (has hesabına dahil)">' +
+                            '+' + iscNum + ' İşç</span>';
+                    }
+                    html += '<tr data-id="' + it._id + '">' +
+                        '<td>' + tipBadge + '</td>' +
+                        '<td class="small">' + (it.name || '-') + '</td>' +
+                        '<td class="small">' + milCell + '</td>' +
+                        '<td class="small">' + safeNum(it.gram).toFixed(2) + '</td>' +
+                        '<td class="small text-warning fw-bold">' + safeNum(it.has).toFixed(3) + '</td>' +
+                        '<td><button type="button" class="btn btn-sm btn-light-danger ue-remove-row" ' +
+                        'data-id="' + it._id + '" title="Sil">' +
+                        '<i class="fas fa-times"></i></button></td>' +
+                        '</tr>';
+                });
+                tbody.innerHTML = html;
+                var tg2 = $id('ue_total_gram'); if (tg2) tg2.textContent = totG.toFixed(2);
+                var th2 = $id('ue_total_has'); if (th2) th2.textContent = totH.toFixed(3);
+            }
+
+            // ---------- "Sepete Ekle" ----------
+            function addCurrentToPending() {
+                try {
+                    var type = ($id('ue_entry_type') || {}).value || 'hurda';
+                    var g, m, item;
+                    if (type === 'bilezik') {
+                        var bname = (($id('ue_bracelet_name') || {}).value || '').trim();
+                        var brate = (($id('ue_bracelet_rate') || {}).value || '').trim();
+                        g = safeNum(($id('ue_bracelet_gram') || {}).value);
+                        m = safeNum(($id('ue_bracelet_mileage') || {}).value);
+                        // FAZ 19 / Bulgu B — Opsiyonel işçilik milyem
+                        var bIscilik = safeNum(($id('ue_bracelet_iscilik') || {}).value);
+                        if (!bname) {
+                            Swal.fire('Eksik', 'Bilezik için ürün adı zorunludur.', 'warning');
+                            return;
+                        }
+                        if (!brate) {
+                            Swal.fire('Eksik', 'Bilezik için ayar seçimi zorunludur.', 'warning');
+                            return;
+                        }
+                        if (g <= 0 || m <= 0) {
+                            Swal.fire('Eksik', 'Geçerli milyem ve gram giriniz.', 'warning');
+                            return;
+                        }
+                        item = {
+                            _id: ++seq,
+                            type: 'bilezik',
+                            name: bname,
+                            bracelet_name: bname,
+                            bracelet_rate: brate,
+                            mileage: m,
+                            gram: g,
+                            iscilik_milyem: bIscilik,
+                            has: (g * (m + bIscilik)) / 1000
+                        };
+                    } else {
+                        var sname = (($id('ue_scrap_name') || {}).value || '').trim();
+                        g = safeNum(($id('ue_scrap_gram') || {}).value);
+                        m = safeNum(($id('ue_scrap_mileage') || {}).value);
+                        // FAZ 19 / Bulgu B — Opsiyonel işçilik milyem
+                        var sIscilik = safeNum(($id('ue_scrap_iscilik') || {}).value);
+                        if (!sname) {
+                            Swal.fire('Eksik', 'Hurda için altın ayarı seçimi zorunludur.', 'warning');
+                            return;
+                        }
+                        if (g <= 0 || m <= 0) {
+                            Swal.fire('Eksik', 'Geçerli milyem ve gram giriniz.', 'warning');
+                            return;
+                        }
+                        item = {
+                            _id: ++seq,
+                            type: 'hurda',
+                            name: sname,
+                            scrap_name: sname,
+                            mileage: m,
+                            gram: g,
+                            iscilik_milyem: sIscilik,
+                            has: (g * (m + sIscilik)) / 1000
+                        };
+                    }
+                    pending.push(item);
+                    renderPending();
+                    resetForm();
+                    // Modal KAPATILMAZ. Bir sonraki giris icin form sifir.
+                    var firstInput = (item.type === 'bilezik')
+                        ? $id('ue_bracelet_name')
+                        : $id('ue_scrap_name');
+                    if (firstInput && typeof firstInput.focus === 'function') {
+                        try { firstInput.focus(); } catch (e) { /* ignore */ }
+                    }
+                } catch (e) {
+                    Swal.fire('Hata', 'Satır eklenemedi: ' + (e && e.message ? e.message : e), 'error');
+                }
+            }
+
+            // ---------- "Tumunu Kaydet" (sirali AJAX) ----------
+            function buildScrapForm(item) {
+                var fd = new FormData();
+                fd.append('csrfmiddlewaretoken', getCsrfToken());
+                fd.append('scrap_name', item.scrap_name || '');
+                fd.append('product_mileage', String(item.mileage));
+                fd.append('gram', String(item.gram));
+                fd.append('wholesale_process_no', getProcessNo());
+                // FAZ 19 / Bulgu B — opsiyonel işçilik milyem
+                if (item.iscilik_milyem && item.iscilik_milyem > 0) {
+                    fd.append('iscilik_milyem', String(item.iscilik_milyem));
+                }
+                return fd;
+            }
+            function buildBraceletForm(item) {
+                var fd = new FormData();
+                fd.append('csrfmiddlewaretoken', getCsrfToken());
+                fd.append('bracelet_name', item.bracelet_name || '');
+                fd.append('product_mileage', String(item.mileage));
+                fd.append('gram', String(item.gram));
+                fd.append('wholesale_process_no', getProcessNo());
+                // FAZ 19 / Bulgu B — opsiyonel işçilik milyem
+                if (item.iscilik_milyem && item.iscilik_milyem > 0) {
+                    fd.append('iscilik_milyem', String(item.iscilik_milyem));
+                }
+                return fd;
+            }
+
+            function postOne(item) {
+                return new Promise(function (resolve) {
+                    var url, fd;
+                    if (item.type === 'bilezik') {
+                        url = '/process/add-bracelet-to-wholesale';
+                        fd = buildBraceletForm(item);
+                    } else {
+                        url = '/process/add-scrap-to-wholesale';
+                        fd = buildScrapForm(item);
+                    }
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        data: fd,
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            if (res && res.result) {
+                                if (res.wholesale_process_no) setProcessNo(res.wholesale_process_no);
+                                resolve({ ok: true, item: item, res: res });
+                            } else {
+                                resolve({
+                                    ok: false, item: item,
+                                    msg: (res && res.error_msg) || 'Bilinmeyen sunucu hatası'
+                                });
+                            }
+                        },
+                        error: function (xhr) {
+                            resolve({
+                                ok: false, item: item,
+                                msg: 'Sunucu hatası (' + (xhr && xhr.status ? xhr.status : '?') + ')'
+                            });
+                        }
+                    });
+                });
+            }
+
+            async function saveAllPending() {
+                if (pending.length === 0) {
+                    Swal.fire('Bilgi', 'Sepete önce en az bir satır ekleyin.', 'info');
+                    return;
+                }
+                var $btn = $('#btnUnifiedSaveAll');
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Kaydediliyor...');
+                var ok = 0, failed = [];
+                // Pending arrayini iterate ederken modifiye etmemek icin kopya.
+                var snapshot = pending.slice();
+                for (var i = 0; i < snapshot.length; i++) {
+                    var r = await postOne(snapshot[i]);
+                    if (r.ok) {
+                        ok++;
+                        // Basarili olani pending'den dusuruyoruz.
+                        pending = pending.filter(function (x) { return x._id !== r.item._id; });
+                    } else {
+                        failed.push(r);
+                    }
+                }
+                $btn.prop('disabled', false).html('<i class="fas fa-check me-1"></i> Tümünü Kaydet');
+                renderPending();
+                try { if (typeof loadTable === 'function') loadTable(); } catch (e) { /* ignore */ }
+
+                if (failed.length === 0) {
+                    var modalEl = $id('unifiedEntryModal');
+                    if (modalEl) {
+                        var inst = bootstrap.Modal.getInstance(modalEl);
+                        if (inst) inst.hide();
+                    }
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'success',
+                        title: ok + ' satır kaydedildi',
+                        showConfirmButton: false, timer: 1800
+                    });
+                } else {
+                    var detail = failed.map(function (f) {
+                        return '• ' + (f.item && f.item.name ? f.item.name : '?') + ' — ' + f.msg;
+                    }).join('<br>');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: ok + ' satır kaydedildi, ' + failed.length + ' satır başarısız',
+                        html: '<div class="text-start small">' + detail + '</div>',
+                        confirmButtonText: 'Tamam'
+                    });
+                }
+            }
+
+            // ---------- Event Bindings ----------
+            $(document).on('click', '#btnOpenUnifiedEntry', function () {
+                fullReset();
+                var modalEl = $id('unifiedEntryModal');
+                if (!modalEl) return;
+                var inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+                inst.show();
+            });
+
+            $(document).on('change', '#ue_entry_type', function () {
+                toggleFields(this.value);
+            });
+
+            // Hurda: ayar secimi -> milyem otomatik doldur (kullanici uzerine yazabilir)
+            $(document).on('change', '#ue_scrap_name', function () {
+                var $opt = $(this).find(':selected');
+                var mil = $opt.data('mil');
+                if (mil) {
+                    // KURAL 7: Aktif input'a yaziyoruz fakat bu secim kullanici
+                    // tarafindan tetiklendi; cursor zaten select uzerinde, mileage
+                    // input'unda degil → cursor kaybi yok.
+                    var milEl = $id('ue_scrap_mileage');
+                    if (milEl) milEl.value = mil;
+                }
+                recalcCurrentHas();
+            });
+
+            $(document).on('change', '#ue_bracelet_rate', function () {
+                var v = this.value;
+                if (v) {
+                    var milEl = $id('ue_bracelet_mileage');
+                    if (milEl) milEl.value = v;
+                }
+                recalcCurrentHas();
+            });
+
+            // Has hesaplama input dinleyicileri (KURAL 7: yalnizca SPAN'a yaziyoruz)
+            // FAZ 19.1 — İşçilik milyem inputları da dinleniyor (anlık has güncelleme)
+            $(document).on('input',
+                '#ue_scrap_mileage, #ue_scrap_gram, #ue_scrap_iscilik, ' +
+                '#ue_bracelet_mileage, #ue_bracelet_gram, #ue_bracelet_iscilik',
+                function () { recalcCurrentHas(); }
+            );
+
+            $(document).on('click', '#btnUnifiedAddRow', function () {
+                addCurrentToPending();
+            });
+
+            $(document).on('click', '.ue-remove-row', function () {
+                var id = parseInt($(this).data('id'), 10);
+                if (!isFinite(id)) return;
+                pending = pending.filter(function (x) { return x._id !== id; });
+                renderPending();
+            });
+
+            $(document).on('click', '#btnUnifiedSaveAll', function () {
+                saveAllPending();
+            });
+
+            // Modal kapaninca tam temizlik (yarim kalmis pending'i atmadan onayla)
+            $(document).on('hide.bs.modal', '#unifiedEntryModal', function (e) {
+                // Pending varsa kullanicinin onayini iste
+                if (pending.length > 0 && !window.__ue_force_close) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'Sepette ' + pending.length + ' satır var',
+                        text: 'Kaydetmeden kapatmak istediğinize emin misiniz?',
+                        showCancelButton: true,
+                        confirmButtonText: 'Evet, kapat',
+                        cancelButtonText: 'Vazgeç'
+                    }).then(function (r) {
+                        if (r.isConfirmed) {
+                            window.__ue_force_close = true;
+                            try {
+                                var modalEl = $id('unifiedEntryModal');
+                                if (modalEl) {
+                                    var inst = bootstrap.Modal.getInstance(modalEl);
+                                    if (inst) inst.hide();
+                                }
+                            } finally {
+                                window.__ue_force_close = false;
+                            }
+                        }
+                    });
                 }
             });
-        });
 
-        // Modal kapanınca sıfırla
-        $('#scrapMultiModal').on('hidden.bs.modal', function () {
-            $('#scrapMultiRows').find('tr:gt(0)').remove();
-            resetMultiRow($('#scrapMultiRows tr:first'));
-            recalcMultiTotals();
-        });
+            $(document).on('hidden.bs.modal', '#unifiedEntryModal', function () {
+                fullReset();
+            });
+        })();
     </script>
 {% endblock footer %}

@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,7 +17,10 @@ from apps.products.models import Products, Categories
 from apps.products.tasks import update_products_from_api
 
 # --- FAZ 3: StockService ve StockSnapshot entegrasyonu ---
-from apps.stock_management.services.stock_service import StockService
+from apps.stock_management.services.stock_service import (
+    StockService,
+    _invalidate_dashboard_assets_cache,
+)
 from apps.stock_management.models import StockSnapshot, StockLedger
 from apps.stock_management.services.price_service import PriceService
 from apps.roles.decorators import role_required
@@ -121,9 +124,22 @@ def product_index(request):
     # NOT: 14 Ayar / Has Altın / Nakit özet pill'leri Dashboard'a taşındı
     # (/dashboard/assets-summary endpoint'i). Bu sayfada artık ağır
     # all_stock_gold() çağrısı yapılmıyor — sayfa hızı iyileşir.
+    #
+    # UAT V3 P4 (2026-04-29): Döviz tablosu manuel kur düzenleme moduna
+    # geçebilmesi için StoreConfiguration'ın use_manual_currency_rate flag'i
+    # template context'e geçirilir. Manuel mod açıkken Döviz buy/sale_price_eur
+    # sütunları editable input olarak render olur ve "Manuel Kurları Kaydet"
+    # butonu /settings/update-manual-currency-rates endpoint'ine yazar.
+    config = None
+    if getattr(request.user, 'store', None):
+        config = StoreConfiguration.objects.filter(store=request.user.store).first()
+
     context = {
         'title': 'Ürünler',
         'categories': Categories.objects.filter(is_deleted=False, is_active=True),
+        'use_manual_currency_rate': bool(
+            config and getattr(config, 'use_manual_currency_rate', False)
+        ),
     }
     return render(request, 'management/products/index.html', context)
 
@@ -136,6 +152,35 @@ def product_add(request):
 
         if record_id:
             record = get_object_or_404(Products, id=record_id)
+            # UPDATE cross-store + global product guard.
+            # Bu view "Sarrafiye Ekle" özel ürün modal'ı için; mağaza kendi
+            # ürününü düzenlemeli. record.store=None (global standart ürün)
+            # veya başka mağaza kaydı buradan değiştirilemez. Aksi halde isim/
+            # fiyat alanları tüm mağazalarda etkilenir.
+            _user_store = request.user.store
+            if not _user_store:
+                return JsonResponse({
+                    'error': True,
+                    'error_msg': 'Mağaza atanmamış.'
+                })
+            if record.is_protected:
+                return JsonResponse({
+                    'error': True,
+                    'error_msg': f"'{record.name}' korumalı bir sistem ürünüdür; düzenlenemez."
+                })
+            if record.store_id is None:
+                return JsonResponse({
+                    'error': True,
+                    'error_msg': (
+                        f"'{record.name}' tüm mağazalarda paylaşılan standart bir "
+                        f"üründür; düzenlenemez."
+                    )
+                })
+            if record.store_id != _user_store.id:
+                return JsonResponse({
+                    'error': True,
+                    'error_msg': f"'{record.name}' başka bir mağazaya ait, düzenlenemez."
+                })
         else:
             record = Products()
 
@@ -161,9 +206,9 @@ def product_add(request):
         record.certificate = request.POST.get('certificate')
         record.gender = request.POST.get('gender')
         record.sale_price_hs = request.POST.get('sale_price_hs')
-        record.sale_price_tl = request.POST.get('sale_price_tl')
+        record.sale_price_eur = request.POST.get('sale_price_eur')
         record.buy_price_hs = request.POST.get('buy_price_hs')
-        record.buy_price_tl = request.POST.get('buy_price_tl')
+        record.buy_price_eur = request.POST.get('buy_price_eur')
         record.profit = request.POST.get('profit')
         record.barcode = request.POST.get('barcode')
 
@@ -173,7 +218,15 @@ def product_add(request):
         else:
             record.fixed_labor_amount = 0
 
-        record.store_id = request.POST.get('store_id')
+        # Cross-store data leak guard:
+        # POST'tan gelen `store_id` güvenli değil — kullanıcı manipüle edebilir
+        # ya da boş gönderebilir, sonuç: store=NULL → ürün TÜM mağazalardan görünür
+        # (get_all() içindeki `Q(store__isnull=True)` global sistem ürünleri için).
+        # Yeni ürünlerde store her zaman authenticated user'ın mağazasıdır.
+        # UPDATE durumunda mevcut store korunur — `is_protected=True, store=None`
+        # global sistem ürünleri (Has Altın, USDTRY) yanlışlıkla mağazaya bağlanmasın.
+        if not record_id:
+            record.store = request.user.store
         record.created_by_id = request.user.id
 
         if not record_id:
@@ -183,22 +236,106 @@ def product_add(request):
         if image:
             filename, processed = process_image(image)
             record.image.save(filename, processed, save=False)
+
+        # ─── UAT V3 P3 (2026-04-29): Adet bazlı ürünlerde gram validasyonu ────
+        # is_gram_bullion=False (Adet Bazlı, örn. Reşat) ürünlerde `gram` (birim
+        # ağırlık) > 0 olmak zorundadır. Aksi halde stok hesabı yanlış işler:
+        # WAC için quantity_gram=0, snapshot.stock_gram=0 → satışta SALE
+        # ledger'ı doğru maliyet üretemez. Frontend modal validation yapsa da
+        # backend'de de zorla — bypass koruması.
+        if not record.is_gram_bullion:
+            try:
+                _g = Decimal(str(record.gram or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                _g = Decimal('0')
+            if _g <= 0:
+                return JsonResponse({
+                    'error': True,
+                    'error_msg': "Adet bazlı ürünlerde 'Birim Ağırlık (gram)' 0'dan büyük olmalıdır."
+                })
+
         try:
             record.save()
 
             stock_pieces = int(request.POST.get('stock_pieces', 0) or 0)
-            stock_weight = Decimal(request.POST.get('stock_weight', 0) or 0)
+            try:
+                stock_weight = Decimal(str(request.POST.get('stock_weight', 0) or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                stock_weight = Decimal('0')
 
-            # FAZ 3: StockService.adjustment ile stok ayarlama
-            StockService.adjustment(
-                product=record,
-                store=request.user.store,
-                actual_gram=stock_weight,
-                actual_pieces=stock_pieces,
-                ref_id=f"product_add_{record.id}",
-                user=request.user,
-                notes="Ürün ekleme/güncelleme stok ayarı",
-            )
+            # ─── UAT V3 P3 (2026-04-29): is_gram_bullion=False için otomatik gram ─
+            # Adet bazlı (Reşat, Cumhuriyet vb.) ürünlerde modal sadece adet
+            # alır; toplam gram = adet × birim_ağırlık × (milyem/1000) formülüyle
+            # otomatik türetilir. Bu has-gram eşdeğeri değil "fiziksel gram"dır;
+            # WAC formülü gram bazlı çalışır, has dönüşümü unit_cost_hs üzerinden
+            # gerçekleşir. SALE çıkışlarında StockLedger aynı formülle quantity
+            # üretir (FAZ S1: çoklu maden + bullion senaryolarıyla simetrik).
+            if not record.is_gram_bullion and stock_pieces > 0:
+                try:
+                    gram_per_piece = Decimal(str(record.gram or 0))
+                    mileage = Decimal(str(record.product_mileage or 1000))
+                except (InvalidOperation, TypeError, ValueError):
+                    gram_per_piece = Decimal('0')
+                    mileage = Decimal('1000')
+                if gram_per_piece > 0:
+                    # Fiziksel gram (milyem dahil değil) — snapshot.stock_gram'a yazılır.
+                    # Has-gram dönüşümü unit_cost_hs ile WAC formülünde uygulanır.
+                    stock_weight = (Decimal(stock_pieces) * gram_per_piece).quantize(Decimal('0.0001'))
+
+            # ─── UAT V3 P3: WAC'lı INITIAL kaydı (yeni ürün için) ────────────
+            # Yeni ürün eklerken (record_id boşsa) açılış stoğunu INITIAL reason
+            # ile StockService.record_entry üzerinden işliyoruz; bu WAC'ı
+            # kullanıcının girdiği buy_price_hs / buy_price_eur ile doğru başlatır.
+            # Mevcut ürün güncellemelerinde adjustment davranışı korunuyor (sayım
+            # düzeltmesi semantiği — WAC tekrar hesaplanmaz, mevcut maliyet kalır).
+            #
+            # Append-only / SSOT etkisi:
+            #   - INITIAL reason direction=IN → ledger append-only kuralına uygun.
+            #   - record_entry WAC formülü `quantity_gram > 0` şartı arar; adet
+            #     bazlı ürünlerde yukarıda hesapladığımız stock_weight bu şartı
+            #     karşılar. Sadece quantity_pieces > 0 (gram=0) durumunda WAC
+            #     hesaplanmaz; o senaryo için fallback olarak adjustment kullan.
+            try:
+                buy_hs_val = Decimal(str(record.buy_price_hs or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                buy_hs_val = Decimal('0')
+            try:
+                buy_tl_val = Decimal(str(record.buy_price_eur or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                buy_tl_val = Decimal('0')
+
+            has_any_quantity = (stock_weight > 0) or (stock_pieces > 0)
+
+            if not record_id and has_any_quantity and stock_weight > 0:
+                # Yeni ürün + miktar var + gram > 0 → INITIAL ledger + WAC init
+                StockService.record_entry(
+                    product=record,
+                    store=request.user.store,
+                    quantity_gram=stock_weight,
+                    quantity_pieces=stock_pieces,
+                    reason=StockLedger.Reason.INITIAL,
+                    ref_type='initial',
+                    ref_id=f"product_add_{record.id}",
+                    unit_cost_hs=buy_hs_val,
+                    unit_cost_eur=buy_tl_val,
+                    hs_rate_eur=Decimal('0'),
+                    user=request.user,
+                    notes="Açılış stoğu (yeni özel ürün)",
+                )
+            else:
+                # Mevcut ürün güncellemesi VEYA gram=0 (sadece adet) edge case →
+                # adjustment fallback'i (sayım semantiği). Adet bazlı ürünlerde
+                # birim ağırlık 0 olamaz (yukarıda blokladık) ama defensive.
+                StockService.adjustment(
+                    product=record,
+                    store=request.user.store,
+                    actual_gram=stock_weight,
+                    actual_pieces=stock_pieces,
+                    ref_id=f"product_add_{record.id}",
+                    user=request.user,
+                    notes="Ürün ekleme/güncelleme stok ayarı",
+                    is_initial=(not record_id),
+                )
 
             return JsonResponse({'result': True})
         except Exception as e:
@@ -215,7 +352,7 @@ def get_all(request):
     start = int(request.GET.get('start', 0))
     search_value = request.GET.get('search[value]', '')
     category_name = request.GET.get('category', None)
-    ordering = ['order']
+    ordering = ['display_order', 'name']
 
     user_store = request.user.store
 
@@ -295,11 +432,12 @@ def get_all(request):
         queryset = queryset.order_by(*ordering)[start:start + length]
 
     raw_data = list(queryset.values(
-        'id', 'name', 'image', 'is_gram_bullion', 'is_currency', 'category__name',
-        'sale_price_tl', 'buy_price_tl', 'buy_price_hs', 'sale_price_hs', 'fixed_labor_amount',
+        'id', 'name', 'image', 'is_gram_bullion', 'is_currency', 'is_protected', 'category__name',
+        'sale_price_eur', 'buy_price_eur', 'buy_price_hs', 'sale_price_hs', 'fixed_labor_amount',
         'total_stock_pieces', 'total_stock_weight', 'incoming_stock_pieces', 'incoming_stock_weight',
         'inv_use_custom_int', 'inv_buy_hs', 'inv_sale_hs', 'inv_labor',
-        'chamber_buy_hs', 'chamber_sale_hs', 'chamber_labor'
+        'chamber_buy_hs', 'chamber_sale_hs', 'chamber_labor',
+        'display_order',  # T2: drag-drop sıralama için
     ))
 
     data = []
@@ -339,13 +477,37 @@ def get_all(request):
 
         # -----------------------------------------------------------------
 
-        # FAZ 21 FIX: Döviz ürünleri (is_currency=True) için buy_price_tl
+        # FAZ 21 FIX: Döviz ürünleri (is_currency=True) için buy_price_eur
         # zaten API'den gelen gerçek TL kurudur. has×kur çarpımı yapılmaz;
         # çünkü buy_price_hs = USDTRY/ALTINTRY şeklinde hesaplandığından
         # altın fiyatı değiştikçe yanlış sonuç üretir.
+        #
+        # T3 (2026-04-29): Manuel Kur Override
+        # ─────────────────────────────────────
+        # `config.use_manual_currency_rate=True` ise ve ürünün UUID'si
+        # `config.manual_currency_rates` JSON'unda var ve değerler 0'dan
+        # büyükse, API kuru yerine kullanıcının girdiği manuel TL kuru
+        # kullanılır. Aksi halde API kuru fallback olarak kalır.
+        # get_product_details (Hızlı İşlem) ile birebir simetri.
         if row.get('is_currency'):
-            final_buy_tl = Decimal(str(row.get('buy_price_tl') or 0))
-            final_sale_tl = Decimal(str(row.get('sale_price_tl') or 0))
+            manual_used = False
+            if config and getattr(config, 'use_manual_currency_rate', False):
+                manual_map = getattr(config, 'manual_currency_rates', None) or {}
+                entry = manual_map.get(str(row['id']))
+                if entry:
+                    try:
+                        mb = Decimal(str(entry.get('buy_tl') or 0))
+                        ms = Decimal(str(entry.get('sell_tl') or 0))
+                    except (InvalidOperation, TypeError, ValueError):
+                        mb = Decimal('0')
+                        ms = Decimal('0')
+                    if mb > 0 and ms > 0:
+                        final_buy_tl = mb
+                        final_sale_tl = ms
+                        manual_used = True
+            if not manual_used:
+                final_buy_tl = Decimal(str(row.get('buy_price_eur') or 0))
+                final_sale_tl = Decimal(str(row.get('sale_price_eur') or 0))
         else:
             final_buy_tl = (Decimal(effective_buy_hs) * store_buy_tl)
             final_sale_tl = (Decimal(effective_sale_hs) * store_sale_tl) + Decimal(effective_labor)
@@ -365,10 +527,12 @@ def get_all(request):
             'buy_price_hs': str(effective_buy_hs),
             'sale_price_hs': str(effective_sale_hs),
             'fixed_labor_amount': str(effective_labor),
-            'buy_price_tl': float(round(final_buy_tl, 2)),
-            'sale_price_tl': float(round(final_sale_tl, 2)),
+            'buy_price_eur': float(round(final_buy_tl, 2)),
+            'sale_price_eur': float(round(final_sale_tl, 2)),
             'is_gram_bullion': row['is_gram_bullion'],
             'is_currency': row.get('is_currency', False),  # FAZ 19.1: UI'da stok input koruması için
+            'is_protected': bool(row.get('is_protected')),  # UAT V3 P2: silme buton koşulu için
+            'display_order': int(row.get('display_order') or 0),  # T2: drag-drop sıralama
         })
 
     return JsonResponse({
@@ -388,14 +552,54 @@ def delete(request):
         if not ids:
             response_data['error_msg'] = "Silinecek kayıt seçilmedi."
             return JsonResponse(response_data)
+
+        # Cross-store + global product guard (change_status ile aynı gerekçe).
+        # delete_single zaten cross-store guard'a sahip; bulk delete'e simetri
+        # kazandırılıyor — başka mağazanın ürününü ya da global standart ürünü
+        # toplu seçimle silmek mümkün olmasın.
+        user_store = request.user.store
+        if not user_store:
+            response_data['error_msg'] = 'Mağaza atanmamış.'
+            return JsonResponse(response_data)
+
         try:
             records = Products.objects.filter(id__in=ids)
             for record in records:
                 if record.is_protected:
                     response_data['error_msg'] = f"{record.name} korunduğu için silinemez."
                     return JsonResponse(response_data)
+                if record.store_id is None:
+                    response_data['error_msg'] = (
+                        f"'{record.name}' tüm mağazalarda paylaşılan standart bir "
+                        f"üründür; silinemez."
+                    )
+                    return JsonResponse(response_data)
+                if record.store_id != user_store.id:
+                    response_data['error_msg'] = (
+                        f"'{record.name}' başka bir mağazaya ait, silinemez."
+                    )
+                    return JsonResponse(response_data)
 
             records.update(is_deleted=True)
+
+            # FAZ 34 (2026-05-01): Toplu soft-delete sonrasi Dashboard cache'ini
+            # invalide et. Etkilenen tum store'lar icin tek tek silinir; cogu
+            # senaryoda kullanici tek magazaya bagli oldugu icin set kucuktur.
+            try:
+                _store_ids = set(
+                    records.exclude(store__isnull=True)
+                           .values_list('store_id', flat=True)
+                )
+                if request.user.store_id:
+                    _store_ids.add(request.user.store_id)
+                for _sid in _store_ids:
+                    _stub = type('S', (), {'id': _sid})()
+                    transaction.on_commit(
+                        lambda s=_stub: _invalidate_dashboard_assets_cache(s)
+                    )
+            except Exception:
+                pass  # cache invalidation hatasi islemi patlatmamali
+
             response_data.update({'result': True, 'error': False})
             return JsonResponse(response_data)
         except Exception as e:
@@ -403,6 +607,128 @@ def delete(request):
             return JsonResponse(response_data)
     response_data['error_msg'] = 'Geçersiz istek.'
     return JsonResponse(response_data)
+
+
+# ============================================================================
+# UAT V3 P2 (2026-04-29): GÜVENLİ SİLME — deletion_check + delete_single
+# ============================================================================
+# Sarrafiye modal'ından eklenen özel ürünler için Ziynet DataTable satırında
+# "Sil" ikonu çıkar. Frontend önce GET /products/<uuid>/deletion-check ile
+# mevcut durumu öğrenir; sonra POST /products/<uuid>/delete-single ile silme
+# komutunu yollar. Append-only / SSOT kurallarına sadık kalmak için:
+#   - is_protected=True ürünler ASLA silinemez (Has Altın, USDTRY vb.).
+#   - Cross-store guard: kullanıcı kendi mağazasının ürününü silebilir.
+#   - StockLedger kaydı VEYA stok > 0 → soft-delete (is_deleted=True).
+#     Append-only kuralı korunur, ledger geçmişi silinmez.
+#   - Hiç ledger yok ve stok = 0 → güvenli soft-delete (orphan).
+#     Fiziksel DELETE yapılmaz; soft-delete WAC/raporlar/ledger zincirini
+#     bozmaz, çağrı yapan kod istisna almaz.
+# ============================================================================
+
+@login_required(login_url='login')
+@role_required('PRODUCTS_DELETE')
+def deletion_check(request, product_id):
+    """
+    Bir ürünün silinebilirlik durumunu döner. Frontend bu cevaba göre
+    kullanıcıya doğru onay metnini gösterir.
+    """
+    user_store = request.user.store
+    if not user_store:
+        return JsonResponse({'error': True, 'message': 'Mağaza atanmamış.'}, status=403)
+
+    try:
+        product = Products.objects.get(id=product_id, is_deleted=False)
+    except Products.DoesNotExist:
+        return JsonResponse({'error': True, 'message': 'Ürün bulunamadı.'}, status=404)
+
+    # Cross-store + protected guard
+    if product.is_protected:
+        return JsonResponse({
+            'error': False,
+            'can_delete': False,
+            'reason': 'protected',
+            'message': f"'{product.name}' korumalı bir sistem ürünüdür, silinemez."
+        })
+    if product.store_id and product.store_id != user_store.id:
+        return JsonResponse({
+            'error': False,
+            'can_delete': False,
+            'reason': 'cross_store',
+            'message': "Bu ürün başka bir mağazaya ait, silinemez."
+        })
+
+    # Ledger varlığı + stok kontrolü
+    has_ledger = StockLedger.objects.filter(product_id=product_id).exists()
+
+    snapshot = StockSnapshot.objects.filter(
+        product_id=product_id, store=user_store
+    ).first()
+    has_stock = bool(
+        snapshot and (
+            (snapshot.stock_pieces or 0) > 0
+            or Decimal(str(snapshot.stock_gram or 0)) > Decimal('0')
+        )
+    )
+
+    return JsonResponse({
+        'error': False,
+        'can_delete': True,
+        'product_name': product.name,
+        'has_ledger': has_ledger,
+        'has_stock': has_stock,
+        # has_ledger veya has_stock varsa soft-delete; yoksa orphan (yine soft-delete)
+        # Fiziksel DELETE hiçbir senaryoda yapılmaz (append-only ledger entegrasyonu).
+        'mode': 'soft_with_history' if (has_ledger or has_stock) else 'soft_orphan',
+    })
+
+
+@login_required(login_url='login')
+@role_required('PRODUCTS_DELETE')
+def delete_single(request, product_id):
+    """
+    Tek ürün için soft-delete (is_deleted=True). is_protected=True veya cross-store
+    ürünleri reddeder. StockLedger ve StockSnapshot kayıtları aynen kalır
+    (append-only kuralı). Soft-deleted ürün listelerden çıkar ama geçmiş
+    raporlarda ürün adıyla görünmeye devam eder.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': True, 'message': 'Sadece POST.'}, status=405)
+
+    user_store = request.user.store
+    if not user_store:
+        return JsonResponse({'error': True, 'message': 'Mağaza atanmamış.'}, status=403)
+
+    try:
+        product = Products.objects.get(id=product_id, is_deleted=False)
+    except Products.DoesNotExist:
+        return JsonResponse({'error': True, 'message': 'Ürün bulunamadı.'}, status=404)
+
+    if product.is_protected:
+        return JsonResponse({
+            'error': True,
+            'message': f"'{product.name}' korumalı bir sistem ürünüdür, silinemez."
+        }, status=400)
+    if product.store_id and product.store_id != user_store.id:
+        return JsonResponse({
+            'error': True,
+            'message': 'Bu ürün başka bir mağazaya ait, silinemez.'
+        }, status=403)
+
+    product.is_deleted = True
+    product.save(update_fields=['is_deleted'])
+
+    # FAZ 34 (2026-05-01): Soft-delete sonrasi Dashboard cache'ini invalide et.
+    # Aksi halde silinmis urun en fazla 5 dakika boyunca TAB 1 (assets-v2)
+    # tablosunda gorunmeye devam eder; WAC anomalileri ve hayalet stok
+    # kayitlari raporda kalir. _invalidate_dashboard_assets_cache hem
+    # dashboard_assets_summary hem de dashboard_assets_v2 key'lerini siler.
+    transaction.on_commit(lambda: _invalidate_dashboard_assets_cache(user_store))
+
+    return JsonResponse({
+        'error': False,
+        'result': True,
+        'message': f"'{product.name}' silindi (soft-delete).",
+    })
 
 
 @login_required(login_url='login')
@@ -414,11 +740,34 @@ def change_status(request):
         if not ids:
             response_data['error_msg'] = "Kayıt seçilmedi."
             return JsonResponse(response_data)
+
+        # Cross-store + global product guard.
+        # Geçmişte bu view'de yalnızca `is_protected` kontrolü vardı; standart
+        # sarrafiye/döviz ürünleri (store=None, is_protected=False — eski DB veya
+        # fixture'dan kalan kayıtlar) tüm mağazalarda görünüyordu ve herhangi bir
+        # mağazadan "Pasif Yap" tıklayan kullanıcı "Eski Tam" / "22 Ayar Gram"
+        # gibi paylaşılan ürünleri TÜM mağazalardan kaldırabiliyordu.
+        user_store = request.user.store
+        if not user_store:
+            response_data['error_msg'] = 'Mağaza atanmamış.'
+            return JsonResponse(response_data)
+
         try:
             records = Products.objects.filter(id__in=ids)
             for record in records:
                 if record.is_protected:
                     response_data['error_msg'] = f"{record.name} korunduğu için değiştirilemez."
+                    return JsonResponse(response_data)
+                if record.store_id is None:
+                    response_data['error_msg'] = (
+                        f"'{record.name}' tüm mağazalarda paylaşılan standart bir "
+                        f"üründür; pasif/aktif durumu değiştirilemez."
+                    )
+                    return JsonResponse(response_data)
+                if record.store_id != user_store.id:
+                    response_data['error_msg'] = (
+                        f"'{record.name}' başka bir mağazaya ait, değiştirilemez."
+                    )
                     return JsonResponse(response_data)
                 record.is_active = not record.is_active
                 record.save()
@@ -463,7 +812,7 @@ def update_inventory_ajax(request):
             'stock_gram': Decimal('0.0000'),
             'stock_pieces': 0,
             'weighted_avg_cost_hs': Decimal('0.0000'),
-            'weighted_avg_cost_tl': Decimal('0.00'),
+            'weighted_avg_cost_eur': Decimal('0.00'),
         }
     )
 
@@ -605,7 +954,7 @@ def update_inventory_bulk_ajax(request):
                         'stock_gram': Decimal('0.0000'),
                         'stock_pieces': 0,
                         'weighted_avg_cost_hs': Decimal('0.0000'),
-                        'weighted_avg_cost_tl': Decimal('0.00'),
+                        'weighted_avg_cost_eur': Decimal('0.00'),
                     }
                 )
 
@@ -825,7 +1174,7 @@ def get_product_details(request):
     categories_data = []
 
     # 1. Mağazanın Canlı Has Kurlarını Al
-    store_has_buy_tl, store_has_sale_tl = compute_store_has_tl(user_store)
+    store_has_buy_eur, store_has_sale_eur = compute_store_has_tl(user_store)
 
     # 2. Mağaza Konfigürasyonunu Al (Marj, Manuel Has, Seçili Dernek)
     try:
@@ -874,11 +1223,30 @@ def get_product_details(request):
         # FAZ 17: TRY baz para birimi olduğu için satış ürünü olamaz.
         # "TRY - Türk Lirası" ürünü Hızlı İşlem ürün kataloğundan çıkarılır.
         # Dolar (USDTRY) ve Euro (EURTRY) döviz bozma mantığı için kalır.
-        products = Products.objects.filter(
+        # ─── T2 (2026-04-29): Custom sorting ───
+        # Eski `.order_by('order')` CharField (lexicographic) sıralamayı
+        # IntegerField `display_order` üzerinden sayısal sıralamaya çevirdik.
+        # Tie-breaker: aynı display_order'a sahip ürünler ada göre sıralanır.
+        # ─── Cross-store leak fix (2026-05-07) ─────────────────────────────
+        # Önceki yorumda "products zaten store ait ürünleri filtreler" diyordu
+        # ama queryset'te store filtresi YOKTU → başka mağazaların custom ürünleri
+        # (örn. "22 ayar gramm") Hızlı İşlem'e sızıyordu. get_all (Ürün Yönetimi)
+        # ve get_categories_with_products (Perakende) ile aynı pattern uygulanıyor:
+        #   Q(store=user_store): mağazanın kendi ürünleri
+        #   Q(store__isnull=True): Has Altın, USDTRY, 22 Ayar Gram gibi global
+        #     sistem ürünleri (tasks.py + populate scripts ile yaratılmış,
+        #     UAT V3 P1-B kararıyla `is_protected=False` olanlar dahil)
+        # ───────────────────────────────────────────────────────────────────
+        products_qs = Products.objects.filter(
             category=category, is_active=True, is_deleted=False
         ).exclude(
             name__icontains="TRY - Türk Lirası"
-        ).order_by('order')
+        )
+        if user_store:
+            products_qs = products_qs.filter(
+                Q(store=user_store) | Q(store__isnull=True)
+            )
+        products = products_qs.order_by('display_order', 'name')
 
         product_list = []
 
@@ -922,16 +1290,36 @@ def get_product_details(request):
 
             # ------------------------------------
 
-            # FAZ 21 FIX: Döviz ürünleri (is_currency=True) için buy_price_tl
+            # FAZ 21 FIX: Döviz ürünleri (is_currency=True) için buy_price_eur
             # zaten API'den gelen gerçek TL kurudur. has×kur çarpımı yapılmaz;
             # altın fiyatı değiştikçe stale buy_price_hs ile yanlış sonuç üretir.
             if getattr(p, 'is_currency', False):
-                raw_buy_tl = Decimal(str(p.buy_price_tl or 0))
-                raw_sale_tl = Decimal(str(p.sale_price_tl or 0))
+                # ─── T3 (2026-04-29): Manuel Kur Override (per-store) ───
+                # use_manual_currency_rate açık ve bu ürün için manuel değer
+                # girilmişse API yerine manuel TL kuru kullanılır.
+                # Eksik / 0 değer fallback olarak global API kuruna düşer.
+                manual_used = False
+                if config and getattr(config, 'use_manual_currency_rate', False):
+                    manual_map = getattr(config, 'manual_currency_rates', None) or {}
+                    entry = manual_map.get(str(p.id))
+                    if entry:
+                        try:
+                            mb = Decimal(str(entry.get('buy_tl') or 0))
+                            ms = Decimal(str(entry.get('sell_tl') or 0))
+                        except Exception:
+                            mb = ms = Decimal('0')
+                        if mb > 0 and ms > 0:
+                            raw_buy_tl = mb
+                            raw_sale_tl = ms
+                            manual_used = True
+
+                if not manual_used:
+                    raw_buy_tl = Decimal(str(p.buy_price_eur or 0))
+                    raw_sale_tl = Decimal(str(p.sale_price_eur or 0))
             else:
                 # TL Fiyatlarını Hesapla (Kur * Has + İşçilik)
-                raw_buy_tl = (effective_buy_hs * store_has_buy_tl)
-                raw_sale_tl = (effective_sale_hs * store_has_sale_tl) + effective_labor
+                raw_buy_tl = (effective_buy_hs * store_has_buy_eur)
+                raw_sale_tl = (effective_sale_hs * store_has_sale_eur) + effective_labor
 
             # MARJ UYGULAMA (Sadece Satış Fiyatına)
             final_sale_tl = raw_sale_tl
@@ -957,8 +1345,8 @@ def get_product_details(request):
             product_list.append({
                 "id": str(p.id),
                 "name": p.name,
-                "buy_price_tl": float(round(raw_buy_tl, 2)),
-                "sale_price_tl": float(round(final_sale_tl, 2)),
+                "buy_price_eur": float(round(raw_buy_tl, 2)),
+                "sale_price_eur": float(round(final_sale_tl, 2)),
                 "buy_price_hs": str(effective_buy_hs),
                 "sale_price_hs": str(effective_sale_hs),
                 "fixed_labor": str(effective_labor),
@@ -973,6 +1361,8 @@ def get_product_details(request):
                 "is_scrap": bool(p.is_scrap),
                 "is_bracelet": p.id in bracelet_product_ids,
                 "product_mileage": float(p.product_mileage or 0),
+                # T2: drag-drop sıralama için frontend'e mevcut sırayı gönder
+                "display_order": int(p.display_order or 0),
             })
 
         categories_data.append({
@@ -991,7 +1381,7 @@ def get_product_details(request):
 # Frontend bu kuru çekip TL karşılığını hesaplar.
 #
 # Kaynak: Mevcut "USDTRY", "EURTRY", "GBPTRY", "CHFTRY" Products kayıtlarının
-# sale_price_tl alanı kuru veriyor. Bu kayıtlar zaten döviz bozma akışında
+# sale_price_eur alanı kuru veriyor. Bu kayıtlar zaten döviz bozma akışında
 # kullanılıyor (fast_views._get_exchange_rate_for_currency ile birebir uyum).
 #
 # Kuyumcu odası (dernek) veya canlı API entegrasyonu KULLANILMAZ — kuyumcu
@@ -1014,7 +1404,7 @@ def get_fx_rates(request):
     Saat ve Pırlanta satış ekranı için döviz/TL kurlarını döndürür.
 
     Kur kaynağı: "USDTRY", "EURTRY" gibi adlandırılmış Products kayıtlarının
-    sale_price_tl alanı. Eğer ürün yoksa veya 0 ise rate 0 ve missing listede.
+    sale_price_eur alanı. Eğer ürün yoksa veya 0 ise rate 0 ve missing listede.
 
     Args (GET):
         currencies: virgülle ayrılmış kod listesi. Örn: "USD,EUR,GBP,CHF".
@@ -1052,11 +1442,11 @@ def get_fx_rates(request):
                     is_active=True,
                     is_deleted=False,
                 )
-                .only('sale_price_tl', 'name')
+                .only('sale_price_eur', 'name')
                 .first()
             )
-            if ccy_product and ccy_product.sale_price_tl and float(ccy_product.sale_price_tl) > 0:
-                rates[ccy] = float(ccy_product.sale_price_tl)
+            if ccy_product and ccy_product.sale_price_eur and float(ccy_product.sale_price_eur) > 0:
+                rates[ccy] = float(ccy_product.sale_price_eur)
             else:
                 rates[ccy] = 0.0
                 missing.append(ccy)
@@ -1068,4 +1458,85 @@ def get_fx_rates(request):
     return JsonResponse({
         'rates': rates,
         'missing': missing,
+    })
+
+
+# ============================================================================
+# T2 (2026-04-29): ÖZEL ÜRÜN SIRALAMASI — product_reorder
+# ============================================================================
+# Kullanıcı Ziynet (veya Döviz) tablosunda drag-drop ile sıralamayı değiştirdiğinde
+# bu endpoint'e POST atılır. Frontend, yeni sırayı `[{"product_id": "...",
+# "display_order": 0}, ...]` formatında gönderir; backend tek transaction'da
+# bulk_update yapar.
+#
+# Güvenlik:
+#   - Kullanıcının mağazasına ait ürünler VEYA is_protected=True global ürünler
+#     güncellenir. Diğer mağazaların özel (store-specific) ürünleri skip edilir.
+#   - is_deleted=False kontrolü.
+#   - Atomic transaction: kısmi güncelleme olmaz.
+#
+# UAT V3 P1-A (2026-04-29):
+#   Eski filter sadece `store=user_store` kontrolü yapıyordu; Has Altın, USDTRY,
+#   22 Ayar Gram gibi `is_protected=True` (store=None veya farklı mağaza) global
+#   ürünler skip ediliyordu. Drag-drop UI başarılı toast atıyor ama global
+#   ürünlerin display_order'ı 0 kalıyordu. Filtre `Q(store=user_store) |
+#   Q(is_protected=True)` olarak genişletildi. `display_order` global bir alan
+#   olduğundan birden çok mağaza farklı sıra verirse son yazan kazanır — tek
+#   mağaza kullanımı için sorun değil; çoklu mağaza tek deployment'ta sorun
+#   olursa per-store display_order için ayrı tablo (StockSnapshot benzeri)
+#   refactor'u gerekir.
+# ============================================================================
+
+@login_required(login_url='login')
+@role_required('PRODUCTS_PRODUCT_INDEX')
+def product_reorder(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Sadece POST desteklenir.'}, status=405)
+
+    try:
+        raw = request.POST.get('items') or request.body.decode('utf-8')
+        items = json.loads(raw) if isinstance(raw, str) else raw
+        if not isinstance(items, list):
+            raise ValueError("items bir liste olmalı")
+    except (ValueError, json.JSONDecodeError) as e:
+        return JsonResponse({'status': 'error', 'message': f'Geçersiz istek: {e}'}, status=400)
+
+    user_store = request.user.store
+    if not user_store:
+        return JsonResponse({'status': 'error', 'message': 'Mağaza atanmamış.'}, status=403)
+
+    # UAT V3 P1-A: Kullanıcının mağazasına ait ürünler VEYA is_protected=True
+    # global ürünler güncellenebilir. Diğer mağazaların özel ürünleri skip.
+    requested_ids = [str(it.get('product_id')) for it in items if it.get('product_id')]
+    products_qs = Products.objects.filter(
+        id__in=requested_ids,
+        is_deleted=False,
+    ).filter(Q(store=user_store) | Q(is_protected=True))
+    products_map = {str(p.id): p for p in products_qs}
+
+    updated = []
+    skipped = []
+
+    with transaction.atomic():
+        for it in items:
+            pid = str(it.get('product_id') or '')
+            try:
+                new_order = int(it.get('display_order', 0))
+            except (TypeError, ValueError):
+                skipped.append(pid)
+                continue
+            p = products_map.get(pid)
+            if not p:
+                skipped.append(pid)
+                continue
+            p.display_order = new_order
+            updated.append(p)
+
+        if updated:
+            Products.objects.bulk_update(updated, ['display_order'])
+
+    return JsonResponse({
+        'status': 'success',
+        'updated_count': len(updated),
+        'skipped': skipped,
     })

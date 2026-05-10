@@ -33,7 +33,7 @@ class BarcodeTemplate(models.Model):
       - material_type alanı eklendi ('GOLD'/'SILVER'/'DIAMOND'/'WATCH').
         Default 'GOLD' — mevcut şablonlar otomatik Altın kategorisine düşer.
       - extra_data JSONField eklendi: Pırlanta/Saat'e özel alanlar (mount_karat,
-        sale_currency, sale_price, buy_price_tl, watch_condition, ...) buraya
+        sale_currency, sale_price, buy_price_eur, watch_condition, ...) buraya
         yazılır. Bu sayede ileride yeni alan eklendiğinde migration gerekmez.
       - Mevcut altın alanları (gold_rate, product_mileage, labor_mileage, ...)
         geriye dönük tam uyumlu korundu. Pırlanta/Saat şablonlarında boş kalır.
@@ -69,9 +69,9 @@ class BarcodeTemplate(models.Model):
         blank=True,
         help_text=(
             "Material-type özel alanları. Pırlanta: mount_metal, mount_karat, "
-            "mount_gram, sale_currency, sale_price, buy_price_tl, diamond_shape, ... "
+            "mount_gram, sale_currency, sale_price, buy_price_eur, diamond_shape, ... "
             "Saat: watch_condition, watch_movement_type, watch_case_material, "
-            "sale_currency, sale_price, buy_price_tl, ..."
+            "sale_currency, sale_price, buy_price_eur, ..."
         ),
     )
     is_active = models.BooleanField(default=True)
@@ -98,7 +98,12 @@ class GoldPurchases(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Products, on_delete=models.CASCADE, null=True, blank=True, related_name='product')
     store = models.ForeignKey(Stores, on_delete=models.CASCADE, null=True, blank=True)
-    supplier = models.ForeignKey(Suppliers, on_delete=models.CASCADE, null=True, blank=True)
+    # FAZ TS-1 (Tedarikçi Silme Güvenliği): on_delete=CASCADE -> SET_NULL
+    # Barkodlu/etiketlenmiş ürün alış kayıtlarının (is_labeled=True dahil)
+    # tedarikçi silindiğinde fiziksel olarak yok olmasını engellemek için
+    # CASCADE kaldırıldı. Tedarikçi silindiğinde supplier alanı NULL olur,
+    # GoldPurchases satırı korunur ve barkod yazdırma akışı çalışmaya devam eder.
+    supplier = models.ForeignKey(Suppliers, on_delete=models.SET_NULL, null=True, blank=True)
     created_by = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='gold_purchases')
     created_on = models.DateTimeField(auto_now_add=True)
     count_is_status = models.IntegerField(choices=COUNT_STATUS_CHOICES, default=0, null=True, blank=True)

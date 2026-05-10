@@ -1,0 +1,573 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#1e293b">
+
+    <link rel="icon" href="{% static 'theme/img/new_logo/1.png' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-500: #64748b;
+            --slate-400: #94a3b8;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            --primary: #1e40af;
+            --primary-light: #dbeafe;
+            --success: #16a34a;
+            --success-light: #dcfce7;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --gold: #b45309;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--slate-900);
+            font-size: 15px;
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .pp-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 16px 14px 60px;
+        }
+
+        /* ─── Hero / Mağaza Header ─────────────────────────────── */
+        .pp-store {
+            background: var(--slate-800);
+            border-radius: 18px;
+            padding: 20px 18px;
+            color: #fff;
+            margin-bottom: 14px;
+            box-shadow: 0 6px 24px rgba(15,23,42,.18);
+        }
+        .pp-store-row { display: flex; align-items: center; gap: 14px; }
+        .pp-logo {
+            width: 56px; height: 56px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.12);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .pp-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .pp-logo-fallback { color: #fbbf24; font-size: 1.6rem; }
+        .pp-store-name { font-weight: 700; font-size: 1.05rem; line-height: 1.2; }
+        .pp-store-meta { font-size: .78rem; color: rgba(255,255,255,.65); margin-top: 2px; }
+        .pp-store-contact { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); }
+        .pp-store-contact a, .pp-store-contact span {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: .8rem; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .pp-store-contact a:hover { color: #fff; }
+
+        /* ─── Process Hero ─────────────────────────────────────── */
+        .pp-hero {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 18px;
+            padding: 22px 20px;
+            color: #fff;
+            margin-bottom: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .pp-hero::before {
+            content: '';
+            position: absolute; top: -30px; right: -30px;
+            width: 140px; height: 140px;
+            background: radial-gradient(circle, rgba(251,191,36,.18) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .pp-hero-label {
+            font-size: .72rem; text-transform: uppercase;
+            letter-spacing: 1px; color: rgba(255,255,255,.55);
+            font-weight: 600; margin-bottom: 6px;
+        }
+        .pp-process-no {
+            font-family: 'SF Mono', 'Courier New', monospace;
+            font-size: 1.8rem; font-weight: 800;
+            letter-spacing: 1.5px; line-height: 1;
+            color: #fbbf24;
+        }
+        .pp-hero-meta {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-top: 14px;
+        }
+        .pp-chip {
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.15);
+            color: #e2e8f0;
+            padding: 5px 11px; border-radius: 999px;
+            font-size: .76rem; font-weight: 500;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .pp-chip i { color: #93c5fd; }
+        .pp-cancel-banner {
+            background: rgba(239,68,68,.18);
+            border: 1px solid rgba(239,68,68,.4);
+            color: #fecaca;
+            padding: 10px 14px; border-radius: 12px;
+            margin-top: 14px;
+            font-size: .85rem; font-weight: 600;
+        }
+
+        /* ─── Bakiye Kartı ─────────────────────────────────────── */
+        .pp-balance {
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(15,23,42,.05);
+            border: 1px solid var(--slate-200);
+        }
+        .pp-balance-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .pp-balance-item {
+            text-align: center;
+            padding: 10px 6px;
+            background: var(--slate-100);
+            border-radius: 12px;
+        }
+        .pp-balance-item .lbl {
+            font-size: .68rem; text-transform: uppercase;
+            letter-spacing: .5px; color: var(--slate-500);
+            font-weight: 600; margin-bottom: 4px;
+        }
+        .pp-balance-item .val {
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--slate-900);
+        }
+        .pp-status {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; margin-top: 14px;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700; font-size: .95rem;
+        }
+        .pp-bal-debt   { background: var(--danger-light);  color: var(--danger); }
+        .pp-bal-credit { background: var(--warning-light); color: var(--warning); }
+        .pp-bal-paid   { background: var(--success-light); color: var(--success); }
+
+        /* ─── Section Card ─────────────────────────────────────── */
+        .pp-card {
+            background: var(--surface);
+            border-radius: 18px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(15,23,42,.05);
+            border: 1px solid var(--slate-200);
+            overflow: hidden;
+        }
+        .pp-card-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--slate-200);
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 700; font-size: .95rem;
+            color: var(--slate-800);
+        }
+        .pp-card-head i { color: var(--primary); }
+        .pp-card-head .pp-count {
+            margin-left: auto;
+            background: var(--slate-100);
+            color: var(--slate-700);
+            padding: 2px 9px; border-radius: 999px;
+            font-size: .72rem; font-weight: 600;
+        }
+
+        /* ─── Item Row ─────────────────────────────────────────── */
+        .pp-item {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--slate-100);
+            display: flex; gap: 12px;
+        }
+        .pp-item:last-child { border-bottom: none; }
+        .pp-item-img {
+            width: 60px; height: 60px;
+            border-radius: 12px; object-fit: cover;
+            border: 1px solid var(--slate-200);
+            background: var(--slate-100);
+            flex-shrink: 0;
+        }
+        .pp-item-imgph {
+            width: 60px; height: 60px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--slate-400); font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .pp-item-body { flex-grow: 1; min-width: 0; }
+        .pp-item-name {
+            font-weight: 700; color: var(--slate-900);
+            font-size: .98rem;
+            margin-bottom: 4px;
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        }
+        .pp-tx-badge {
+            font-size: .68rem; padding: 3px 8px; border-radius: 6px;
+            font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+            white-space: nowrap;
+        }
+        .pp-tx-sale     { background: var(--success-light); color: var(--success); }
+        .pp-tx-purchase { background: var(--primary-light); color: var(--primary); }
+        .pp-tx-return   { background: var(--warning-light); color: var(--warning); }
+        .pp-item-meta {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin-bottom: 8px;
+        }
+        .pp-mini-pill {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            padding: 2px 8px; border-radius: 6px;
+            font-size: .72rem; font-weight: 500;
+        }
+        .pp-mini-pill.gold {
+            background: var(--warning-light);
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .pp-item-fin {
+            display: flex; justify-content: space-between; align-items: baseline;
+            padding-top: 8px;
+            border-top: 1px dashed var(--slate-200);
+        }
+        .pp-item-qty {
+            font-size: .82rem; color: var(--slate-500);
+        }
+        .pp-item-total {
+            font-weight: 800; font-size: 1.05rem;
+            color: var(--slate-900);
+        }
+        .pp-item-total .cur { color: var(--slate-500); font-size: .85rem; font-weight: 500; margin-left: 2px; }
+        .pp-item-unit { font-size: .74rem; color: var(--slate-400); margin-top: 2px; text-align: right; }
+
+        /* ─── Payments ─────────────────────────────────────────── */
+        .pp-pay-row {
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--slate-100);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .pp-pay-row:last-child { border-bottom: none; }
+        .pp-pay-icon {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.05rem; flex-shrink: 0;
+        }
+        .pp-pay-icon.cash     { background: var(--success-light); color: var(--success); }
+        .pp-pay-icon.card     { background: var(--primary-light); color: var(--primary); }
+        .pp-pay-icon.transfer { background: var(--warning-light); color: var(--warning); }
+        .pp-pay-icon.other    { background: var(--slate-100);     color: var(--slate-500); }
+        .pp-pay-body { flex-grow: 1; min-width: 0; }
+        .pp-pay-method { font-weight: 700; color: var(--slate-900); font-size: .9rem; }
+        .pp-pay-date { font-size: .76rem; color: var(--slate-500); }
+        .pp-pay-amount {
+            font-weight: 800; font-size: 1.0rem;
+            white-space: nowrap;
+        }
+        .pp-pay-amount.in  { color: var(--success); }
+        .pp-pay-amount.out { color: var(--danger); }
+
+        .pp-empty {
+            text-align: center; padding: 36px 20px;
+            color: var(--slate-400);
+        }
+        .pp-empty i { font-size: 2rem; opacity: .4; display: block; margin-bottom: 8px; }
+        .pp-empty .sub { font-size: .85rem; color: var(--slate-500); margin-top: 4px; }
+
+        /* ─── Footer ───────────────────────────────────────────── */
+        .pp-footer {
+            text-align: center;
+            color: var(--slate-400);
+            font-size: .76rem;
+            padding: 24px 16px 8px;
+            line-height: 1.6;
+        }
+        .pp-footer .brand { font-weight: 700; color: var(--slate-700); }
+
+        .pp-cta {
+            display: flex; gap: 8px; margin-top: 14px;
+        }
+        .pp-cta .btn {
+            flex: 1;
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700; font-size: .88rem;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            cursor: pointer;
+            transition: transform .08s ease;
+            text-decoration: none;
+        }
+        .pp-cta .btn:active { transform: scale(.98); }
+        .pp-cta .btn-print {
+            background: var(--surface);
+            color: var(--slate-800);
+            border: 1px solid var(--slate-200);
+        }
+        .pp-cta .btn-call {
+            background: var(--success); color: #fff;
+        }
+
+        /* ─── Invalid Token ────────────────────────────────────── */
+        .pp-error {
+            text-align: center;
+            padding: 60px 24px;
+            background: var(--surface);
+            border-radius: 18px;
+            margin-top: 40px;
+            box-shadow: 0 2px 8px rgba(15,23,42,.05);
+        }
+        .pp-error i { font-size: 3.5rem; color: var(--danger); margin-bottom: 14px; }
+        .pp-error h2 { margin: 0 0 8px; font-size: 1.3rem; color: var(--slate-900); }
+        .pp-error p { margin: 0; color: var(--slate-500); font-size: .92rem; }
+
+        /* ─── Print ─────────────────────────────────────────────── */
+        @media print {
+            body { background: #fff; }
+            .pp-cta { display: none; }
+            .pp-store, .pp-hero {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .pp-card, .pp-balance { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+        }
+
+        /* ─── Tablet+ ──────────────────────────────────────────── */
+        @media (min-width: 600px) {
+            .pp-balance-grid { grid-template-columns: repeat(3, 1fr); }
+            .pp-process-no { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="pp-wrap">
+
+{% if invalid_token %}
+    {# ─── Geçersiz/Bulunamayan Token ──────────────────────── #}
+    <div class="pp-error">
+        <i class="fa-solid fa-link-slash"></i>
+        <h2>Bağlantı Geçersiz</h2>
+        <p>Bu link süresi dolmuş veya hatalı olabilir. Lütfen mağazanız ile iletişime geçin.</p>
+    </div>
+{% else %}
+
+    {# ─── Mağaza Branding ──────────────────────────────────── #}
+    <div class="pp-store">
+        <div class="pp-store-row">
+            <div class="pp-logo">
+                {% if store.logo_url %}
+                    <img src="{{ store.logo_url }}" alt="{{ store.name }}"
+                         onerror="this.style.display='none';this.parentNode.innerHTML='<i class=&quot;fa-solid fa-store pp-logo-fallback&quot;></i>';">
+                {% else %}
+                    <i class="fa-solid fa-store pp-logo-fallback"></i>
+                {% endif %}
+            </div>
+            <div style="flex-grow:1;min-width:0;">
+                <div class="pp-store-name">{{ store.name }}</div>
+                <div class="pp-store-meta">
+                    Sayın <strong style="color:#fff;">{{ customer_name }}</strong>, işlem özetiniz hazır.
+                </div>
+            </div>
+        </div>
+        {% if store.phone or store.address %}
+            <div class="pp-store-contact">
+                {% if store.phone %}
+                    <a href="tel:{{ store.phone }}"><i class="fa-solid fa-phone"></i> {{ store.phone }}</a>
+                {% endif %}
+                {% if store.city %}
+                    <span><i class="fa-solid fa-location-dot"></i> {{ store.city }}{% if store.address %} · {{ store.address|truncatechars:35 }}{% endif %}</span>
+                {% elif store.address %}
+                    <span><i class="fa-solid fa-location-dot"></i> {{ store.address|truncatechars:50 }}</span>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {# ─── Process Hero ─────────────────────────────────────── #}
+    <div class="pp-hero">
+        <div class="pp-hero-label">İşlem No</div>
+        <div class="pp-process-no">{{ process_no }}</div>
+        <div class="pp-hero-meta">
+            <span class="pp-chip"><i class="fa-solid fa-calendar-day"></i> {{ date }}</span>
+            <span class="pp-chip"><i class="fa-solid fa-cube"></i> {{ items|length }} kalem</span>
+            {% if payments %}
+                <span class="pp-chip"><i class="fa-solid fa-receipt"></i> {{ payments|length }} ödeme</span>
+            {% endif %}
+        </div>
+        {% if is_canceled %}
+            <div class="pp-cancel-banner">
+                <i class="fa-solid fa-ban"></i> Bu işlem iptal edilmiştir.
+            </div>
+        {% endif %}
+    </div>
+
+    {# ─── Bakiye Özet ──────────────────────────────────────── #}
+    <div class="pp-balance">
+        <div class="pp-balance-grid">
+            <div class="pp-balance-item">
+                <div class="lbl">Toplam Tutar</div>
+                <div class="val">{{ summary.net_total }} ₺</div>
+            </div>
+            <div class="pp-balance-item">
+                <div class="lbl">Ödenen</div>
+                <div class="val" style="color:var(--success);">{{ summary.paid_total }} ₺</div>
+            </div>
+            <div class="pp-balance-item" style="grid-column: 1 / -1;">
+                <div class="lbl">Kalan Bakiye</div>
+                <div class="val" style="font-size:1.35rem;
+                    {% if summary.balance_raw > 0 %}color:var(--danger);
+                    {% elif summary.balance_raw < 0 %}color:var(--warning);
+                    {% else %}color:var(--success);{% endif %}">
+                    {{ summary.balance }} ₺
+                </div>
+            </div>
+        </div>
+        <div class="pp-status {{ balance_state.cls }}">
+            <i class="fa-solid {{ balance_state.icon }}"></i>
+            {{ balance_state.text }}
+        </div>
+    </div>
+
+    {# ─── İşlem Kalemleri ──────────────────────────────────── #}
+    <div class="pp-card">
+        <div class="pp-card-head">
+            <i class="fa-solid fa-gem"></i> İşlem Kalemleri
+            <span class="pp-count">{{ items|length }}</span>
+        </div>
+        {% if items %}
+            {% for it in items %}
+                <div class="pp-item">
+                    {% if it.image_url %}
+                        <img src="{{ it.image_url }}" class="pp-item-img" alt="{{ it.name }}"
+                             onerror="this.outerHTML='<div class=&quot;pp-item-imgph&quot;><i class=&quot;fa-solid fa-gem&quot;></i></div>';">
+                    {% else %}
+                        <div class="pp-item-imgph"><i class="fa-solid fa-gem"></i></div>
+                    {% endif %}
+                    <div class="pp-item-body">
+                        <div class="pp-item-name">
+                            <span>{{ it.name }}</span>
+                            {% if it.is_entry %}
+                                <span class="pp-tx-badge pp-tx-purchase">{{ it.transaction_label }}</span>
+                            {% else %}
+                                <span class="pp-tx-badge pp-tx-sale">{{ it.transaction_label }}</span>
+                            {% endif %}
+                        </div>
+                        {% if it.jewelry_type or it.karat_label or it.barcode %}
+                            <div class="pp-item-meta">
+                                {% if it.jewelry_type %}<span class="pp-mini-pill">{{ it.jewelry_type }}</span>{% endif %}
+                                {% if it.karat_label %}<span class="pp-mini-pill gold">{{ it.karat_label }}</span>{% endif %}
+                                {% if it.barcode %}<span class="pp-mini-pill" style="font-family:monospace;">{{ it.barcode }}</span>{% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="pp-item-fin">
+                            <div>
+                                <div class="pp-item-qty">{{ it.qty_display }}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div class="pp-item-total">
+                                    {{ it.amount_eur|floatformat:2 }}<span class="cur"> ₺</span>
+                                </div>
+                                {% if it.unit_price %}
+                                    <div class="pp-item-unit">{{ it.unit_price|floatformat:2 }} ₺ / birim</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="pp-empty">
+                <i class="fa-solid fa-box-open"></i>
+                Kalem bulunamadı
+            </div>
+        {% endif %}
+    </div>
+
+    {# ─── Ödeme Hareketleri ─────────────────────────────────── #}
+    <div class="pp-card">
+        <div class="pp-card-head">
+            <i class="fa-solid fa-wallet"></i> Ödeme Hareketleri
+            {% if payments %}<span class="pp-count">{{ payments|length }}</span>{% endif %}
+        </div>
+        {% if payments %}
+            {% for pay in payments %}
+                <div class="pp-pay-row">
+                    <div class="pp-pay-icon
+                        {% if pay.label == 'Nakit' %}cash
+                        {% elif pay.label == 'Kredi Kartı' %}card
+                        {% elif pay.label == 'Havale / EFT' %}transfer
+                        {% else %}other{% endif %}">
+                        {% if pay.label == 'Nakit' %}<i class="fa-solid fa-money-bill-wave"></i>
+                        {% elif pay.label == 'Kredi Kartı' %}<i class="fa-regular fa-credit-card"></i>
+                        {% elif pay.label == 'Havale / EFT' %}<i class="fa-solid fa-building-columns"></i>
+                        {% else %}<i class="fa-solid fa-coins"></i>{% endif %}
+                    </div>
+                    <div class="pp-pay-body">
+                        <div class="pp-pay-method">
+                            {{ pay.label }}
+                            {% if pay.installment %}
+                                <span class="pp-mini-pill" style="margin-left:6px;">{{ pay.installment }} taksit</span>
+                            {% endif %}
+                        </div>
+                        <div class="pp-pay-date">{{ pay.date }}</div>
+                    </div>
+                    <div class="pp-pay-amount {% if pay.is_refund %}out{% else %}in{% endif %}">
+                        {% if pay.is_refund %}−{% else %}+{% endif %}{{ pay.amount }} ₺
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="pp-empty">
+                <i class="fa-solid fa-circle-info"></i>
+                Henüz ödeme kaydı yok
+                <div class="sub">Tüm tutar veresiye / cari hesabınızda görünüyor.</div>
+            </div>
+        {% endif %}
+    </div>
+
+    {# ─── CTA Butonları ─────────────────────────────────────── #}
+    <div class="pp-cta">
+        <button onclick="window.print()" class="btn btn-print">
+            <i class="fa-solid fa-print"></i> Yazdır / PDF
+        </button>
+        {% if store.phone %}
+            <a href="tel:{{ store.phone }}" class="btn btn-call">
+                <i class="fa-solid fa-phone"></i> Mağazayı Ara
+            </a>
+        {% endif %}
+    </div>
+
+    {# ─── Footer ────────────────────────────────────────────── #}
+    <div class="pp-footer">
+        Bu özet bilgilendirme amaçlıdır, resmi fatura yerine geçmez.<br>
+        <span class="brand">{{ store.name }}</span> · KuyumPlus Otomasyon
+    </div>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>

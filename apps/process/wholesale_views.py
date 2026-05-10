@@ -18,7 +18,6 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from apps.invoices.models import *
 from apps.process.models import Process
 from apps.process.views import generate_process_no, update_product_stock
 
@@ -31,6 +30,8 @@ from apps.suppliers.models import Suppliers, SupplierLedger
 from apps.scraps.models import Scraps
 from apps.bracelets.models import Bracelets
 from apps.helpers.numbers import parse_decimal_locale
+# Faz 13: Kasa Çoklu-Döviz SSOT (sentinel rate yazma yolu)
+from apps.banking.services import FX_SENTINEL_MAP
 
 RAW_CODES = {
     'AUDTRY': 'AUD', 'CADTRY': 'CAD', 'CHFTRY': 'CHF', 'EURTRY': 'EUR',
@@ -136,9 +137,13 @@ def validate_mileage(value, *, required=True, field_label='Milyem'):
 
 def book_supplier_tx(*, supplier, transaction_type, amount_value, currency, process_no,
                      description='', product=None, quantity_piece=0, quantity_gram=Decimal('0'),
-                     auto_setoff: bool = True):
+                     auto_setoff: bool = True, source_process_id=None):
     """
     Cari kayıt açar; auto_setoff=True ise OB hariç karşı taraftaki açıkları FIFO kapatır.
+
+    FAZ 21 / Bug 2B: source_process_id parametresi eklendi. Toptan seans gibi
+    çoklu kalemli senaryolarda her satırın Process UUID'si bu alanda saklanır;
+    cancel_row PROC dalı bu alanla satır-bazlı pasifleştirme yapar.
     """
     # Tutar 0 veya negatifse işlem yapma (Opsiyonel güvenlik)
     if amount_value <= 0:
@@ -154,6 +159,7 @@ def book_supplier_tx(*, supplier, transaction_type, amount_value, currency, proc
         currency=(currency or 'HS').upper(),
         process_no=process_no,
         description=description,
+        source_process_id=source_process_id,
         is_active=True
     )
 
@@ -163,6 +169,22 @@ def book_supplier_tx(*, supplier, transaction_type, amount_value, currency, proc
     rest = amount_value
     opposite = 'EXIT' if transaction_type == 'ENTRY' else 'ENTRY'
 
+    # ── FAZ 11 / BL-01-HARDEN-04: Deterministik FIFO Sıralaması ──
+    # Önceki sıralama: order_by('created_on', 'id')
+    #   Sorun: id alanı UUID v4 (rastgele); aynı created_on'a sahip kayıtlar
+    #   arasında iş anlamlı olmayan, rastgele bir sıralama uygular. FIFO
+    #   "en eski açık kayıt önce kapatılır" prensibinin alt-saniye granülaritede
+    #   determinizmini bozar; aynı saniyede yazılmış iki kaydın hangisinin
+    #   önce kapatıldığı her sorguda tutarlı olsa da iş anlamı taşımaz.
+    #
+    # Yeni sıralama: order_by('created_on', 'process_no', 'id')
+    #   process_no birincil tiebreaker — process_no formatları (ADJ-, OB-, P-,
+    #   WHL- vb.) zaman damgası içerir, bu da business-meaningful FIFO sağlar.
+    #   id (UUID) yine de son tiebreaker olarak kalır → tüm sıralama her
+    #   zaman tam (total order) ve deterministik garanti.
+    #
+    # Etki: Sıradan günlük operasyonda görünür bir fark olmaz; sadece audit
+    # ve kenar durumlarda (aynı saniyede çoklu satır) tutarlılık sağlanır.
     qs = (SupplierLedger.objects
           .select_for_update()
           .filter(
@@ -172,7 +194,7 @@ def book_supplier_tx(*, supplier, transaction_type, amount_value, currency, proc
         is_active=True
     )
           .exclude(process_no__startswith='OB')
-          .order_by('created_on', 'id'))
+          .order_by('created_on', 'process_no', 'id'))
 
     for row in qs:
         if rest <= 0:
@@ -203,9 +225,12 @@ def book_supplier_product_tx(*,
                              gram: Decimal = Decimal('0'),
                              tl_total: Decimal = Decimal('0.00'),
                              price_hs: Decimal = Decimal('0.000'),
-                             user=None):
+                             user=None,
+                             source_process_id=None):
     """
     Ürün hareketlerinden doğru para birimi & tutarla cari kayıt açar.
+
+    FAZ 21 / Bug 2B: source_process_id pass-through eklendi.
     """
     cur_code = (product.currency or '').upper()
 
@@ -228,7 +253,8 @@ def book_supplier_product_tx(*,
         currency=cur,
         quantity_piece=piece,
         quantity_gram=gram,
-        auto_setoff=True
+        auto_setoff=True,
+        source_process_id=source_process_id,
     )
 
 
@@ -274,14 +300,28 @@ def add_scrap_to_wholesale_process(request):
         # Hurda milyemi tam sayı olarak saklanır (14K=585, 22K=916 vb.)
         product_mileage = Decimal(int(validated_mileage))
 
+        # FAZ 19.1 — Opsiyonel işçilik milyem (has hesabına DAHİL).
+        # parse_decimal_locale: virgül/nokta toleranslı; negatif değer 0'a düşer.
+        _iscilik_raw = request.POST.get('iscilik_milyem')
+        _iscilik_milyem = Decimal('0.00')
+        if _iscilik_raw is not None and str(_iscilik_raw).strip() != '':
+            try:
+                _iscilik_milyem = parse_decimal_locale(_iscilik_raw, default="0", places=2)
+                if _iscilik_milyem < 0:
+                    _iscilik_milyem = Decimal('0.00')
+            except Exception:
+                _iscilik_milyem = Decimal('0.00')
+
         # 1. Kategori Bul veya Oluştur
         category = Categories.objects.filter(name__icontains='Hurda').first()
         if not category:
             category = Categories.objects.create(name='Hurda', store=store)
 
-        # Birim has hesabı
-        unit_buy_price_hs = round(product_mileage / Decimal('1000'), 3)
-        total_hs = (gram * product_mileage) / Decimal('1000')
+        # Birim has hesabı (FAZ 19.1: işçilik milyem dahil)
+        # Örn: 585 + 220 işçilik → effective_mileage=805 → 100g'da total_hs=80.5
+        _effective_mileage = product_mileage + _iscilik_milyem
+        unit_buy_price_hs = round(_effective_mileage / Decimal('1000'), 3)
+        total_hs = (gram * _effective_mileage) / Decimal('1000')
 
         # ----------------------------------------------------------------------
         # 2. HURDA HAVUZU KONTROLÜ VE STOK GÜNCELLEMESİ
@@ -452,12 +492,13 @@ def add_scrap_to_wholesale_process(request):
                 'stock_gram': Decimal('0.0000'),
                 'stock_pieces': 0,
                 'weighted_avg_cost_hs': Decimal('0.0000'),
-                'weighted_avg_cost_tl': Decimal('0.00'),
+                'weighted_avg_cost_eur': Decimal('0.00'),
             }
         )
         # ----------------------------------------------------------------------
 
         # 3. Process Kaydı Oluştur (IN_PROGRESS)
+        # FAZ 19.1: _iscilik_milyem yukarıda parse edildi ve total_hs'ye dahil.
         Process.objects.create(
             store=store,
             process_no=process_no,
@@ -471,6 +512,7 @@ def add_scrap_to_wholesale_process(request):
             price_hs=total_hs,
             unit_price=Decimal('0'),
             amount=Decimal('0'),
+            iscilik_milyem=_iscilik_milyem,
             is_status='IN_PROGRESS'
         )
 
@@ -560,7 +602,20 @@ def add_bracelet_to_wholesale_process(request):
         if not category:
             category = Categories.objects.create(name='Bilezik', store=store)
 
-        unit_hs_price = Decimal(mileage) / Decimal('1000')
+        # FAZ 19.1 — Opsiyonel işçilik milyem (has hesabına DAHİL).
+        _iscilik_raw = request.POST.get('iscilik_milyem')
+        _iscilik_milyem = Decimal('0.00')
+        if _iscilik_raw is not None and str(_iscilik_raw).strip() != '':
+            try:
+                _iscilik_milyem = parse_decimal_locale(_iscilik_raw, default="0", places=2)
+                if _iscilik_milyem < 0:
+                    _iscilik_milyem = Decimal('0.00')
+            except Exception:
+                _iscilik_milyem = Decimal('0.00')
+
+        # FAZ 19.1: unit_hs_price işçilik dahil (effective_mileage).
+        _effective_mileage = Decimal(mileage) + _iscilik_milyem
+        unit_hs_price = _effective_mileage / Decimal('1000')
 
         # ════════════════════════════════════════════════════════════════════
         # B-FAZ 5 — HAVUZ ARAMA + REVIVAL RESET
@@ -690,17 +745,18 @@ def add_bracelet_to_wholesale_process(request):
                 'stock_gram': Decimal('0.0000'),
                 'stock_pieces': 0,
                 'weighted_avg_cost_hs': Decimal('0.0000'),
-                'weighted_avg_cost_tl': Decimal('0.00'),
+                'weighted_avg_cost_eur': Decimal('0.00'),
             }
         )
 
         # 4. Process (İşlem Sepeti) Kaydı
+        # FAZ 19.1: _effective_mileage = mileage + işçilik (yukarıda parse edildi)
         if is_gram_mode:
-            total_hs = (gram * mileage) / Decimal('1000')
+            total_hs = (gram * _effective_mileage) / Decimal('1000')
             row_piece = 1
             row_gram = gram
         else:
-            total_hs = (gram * mileage) / Decimal('1000') * Decimal(piece_count) if gram > 0 else Decimal('0')
+            total_hs = (gram * _effective_mileage) / Decimal('1000') * Decimal(piece_count) if gram > 0 else Decimal('0')
             row_piece = piece_count
             row_gram = gram * Decimal(piece_count) if gram > 0 else Decimal('0')
 
@@ -717,6 +773,7 @@ def add_bracelet_to_wholesale_process(request):
             price_hs=total_hs,
             unit_price=Decimal('0'),
             amount=Decimal('0'),
+            iscilik_milyem=_iscilik_milyem,
             is_status='IN_PROGRESS'
         )
 
@@ -808,7 +865,7 @@ def get_parities(request):
     # FAZ 3: Has Altın fiyatını PriceService'den al, fallback olarak Products tablosundan
     hs = (Products.objects
           .filter(name='Has Altın 24 Ayar', is_active=True, is_deleted=False)
-          .values('id', 'buy_price_tl', 'sale_price_tl')
+          .values('id', 'buy_price_eur', 'sale_price_eur')
           .first())
 
     hs_buy_tl = 0
@@ -823,8 +880,8 @@ def get_parities(request):
     if hs:
         data['HS'] = {
             'prod_id': hs['id'],
-            'tl_buy': hs_buy_tl if hs_buy_tl else (hs['buy_price_tl'] or 0),
-            'tl_sale': hs_sale_tl if hs_sale_tl else (hs['sale_price_tl'] or 0),
+            'tl_buy': hs_buy_tl if hs_buy_tl else (hs['buy_price_eur'] or 0),
+            'tl_sale': hs_sale_tl if hs_sale_tl else (hs['sale_price_eur'] or 0),
         }
 
     # TRY (nakit)
@@ -838,15 +895,15 @@ def get_parities(request):
     # Diğer kodlar
     rows = (Products.objects
             .filter(name__in=RAW_CODES.keys(), is_deleted=False)
-            .values('id', 'name', 'buy_price_tl', 'sale_price_tl'))
+            .values('id', 'name', 'buy_price_eur', 'sale_price_eur'))
 
     for r in rows:
         key = RAW_CODES[r['name']]
         obj = data.setdefault(key, {})
         obj.setdefault('prod_id', r['id'])
 
-        raw_buy = r['buy_price_tl'] or 0
-        raw_sell = r['sale_price_tl'] or 0
+        raw_buy = r['buy_price_eur'] or 0
+        raw_sell = r['sale_price_eur'] or 0
         # Bazı sağlayıcılar (Harem Altın) USDTRY için yalnızca sell yayınlar; buy=null gelir.
         # Dönüşüm modalı `tl_buy=0` görünce kullanıcıyı kilitlemesin diye sell'i yedek olarak kullan.
         buy = raw_buy or raw_sell or 0
@@ -1350,6 +1407,38 @@ def complete_process_wholesale(request):
                 status=400
             )
 
+        # ════════════════════════════════════════════════════════════════════
+        # FAZ 31 / BUG-7 — PRICE_HS PRE-FLIGHT KONTROLÜ (2026-05-01)
+        # ════════════════════════════════════════════════════════════════════
+        # Sorun: book_supplier_product_tx → book_supplier_tx, amount_value <= 0
+        #        olduğunda satır 150'de sessizce return None yapıyordu. Stok
+        #        güncellemesi başarılı olduktan sonra cari kaydı sessizce
+        #        atlanıyor → "stoğum düştü ama cari çalışmadı" şikayeti.
+        # Çözüm: Döngüye girmeden önce, ürün satırlarının (kasa kalemleri
+        #        hariç) price_hs > 0 olduğunu doğrula. Hatalı satır varsa
+        #        atomik blok hiç başlatılmadan, açık hata mesajıyla geri dön.
+        # ════════════════════════════════════════════════════════════════════
+        for _row in rows:
+            if _row.bank_account_id is not None:
+                continue  # kasa kalemleri price_hs zorunluluğundan muaf
+            try:
+                _phs = Decimal(str(_row.price_hs or 0))
+            except (InvalidOperation, ValueError, TypeError):
+                _phs = Decimal('0')
+            if _phs <= Decimal('0'):
+                _prod_name = _row.product.name if _row.product else '-'
+                return JsonResponse(
+                    {
+                        'error': True,
+                        'error_msg': (
+                            f'Has fiyatı (price_hs) 0 veya girilmemiş satır var: '
+                            f'"{_prod_name}" (process_no={_row.process_no}). '
+                            f'İşlemi tamamlamadan önce satırı düzeltin veya silin.'
+                        ),
+                    },
+                    status=400,
+                )
+
         # Fatura oluşturmak için işlenen satırları bellekte tutacağız
         processed_rows = []
 
@@ -1387,15 +1476,12 @@ def complete_process_wholesale(request):
                 # 1) Payment kaydı (kasadan çıkış)
                 _pay_extra = {}
                 if is_fx and pay_currency != 'TRY':
-                    _FX_SENTINEL_RATES = {
-                        'USD': Decimal('0.01'), 'EUR': Decimal('0.02'),
-                        'GBP': Decimal('0.03'), 'CHF': Decimal('0.04'),
-                        'CAD': Decimal('0.05'), 'AUD': Decimal('0.06'),
-                        'JPY': Decimal('0.07'), 'QAR': Decimal('0.08'),
-                        'SAR': Decimal('0.09'),
-                    }
+                    # Faz 13: SSOT — services.FX_SENTINEL_MAP. Yazma ve okuma
+                    # yolları aynı haritayı paylaşır (eskiden bu blok kendi
+                    # haritasını tutuyordu; bank_views._SENTINEL_MAP ile çakışıyordu:
+                    # CHF=0.04 yazılıp CAD okunuyor, CAD=0.05 yazılıp QAR okunuyordu).
                     _pay_extra['currency_amount'] = p.amount
-                    _pay_extra['exchange_rate'] = _FX_SENTINEL_RATES.get(
+                    _pay_extra['exchange_rate'] = FX_SENTINEL_MAP.get(
                         pay_currency, Decimal('0.09')
                     )
 
@@ -1421,6 +1507,9 @@ def complete_process_wholesale(request):
                 # ÇIKIŞ (SALE)     → Tedarikçiye ödeme yapılıyor   → EXIT  (borç)
                 ledger_dir = 'ENTRY' if p.transaction_type == 'PURCHASE' else 'EXIT'
 
+                # FAZ 21 / Bug 2B — source_process_id=p.id: kasa ödemesi de
+                # satır-bazlı bağlanıyor. Tek satırın iptali yalnızca o satırın
+                # carisini etkilesin (eski: process_no toplu pasifleştirme).
                 book_supplier_tx(
                     supplier=supplier,
                     transaction_type=ledger_dir,
@@ -1429,6 +1518,7 @@ def complete_process_wholesale(request):
                     process_no=p.process_no,
                     description=f'Toptan kasa ödemesi ({pay_currency})',
                     auto_setoff=True,
+                    source_process_id=p.id,
                 )
 
                 # 3) Process durumunu güncelle (stok/fatura yok)
@@ -1491,10 +1581,16 @@ def complete_process_wholesale(request):
                         pass
 
             # A) Stok Güncelleme (unit_cost_hs parametresi eklendi)
+            # FAZ 21 / Bug 2A — process_id=p.id eklendi: StockLedger.ref_id artık
+            # Process satırının UUID'si olur (process_no yerine). Çoklu satırlı
+            # toptan seansda tek satır iptal edildiğinde yalnızca o satırın stok
+            # hareketi geri sarılır; eski davranış tüm seansın stoğunu reverse
+            # ediyordu (cancel_stock_entry ref_id=process_no eşleşmesinden).
             update_product_stock(
                 p.product, mv, p.piece, p.gram,
                 False, request.user, 'Toptan işlem', p.process_no,
-                unit_cost_hs=unit_cost_hs
+                unit_cost_hs=unit_cost_hs,
+                process_id=p.id,
             )
 
             # ── FAZ 9.6: Tekil barkodlu ürünler için is_completed güncelleme ──
@@ -1503,13 +1599,15 @@ def complete_process_wholesale(request):
                 prod.is_completed = (mv == 'EXIT')
                 prod.save(update_fields=['is_completed'])
 
-            # B) Cari Hareket (Ledger) - Değişmedi
+            # B) Cari Hareket (Ledger) — FAZ 21 / Bug 2B: source_process_id=p.id
+            # Çoklu kalemli toptan seansda satır-bazlı pasifleştirme için kritik.
             book_supplier_product_tx(
                 supplier=supplier, product=p.product, process_no=p.process_no,
                 tx_type=mv, piece=p.piece, gram=Decimal(str(p.gram or 0)),
                 tl_total=Decimal(str(p.amount or 0)),
                 price_hs=Decimal(str(p.price_hs or 0)),
                 user=request.user,
+                source_process_id=p.id,
             )
 
             # C) Process Durumunu Güncelle - Değişmedi
@@ -1679,13 +1777,13 @@ def supplier_cash_payment(request):
     _pay_extra = {}
     acct_currency = getattr(ba, 'currency', 'TRY') or 'TRY'
     if acct_currency == 'FX' and currency != 'TRY':
-        # Merkez Döviz Kasası — sentinel rate + reference prefix
-        _FX_SENTINEL_RATES = {
-            'USD': Decimal('0.01'), 'EUR': Decimal('0.02'), 'GBP': Decimal('0.03'),
-            'CAD': Decimal('0.04'), 'QAR': Decimal('0.05'),
-        }
+        # Faz 13: SSOT — services.FX_SENTINEL_MAP. Bu blok eskiden
+        # USD=0.01, EUR=0.02, GBP=0.03, CAD=0.04, QAR=0.05 haritasını
+        # tutuyordu; üstte 1406 satırındaki harita CHF=0.04, CAD=0.05
+        # ile çakışıyordu (aynı dosyada iki farklı sentinel düzeni!).
+        # Tek doğruluk kaynağına bağlandı.
         _pay_extra['currency_amount'] = amount
-        _pay_extra['exchange_rate'] = _FX_SENTINEL_RATES.get(currency, Decimal('0.09'))
+        _pay_extra['exchange_rate'] = FX_SENTINEL_MAP.get(currency, Decimal('0.09'))
 
     Payment.objects.create(
         process_no=process_no,
@@ -1893,7 +1991,7 @@ def add_scrap_multi_to_wholesale_process(request):
                 'stock_gram': Decimal('0.0000'),
                 'stock_pieces': 0,
                 'weighted_avg_cost_hs': Decimal('0.0000'),
-                'weighted_avg_cost_tl': Decimal('0.00'),
+                'weighted_avg_cost_eur': Decimal('0.00'),
             }
         )
 

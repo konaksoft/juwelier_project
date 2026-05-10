@@ -1,0 +1,1590 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- ONARIM FAZI 12 — Havuz Detay Sayfası (Pool Detail & Ledger Page)           -->
+<!--                                                                            -->
+<!-- Modal yerine tam sayfa görünüm: 3 yıllık binlerce işlemli havuzlar için   -->
+<!-- ölçeklenir. URL bazlı (deep-link, bookmark, multi-tab), tarayıcı geri      -->
+<!-- tuşuyla ana listeye döner.                                                 -->
+<!--                                                                            -->
+<!-- Sayfa yapısı:                                                              -->
+<!--   1. Breadcrumb (Hurda > Altın/Gümüş > {pool_name})                       -->
+<!--   2. Hero (sticky): 4 metrik kart                                         -->
+<!--   3. Filtre çubuğu (quick + advanced)                                     -->
+<!--   4. İşlem Geçmişi tablosu (DataTables, server-side)                       -->
+<!--   5. Satır içi iptal akışı (child row accordion)                          -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+{% block header %}
+    <style>
+        .pool-page-wrap {
+            padding: 1rem 2rem 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Breadcrumb */
+        .pool-breadcrumb {
+            font-size: 0.85rem;
+            color: #7e8299;
+            margin-bottom: 0.75rem;
+        }
+        .pool-breadcrumb a {
+            color: #5e6278;
+            text-decoration: none;
+        }
+        .pool-breadcrumb a:hover {
+            color: #009ef7;
+            text-decoration: underline;
+        }
+        .pool-breadcrumb .sep {
+            margin: 0 0.5rem;
+            color: #b5b5c3;
+        }
+
+        /* Sticky Hero */
+        .pool-hero {
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            background: #fff;
+            border: 1px solid #e4e6ef;
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .pool-hero-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .pool-hero-title h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: #181c32;
+            font-weight: 700;
+        }
+        .pool-hero-title .pool-meta {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        .pool-metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 991px) {
+            .pool-metric-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 575px) {
+            .pool-metric-grid { grid-template-columns: 1fr; }
+        }
+
+        .pool-metric {
+            background: #f9f9f9;
+            border-radius: 0.5rem;
+            padding: 0.85rem 1rem;
+            border-left: 3px solid #009ef7;
+        }
+        .pool-metric.metric-wac { border-left-color: #f1c40f; }
+        .pool-metric.metric-value { border-left-color: #50cd89; }
+        .pool-metric.metric-count { border-left-color: #7239ea; }
+
+        .pool-metric .label {
+            font-size: 0.7rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .pool-metric .value {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #181c32;
+            line-height: 1;
+        }
+        .pool-metric .unit {
+            font-size: 0.8rem;
+            color: #a1a5b7;
+            font-weight: 500;
+            margin-left: 0.25rem;
+        }
+        .pool-metric .sub {
+            font-size: 0.7rem;
+            color: #a1a5b7;
+            margin-top: 0.25rem;
+        }
+
+        /* Filtre çubuğu */
+        .pool-filters {
+            background: #fff;
+            border: 1px solid #e4e6ef;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .pool-quick-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.85rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px dashed #e4e6ef;
+        }
+        .pool-quick-filters .qf-btn {
+            border: 1px solid #e4e6ef;
+            background: #fff;
+            color: #5e6278;
+            padding: 0.35rem 0.85rem;
+            border-radius: 1.25rem;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .pool-quick-filters .qf-btn:hover { background: #f5f5f5; }
+        .pool-quick-filters .qf-btn.active {
+            background: #009ef7;
+            border-color: #009ef7;
+            color: #fff;
+        }
+
+        .pool-advanced-filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr 1.6fr auto auto;
+            gap: 0.6rem;
+            align-items: end;
+        }
+        @media (max-width: 991px) {
+            .pool-advanced-filters {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .pool-advanced-filters label {
+            font-size: 0.7rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .pool-advanced-filters .form-control,
+        .pool-advanced-filters .form-select {
+            height: 2.5rem;
+            font-size: 0.85rem;
+        }
+
+        .filter-active-banner {
+            background: #fff8e1;
+            border: 1px solid #f1c40f;
+            border-radius: 0.5rem;
+            padding: 0.65rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.82rem;
+        }
+
+        /* Tablo */
+        .pool-ledger-card {
+            background: #fff;
+            border: 1px solid #e4e6ef;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+        }
+
+        #pool_ledger_table thead th {
+            font-size: 0.7rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        #pool_ledger_table tbody td {
+            vertical-align: middle;
+            font-size: 0.85rem;
+        }
+
+        .row-cancelled {
+            background-color: #fafafa !important;
+            color: #a1a5b7 !important;
+        }
+        .row-cancelled td { color: #a1a5b7 !important; }
+        .row-cancellation {
+            background-color: #fff8e1 !important;
+        }
+
+        .gram-positive { color: #50cd89; font-weight: 600; }
+        .gram-negative { color: #d6336c; font-weight: 600; }
+
+        .running-balance {
+            font-weight: 700;
+            color: #181c32;
+            font-family: 'SF Mono', Menlo, monospace;
+        }
+
+        .ref-mono {
+            font-family: 'SF Mono', Menlo, monospace;
+            color: #a1a5b7;
+            font-size: 0.75rem;
+        }
+
+        /* Satır içi iptal accordion */
+        .cancel-accordion {
+            background: #fff8e1;
+            border: 1px solid #f1c40f;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            margin: 0.5rem 0;
+        }
+        .cancel-accordion h6 {
+            font-size: 0.8rem;
+            color: #5e6278;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.75rem;
+        }
+        .cancel-summary-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: #181c32;
+            margin-bottom: 0.85rem;
+        }
+        .cancel-summary-row .item {
+            display: flex;
+            flex-direction: column;
+        }
+        .cancel-summary-row .item .lbl {
+            font-size: 0.7rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.2rem;
+        }
+        .cancel-summary-row .item .val {
+            font-weight: 600;
+        }
+        .cancel-warning-line {
+            background: #fff;
+            border-radius: 0.4rem;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.8rem;
+            color: #d6336c;
+            margin-bottom: 0.85rem;
+        }
+        .cancel-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .cancel-confirm-btn {
+            position: relative;
+            min-width: 180px;
+        }
+        .cancel-confirm-btn.locked {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        /* Toast */
+        .pool-toast-stack {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .pool-toast {
+            background: #50cd89;
+            color: #fff;
+            padding: 0.85rem 1.15rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 0.85rem;
+            min-width: 280px;
+            animation: poolToastIn .25s ease-out;
+        }
+        .pool-toast.error { background: #d6336c; }
+        @keyframes poolToastIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* Hero değer animasyonu */
+        .pool-metric .value.flash {
+            animation: metricFlash .8s ease-out;
+        }
+        @keyframes metricFlash {
+            0%   { color: #50cd89; }
+            100% { color: #181c32; }
+        }
+
+        /* ═══ FAZ 22 — Active Stock Origin View Stilleri ═══ */
+        .pool-empty-state {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px dashed #b5b5c3;
+            border-radius: 0.75rem;
+            padding: 1.85rem 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #5e6278;
+        }
+        .pool-empty-state .empty-icon {
+            font-size: 2.4rem;
+            color: #a1a5b7;
+            margin-bottom: 0.6rem;
+        }
+        .pool-empty-state h6 {
+            font-size: 1.05rem;
+            color: #181c32;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        .pool-empty-state p {
+            font-size: 0.86rem;
+            margin-bottom: 0.4rem;
+        }
+        .pool-empty-state small {
+            color: #7e8299;
+            font-size: 0.78rem;
+        }
+
+        .row-consumed {
+            background-color: #fcfcfc !important;
+            opacity: 0.72;
+        }
+        .row-consumed td { color: #7e8299 !important; }
+        .row-consumed .gram-positive,
+        .row-consumed .gram-negative,
+        .row-consumed .running-balance {
+            color: #a1a5b7 !important;
+            text-decoration: line-through;
+        }
+
+        .ref-clickable {
+            cursor: pointer;
+            color: #009ef7 !important;
+            text-decoration: none;
+            transition: color .15s, background-color .15s;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .ref-clickable:hover {
+            background-color: #e1f0ff;
+            color: #0073cc !important;
+            text-decoration: underline;
+        }
+
+        .badge-remaining {
+            font-size: 0.66rem;
+            font-weight: 600;
+            padding: 0.2rem 0.45rem;
+            margin-left: 0.35rem;
+            border-radius: 0.25rem;
+            background: #d1f7e3;
+            color: #0e8c4a;
+        }
+        .badge-consumed {
+            font-size: 0.66rem;
+            font-weight: 600;
+            padding: 0.2rem 0.45rem;
+            background: #f5f5f5;
+            color: #7e8299;
+            border-radius: 0.25rem;
+        }
+        .badge-partial {
+            font-size: 0.66rem;
+            font-weight: 600;
+            padding: 0.2rem 0.45rem;
+            background: #fff3cd;
+            color: #b08400;
+            border-radius: 0.25rem;
+        }
+
+        /* Process Detail Modal */
+        .pdm-modal .modal-header {
+            background: linear-gradient(135deg, #009ef7 0%, #0073cc 100%);
+            color: #fff;
+            border-bottom: 0;
+        }
+        .pdm-modal .modal-header .modal-title { color: #fff; font-weight: 700; }
+        .pdm-modal .modal-header .btn-close { filter: invert(1) brightness(2); }
+        .pdm-section-title {
+            font-size: 0.72rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #e4e6ef;
+        }
+        .pdm-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+        @media (max-width: 575px) {
+            .pdm-info-grid { grid-template-columns: 1fr; }
+        }
+        .pdm-info-item {
+            background: #f9f9f9;
+            border-radius: 0.4rem;
+            padding: 0.55rem 0.75rem;
+            border-left: 3px solid #009ef7;
+        }
+        .pdm-info-item .lbl {
+            font-size: 0.68rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+        .pdm-info-item .val {
+            font-size: 0.92rem;
+            color: #181c32;
+            font-weight: 600;
+            word-break: break-word;
+        }
+        .pdm-ledger-table {
+            width: 100%;
+            font-size: 0.82rem;
+        }
+        .pdm-ledger-table thead th {
+            background: #f5f8fa;
+            font-size: 0.7rem;
+            color: #7e8299;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 0.5rem 0.65rem;
+            border-bottom: 2px solid #e4e6ef;
+        }
+        .pdm-ledger-table tbody td {
+            padding: 0.5rem 0.65rem;
+            border-bottom: 1px solid #f0f1f5;
+            vertical-align: middle;
+        }
+        .pdm-ledger-row-reversal {
+            background-color: #fff8e1;
+        }
+        .pdm-ledger-row-reversal td {
+            color: #b08400 !important;
+        }
+        .pdm-empty {
+            padding: 2rem;
+            text-align: center;
+            color: #7e8299;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+<div class="pool-page-wrap">
+
+    <!-- ═══ Breadcrumb ═══ -->
+    <div class="pool-breadcrumb">
+        <a href="{% url 'scraps:index' %}">Hurda</a>
+        <span class="sep">›</span>
+        <a href="{{ back_url }}">{{ back_label }}</a>
+        <span class="sep">›</span>
+        <span class="text-gray-700">{{ pool_name }} Havuzu</span>
+    </div>
+
+    <!-- ═══ Hero Header (Sticky) ═══ -->
+    <div class="pool-hero">
+        <div class="pool-hero-title">
+            <h1>
+                {{ pool_name }}
+                <span class="text-muted fw-normal" style="font-size:1rem;margin-left:0.5rem;">
+                    Havuzu
+                </span>
+            </h1>
+            <div class="pool-meta">
+                {% if is_active %}
+                    <span class="badge badge-light-success">Aktif</span>
+                {% else %}
+                    <span class="badge badge-light-danger">Pasif</span>
+                {% endif %}
+                {% if view_material_type == 'SILVER' %}
+                    <span class="badge badge-light-secondary">
+                        <i class="fa-solid fa-coins me-1"></i>GÜMÜŞ
+                    </span>
+                {% else %}
+                    <span class="badge badge-light-warning">
+                        <i class="fa-solid fa-coins me-1"></i>ALTIN
+                    </span>
+                {% endif %}
+                <span class="badge badge-light">{{ pool_milyem }} milyem</span>
+
+                <!-- ─── Toplu İptal Butonu (FAZ 13) ─── -->
+                {% if active_purchase_count > 0 %}
+                <button type="button" id="btn_bulk_cancel"
+                        class="btn btn-sm btn-light-danger ms-2"
+                        title="Bu havuzdaki tüm aktif {{ active_purchase_count }} alış kaydını tek seferde iptal eder. Audit trail korunur (REVERSAL satırları yazılır).">
+                    <i class="fa-solid fa-broom me-1"></i>
+                    Tüm Aktif İşlemleri İptal Et
+                    <span class="badge badge-circle badge-danger ms-1" style="font-size:0.7rem;">{{ active_purchase_count }}</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="pool-metric-grid">
+            <div class="pool-metric">
+                <div class="label">
+                    <i class="fa-solid fa-weight-scale"></i>
+                    Güncel Gram
+                </div>
+                <div class="value" id="metric_gram">
+                    {{ current_gram }}<span class="unit">gr</span>
+                </div>
+                <div class="sub">Anlık envanter</div>
+            </div>
+            <div class="pool-metric metric-wac">
+                <div class="label">
+                    <i class="fa-solid fa-tag"></i>
+                    WAC (Hs/gr)
+                    <span title="Ağırlıklı Ortalama Maliyet — tüm aktif girişlerin gram-ağırlıklı ortalaması. İptal edilen işlemler bu hesabı otomatik günceller."
+                          style="cursor:help;color:#a1a5b7;">
+                        <i class="fa-solid fa-circle-info" style="font-size:0.7rem;"></i>
+                    </span>
+                </div>
+                <div class="value" id="metric_wac">
+                    {{ wac_hs }}
+                </div>
+                <div class="sub">Birim Has cinsinden</div>
+            </div>
+            <div class="pool-metric metric-value">
+                <div class="label">
+                    <i class="fa-solid fa-coins"></i>
+                    Toplam Değer
+                </div>
+                <div class="value" id="metric_total_value">
+                    {{ total_value_hs }}<span class="unit">Hs</span>
+                </div>
+                <div class="sub">Gram × WAC</div>
+            </div>
+            <div class="pool-metric metric-count">
+                <div class="label">
+                    <i class="fa-solid fa-list"></i>
+                    İşlem Sayısı
+                </div>
+                <div class="value">
+                    {{ ledger_count }}
+                </div>
+                <div class="sub">Son: {{ last_activity_date }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ FAZ 22 — Empty State Banner (Havuz Boş) ═══ -->
+    {% if pool_is_empty %}
+    <div class="pool-empty-state" id="pool_empty_state">
+        <div class="empty-icon">
+            <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h6>Bu havuz şu an boş</h6>
+        <p>Havuzda aktif stok bulunmuyor. Son işlem tarihi: <b>{{ last_activity_date }}</b></p>
+        <small>
+            <i class="fa-solid fa-shield-halved me-1 text-success"></i>
+            Audit trail dokunulmaz: tüm geçmiş kayıtlar saklanmaktadır.
+            Geçmişi görmek için yukarıdaki <b>"Tüketilmişi Göster"</b> butonunu açın
+            veya <b>"Tüm Geçmişi Göster"</b> ile tarih filtresini genişletin.
+        </small>
+    </div>
+    {% endif %}
+
+    <!-- ═══ Filtre Çubuğu ═══ -->
+    <div class="pool-filters">
+        <div class="pool-quick-filters">
+            <span style="font-size:0.72rem;color:#7e8299;text-transform:uppercase;letter-spacing:0.04em;
+                         font-weight:600;align-self:center;margin-right:0.5rem;">
+                Hızlı Filtreler:
+            </span>
+            <button type="button" class="qf-btn" data-qf="all">Tümü</button>
+            <button type="button" class="qf-btn" data-qf="in">
+                <i class="fa-solid fa-arrow-down me-1"></i>Sadece Girişler
+            </button>
+            <button type="button" class="qf-btn" data-qf="out">
+                <i class="fa-solid fa-arrow-up me-1"></i>Sadece Çıkışlar
+            </button>
+            <!-- UX FAZ A2 — Varsayılan: iptaller gizli. Buton etkin olduğunda iptaller görünür. -->
+            <button type="button" class="qf-btn" data-qf="hide_cancel"
+                    title="Varsayılan olarak iptal edilen işlemler gizlidir; tümünü görmek için tıklayın.">
+                <i class="fa-solid fa-eye me-1"></i>İptal Edilenleri Göster
+            </button>
+            <!-- FAZ 22 — Active Stock Origin View — Tüketilmiş kayıt toggle'ı -->
+            <button type="button" class="qf-btn" data-qf="show_consumed"
+                    title="Varsayılan olarak içeride hiç gramı kalmamış (tüketilmiş) işlemler gizlidir. Buton etkin olduğunda tüm geçmiş satırları görünür.">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i>Tüketilmişi Göster
+            </button>
+            <button type="button" class="qf-btn" data-qf="show_all_history">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i>Tüm Geçmişi Göster
+            </button>
+            <span style="flex:1"></span>
+            <button type="button" class="qf-btn" data-qf="reset">
+                <i class="fa-solid fa-rotate-left me-1"></i>Sıfırla
+            </button>
+        </div>
+
+        <div class="pool-advanced-filters">
+            <div>
+                <label for="f_date_from">Başlangıç</label>
+                <input type="date" id="f_date_from" class="form-control"
+                       value="{{ default_date_from }}"
+                       data-default="{{ default_date_from }}"/>
+            </div>
+            <div>
+                <label for="f_date_to">Bitiş</label>
+                <input type="date" id="f_date_to" class="form-control"
+                       value="{{ default_date_to }}"
+                       data-default="{{ default_date_to }}"/>
+            </div>
+            <div>
+                <label for="f_supplier">Tedarikçi</label>
+                <select id="f_supplier" class="form-select">
+                    <option value="">Tümü</option>
+                    {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.company_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="f_search">Ara</label>
+                <input type="text" id="f_search" class="form-control"
+                       placeholder="Tedarikçi adı, referans no veya açıklama..."/>
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button type="button" id="btn_apply_filters" class="btn btn-primary">
+                    <i class="fa-solid fa-filter me-1"></i>Filtrele
+                </button>
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button type="button" id="btn_clear_filters" class="btn btn-light">
+                    Temizle
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-active-banner" id="filter_banner" style="display:none;">
+            <div>
+                <i class="fa-solid fa-circle-info me-1 text-warning"></i>
+                <span id="filter_banner_text"></span>
+            </div>
+            <button type="button" class="btn btn-sm btn-light" id="btn_remove_filter">
+                Filtreyi Kaldır
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══ İşlem Geçmişi Tablosu ═══ -->
+    <div class="pool-ledger-card">
+        <h5 class="mb-3" style="font-size:0.95rem;color:#181c32;">
+            <i class="fa-solid fa-clock-rotate-left me-1 text-muted"></i>
+            İşlem Geçmişi (Append-Only StockLedger)
+        </h5>
+        <div class="table-responsive">
+            <table id="pool_ledger_table" class="table align-middle table-row-dashed gy-3">
+                <thead>
+                <tr>
+                    <th style="width:30px;"></th>
+                    <th title="İşlemin gerçekleşme tarihi">Tarih</th>
+                    <th title="StockLedger reason kodu">İşlem Tipi</th>
+                    <th title="Tedarikçi, müşteri veya kaynak etiketi">Tedarikçi / Kaynak</th>
+                    <th class="text-end" title="Bu işlemdeki gram (giriş +, çıkış -)">Gram (±)</th>
+                    <th class="text-end" title="O işlemin birim Has maliyeti">Birim (Hs/gr)</th>
+                    <th class="text-end" title="O işlemin toplam Has değeri">Tutar (Hs)</th>
+                    <th class="text-end" title="O işlem sonrası havuzun gram bakiyesi">
+                        Bakiye (gr)
+                        <i class="fa-solid fa-circle-info" style="font-size:0.7rem;color:#a1a5b7;"></i>
+                    </th>
+                    <th title="Sistem referans numarası (son 6 hane)">Ref. No</th>
+                    <th>Durum</th>
+                    <th class="text-center">İşlem</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Toast stack -->
+<div class="pool-toast-stack" id="pool_toast_stack"></div>
+
+<!-- ═══ FAZ 22 — Process Detail Modal ═══ -->
+<!-- Tıklanan işlem numarasının tüm bağlamını gösteren read-only modal.   -->
+<!-- AJAX ile pool_process_detail endpoint'inden veri çekilir; veritabanına -->
+<!-- hiçbir yazma işlemi yapmaz. Append-Only mimariyle uyumludur.          -->
+<div class="modal fade pdm-modal" id="processDetailModal" tabindex="-1"
+     aria-labelledby="processDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="processDetailModalLabel">
+                    <i class="fa-solid fa-file-invoice me-2"></i>
+                    İşlem Detayı
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body" id="processDetailModalBody">
+                <div class="pdm-empty">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size:1.6rem;"></i>
+                    <div class="mt-2">İşlem detayı yükleniyor...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i>Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+<script>
+    // ═════════════════════════════════════════════════════════════════════
+    // ONARIM FAZI 12 — Pool Detail Page (Modal'dan Sayfaya Geçiş)
+    // ═════════════════════════════════════════════════════════════════════
+
+    const SCRAP_ID = "{{ scrap_id }}";
+    const POOL_NAME = "{{ pool_name|escapejs }}";
+    const LEDGER_URL = "{% url 'scraps:pool_ledger' scrap_id=scrap_id %}";
+    const BULK_CANCEL_URL = "{% url 'scraps:pool_bulk_cancel' scrap_id=scrap_id %}";
+    const DELETE_URL = "/scraps/delete";
+    // FAZ 22 — Process detail endpoint URL şablonu (process_no runtime'da yerleştirilir)
+    const PROCESS_DETAIL_URL_TPL = "/scraps/pool/{{ scrap_id }}/process/__PROCESS_NO__/";
+    const CSRF_TOKEN = $("input[name='csrfmiddlewaretoken']").val();
+    const DEFAULT_DATE_FROM = "{{ default_date_from }}";
+    const DEFAULT_DATE_TO = "{{ default_date_to }}";
+    const ACTIVE_PURCHASE_COUNT = parseInt("{{ active_purchase_count }}", 10) || 0;
+
+    // Yardımcılar
+    function fmt3(v) {
+        return Number(v || 0).toLocaleString('tr-TR', {
+            minimumFractionDigits: 3, maximumFractionDigits: 3
+        });
+    }
+    function escapeHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showToast(text, type) {
+        const t = document.createElement('div');
+        t.className = 'pool-toast' + (type === 'error' ? ' error' : '');
+        t.innerHTML = '<i class="fa-solid ' +
+            (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check') +
+            ' me-2"></i>' + escapeHtml(text);
+        document.getElementById('pool_toast_stack').appendChild(t);
+        setTimeout(() => {
+            t.style.transition = 'opacity .25s';
+            t.style.opacity = '0';
+            setTimeout(() => t.remove(), 250);
+        }, 4000);
+    }
+
+    // Hero metriklerini güncelle (iptal sonrası)
+    function refreshHeroMetrics() {
+        // Sayfa reload yerine sadece tablo + hero sayaçları yenilenebilir.
+        // Kısa yol: location.reload — ama state korunmaz. Bunun yerine
+        // iptal sonrası ledger reload + hero için ayrı bir endpoint çağırılabilir.
+        // Şimdilik sade çözüm: ledger tablosunu yeniden yükle, hero'yu
+        // sayfa scroll edilince güncellemek için reload bayrağı bırak.
+        if (window._poolDt) window._poolDt.ajax.reload(null, false);
+        // Hero için lightweight refresh: kullanıcıya görsel ipucu
+        document.querySelectorAll('.pool-metric .value').forEach(el => {
+            el.classList.remove('flash');
+            void el.offsetWidth;  // reflow
+            el.classList.add('flash');
+        });
+        // Tam sayım için 800ms sonra silent reload
+        setTimeout(() => { window.location.reload(); }, 1500);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // DataTable
+    // ═════════════════════════════════════════════════════════════════════
+    // Sayfa açıldığında varsayılan filtre: SON 30 GÜN
+    // Eski (iptal edilmiş + REVERSAL) verileri otomatik gizler. Kullanıcı
+    // "Tüm Geçmişi Göster" butonuyla bu filtreyi tek tıkla kaldırır.
+    // UX FAZ A2 — Varsayılan: iptaller gizli (sadece aktif işlemler görünür).
+    // Kullanıcı "İptal Edilenleri Göster" butonuna basınca hide_cancelled=false olur.
+    // FAZ 22 — show_consumed: false varsayılanı → "Aktif Stok Kaynağı Görünümü"
+    // FIFO ile içeride hiç gramı kalmamış (tüketilmiş) IN satırları varsayılan
+    // olarak gizlidir. Kullanıcı "Tüketilmişi Göster" toggle'ını açınca true olur.
+    let currentFilters = {
+        date_from: DEFAULT_DATE_FROM,
+        date_to: DEFAULT_DATE_TO,
+        direction: '', reason: '',
+        supplier_id: '', search: '',
+        hide_cancelled: true,
+        show_consumed: false,
+    };
+
+    function buildFilterBannerText() {
+        const parts = [];
+        if (currentFilters.date_from || currentFilters.date_to) {
+            parts.push('Tarih: ' + (currentFilters.date_from || '...') + ' → ' + (currentFilters.date_to || '...'));
+        }
+        if (currentFilters.supplier_id) {
+            const txt = $('#f_supplier option:selected').text();
+            parts.push('Tedarikçi: ' + txt);
+        }
+        if (currentFilters.direction === 'IN') parts.push('Sadece Girişler');
+        if (currentFilters.direction === 'OUT') parts.push('Sadece Çıkışlar');
+        if (!currentFilters.hide_cancelled) parts.push('İptal Edilenler Görünür');
+        if (currentFilters.search) parts.push('Arama: "' + currentFilters.search + '"');
+        return parts.join(' · ');
+    }
+
+    function updateFilterBanner(visibleCount, totalCount) {
+        const txt = buildFilterBannerText();
+        const banner = document.getElementById('filter_banner');
+        if (!txt) {
+            banner.style.display = 'none';
+            return;
+        }
+        document.getElementById('filter_banner_text').innerHTML =
+            '<b>Filtre aktif:</b> ' + escapeHtml(txt) +
+            ' &nbsp;·&nbsp; ' + visibleCount + ' / ' + totalCount + ' işlem';
+        banner.style.display = 'flex';
+    }
+
+    function initLedgerTable() {
+        if (window._poolDt) {
+            try { window._poolDt.destroy(); } catch (e) {}
+        }
+        window._poolDt = $('#pool_ledger_table').DataTable({
+            destroy: true,
+            processing: true,
+            serverSide: true,
+            searching: false,
+            ordering: false,
+            pageLength: 50,
+            lengthMenu: [25, 50, 100],
+            language: {
+                url: "/static/management/plugins/custom/datatables/TR.json"
+            },
+            ajax: {
+                url: LEDGER_URL,
+                type: 'GET',
+                data: function (d) {
+                    Object.assign(d, {
+                        date_from: currentFilters.date_from,
+                        date_to: currentFilters.date_to,
+                        direction: currentFilters.direction,
+                        reason: currentFilters.reason,
+                        supplier_id: currentFilters.supplier_id,
+                        search: currentFilters.search,
+                        hide_cancelled: currentFilters.hide_cancelled ? '1' : '0',
+                        // FAZ 22 — Active Stock Origin View
+                        show_consumed: currentFilters.show_consumed ? '1' : '0',
+                    });
+                },
+                dataSrc: function (json) {
+                    updateFilterBanner(json.recordsFiltered || 0, json.recordsTotal || 0);
+                    return json.data || [];
+                }
+            },
+            columns: [
+                {
+                    data: null, orderable: false, className: 'text-center',
+                    render: function (_d, _t, row) {
+                        if (row.can_cancel) {
+                            return '<button type="button" class="btn btn-sm btn-icon btn-light row-expand" ' +
+                                   'title="İptal akışını başlat">' +
+                                   '<i class="fa-solid fa-chevron-down"></i></button>';
+                        }
+                        return '';
+                    }
+                },
+                {
+                    data: 'date_short',
+                    render: function (d) {
+                        return '<span style="white-space:nowrap;">' + escapeHtml(d) + '</span>';
+                    }
+                },
+                {
+                    data: 'type_label',
+                    render: function (d, _t, row) {
+                        const cls = 'badge badge-light-' + (row.type_color || 'secondary');
+                        const arrow = row.direction === 'IN'
+                            ? '<i class="fa-solid fa-arrow-down me-1"></i>'
+                            : '<i class="fa-solid fa-arrow-up me-1"></i>';
+                        if (row.is_cancellation) {
+                            return '<span class="badge badge-light-danger" style="text-decoration:line-through;">' +
+                                   '<i class="fa-solid fa-rotate-left me-1"></i>İPTAL</span>';
+                        }
+                        return '<span class="' + cls + '">' + arrow + escapeHtml(d) + '</span>';
+                    }
+                },
+                {
+                    data: 'source_name',
+                    render: function (d, _t, row) {
+                        let icon = 'fa-question';
+                        if (row.source_kind === 'supplier') icon = 'fa-building';
+                        else if (row.source_kind === 'customer') icon = 'fa-user';
+                        else if (row.source_kind === 'none') icon = 'fa-box-open';
+                        else if (row.source_kind === 'initial') icon = 'fa-flag';
+                        else if (row.source_kind === 'adjustment') icon = 'fa-pen';
+                        else if (row.source_kind === 'conversion') icon = 'fa-shuffle';
+                        // FAZ 19 / Bulgu B — İşçilik milyem badge
+                        let iscilikBadge = '';
+                        if (row.iscilik_milyem) {
+                            iscilikBadge = ' <span class="badge badge-light-warning ms-1" ' +
+                                'title="İşçilik milyemi (raporlama amaçlı; WAC\'a dahil değildir)">' +
+                                '<i class="fa-solid fa-screwdriver-wrench me-1"></i>' +
+                                'İşç: ' + escapeHtml(row.iscilik_milyem) + '</span>';
+                        }
+                        return '<i class="fa-solid ' + icon + ' me-1 text-muted"></i>' +
+                               escapeHtml(d) + iscilikBadge;
+                    }
+                },
+                {
+                    data: 'gram_signed', className: 'text-end',
+                    render: function (d, _t, row) {
+                        const cls = row.direction === 'IN' ? 'gram-positive' : 'gram-negative';
+                        const sign = row.direction === 'IN' ? '+' : '';
+                        return '<span class="' + cls + '">' + sign + escapeHtml(d) + ' gr</span>';
+                    }
+                },
+                {
+                    data: 'unit_hs', className: 'text-end',
+                    render: function (d) {
+                        return d === '-' ? '<span class="text-muted">-</span>' : escapeHtml(d);
+                    }
+                },
+                {
+                    data: 'total_hs', className: 'text-end',
+                    render: function (d) {
+                        return d === '-' ? '<span class="text-muted">-</span>' :
+                            '<b>' + escapeHtml(d) + '</b>';
+                    }
+                },
+                {
+                    data: 'running_balance', className: 'text-end running-balance'
+                },
+                {
+                    data: 'ref_no_short',
+                    render: function (d, _t, row) {
+                        if (d === '-') return '<span class="text-muted">-</span>';
+                        // FAZ 22 — Process numarası tıklanabilir; modal aç.
+                        // Process eşleşmesi yoksa (legacy/tedarikçisiz) link verme.
+                        if (row.process_no) {
+                            return '<a href="javascript:void(0)" class="ref-mono ref-clickable" ' +
+                                   'data-process-no="' + escapeHtml(row.process_no) + '" ' +
+                                   'title="Bu işlemin detayını görmek için tıklayın · ' + escapeHtml(row.ref_no) + '">' +
+                                   '<i class="fa-solid fa-up-right-from-square me-1" style="font-size:0.65rem;"></i>' +
+                                   '#' + escapeHtml(d) + '</a>';
+                        }
+                        return '<span class="ref-mono" title="' + escapeHtml(row.ref_no) + '">#' + escapeHtml(d) + '</span>';
+                    }
+                },
+                {
+                    data: null,
+                    render: function (_d, _t, row) {
+                        if (row.is_cancellation) {
+                            return '<span class="badge badge-light-warning">REVERSAL</span>';
+                        }
+                        if (row.is_cancelled) {
+                            return '<span class="badge badge-light-danger">İptal Edildi</span>';
+                        }
+                        // FAZ 22 — FIFO durumu
+                        if (row.is_consumed) {
+                            return '<span class="badge-consumed" title="Bu girişin gramı havuzdan tamamen tüketildi (FIFO).">' +
+                                   '<i class="fa-solid fa-circle-minus me-1"></i>Tüketildi</span>';
+                        }
+                        if (row.is_partial && row.remaining_gram) {
+                            return '<span class="badge-partial" title="Bu girişin bir kısmı havuzda hâlâ duruyor.">' +
+                                   '<i class="fa-solid fa-hourglass-half me-1"></i>Kalan: ' + escapeHtml(row.remaining_gram) + ' gr</span>';
+                        }
+                        return '<span class="badge badge-light-success">Aktif</span>';
+                    }
+                },
+                {
+                    data: null, orderable: false, className: 'text-center',
+                    render: function (_d, _t, row) {
+                        if (!row.can_cancel) return '<span class="text-muted">-</span>';
+                        return '<button type="button" class="btn btn-sm btn-light-warning row-expand" ' +
+                               'title="Bu işlemi iptal et">' +
+                               '<i class="fa-solid fa-trash-can"></i> İptal</button>';
+                    }
+                },
+            ],
+            createdRow: function (rowEl, data) {
+                if (data.is_cancelled) $(rowEl).addClass('row-cancelled');
+                if (data.is_cancellation) $(rowEl).addClass('row-cancellation');
+                // FAZ 22 — Tüketilmiş satırlar grileştir
+                if (data.is_consumed) $(rowEl).addClass('row-consumed');
+                $(rowEl).attr('data-row-id', data.id);
+                $(rowEl).data('row-data', data);
+            },
+        });
+
+        // FAZ 22 — Process numarası tıklamasında modal aç
+        $('#pool_ledger_table tbody').on('click', '.ref-clickable', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const procNo = $(this).attr('data-process-no');
+            if (!procNo) return;
+            openProcessDetailModal(procNo);
+        });
+
+        // Satır içi iptal accordion
+        $('#pool_ledger_table tbody').on('click', '.row-expand', function () {
+            const tr = $(this).closest('tr');
+            const row = window._poolDt.row(tr);
+            const data = tr.data('row-data');
+            if (!data || !data.can_cancel) return;
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+            } else {
+                row.child(buildCancelAccordion(data)).show();
+                tr.addClass('shown');
+                attachCancelAccordionHandlers(row, data);
+            }
+        });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // Satır içi iptal accordion
+    // ═════════════════════════════════════════════════════════════════════
+    function buildCancelAccordion(data) {
+        const newGram = (Number((window._currentTotalGram || 0)) - Number(data.gram_abs.replace(/\./g, '').replace(',', '.') || 0));
+        const newGramFormatted = fmt3(Math.max(0, newGram));
+
+        return '' +
+            '<div class="cancel-accordion">' +
+            '  <h6><i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>İPTAL AKIŞI BAŞLADI</h6>' +
+            '  <div class="cancel-summary-row">' +
+            '    <div class="item">' +
+            '      <span class="lbl">İptal Edilecek</span>' +
+            '      <span class="val">' + escapeHtml(data.source_name) + '</span>' +
+            '    </div>' +
+            '    <div class="item">' +
+            '      <span class="lbl">Gramaj</span>' +
+            '      <span class="val gram-positive">' + escapeHtml(data.gram_signed) + ' gr</span>' +
+            '    </div>' +
+            '    <div class="item">' +
+            '      <span class="lbl">Birim Maliyet</span>' +
+            '      <span class="val">' + escapeHtml(data.unit_hs) + ' Hs/gr</span>' +
+            '    </div>' +
+            '    <div class="item">' +
+            '      <span class="lbl">Tutar</span>' +
+            '      <span class="val">' + escapeHtml(data.total_hs) + ' Hs</span>' +
+            '    </div>' +
+            '    <div class="item">' +
+            '      <span class="lbl">Tarih</span>' +
+            '      <span class="val">' + escapeHtml(data.date_short) + '</span>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="cancel-warning-line">' +
+            '    <i class="fa-solid fa-circle-info me-1"></i>' +
+            '    <b>Bu işlem geri alınamaz.</b> ' +
+            (data.source_kind === 'supplier'
+                ? 'Tedarikçi cari bakiyesi sıfırlanır.'
+                : 'Sadece havuzdaki gram bakiyesi düşer.') +
+            '  </div>' +
+            '  <div class="cancel-actions">' +
+            '    <button type="button" class="btn btn-light cancel-dismiss-btn">' +
+            '      <i class="fa-solid fa-xmark me-1"></i>İptalden Vazgeç' +
+            '    </button>' +
+            '    <button type="button" class="btn btn-warning cancel-confirm-btn locked" disabled>' +
+            '      <span class="confirm-text">' +
+            '        <i class="fa-solid fa-clock me-1"></i>3 saniye bekleyin...' +
+            '      </span>' +
+            '    </button>' +
+            '  </div>' +
+            '</div>';
+    }
+
+    function attachCancelAccordionHandlers(row, data) {
+        const $accordion = $(row.child());
+        const $confirm = $accordion.find('.cancel-confirm-btn');
+        const $dismiss = $accordion.find('.cancel-dismiss-btn');
+        const $confirmText = $confirm.find('.confirm-text');
+
+        // 3 saniyelik kilit (tepkisel iptal önleme)
+        let secondsLeft = 3;
+        const tick = setInterval(() => {
+            secondsLeft -= 1;
+            if (secondsLeft <= 0) {
+                clearInterval(tick);
+                $confirm.prop('disabled', false).removeClass('locked');
+                $confirmText.html(
+                    '<i class="fa-solid fa-trash-can me-1"></i>Evet, Bu İşlemi İptal Et'
+                );
+            } else {
+                $confirmText.html(
+                    '<i class="fa-solid fa-clock me-1"></i>' + secondsLeft + ' saniye bekleyin...'
+                );
+            }
+        }, 1000);
+
+        $dismiss.on('click', function () {
+            clearInterval(tick);
+            row.child.hide();
+            $(row.node()).removeClass('shown');
+        });
+
+        $confirm.on('click', function () {
+            if ($(this).hasClass('locked')) return;
+            $(this).prop('disabled', true);
+            $confirmText.html(
+                '<i class="fa-solid fa-spinner fa-spin me-1"></i>İptal ediliyor...'
+            );
+            performCancellation(data, row);
+        });
+    }
+
+    function performCancellation(data, row) {
+        // FAZ 13.1 — Tedarikçisiz/Legacy iptal için ledger_id'yi de gönder.
+        // Backend önce process_no ile Process eşleşmesini dener; bulamazsa
+        // ledger_id'den ref_type+ref_id türetip cancel_stock_entry çağırır.
+        $.post(DELETE_URL, {
+            'ids[]': [SCRAP_ID],
+            'selected_process_no': data.process_no || '',
+            'selected_ledger_id': data.ledger_id || data.id || '',
+            'csrfmiddlewaretoken': CSRF_TOKEN,
+        }, function (resp) {
+            if (resp.result) {
+                showToast('İşlem iptal edildi. Havuz bakiyesi güncellendi.', 'success');
+                row.child.hide();
+                refreshHeroMetrics();
+            } else if (resp.error === 'MULTI_SOURCE_POOL') {
+                showToast('Havuz Kilitli: ' + (resp.error_msg || ''), 'error');
+            } else {
+                showToast('Hata: ' + (resp.error_msg || 'Beklenmeyen hata'), 'error');
+            }
+        }).fail(function () {
+            showToast('Bağlantı hatası. Lütfen tekrar deneyin.', 'error');
+        });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // Toplu İptal Akışı (FAZ 13)
+    // ═════════════════════════════════════════════════════════════════════
+    // 2 aşamalı onay:
+    //   Adım 1: Yıkıcı eylem uyarısı + havuz özeti + onay butonu
+    //   Adım 2: Kullanıcı "İPTAL ET" metnini yazmadan onaylama açılmaz
+    //   Sonuç:  Sayfa reload + toast bildirim
+    // ─────────────────────────────────────────────────────────────────────
+    function startBulkCancelFlow() {
+        if (ACTIVE_PURCHASE_COUNT <= 0) {
+            showToast('Bu havuzda iptal edilebilecek aktif işlem yok.', 'error');
+            return;
+        }
+
+        const currentGramText = ($('#metric_gram').text() || '').trim();
+        const wacText = ($('#metric_wac').text() || '').trim();
+
+        const summaryHtml =
+            '<div style="text-align:left;">' +
+            '<div style="background:#fff3cd;border:1px solid #f1c40f;border-radius:0.5rem;padding:1rem;margin-bottom:1rem;">' +
+            '<div style="font-size:0.75rem;color:#7e8299;margin-bottom:0.4rem;letter-spacing:0.04em;">' +
+            '<i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>YIKICI EYLEM' +
+            '</div>' +
+            '<div class="fw-bold" style="font-size:1rem;color:#181c32;margin-bottom:0.5rem;">' +
+            escapeHtml(POOL_NAME) + ' Havuzu — Toplu İptal' +
+            '</div>' +
+            '<div style="font-size:0.85rem;color:#5e6278;">' +
+            '<b>' + ACTIVE_PURCHASE_COUNT + '</b> aktif alış kaydı iptal edilecek. ' +
+            'Havuz gramı sıfırlanacak, tedarikçi carileri pasifleştirilecek.' +
+            '</div>' +
+            '</div>' +
+            '<div style="background:#f8f9fa;border-radius:0.5rem;padding:0.85rem;font-size:0.82rem;color:#5e6278;margin-bottom:1rem;">' +
+            '<div style="margin-bottom:0.35rem;"><i class="fa-solid fa-shield-halved me-1 text-success"></i>' +
+            '<b>Audit trail KORUNUR.</b> Hiçbir kayıt silinmez — her birine REVERSAL satırı yazılır.</div>' +
+            '<div><i class="fa-solid fa-eye-slash me-1 text-info"></i>' +
+            'İptal edilen kayıtlar varsayılan tarih filtresiyle (son 30 gün) ekrandan otomatik gizlenir; ' +
+            '"Tüm Geçmişi Göster" ile yeniden görüntülenir.</div>' +
+            '</div>' +
+            '<div style="font-size:0.82rem;color:#181c32;">' +
+            '<div class="mb-2">Devam etmek için aşağıya <b style="color:#d6336c;">İPTAL ET</b> yazın:</div>' +
+            '<input type="text" id="bulk_cancel_confirm_input" class="form-control" ' +
+            'placeholder="İPTAL ET" autocomplete="off" ' +
+            'style="text-transform:uppercase;letter-spacing:0.08em;text-align:center;font-weight:600;"/>' +
+            '</div>' +
+            '<div style="margin-top:0.85rem;font-size:0.72rem;color:#a1a5b7;">' +
+            'Mevcut: ' + escapeHtml(currentGramText) + ' · WAC: ' + escapeHtml(wacText) + ' Hs/gr' +
+            '</div>' +
+            '</div>';
+
+        Swal.fire({
+            title: 'Toplu İptal Onayı',
+            html: summaryHtml,
+            icon: 'warning',
+            width: 620,
+            showCancelButton: true,
+            cancelButtonText: 'Vazgeç',
+            confirmButtonText: 'Tüm İşlemleri İptal Et',
+            confirmButtonColor: '#d6336c',
+            focusCancel: true,
+            reverseButtons: true,
+            preConfirm: function () {
+                const val = (document.getElementById('bulk_cancel_confirm_input').value || '')
+                    .trim().toUpperCase();
+                if (val !== 'İPTAL ET' && val !== 'IPTAL ET') {
+                    Swal.showValidationMessage(
+                        'Onaylamak için "İPTAL ET" yazmanız gerekiyor.'
+                    );
+                    return false;
+                }
+                return true;
+            }
+        }).then(function (res) {
+            if (res.isConfirmed) {
+                executeBulkCancel();
+            }
+        });
+    }
+
+    function executeBulkCancel() {
+        // Çalışıyor… göstergesi
+        Swal.fire({
+            title: 'İptal Ediliyor...',
+            html: '<div style="text-align:center;padding:1rem;">' +
+                  '<i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;color:#009ef7;"></i>' +
+                  '<div style="margin-top:0.85rem;color:#5e6278;font-size:0.85rem;">' +
+                  ACTIVE_PURCHASE_COUNT + ' kayıt işleniyor — lütfen bekleyin.' +
+                  '</div></div>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+        });
+
+        $.post(BULK_CANCEL_URL, {
+            'csrfmiddlewaretoken': CSRF_TOKEN,
+        }, function (resp) {
+            Swal.close();
+            if (resp.result) {
+                const msg =
+                    '<b>' + (resp.cancelled_count || 0) + '</b> kayıt iptal edildi · ' +
+                    'Havuzdan düşen gram: <b>' + fmt3(resp.total_cancelled_gram || 0) + ' gr</b>' +
+                    (resp.failed_count > 0
+                        ? '<br/><span style="color:#d6336c;">' + resp.failed_count +
+                          ' kayıt iptal edilemedi (loglara bakın).</span>'
+                        : '') +
+                    (resp.pool_archived
+                        ? '<br/><i class="fa-solid fa-box-archive me-1"></i>Havuz arşivlendi.'
+                        : '');
+                Swal.fire({
+                    title: 'Tamamlandı',
+                    html: msg,
+                    icon: 'success',
+                    confirmButtonText: 'Tamam',
+                    timer: 4000,
+                    timerProgressBar: true,
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire('Hata', resp.error_msg || 'Bilinmeyen hata.', 'error');
+            }
+        }).fail(function (xhr) {
+            Swal.close();
+            let msg = 'Bağlantı hatası.';
+            try {
+                const j = JSON.parse(xhr.responseText || '{}');
+                if (j && j.error_msg) msg = j.error_msg;
+            } catch (e) {}
+            Swal.fire('Hata', msg, 'error');
+        });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // Filtre eventleri
+    // ═════════════════════════════════════════════════════════════════════
+    function applyFilters() {
+        currentFilters.date_from = $('#f_date_from').val() || '';
+        currentFilters.date_to = $('#f_date_to').val() || '';
+        currentFilters.supplier_id = $('#f_supplier').val() || '';
+        currentFilters.search = ($('#f_search').val() || '').trim();
+        if (window._poolDt) window._poolDt.ajax.reload();
+    }
+
+    // Tüm filtreleri varsayılana al (son 30 gün — diğer her şey temiz)
+    // UX FAZ A2: hide_cancelled varsayılan olarak true (iptaller gizli).
+    function clearAllFilters() {
+        $('#f_date_from').val(DEFAULT_DATE_FROM);
+        $('#f_date_to').val(DEFAULT_DATE_TO);
+        $('#f_search').val('');
+        $('#f_supplier').val('');
+        currentFilters = {
+            date_from: DEFAULT_DATE_FROM,
+            date_to: DEFAULT_DATE_TO,
+            direction: '', reason: '',
+            supplier_id: '', search: '',
+            hide_cancelled: true,
+            show_consumed: false,  // FAZ 22 — Active Stock Origin View varsayılanı
+        };
+        $('.qf-btn').removeClass('active');
+        $('.qf-btn[data-qf="all"]').addClass('active');
+        if (window._poolDt) window._poolDt.ajax.reload();
+    }
+
+    // Tüm geçmişi göster — tarih filtresini tamamen kaldır
+    function showAllHistory() {
+        $('#f_date_from, #f_date_to').val('');
+        currentFilters.date_from = '';
+        currentFilters.date_to = '';
+        $('.qf-btn[data-qf="show_all_history"]').addClass('active');
+        $('.qf-btn[data-qf="all"]').removeClass('active');
+        if (window._poolDt) window._poolDt.ajax.reload();
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // FAZ 22 — Process Detail Modal (İşlem No Tıklaması)
+    // ═════════════════════════════════════════════════════════════════════
+    // Read-only modal: tek bir işlemin Process bilgisini ve bağlı tüm
+    // StockLedger satırlarını (orijinal + reversal) gösterir. AJAX ile
+    // pool_process_detail endpoint'inden veri çekilir; veritabanı yazılmaz.
+    function openProcessDetailModal(processNo) {
+        const url = PROCESS_DETAIL_URL_TPL.replace('__PROCESS_NO__', encodeURIComponent(processNo));
+        const $modal = $('#processDetailModal');
+        const $body = $('#processDetailModalBody');
+
+        $body.html(
+            '<div class="pdm-empty">' +
+            '<i class="fa-solid fa-spinner fa-spin" style="font-size:1.6rem;color:#009ef7;"></i>' +
+            '<div class="mt-2">İşlem detayı yükleniyor...</div>' +
+            '</div>'
+        );
+        $modal.modal('show');
+
+        $.get(url)
+            .done(function (resp) {
+                if (!resp || resp.error) {
+                    $body.html(
+                        '<div class="pdm-empty text-danger">' +
+                        '<i class="fa-solid fa-circle-exclamation" style="font-size:1.6rem;"></i>' +
+                        '<div class="mt-2">' + escapeHtml(resp.error_msg || 'İşlem detayı alınamadı.') + '</div>' +
+                        '</div>'
+                    );
+                    return;
+                }
+                $body.html(buildProcessDetailHtml(resp));
+            })
+            .fail(function (xhr) {
+                let msg = 'Bağlantı hatası.';
+                try {
+                    const j = JSON.parse(xhr.responseText || '{}');
+                    if (j && j.error_msg) msg = j.error_msg;
+                } catch (e) {}
+                $body.html(
+                    '<div class="pdm-empty text-danger">' +
+                    '<i class="fa-solid fa-circle-exclamation" style="font-size:1.6rem;"></i>' +
+                    '<div class="mt-2">' + escapeHtml(msg) + '</div>' +
+                    '</div>'
+                );
+            });
+    }
+
+    function buildProcessDetailHtml(resp) {
+        const proc = resp.process;
+        const rows = resp.ledger_rows || [];
+        let html = '';
+
+        // Üst başlık çubuğu
+        html += '<div style="margin-bottom:1rem;">';
+        html += '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">';
+        html += '<span class="badge badge-light-primary" style="font-family:monospace;">' +
+                '#' + escapeHtml(resp.process_no) + '</span>';
+        if (resp.has_reversal) {
+            html += '<span class="badge badge-light-danger">' +
+                    '<i class="fa-solid fa-rotate-left me-1"></i>Bu işlem iptal edildi</span>';
+        }
+        html += '<span class="text-muted" style="font-size:0.78rem;margin-left:auto;">' +
+                '<i class="fa-solid fa-warehouse me-1"></i>' + escapeHtml(resp.pool_name || '') + '</span>';
+        html += '</div></div>';
+
+        // Process bölümü
+        if (proc) {
+            html += '<div class="pdm-section-title">' +
+                    '<i class="fa-solid fa-receipt me-1"></i>İşlem Bilgisi</div>';
+            const txTypeLabel = (
+                proc.transaction_type === 'PURCHASE' ? 'Alış' :
+                proc.transaction_type === 'SALE' ? 'Satış' : escapeHtml(proc.transaction_type || '-')
+            );
+            const sourceIcon = (
+                proc.source_kind === 'supplier' ? 'fa-building' :
+                proc.source_kind === 'customer' ? 'fa-user' : 'fa-box-open'
+            );
+            html += '<div class="pdm-info-grid">';
+            html += '  <div class="pdm-info-item"><div class="lbl">Tarih</div>' +
+                    '<div class="val"><i class="fa-solid fa-calendar me-1 text-muted"></i>' +
+                    escapeHtml(proc.date) + '</div></div>';
+            html += '  <div class="pdm-info-item"><div class="lbl">İşlem Türü</div>' +
+                    '<div class="val">' + txTypeLabel + '</div></div>';
+            html += '  <div class="pdm-info-item"><div class="lbl">Kaynak</div>' +
+                    '<div class="val"><i class="fa-solid ' + sourceIcon + ' me-1 text-muted"></i>' +
+                    escapeHtml(proc.source_name) + '</div></div>';
+            html += '  <div class="pdm-info-item"><div class="lbl">Kullanıcı</div>' +
+                    '<div class="val">' + escapeHtml(proc.created_by || '-') + '</div></div>';
+            html += '  <div class="pdm-info-item"><div class="lbl">Gram</div>' +
+                    '<div class="val">' + escapeHtml(proc.gram) + ' gr</div></div>';
+            html += '  <div class="pdm-info-item"><div class="lbl">Milyem</div>' +
+                    '<div class="val">' + escapeHtml(String(proc.milyem || 0)) + '</div></div>';
+            if (proc.iscilik_milyem) {
+                html += '  <div class="pdm-info-item"><div class="lbl">İşçilik Milyemi</div>' +
+                        '<div class="val"><i class="fa-solid fa-screwdriver-wrench me-1 text-warning"></i>' +
+                        escapeHtml(proc.iscilik_milyem) + '</div></div>';
+            }
+            html += '  <div class="pdm-info-item"><div class="lbl">Durum</div>' +
+                    '<div class="val">' + escapeHtml(proc.is_status) +
+                    (proc.is_deleted ? ' <span class="badge badge-light-danger ms-1">Silinmiş</span>' : '') +
+                    '</div></div>';
+            html += '</div>';
+        } else {
+            html += '<div class="alert alert-warning" style="font-size:0.85rem;">' +
+                    '<i class="fa-solid fa-circle-info me-1"></i>' +
+                    'Bu kayıt için Process bilgisi bulunmadı (legacy/tedarikçisiz işlem). ' +
+                    'StockLedger satırları aşağıda listelenmektedir.</div>';
+        }
+
+        // Ledger satırları
+        html += '<div class="pdm-section-title mt-3">' +
+                '<i class="fa-solid fa-list-check me-1"></i>Stok Hareketleri (' + rows.length + ')</div>';
+        if (rows.length === 0) {
+            html += '<div class="pdm-empty">Bu işleme bağlı stok hareketi yok.</div>';
+        } else {
+            html += '<div class="table-responsive">';
+            html += '<table class="pdm-ledger-table">';
+            html += '<thead><tr>' +
+                    '<th>Tarih</th>' +
+                    '<th>Tür</th>' +
+                    '<th>Yön</th>' +
+                    '<th class="text-end">Gram</th>' +
+                    '<th class="text-end">Birim (Hs/gr)</th>' +
+                    '<th class="text-end">Tutar (Hs)</th>' +
+                    '<th>Açıklama</th>' +
+                    '</tr></thead><tbody>';
+            rows.forEach(function (r) {
+                const rowCls = r.is_reversal ? 'pdm-ledger-row-reversal' : '';
+                const dirIcon = r.direction === 'IN' ?
+                    '<i class="fa-solid fa-arrow-down text-success"></i> Giriş' :
+                    '<i class="fa-solid fa-arrow-up text-danger"></i> Çıkış';
+                const labelHtml = r.is_reversal ?
+                    '<span class="badge badge-light-warning">' +
+                    '<i class="fa-solid fa-rotate-left me-1"></i>' + escapeHtml(r.reason_label) + '</span>' :
+                    '<span class="badge badge-light-primary">' + escapeHtml(r.reason_label) + '</span>';
+                html += '<tr class="' + rowCls + '">';
+                html += '<td style="white-space:nowrap;">' + escapeHtml(r.date) + '</td>';
+                html += '<td>' + labelHtml + '</td>';
+                html += '<td>' + dirIcon + '</td>';
+                html += '<td class="text-end">' + escapeHtml(r.gram) + ' gr</td>';
+                html += '<td class="text-end">' + escapeHtml(r.unit_hs) + '</td>';
+                html += '<td class="text-end"><b>' + escapeHtml(r.total_hs) + '</b></td>';
+                html += '<td style="font-size:0.78rem;color:#7e8299;">' + escapeHtml(r.notes || '-') + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+        }
+
+        // Alt bilgi notu
+        html += '<div class="alert alert-info mt-3" style="font-size:0.8rem;">' +
+                '<i class="fa-solid fa-shield-halved me-1"></i>' +
+                '<b>Append-Only Audit Trail:</b> Yukarıdaki kayıtlar değiştirilemez. ' +
+                'Bir işlem iptal edildiğinde orijinal satır dokunulmaz; sisteme ayrı bir REVERSAL ' +
+                'satırı eklenir.</div>';
+
+        return html;
+    }
+
+    $(document).ready(function () {
+        // Hero gram'ını JS için sayısal sakla (cancellation accordion'unda kullanılır)
+        const headerGramRaw = ($('#metric_gram').text() || '').trim().replace(/\s+gr.*$/, '')
+            .replace(/\./g, '').replace(',', '.');
+        window._currentTotalGram = parseFloat(headerGramRaw) || 0;
+
+        initLedgerTable();
+
+        // Quick filters
+        $('.qf-btn').on('click', function () {
+            const qf = $(this).data('qf');
+            if (qf === 'all') {
+                // UX FAZ A2: "Tümü" yön filtresini sıfırlar; iptal gizleme
+                // varsayılanı (hide_cancelled=true) korunur. Kullanıcı iptalleri
+                // görmek isterse "İptal Edilenleri Göster" butonu ayrıca tıklanır.
+                $('.qf-btn').removeClass('active');
+                $(this).addClass('active');
+                currentFilters.direction = '';
+                currentFilters.hide_cancelled = true;
+            } else if (qf === 'in') {
+                $('.qf-btn[data-qf="in"]').toggleClass('active');
+                $('.qf-btn[data-qf="out"]').removeClass('active');
+                $('.qf-btn[data-qf="all"]').removeClass('active');
+                currentFilters.direction = $(this).hasClass('active') ? 'IN' : '';
+            } else if (qf === 'out') {
+                $('.qf-btn[data-qf="out"]').toggleClass('active');
+                $('.qf-btn[data-qf="in"]').removeClass('active');
+                $('.qf-btn[data-qf="all"]').removeClass('active');
+                currentFilters.direction = $(this).hasClass('active') ? 'OUT' : '';
+            } else if (qf === 'hide_cancel') {
+                // UX FAZ A2: Buton ETKİN ise iptaller GÖSTERİLİR; pasif (varsayılan) ise GİZLİDİR.
+                $(this).toggleClass('active');
+                currentFilters.hide_cancelled = !$(this).hasClass('active');
+            } else if (qf === 'show_consumed') {
+                // FAZ 22: Buton ETKİN ise tüketilmiş kayıtlar GÖSTERİLİR; pasif (varsayılan) ise GİZLİDİR.
+                $(this).toggleClass('active');
+                currentFilters.show_consumed = $(this).hasClass('active');
+            } else if (qf === 'show_all_history') {
+                showAllHistory();
+                return;
+            } else if (qf === 'reset') {
+                clearAllFilters();
+                return;
+            }
+            if (window._poolDt) window._poolDt.ajax.reload();
+        });
+
+        // ─── Toplu İptal Akışı (FAZ 13) ───────────────────────────
+        $('#btn_bulk_cancel').on('click', function () {
+            startBulkCancelFlow();
+        });
+
+        $('#btn_apply_filters').on('click', applyFilters);
+        $('#btn_clear_filters').on('click', clearAllFilters);
+        $('#btn_remove_filter').on('click', clearAllFilters);
+
+        // Enter ile arama
+        $('#f_search').on('keypress', function (e) {
+            if (e.which === 13) applyFilters();
+        });
+
+        // Default aktif filter
+        $('.qf-btn[data-qf="all"]').addClass('active');
+    });
+</script>
+{% endblock footer %}

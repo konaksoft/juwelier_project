@@ -544,12 +544,12 @@
 
                                     <div class="col-md-12 col-12">
                                         <div class="row">
-                                            <div class="col-6">
+                                            <div class="col-6" id="fastSatisHasCol">
                                                 <label class="form-label"> Has</label>
                                         <input type="number" class="form-control text-end" name="sale_hs" id="txt-satis-has"
                                                oninput="calculateTotalFast(this)"/>
                                             </div>
-                                              <div class="col-6">
+                                              <div class="col-6" id="fastSatisFiyatCol">
                                                 <label class="form-label">Fiyat</label>
                                         <input type="number" class="form-control text-end" name="sale_amount" id="txtSatisFiyat"
                                                oninput="calculateTotalFast(this)"/>
@@ -565,12 +565,12 @@
 
 
                                    <div class="row">
-                                        <div class="col-6">
+                                        <div class="col-6" id="fastAlisHasCol">
                                                 <label class="form-label"> Has</label>
                                         <input type="number" class="form-control text-end" name="buy_hs" id="txt-buy-has"
                                                oninput="calculateTotalFast(this)"/>
                                     </div>
-                                       <div class="col-6">
+                                       <div class="col-6" id="fastAlisFiyatCol">
                                                 <label class="form-label"> Fiyat</label>
                                         <input type="number" class="form-control text-end" name="buy_amount" id="txt-buy-fiyat"
                                                oninput="calculateTotalFast(this)"/>
@@ -613,7 +613,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-4 col-6">
+                            <div class="col-md-4 col-6" id="fastLaborCol">
                                 <label class="form-label">İşçilik Tutarı</label>
                                 <input type="number" class="form-control text-end" name="labor_amount"
                                        id="txtLaborAmount" value="0" oninput="calculateTotalFast()"/>
@@ -985,8 +985,62 @@
         const INVOICE_LIMIT = 36000;     // Fatura Kesme Sınırı (Müşteri Seçimi Zorunlu)
         const CASH_LIMIT = 30000;        // Nakit Ödeme Sınırı (Banka Zorunluluğu)
 
-        const POS_TIMEOUT_SECONDS = 120;
+        // FAZ 30 — Pavo timeout ve success status SSOT settings'ten geliyor.
+        const POS_TIMEOUT_SECONDS = parseInt("{{ PAVO_FRONTEND_TIMEOUT_SECONDS|default:'120' }}", 10) || 120;
+        const PAVO_SUCCESS_STATUS_IDS = (function () {
+            try {
+                const raw = "{{ PAVO_SUCCESS_STATUS_IDS|default:'4,5,6,22' }}";
+                return raw.replace(/[\[\]\s]/g, '').split(',').map(function (s) {
+                    return parseInt(s, 10);
+                }).filter(function (n) {
+                    return !isNaN(n);
+                });
+            } catch (e) {
+                return [4, 5, 6, 22];
+            }
+        })();
         const LABOR_VAT_RATE = 0.20;
+
+        // FAZ 30 — CustomerParty cache: aynı müşteri için tekrar tekrar API
+        // çağrılmasın diye basit bellek cache. Müşteri seçimi değişince yenilenir.
+        let _pavoCustomerPartyCache = null;
+        let _pavoCustomerPartyCustomerId = null;
+
+        function pavoFetchCustomerParty(customerId) {
+            // Müşteri yoksa anonim party döner — backend Türkiye/empty döner.
+            // Network hatasında bile fallback anonim nesne döneriz, akış patlamaz.
+            const id = String(customerId || '').trim();
+            if (_pavoCustomerPartyCustomerId === id && _pavoCustomerPartyCache) {
+                return Promise.resolve(_pavoCustomerPartyCache);
+            }
+            const url = '/v1/pavo-local/customer-party/' + (id ? ('?customer_id=' + encodeURIComponent(id)) : '');
+            return fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {'Accept': 'application/json'}
+            }).then(function (r) {
+                if (!r.ok && r.status !== 404) throw new Error('http ' + r.status);
+                return r.json();
+            }).then(function (j) {
+                const cp = (j && j.customer_party) ? j.customer_party : pavoAnonymousCustomerParty();
+                _pavoCustomerPartyCache = cp;
+                _pavoCustomerPartyCustomerId = id;
+                return cp;
+            }).catch(function () {
+                return pavoAnonymousCustomerParty();
+            });
+        }
+
+        function pavoAnonymousCustomerParty() {
+            return {
+                CustomerType: 2,
+                FirstName: '', MiddleName: '', FamilyName: '',
+                CompanyName: '', TaxOfficeCode: '', TaxNumber: '',
+                Phone: '', EMail: '',
+                Country: 'Türkiye', City: '', District: '',
+                Neighborhood: '', Address: ''
+            };
+        }
 
         let currentTabHS = 'SALE';
         let selectedProduct = null;
@@ -1074,10 +1128,10 @@
             let buy_kur = 1;
             if (selectedProduct && !selectedProduct.is_currency) {
                 if (selectedProduct.sale_price_hs && selectedProduct.sale_price_hs > 0) {
-                    sale_kur = Number(selectedProduct.sale_price_tl / selectedProduct.sale_price_hs);
+                    sale_kur = Number(selectedProduct.sale_price_eur / selectedProduct.sale_price_hs);
                 }
                 if (selectedProduct.buy_price_hs && selectedProduct.buy_price_hs > 0) {
-                    buy_kur = Number(selectedProduct.buy_price_tl / selectedProduct.buy_price_hs);
+                    buy_kur = Number(selectedProduct.buy_price_eur / selectedProduct.buy_price_hs);
                 }
             }
             let e_id = element ? $(element).attr("id") : null;
@@ -1212,18 +1266,18 @@
             if (!isFinite(newUnitPrice) || newUnitPrice < 0) return;
             newUnitPrice = +newUnitPrice.toFixed(2);
 
-            // Has TL kuru: Döviz için 1:1; Ziynet/Altın için sale_price_tl/sale_price_hs
+            // Has TL kuru: Döviz için 1:1; Ziynet/Altın için sale_price_eur/sale_price_hs
             const isCurrency = !!selectedProduct.is_currency;
             const isSale = (currentTabHS === 'SALE');
             let kur = 1;
             if (!isCurrency) {
                 if (isSale) {
                     if (selectedProduct.sale_price_hs && selectedProduct.sale_price_hs > 0) {
-                        kur = Number(selectedProduct.sale_price_tl / selectedProduct.sale_price_hs);
+                        kur = Number(selectedProduct.sale_price_eur / selectedProduct.sale_price_hs);
                     }
                 } else {
                     if (selectedProduct.buy_price_hs && selectedProduct.buy_price_hs > 0) {
-                        kur = Number(selectedProduct.buy_price_tl / selectedProduct.buy_price_hs);
+                        kur = Number(selectedProduct.buy_price_eur / selectedProduct.buy_price_hs);
                     }
                 }
             }
@@ -1303,19 +1357,55 @@
                 return;
             }
             document.getElementById('txtUrun').value = p.name || '';
-            document.getElementById('txtSatisFiyat').value = p.sale_price_tl || '';
-            document.getElementById('txtAlisFiyat').value = p.buy_price_tl || '';
-            document.getElementById('txt-buy-fiyat').value = p.buy_price_tl || '';
+            document.getElementById('txtSatisFiyat').value = p.sale_price_eur || '';
+            document.getElementById('txtAlisFiyat').value = p.buy_price_eur || '';
+            document.getElementById('txt-buy-fiyat').value = p.buy_price_eur || '';
 
             // FAZ 21 FIX: Döviz ürünlerinde Has alanları anlamsızdır (API kuru zaten TL).
             // Has inputlarına TL değeri yazılır ki HS↔TL oranı 1:1 olsun,
             // böylece calculateTotalFast'taki sale_kur/buy_kur = 1 olur.
             if (p.is_currency) {
-                document.getElementById('txt-satis-has').value = p.sale_price_tl || '';
-                document.getElementById('txt-buy-has').value = p.buy_price_tl || '';
+                document.getElementById('txt-satis-has').value = p.sale_price_eur || '';
+                document.getElementById('txt-buy-has').value = p.buy_price_eur || '';
             } else {
                 document.getElementById('txt-satis-has').value = p.sale_price_hs || '';
                 document.getElementById('txt-buy-has').value = p.buy_price_hs || '';
+            }
+
+            // FAZ 20 (2026-04-30): Döviz seçilince Has ve İşçilik kolonlarını gizle,
+            // Fiyat kolonunu tam genişliğe al. Fiat para altın karşılığı (Has) ve
+            // işçilik mantığıyla işlem görmediğinden bu alanlar semantik olarak
+            // anlamsızdır. Non-Döviz ürünlere geri dönüldüğünde visibility resetlenir.
+            // KURAL 6 — defensive DOM (null-check zorunlu).
+            const _fxHasSatisCol = document.getElementById('fastSatisHasCol');
+            const _fxFiyatSatisCol = document.getElementById('fastSatisFiyatCol');
+            const _fxHasAlisCol = document.getElementById('fastAlisHasCol');
+            const _fxFiyatAlisCol = document.getElementById('fastAlisFiyatCol');
+            const _fxLaborCol = document.getElementById('fastLaborCol');
+            if (p.is_currency) {
+                if (_fxHasSatisCol) _fxHasSatisCol.style.display = 'none';
+                if (_fxHasAlisCol) _fxHasAlisCol.style.display = 'none';
+                if (_fxLaborCol) _fxLaborCol.style.display = 'none';
+                if (_fxFiyatSatisCol) {
+                    _fxFiyatSatisCol.classList.remove('col-6');
+                    _fxFiyatSatisCol.classList.add('col-12');
+                }
+                if (_fxFiyatAlisCol) {
+                    _fxFiyatAlisCol.classList.remove('col-6');
+                    _fxFiyatAlisCol.classList.add('col-12');
+                }
+            } else {
+                if (_fxHasSatisCol) _fxHasSatisCol.style.display = '';
+                if (_fxHasAlisCol) _fxHasAlisCol.style.display = '';
+                if (_fxLaborCol) _fxLaborCol.style.display = '';
+                if (_fxFiyatSatisCol) {
+                    _fxFiyatSatisCol.classList.remove('col-12');
+                    _fxFiyatSatisCol.classList.add('col-6');
+                }
+                if (_fxFiyatAlisCol) {
+                    _fxFiyatAlisCol.classList.remove('col-12');
+                    _fxFiyatAlisCol.classList.add('col-6');
+                }
             }
 
             document.getElementById('fast_product_id').value = p.id || '';
@@ -1424,7 +1514,7 @@
             let stockInfo = '';
             const isCurrencyProd = !!product.is_currency || product.category_name === 'Döviz';
             if (product.is_gram_bullion) {
-                stockInfo = (stockGram > 100) ? '100+ gr' : stockGram.toFixed(2) + ' gr';
+                stockInfo = stockGram.toFixed(2) + ' gr';
             } else if (isCurrencyProd) {
                 const fxBal = Number(product.fx_balance || 0);
                 const fxCcy = product.fx_currency || '';
@@ -1434,13 +1524,11 @@
                     // Satış (SALE) backend guard ve check-fast-stock tarafından bloke edilir.
                     stockInfo = '<span style="color:#c62828;font-weight:600;">0.00 ' + fxCcy + '</span>';
                     div.style.opacity = '0.6';
-                } else if (fxBal > 10000) {
-                    stockInfo = '10000+ ' + fxCcy;
                 } else {
                     stockInfo = fxBal.toFixed(2) + ' ' + fxCcy;
                 }
             } else {
-                stockInfo = (+product.stock_pieces > 10) ? '10+ adet' : (product.stock_pieces || 0) + ' adet';
+                stockInfo = (product.stock_pieces || 0) + ' adet';
             }
 
             // FAZ 6: Hurda sol tarafında Ayar etiketi, bilezik sol tarafında gram tekrarı temizleme
@@ -1590,9 +1678,13 @@
             };
         }
 
+        // FAZ 30 — Async: gerçek müşteri verisi backend'den çekiliyor, Pavo'ya
+        // sahte sabit '11111111111' / 'Ankara' artık gönderilmiyor. Müşteri
+        // seçilmediğinde anonim CustomerType=2 party döner.
         function buildCompleteSalePayloadFromFast(paymentMediator, ctxOverride) {
             const ctx = ctxOverride || getFastContext();
-            if (!ctx) return null;
+            if (!ctx) return Promise.resolve(null);
+
             const items = [];
             items.push({
                 Name: ctx.productName, IsGeneric: false, UnitCode: ctx.unitCode, TaxGroupCode: ctx.taxGroup,
@@ -1600,7 +1692,9 @@
                 TotalPriceAmount: ctx.itemGross, ReservedText: 'FAST_PROCESS_METAL'
             });
 
-            const grossTotal = items.reduce((sum, it) => sum + (parseFloat(it.TotalPriceAmount) || 0), 0);
+            const grossTotal = items.reduce(function (sum, it) {
+                return sum + (parseFloat(it.TotalPriceAmount) || 0);
+            }, 0);
             const additionalInfo = [];
             if (ctx.laborTotal > 0) additionalInfo.push({
                 Key: 'LaborNet',
@@ -1608,86 +1702,183 @@
                 Print: false
             });
 
-            return {
-                Sale: {
-                    RefererApp: 'KuyumPlus',
-                    RefererAppVersion: '1.0.0',
-                    OrderNo: String(ctx.reference),
-                    MainDocumentType: 1,
-                    GrossPrice: grossTotal,
-                    TotalPrice: grossTotal,
-                    CurrencyCode: ctx.currency,
-                    ExchangeRate: 1,
-                    SendPhoneNotification: false,
-                    SendEMailNotification: false,
-                    NotificationPhone: '',
-                    DocumentNote: '',
-                    Reserved03: '',
-                    NotificationEMail: '',
-                    ShowCreditCardMenu: false,
-                    SelectedSlots: ['rf', 'icc', 'manual'],
-                    EnableAllTerminalsOnRetry: false,
-                    AllowDismissCardRead: false,
-                    CardReadTimeout: 120,
-                    SkipAmountCash: false,
-                    CancelPaymentLater: true,
-                    AskCustomer: false,
-                    SendResponseBeforePrint: false,
-                    TryAgainOnPaymentFailure: false,
-                    ReferOtherMediatorsToRetryPayment: true,
-                    AbandonOptions: {IsVoid: true, EnableRefundMediatorsOnVoidFailure: true},
-                    ContinuePaymentWithCardInserted: true,
-                    HeadUnmaskedCardNumber: 4,
-                    TailUnmaskedCardNumber: 4,
-                    AddedSaleItems: items,
-                    PaymentInformations: [{
-                        Mediator: paymentMediator || 2,
-                        Amount: grossTotal,
+            const custSel = document.getElementById('customer_id');
+            const customerId = (custSel && custSel.value) ? String(custSel.value).trim() : '';
+
+            return pavoFetchCustomerParty(customerId).then(function (party) {
+                // Backend party'sinde FirstName/FamilyName boşsa (anonim/Nakit Müşteri),
+                // ekrandaki "Nakit Müşteri" görünür adı kullan; vergi/şehir verisi
+                // yine de backend'in dolu/boş haline sadık kalsın.
+                const customerParty = Object.assign({}, party);
+                if (!customerParty.FirstName && !customerParty.FamilyName) {
+                    customerParty.FirstName = ctx.customerFirstName || '';
+                    customerParty.MiddleName = ctx.customerMiddleName || '';
+                    customerParty.FamilyName = ctx.customerFamilyName || '';
+                    customerParty.CompanyName = ctx.customerCompanyName || '';
+                }
+                return {
+                    Sale: {
+                        RefererApp: 'KuyumPlus',
+                        RefererAppVersion: '1.0.0',
+                        OrderNo: String(ctx.reference),
+                        MainDocumentType: 1,
+                        GrossPrice: grossTotal,
+                        TotalPrice: grossTotal,
                         CurrencyCode: ctx.currency,
                         ExchangeRate: 1,
-                        ExternalReferenceText: String(ctx.reference)
-                    }],
-                    AllowedPaymentMediators: [{Mediator: 2}, {Mediator: 1}],
-                    ReceiptInformation: {
-                        ReceiptImageEnabled: true,
-                        ReceiptJsonEnabled: false,
-                        ReceiptTextEnabled: false,
-                        ReceiptWidth: '58mm',
-                        PrintCustomerReceipt: true,
-                        PrintCustomerReceiptCopy: true,
-                        PrintMerchantReceipt: true,
-                        EnableExchangeRateField: true
-                    },
-                    CustomerParty: {
-                        CustomerType: 1,
-                        FirstName: ctx.customerFirstName,
-                        MiddleName: ctx.customerMiddleName,
-                        FamilyName: ctx.customerFamilyName,
-                        CompanyName: ctx.customerCompanyName,
-                        TaxOfficeCode: '',
-                        TaxNumber: '11111111111',
-                        Phone: '',
-                        EMail: '',
-                        Country: 'Türkiye',
-                        City: 'Ankara',
-                        District: 'Çankaya',
-                        Neighborhood: '',
-                        Address: ''
-                    },
-                    AdditionalInfo: additionalInfo,
-                    TopPrintableItems: [],
-                    BottomPrintableItems: []
-                }
-            };
+                        SendPhoneNotification: false,
+                        SendEMailNotification: false,
+                        NotificationPhone: customerParty.Phone || '',
+                        DocumentNote: '',
+                        Reserved03: '',
+                        NotificationEMail: customerParty.EMail || '',
+                        ShowCreditCardMenu: false,
+                        SelectedSlots: ['rf', 'icc', 'manual'],
+                        EnableAllTerminalsOnRetry: false,
+                        AllowDismissCardRead: false,
+                        CardReadTimeout: POS_TIMEOUT_SECONDS,
+                        SkipAmountCash: false,
+                        CancelPaymentLater: true,
+                        AskCustomer: false,
+                        SendResponseBeforePrint: false,
+                        TryAgainOnPaymentFailure: false,
+                        ReferOtherMediatorsToRetryPayment: true,
+                        AbandonOptions: {IsVoid: true, EnableRefundMediatorsOnVoidFailure: true},
+                        ContinuePaymentWithCardInserted: true,
+                        HeadUnmaskedCardNumber: 4,
+                        TailUnmaskedCardNumber: 4,
+                        AddedSaleItems: items,
+                        PaymentInformations: [{
+                            Mediator: paymentMediator || 2,
+                            Amount: grossTotal,
+                            CurrencyCode: ctx.currency,
+                            ExchangeRate: 1,
+                            ExternalReferenceText: String(ctx.reference)
+                        }],
+                        AllowedPaymentMediators: [{Mediator: 2}, {Mediator: 1}],
+                        ReceiptInformation: {
+                            ReceiptImageEnabled: true,
+                            ReceiptJsonEnabled: false,
+                            ReceiptTextEnabled: false,
+                            ReceiptWidth: '58mm',
+                            PrintCustomerReceipt: true,
+                            PrintCustomerReceiptCopy: true,
+                            PrintMerchantReceipt: true,
+                            EnableExchangeRateField: true
+                        },
+                        CustomerParty: customerParty,
+                        AdditionalInfo: additionalInfo,
+                        TopPrintableItems: [],
+                        BottomPrintableItems: []
+                    }
+                };
+            });
         }
 
+        // FAZ 30 — Timeout sayacı ve orphan transaction guard
+        // POS_TIMEOUT_SECONDS sonunda kullanıcıya cihazdan abort + son işlem
+        // sorgulama önerilir. Form OTOMATİK SUBMIT EDİLMEZ — yanlış kayıt
+        // riskini önler. Kullanıcı net şekilde durumu öğrenir.
         function showPosWaiting() {
-            showWorking('POS cihazından ödeme bekleniyor...');
             posRemainingSeconds = POS_TIMEOUT_SECONDS;
+            if (posTimerId) {
+                clearInterval(posTimerId);
+                posTimerId = null;
+            }
+            try {
+                Swal.fire({
+                    title: 'POS ödemesi bekleniyor',
+                    html: '<div style="font-size:1rem">Lütfen POS cihazından ödemeyi tamamlayın.</div>' +
+                          '<div style="margin-top:.5rem;font-size:.85rem;color:#6b7280">Kalan süre: <span id="posCountdownFast">' +
+                          posRemainingSeconds + '</span> sn</div>',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: function () {
+                        var el = document.getElementById('posCountdownFast');
+                        posTimerId = setInterval(function () {
+                            posRemainingSeconds -= 1;
+                            if (el) el.textContent = String(Math.max(0, posRemainingSeconds));
+                            if (posRemainingSeconds <= 0) {
+                                clearInterval(posTimerId);
+                                posTimerId = null;
+                                _pavoFastTimeoutRecover();
+                            }
+                        }, 1000);
+                    }
+                });
+            } catch (e) {
+                showWorking('POS cihazından ödeme bekleniyor...');
+            }
         }
 
         function hidePosWaiting() {
+            if (posTimerId) {
+                clearInterval(posTimerId);
+                posTimerId = null;
+            }
+            try {
+                Swal.close();
+            } catch (e) {
+            }
             hideWorking();
+        }
+
+        function _pavoCsrfFast() {
+            try {
+                var m = document.cookie.match(/csrftoken=([^;]+)/);
+                if (m) return m[1];
+            } catch (e) {
+            }
+            var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return el ? el.value : '';
+        }
+
+        // Timeout sonrası: AbortCurrentPayment + LastProcessedSale ile durum
+        // sorgula. Kullanıcı yanlış kayıt yapmasın diye otomatik form submit
+        // YAPILMAZ — sadece bilgilendirme.
+        function _pavoFastTimeoutRecover() {
+            try {
+                Swal.close();
+            } catch (e) {
+            }
+            posInFlight = false;
+            if (btnPosEl) btnPosEl.disabled = false;
+
+            var hdrs = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': _pavoCsrfFast()
+            };
+
+            // Önce abort dene (cihazdaki bekleyen ödemeyi sonlandır).
+            fetch('/v1/pavo-local/abort-current-payment/', {
+                method: 'POST', credentials: 'same-origin', headers: hdrs, body: '{}'
+            }).catch(function () { /* sessizce yut */ });
+
+            // Sonra son işlem durumunu sorgula.
+            fetch('/v1/pavo-local/last-processed-sale/', {
+                method: 'POST', credentials: 'same-origin', headers: hdrs, body: '{}'
+            }).then(function (r) {
+                return r.ok ? r.json() : null;
+            }).then(function (j) {
+                var msg = 'POS yanıtı zaman aşımına uğradı.<br>';
+                if (j && j.Data) {
+                    var data = j.Data || {};
+                    var sid = data.StatusId || data.SaleStatusId || (data.Sale && data.Sale.StatusId) || '-';
+                    msg += '<div class="text-start small"><b>Son işlem:</b> ' +
+                           'StatusId: ' + sid + '<br>' +
+                           'SaleNumber: ' + (data.SaleNumber || '-') + '</div>';
+                }
+                msg += '<br><b>Kayıt oluşturulmadı.</b> Cihazdaki sliplerle kontrol edip ' +
+                       'gerekirse işlemi tekrar başlatın.';
+                Swal.fire({icon: 'warning', title: 'POS Zaman Aşımı', html: msg});
+            }).catch(function () {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'POS Zaman Aşımı',
+                    html: 'POS yanıtı alınamadı. <b>Kayıt oluşturulmadı.</b> Cihazdaki sliplerle kontrol edin.'
+                });
+            });
         }
 
         function resolveSaleNumberFromResult(out, fallbackRef) {
@@ -1714,7 +1905,8 @@
             }
             if (statusId == null || statusId === '') return false;
             const sid = Number(statusId);
-            return !isNaN(sid) && sid === 4;
+            // FAZ 30 — Backend ile aynı SSOT (settings.PAVO_SUCCESS_STATUS_IDS).
+            return !isNaN(sid) && PAVO_SUCCESS_STATUS_IDS.indexOf(sid) !== -1;
         }
 
         function submitFastForm(fd, successTitle) {
@@ -1752,25 +1944,38 @@
 
         function startPosPayment(mode, ctx) {
             const modeUpper = (mode || 'CARD').toUpperCase();
-            let mediatorId = (modeUpper === 'CASH' || modeUpper === 'TRANSFER') ? 1 : 2;
-            const payload = buildCompleteSalePayloadFromFast(mediatorId, ctx);
-            if (!payload) {
+            const mediatorId = (modeUpper === 'CASH' || modeUpper === 'TRANSFER') ? 1 : 2;
+
+            // FAZ 30 — payload artık async (gerçek müşteri verisi backend'den
+            // çekiliyor). Async hata durumunda akış güvenli şekilde sonlanır,
+            // POS cihazına yanlış payload gönderilmez.
+            buildCompleteSalePayloadFromFast(mediatorId, ctx).then(function (payload) {
+                if (!payload) {
+                    posInFlight = false;
+                    if (btnPosEl) btnPosEl.disabled = false;
+                    Swal.fire('Hata', 'POS payload oluşturulamadı.', 'error');
+                    return;
+                }
+
+                let completeStr;
+                try {
+                    completeStr = JSON.stringify(payload);
+                } catch (e) {
+                    posInFlight = false;
+                    if (btnPosEl) btnPosEl.disabled = false;
+                    Swal.fire('Hata', 'POS payload hatası.', 'error');
+                    return;
+                }
+
+                _startPosPaymentInner(modeUpper, mediatorId, completeStr);
+            }).catch(function (err) {
                 posInFlight = false;
                 if (btnPosEl) btnPosEl.disabled = false;
-                Swal.fire('Hata', 'POS payload oluşturulamadı.', 'error');
-                return;
-            }
+                Swal.fire('Hata', 'Müşteri bilgileri hazırlanamadı: ' + (err && err.message ? err.message : ''), 'error');
+            });
+        }
 
-            let completeStr;
-            try {
-                completeStr = JSON.stringify(payload);
-            } catch (e) {
-                posInFlight = false;
-                if (btnPosEl) btnPosEl.disabled = false;
-                Swal.fire('Hata', 'POS payload hatası.', 'error');
-                return;
-            }
-
+        function _startPosPaymentInner(modeUpper, mediatorId, completeStr) {
             showPosWaiting();
 
             window.pavoFastCallback = function (resultJson) {
@@ -2369,6 +2574,9 @@
 
         $(document).on('change', '#customer_id', function () {
             syncFastCustomerName();
+            // FAZ 30 — müşteri değiştiğinde Pavo CustomerParty cache'ini sıfırla.
+            _pavoCustomerPartyCache = null;
+            _pavoCustomerPartyCustomerId = null;
         });
     </script>
     <script>
@@ -2386,7 +2594,7 @@
                         (x.name || '').toLowerCase().includes('has 24')
                     );
                     if (p) {
-                        hasPrice = parseFloat(p.sale_price_tl || 0);
+                        hasPrice = parseFloat(p.sale_price_eur || 0);
                         break;
                     }
                 }

@@ -81,6 +81,22 @@ class Stores(models.Model):
         ('manual',     'Manuel (Admin)'),
     ]
 
+    # ------------------------------------------------------------------
+    # FAZ 45 — Çoklu Şube (Multi-Branch) Hiyerarşi Alanları
+    #   Mevcut tek-şube davranışı KORUNUR: var olan tüm satırlar
+    #   branch_type='MAIN', parent_store=NULL olarak başlar.
+    #   Bu alanlar yalnızca FAZ 46+ aktivasyonunda anlam kazanır.
+    #
+    #   MAIN   → Ana merkez şubesi (parent_store=NULL)
+    #   BRANCH → Fiziksel alt şube
+    #   MOBILE → Plasiyer / çantacı / mobil şube
+    # ------------------------------------------------------------------
+    BRANCH_TYPE_CHOICES = [
+        ('MAIN',   'Ana Merkez'),
+        ('BRANCH', 'Şube'),
+        ('MOBILE', 'Mobil / Plasiyer'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     store_id = models.CharField(max_length=25, unique=True, editable=False, blank=True, null=True,
                                 verbose_name='Mağaza Kimlik No')
@@ -144,12 +160,62 @@ class Stores(models.Model):
         help_text='Bu mağaza hangi akışla sisteme dahil oldu?'
     )
 
+    # ------------------------------------------------------------------
+    # FAZ 45 — Multi-Branch Altyapısı (DORMANT — sadece şema, davranış yok)
+    #   Bu alanlar henüz hiçbir view/sorgu/akış tarafından kullanılmaz.
+    #   Aktivasyon FAZ 46+ kapsamındadır. Mevcut tüm satırlar otomatik
+    #   olarak branch_type='MAIN', parent_store=NULL alır (tek-şube
+    #   davranışı korunur).
+    # ------------------------------------------------------------------
+    parent_store = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='child_branches',
+        verbose_name='Ana Şube (Merkez)',
+        help_text='Bu kayıt bir alt şube ise bağlı olduğu ana merkez. MAIN tipindeki şubelerde NULL kalır.'
+    )
+    branch_type = models.CharField(
+        max_length=10,
+        choices=BRANCH_TYPE_CHOICES,
+        default='MAIN',
+        db_index=True,
+        verbose_name='Şube Tipi',
+        help_text='Şubenin sistemsel rolü. MAIN: ana merkez, BRANCH: fiziksel şube, MOBILE: plasiyer/çantacı.'
+    )
+    branch_code = models.CharField(
+        max_length=20,
+        null=True, blank=True,
+        unique=True,
+        verbose_name='Şube Kısa Kodu',
+        help_text='İnsan-okunabilir benzersiz kod (örn: MRK, ŞB1, PLY1). Transfer fişlerinde gösterilir.'
+    )
+    is_branch_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name='Şube Operasyonel mi?',
+        help_text='Geçici kapatma için kullanılır. Kapalı şubeye transfer başlatılamaz. is_active ile birlikte okunur.'
+    )
+    allows_inbound_transfer = models.BooleanField(
+        default=True,
+        verbose_name='Gelen Transferi Kabul Eder',
+        help_text='Bu şubeye başka şubelerden transfer gönderilebilir mi? Bazı plasiyer şubeler sadece çıkış-yönlü çalışabilir.'
+    )
+    transfer_auto_approve = models.BooleanField(
+        default=False,
+        verbose_name='Transferi Otomatik Onayla',
+        help_text='Tek kişi çalışan küçük şubelerde gelen transferi otomatik kabul eder. Varsayılan kapalıdır; insan onayı zorunludur.'
+    )
+
     class Meta:
         db_table = 'Stores'
         indexes = [
             models.Index(fields=['company', 'is_active']),
             models.Index(fields=['status']),
             models.Index(fields=['status', 'demo_expires_at']),
+            # FAZ 45 — şube hiyerarşi sorguları
+            models.Index(fields=['parent_store', 'branch_type'], name='stores_parent_type_idx'),
+            models.Index(fields=['branch_type', 'is_branch_active'], name='stores_btype_active_idx'),
         ]
 
     def __str__(self):
@@ -225,8 +291,8 @@ class StoreModule(models.Model):
 from decimal import Decimal  # Sadece burası için gerekiyorsa tekrar eklenebilir veya yukarıda tutulabilir
 class StorePriceCache(models.Model):
     store = models.OneToOneField('Stores', on_delete=models.CASCADE, related_name='price_cache')
-    has_buy_tl = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
-    has_sale_tl = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
+    has_buy_eur = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
+    has_sale_eur = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

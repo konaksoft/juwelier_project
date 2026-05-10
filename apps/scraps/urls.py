@@ -22,4 +22,19 @@ urlpatterns = [
 
     # ── ONARIM FAZI 9 — Duplicate havuz birleştirme (operatör tetikli) ──
     path('merge-duplicates', merge_scrap_duplicates_view, name='merge_duplicates'),
+
+    # ── ONARIM FAZI 12 — Havuz Detay Sayfası (Pool Detail & Ledger) ──
+    # Modal yerine her havuza özel URL: 3 yıllık ledger için ölçeklenir.
+    path('pool/<uuid:scrap_id>/', pool_detail, name='pool_detail'),
+    path('pool/<uuid:scrap_id>/ledger', pool_ledger, name='pool_ledger'),
+
+    # ── FAZ 22 — İşlem Detay (Process Detail Modal) ──
+    # Havuz detay sayfasındaki işlem numarası tıklandığında modal için JSON.
+    path('pool/<uuid:scrap_id>/process/<str:process_no>/', pool_process_detail,
+         name='pool_process_detail'),
+
+    # ── ONARIM FAZI 13 — Toplu İptal (Bulk Cancel) ──
+    # Havuzdaki tüm aktif PURCHASE'ları tek tıkla iptal eder.
+    # cancel_stock_entry zinciri korunur → REVERSAL'lar audit trail'de kalır.
+    path('pool/<uuid:scrap_id>/bulk-cancel', pool_bulk_cancel, name='pool_bulk_cancel'),
 ]

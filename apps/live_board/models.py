@@ -57,6 +57,30 @@ class LiveBoardSettings(models.Model):
         verbose_name='Sarrafiye Bölümü Aktif',
     )
 
+    # FAZ 20 (2026-04-30): Ürün bazında görünürlük & sıralama
+    # ----------------------------------------------------------------------
+    # hidden_items: Live Board'da gizlenen ürün adları listesi (DB name).
+    #   Format: ["Eski Çeyrek", "EURTRY", "Reşat Altın"]
+    #   Set lookup için JS/Python tarafında set()'e çevrilir.
+    #
+    # live_board_item_order: Live Board'a özgü sıralama (Products.display_order'dan
+    # bağımsız). Hızlı/Perakende ekranındaki sıralamayı bozmadan canlı ekranda
+    # farklı bir sıra kurmak için.
+    #   Format: {"Yeni Çeyrek": 1, "Eski Çeyrek": 2, "Gram Altın": 3, ...}
+    #   Boş dict ise Products.display_order'a fallback edilir.
+    hidden_items = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Gizlenen Ürünler',
+        help_text='Live Board ekranında gizlenecek ürün adlarının listesi.',
+    )
+    live_board_item_order = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Live Board Özel Sıralama',
+        help_text='Live Board\'a özgü ürün sıralaması (ad → tamsayı sıra).',
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

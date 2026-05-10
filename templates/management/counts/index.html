@@ -616,15 +616,15 @@
 {% endblock header %}
 
 {% block body %}
-    {# Baglanti / durum banner (sayfanin en ustunde, sticky) #}
+    <!-- Baglanti / durum banner (sayfanin en ustunde, sticky) -->
     <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite"></div>
 
-    {# Toast notification container #}
+    <!-- Toast notification container -->
     <div id="countToastContainer" class="count-toast-container" aria-live="polite"></div>
 
     <div class="container-xxl mt-5">
 
-        {# MOBIL STICKY SAYAC PANELI (sadece mobilde gorunur) #}
+        <!-- MOBIL STICKY SAYAC PANELI (sadece mobilde gorunur) -->
         <div class="mobile-status-bar" id="mobileStatusBar">
             <div class="ms-counters">
                 <div class="ms-counter ms-found">
@@ -717,7 +717,7 @@
             </div>
         </div>
 
-        {# MOBIL SEKME NAVIGASYONU - Tek DOM, sekmelerle kontrol edilir #}
+        <!-- MOBIL SEKME NAVIGASYONU - Tek DOM, sekmelerle kontrol edilir -->
         <div class="count-mobile-tabs" id="countMobileTabs">
             <button type="button" class="ct-tab active" data-panel="found">
                 <i class="bi bi-check-circle text-success"></i>
@@ -840,13 +840,13 @@
         </div>
     </div>
 
-    {# FAZ 3: Performans Rozeti (Hafif Mod / FPS uyarisi) #}
+    <!-- FAZ 3: Performans Rozeti (Hafif Mod / FPS uyarisi) -->
     <div id="perfBadge" class="perf-badge">
         <i class="bi bi-speedometer"></i>
         <span id="perfBadgeText">Hafif Mod</span>
     </div>
 
-    {# --- FAZ 2: Sayim Kapsami Secim Modali --- #}
+    <!-- --- FAZ 2: Sayim Kapsami Secim Modali --- -->
     <div class="modal fade" id="scopeSelectModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-md-down modal-dialog-scrollable">
             <div class="modal-content">
@@ -864,7 +864,7 @@
                     <div id="scopeModalContent" class="d-none">
                         <div class="mb-3 fw-bold fs-6">Neyi saymak istiyorsunuz?</div>
 
-                        {# Kapsam tipi - radio kartlari #}
+                        <!-- Kapsam tipi - radio kartlari -->
                         <div class="d-grid gap-2 mb-4" id="scopeTypeList">
                             <label class="card card-flush p-3 border cursor-pointer scope-type-card active" data-scope-type="ALL">
                                 <input type="radio" name="scopeType" value="ALL" class="form-check-input d-none" checked>
@@ -918,7 +918,7 @@
                             </label>
                         </div>
 
-                        {# Kapsam secenek listesi (dinamik) #}
+                        <!-- Kapsam secenek listesi (dinamik) -->
                         <div id="scopeValueSection" class="d-none">
                             <div class="fw-bold mb-2" id="scopeValueLabel">Secenekler</div>
                             <div class="input-group mb-2">
@@ -930,7 +930,7 @@
                             </div>
                         </div>
 
-                        {# Onizleme #}
+                        <!-- Onizleme -->
                         <div class="alert alert-info mt-3 mb-0 d-flex align-items-center gap-2">
                             <i class="bi bi-info-circle fs-4"></i>
                             <div>
@@ -952,7 +952,7 @@
         </div>
     </div>
 
-    {# FAZ 3: Tam Liste Gosterim Modali (DOM cap'le gizlenmis kayitlara erisim) #}
+    <!-- FAZ 3: Tam Liste Gosterim Modali (DOM cap'le gizlenmis kayitlara erisim) -->
     <div class="modal fade" id="fullListModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-md-down modal-dialog-scrollable">
             <div class="modal-content">
@@ -1000,7 +1000,7 @@
         </div>
     </div>
 
-    {# --- Urun Gorseli Onizleme Modali --- #}
+    <!-- --- Urun Gorseli Onizleme Modali --- -->
     <div class="modal fade" id="productImageModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
@@ -1037,7 +1037,7 @@
         </div>
     </div>
 
-    {# --- Rapor Onizleme Modali --- #}
+    <!-- --- Rapor Onizleme Modali --- -->
     <div class="modal fade" id="reportPreviewModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-fullscreen-md-down modal-xl modal-dialog-scrollable">
             <div class="modal-content">

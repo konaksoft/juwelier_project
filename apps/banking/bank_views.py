@@ -32,6 +32,11 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.banking.models import BankAccount
+from apps.banking.services import (
+    FX_SENTINEL_MAP,
+    FX_SENTINEL_REVERSE_MAP,
+    SUPPORTED_FX_CURRENCIES,
+)
 from apps.process.models import Payment
 
 log = logging.getLogger(__name__)
@@ -60,43 +65,56 @@ _ZERO = Value(Decimal('0'), output_field=DecimalField(max_digits=15, decimal_pla
 
 def _guess_fx_code_from_rate(exchange_rate):
     """
-    FAZ 20.4: Exchange rate'ten döviz türünü tespit et.
+    FAZ 20.4 / Faz 13: Exchange rate'ten döviz türünü tespit et (FALLBACK YOL).
 
     İki mod:
-    1. Sentinel rate (düzeltme fişleri): 0.01=USD, 0.02=EUR, 0.03=GBP, 0.04=CAD, 0.05=QAR
-    2. Gerçek kur (döviz bozma): Kur aralığından tahmin
+    1. Sentinel rate (düzeltme fişleri): services.FX_SENTINEL_MAP üzerinden okunur.
+       Yazma ve okuma yolları aynı SSOT haritasını kullanır.
+    2. Gerçek kur (döviz bozma): Kur aralığından tahmin (yalnızca reference'sız
+       eski kayıtlar için son savunma hattı; yeni kayıtlar her zaman reference taşır).
+
+    NOT: Bu fonksiyon yalnızca Payment.reference boşsa devreye girer.
+         Yeni eklenen tüm FX yazma yolları reference=[KOD] formatını zorunlu kılar.
     """
     r = float(exchange_rate)
 
-    # Sentinel rate kontrolü (FAZ 20.4: Bakiye düzeltme fişleri)
-    _SENTINEL_MAP = {0.01: 'USD', 0.02: 'EUR', 0.03: 'GBP', 0.04: 'CAD', 0.05: 'QAR'}
-    for sentinel, code in _SENTINEL_MAP.items():
+    # Sentinel rate kontrolü (services.FX_SENTINEL_MAP'ten)
+    for sentinel, code in FX_SENTINEL_REVERSE_MAP.items():
         if abs(r - sentinel) < 0.001:
             return code
 
-    # Gerçek kur aralığı tahmini (2026 döviz kurları)
-    if r < 20:
+    # Gerçek kur aralığı tahmini (Nisan 2026 döviz kurları, TL bazında):
+    # QAR ~9 TL, CAD ~25 TL, USD ~34 TL, AUD ~22 TL, CHF ~39 TL, SAR ~9 TL,
+    # EUR ~37 TL, GBP ~44 TL.
+    # Aralıklar fallback amaçlıdır; yeni FX kayıtları reference üzerinden okunur.
+    if r < 15:
         return 'QAR'
-    elif r < 48:
+    elif r < 30:
+        return 'CAD'
+    elif r < 36:
         return 'USD'
-    elif r < 65:
+    elif r < 41:
         return 'EUR'
-    elif r < 85:
+    elif r < 50:
         return 'GBP'
     return 'Döviz'
 
 
 def _extract_fx_code_from_reference(reference):
     """
-    FAZ 20.4: Payment.reference alanından döviz kodunu çıkar.
+    FAZ 20.4 / Faz 13: Payment.reference alanından döviz kodunu çıkar.
     Format: "[EUR] Açıklama notları"
+
+    Whitelist services.SUPPORTED_FX_CURRENCIES SSOT'undan dinamik okunur;
+    yeni döviz eklemek yalnızca services.CURRENCY_FROM_PRODUCT_NAME güncellemesi
+    gerektirir.
     """
     if not reference:
         return None
     ref = str(reference).strip()
     if ref.startswith('[') and ']' in ref:
         code = ref[1:ref.index(']')].strip().upper()
-        if code in ('USD', 'EUR', 'GBP', 'CAD', 'QAR', 'TRY'):
+        if code in SUPPORTED_FX_CURRENCIES:
             return code
     return None
 
@@ -349,38 +367,10 @@ def get_account_summary(account):
         bank_account=account, is_cancelled=False, is_approved=False,
     ).count()
 
-    # FAZ 20: Merkez Döviz Kasası (currency='FX') ise, döviz bazlı bakiye gruplama
-    # Her döviz türünün (USD, EUR, GBP) ayrı bakiyesini hesapla
-    agg['fx_breakdown'] = None
-    if acct_currency == 'FX':
-        from django.db.models import CharField
-        from django.db.models.functions import Coalesce as FCoalesce
-
-        # currency_amount NULL olabilir — exchange_rate bilgisinden döviz türünü tespit et
-        # Payment kaydındaki reference veya bank_account ile ilişkili
-        # En güvenilir yol: currency_amount > 0 olan kayıtları exchange_rate ile gruplayarak
-        # her döviz türü için ayrı bakiye çıkarmak
-        fx_payments = base_qs.exclude(currency_amount__isnull=True).exclude(currency_amount=0)
-
-        fx_data = {}
-        for fp in fx_payments:
-            # Döviz kodunu Payment'tan alamıyoruz (ayrı alan yok),
-            # ama process_no üzerinden Product'tan çıkarabiliriz.
-            # Basit çözüm: exchange_rate'e göre gruplamak yerine,
-            # aynı process_no'daki Process kaydının ürün adından çıkar.
-            # Daha pragmatik: amount / currency_amount = exchange_rate → yaklaşık kur
-            # Bu kurdan döviz türünü tahmin etmek güvenilmez.
-            # En sağlam çözüm: Payment modeline currency_code eklemek
-            # Şimdilik basit toplama: tüm dövizleri currency_amount üzerinden topla
-            direction_sign = Decimal('-1') if fp.is_output else Decimal('1')
-            fx_code = 'FX'  # Genel
-            if fp.exchange_rate and fp.exchange_rate > 0:
-                fx_code = _guess_fx_code_from_rate(fp.exchange_rate)
-            if fx_code not in fx_data:
-                fx_data[fx_code] = Decimal('0')
-            fx_data[fx_code] += direction_sign * (fp.currency_amount or Decimal('0'))
-
-        agg['fx_breakdown'] = {k: str(v) for k, v in fx_data.items()} if fx_data else None
+    # FAZ 20 / Faz 13.2: Merkez Döviz Kasası (currency='FX') için bakiye kırılımı.
+    # SSOT: _get_fx_breakdown() — Payment.reference [KOD] etiketini önce okur,
+    # yalnızca eski referanssız kayıtlar için kur aralığı fallback'ine düşer.
+    agg['fx_breakdown'] = _get_fx_breakdown(account) if acct_currency == 'FX' else None
 
     return agg
 
@@ -808,7 +798,7 @@ def bank_management_payments(request, account_id):
             'payment_type': p.payment_type,
             'payment_type_display': str(type_labels.get(p.payment_type, p.payment_type)),
             'amount': _display_amount,
-            'amount_tl': str(p.amount),
+            'amount_eur': str(p.amount),
             'net_amount': _display_net,
             'commission_amount': str(p.commission_amount) if p.commission_amount else '0',
             'commission_rate': str(p.commission_rate_applied) if p.commission_rate_applied else '',
@@ -1482,20 +1472,10 @@ def adjustment_payment(request):
     _adj_extra = {}
     acct_currency = getattr(account, 'currency', 'TRY') or 'TRY'
 
-    # FAZ 20.4: Currency kodu sentinel exchange_rate değerleri ile kodlanır.
-    # Bu sayede _get_fx_breakdown doğru döviz türünü tespit eder.
-    _FX_SENTINEL_RATES = {
-        'USD': Decimal('0.01'),
-        'EUR': Decimal('0.02'),
-        'GBP': Decimal('0.03'),
-        'CAD': Decimal('0.04'),
-        'QAR': Decimal('0.05'),
-    }
-
     if acct_currency == 'FX' and adj_currency and adj_currency != 'TRY':
         _adj_extra['currency_amount'] = abs_amount
-        # Sentinel rate: döviz kodunu tanımlar (ör: 0.01=USD, 0.02=EUR)
-        _adj_extra['exchange_rate'] = _FX_SENTINEL_RATES.get(adj_currency, Decimal('0.09'))
+        # FAZ 13.3: Sentinel rate SSOT'tan alınır (services.FX_SENTINEL_MAP).
+        _adj_extra['exchange_rate'] = FX_SENTINEL_MAP.get(adj_currency, Decimal('0.09'))
     elif acct_currency != 'TRY' and acct_currency != 'FX':
         _adj_extra['currency_amount'] = abs_amount
         _adj_extra['exchange_rate'] = Decimal('1')
@@ -1526,6 +1506,204 @@ def adjustment_payment(request):
     return JsonResponse({
         'result': True,
         'msg': f'{abs_amount:.2f} {account.currency} {direction} başarıyla kaydedildi.',
+    })
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# FAZ 31 / BUG-3 — MANUEL GİDER GİRİŞİ (2026-05-01)
+# ════════════════════════════════════════════════════════════════════════════
+#
+# Müşteri şikayeti: "Kasada gider düşüremiyorum, gider düşecek ekran yok."
+#
+# Önceki durum:
+#   - IncomeExpenseLedger ve CashboxLedger.EXPENSE modelleri MEVCUTTU
+#   - Ancak bunlara YAZAN endpoint yoktu (sadece tahsilat/iskonto/kur farkı
+#     gibi otomatik akışlar yazıyordu)
+#   - Manuel "kira ödedim", "fatura ödedim", "personel maaşı" gibi gider
+#     girişi için ekran/endpoint hiç yazılmamıştı
+#
+# Bu endpoint:
+#   1. Payment (is_output=True, payment_type='ADJUSTMENT') yazar →
+#      kasa bakiyesi anında düşer (get_bank_balance_qs Payment'a dayanır)
+#   2. CashboxLedger.EXPENSE yazar → audit trail
+#   3. IncomeExpenseLedger.OTHER_EXPENSE yazar → P&L raporlamasına dahil
+#
+# Tüm yazımlar TEK atomik blokta. Bu üçünden biri patlasa hiçbiri yazılmaz.
+# Mevcut adjustment_payment endpoint'ine DOKUNULMADI; o "açılış/sayım farkı"
+# için kalır, bu yeni endpoint "gerçek gider" için kullanılır.
+# ════════════════════════════════════════════════════════════════════════════
+
+@login_required(login_url='login')
+@transaction.atomic
+def manual_expense(request):
+    """Kasadan manuel gider düşümü.
+
+    POST parametreleri:
+        account_id          — BankAccount UUID (zorunlu)
+        amount              — Gider tutarı (zorunlu, pozitif)
+        currency            — Döviz cinsi (FX kasalarda zorunlu, diğerlerinde opsiyonel)
+        description         — Açıklama (zorunlu, ör: "Kira", "Personel maaşı")
+        expense_category_id — ExpenseCategory UUID (FAZ 61, OPSİYONEL)
+                               Geçerli kategori varsa IncomeExpenseLedger.expense_category
+                               alanına yazılır; yoksa NULL kalır (geriye uyum).
+
+    Yan etkiler:
+      • Payment(is_output=True, payment_type='ADJUSTMENT') — kasa bakiyesi düşer
+      • CashboxLedger.EXPENSE                              — audit/iz
+      • IncomeExpenseLedger.OTHER_EXPENSE                  — gelir/gider defteri
+                                                             (+ expense_category FK opsiyonel)
+    """
+    if request.method != 'POST':
+        return JsonResponse({'result': False, 'msg': 'Geçersiz istek.'}, status=405)
+
+    store = _get_store(request)
+    if not store:
+        return JsonResponse({'result': False, 'msg': 'Mağaza bulunamadı.'})
+
+    account_id = request.POST.get('account_id', '').strip()
+    amount_str = request.POST.get('amount', '').strip()
+    description = request.POST.get('description', '').strip()
+    exp_currency = request.POST.get('currency', '').strip().upper() or None
+    category_id = request.POST.get('expense_category_id', '').strip() or None
+
+    if not account_id:
+        return JsonResponse({'result': False, 'msg': 'Hesap bilgisi eksik.'})
+    if not amount_str:
+        return JsonResponse({'result': False, 'msg': 'Tutar girilmelidir.'})
+    if not description:
+        return JsonResponse({'result': False, 'msg': 'Gider açıklaması zorunludur.'})
+
+    try:
+        amount = Decimal(amount_str.replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        return JsonResponse({'result': False, 'msg': 'Geçersiz tutar formatı.'})
+
+    if amount <= 0:
+        return JsonResponse({'result': False, 'msg': 'Gider tutarı pozitif olmalıdır.'})
+
+    account = BankAccount.objects.filter(
+        id=account_id, store=store, is_deleted=False, is_active=True,
+    ).first()
+    if not account:
+        return JsonResponse({'result': False, 'msg': 'Hesap bulunamadı veya aktif değil.'})
+
+    # FAZ 61: Opsiyonel kategori doğrulaması (geriye uyumlu — eski çağrılar bypass eder).
+    expense_category = None
+    if category_id:
+        from apps.banking.models import ExpenseCategory
+        expense_category = ExpenseCategory.objects.filter(
+            id=category_id, store=store, is_active=True,
+        ).first()
+        if not expense_category:
+            return JsonResponse({
+                'result': False,
+                'msg': 'Seçilen gider kategorisi bulunamadı veya aktif değil.',
+            })
+
+    acct_currency = getattr(account, 'currency', 'TRY') or 'TRY'
+
+    # ────────────────────────────────────────────────────────────────
+    # 1) Payment kaydı (is_output=True → kasa bakiyesi anında düşer)
+    # ────────────────────────────────────────────────────────────────
+    _pay_extra = {}
+    if acct_currency == 'FX' and exp_currency and exp_currency != 'TRY':
+        _pay_extra['currency_amount'] = amount
+        _pay_extra['exchange_rate'] = FX_SENTINEL_MAP.get(exp_currency, Decimal('0.09'))
+    elif acct_currency != 'TRY' and acct_currency != 'FX':
+        _pay_extra['currency_amount'] = amount
+        _pay_extra['exchange_rate'] = Decimal('1')
+
+    _ref_prefix = f'[{exp_currency}] ' if (acct_currency == 'FX' and exp_currency) else ''
+    _ref_text = f'{_ref_prefix}GIDER: {description}'[:100]
+
+    payment = Payment.objects.create(
+        process_no=None,
+        payment_type='ADJUSTMENT',
+        amount=amount,
+        is_output=True,                                  # kasadan ÇIKIŞ
+        bank_account=account,
+        reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
+        is_approved=True,
+        reference=_ref_text,
+        performed_by=request.user,
+        **_pay_extra,
+    )
+
+    # ────────────────────────────────────────────────────────────────
+    # 2) CashboxLedger.EXPENSE (audit trail)
+    # ────────────────────────────────────────────────────────────────
+    # TL eşdeğeri:
+    #   • TRY kasa → amount aynen
+    #   • FX kasa → amount sentinel rate'i ham olduğu için TL eşdeğeri
+    #     için anlık has kuru / döviz kuru çağırmak gerekir; FAZ 14 şu an
+    #     bu kasa hareketi için TL eşdeğerini approximate olarak amount kabul ediyor.
+    #     (Mevcut adjustment_payment de aynı yaklaşımı kullanıyor.)
+    from apps.banking.models import CashboxLedger, IncomeExpenseLedger
+
+    cb_currency_choice = (
+        exp_currency if (acct_currency == 'FX' and exp_currency) else acct_currency
+    )
+    if cb_currency_choice not in ('TRY', 'USD', 'EUR', 'GBP', 'HS'):
+        cb_currency_choice = 'TRY'
+
+    try:
+        prior_balance = account.get_balance(currency=cb_currency_choice)
+    except Exception:
+        prior_balance = Decimal('0')
+    new_balance = (Decimal(str(prior_balance)) - amount).quantize(Decimal('0.01'))
+
+    cashbox_entry = CashboxLedger.objects.create(
+        cashbox=account,
+        store=store,
+        movement_type=CashboxLedger.MovementType.EXPENSE,
+        amount=amount.quantize(Decimal('0.01')),
+        currency=cb_currency_choice,
+        amount_eur_equivalent=amount.quantize(Decimal('0.01')),
+        exchange_rate=_pay_extra.get('exchange_rate'),
+        balance_snapshot=new_balance,
+        related_payment=payment,
+        process_no=None,
+        description=f'Manuel gider — {description}'[:255],
+        created_by=request.user,
+        ip_address=request.META.get('REMOTE_ADDR') or None,
+        user_agent=(request.META.get('HTTP_USER_AGENT') or '')[:512],
+    )
+
+    # ────────────────────────────────────────────────────────────────
+    # 3) IncomeExpenseLedger.OTHER_EXPENSE (P&L kaydı)
+    # ────────────────────────────────────────────────────────────────
+    # Anlık has kuru — FX_LOSS_EXPENSE gibi altın bazlı zarar değil; pure TL gider.
+    # amount_hs ve exchange_rate_eur sıfır kalır (modelin default'u 0).
+    try:
+        IncomeExpenseLedger.objects.create(
+            store=store,
+            entry_type=IncomeExpenseLedger.EntryType.OTHER_EXPENSE,
+            amount_eur=amount.quantize(Decimal('0.01')),
+            amount_hs=Decimal('0'),
+            exchange_rate_eur=Decimal('0'),
+            related_payment=payment,
+            expense_category=expense_category,  # FAZ 61: opsiyonel kategori bağı
+            description=description[:255],
+            created_by=request.user,
+            ip_address=request.META.get('REMOTE_ADDR') or None,
+            user_agent=(request.META.get('HTTP_USER_AGENT') or '')[:512],
+        )
+    except Exception as exc:
+        # IncomeExpenseLedger yazımı başarısız olursa atomik blok geri sarılır.
+        # Loglanır ve kullanıcıya hata döner.
+        log.exception("manual_expense: IncomeExpenseLedger yazımı başarısız: %s", exc)
+        raise
+
+    log.info(
+        "FAZ31 MANUAL_EXPENSE: account=%s amount=%s currency=%s description=%s "
+        "category=%s user=%s",
+        account.name, amount, cb_currency_choice, description,
+        getattr(expense_category, 'name', '-'), request.user.username,
+    )
+
+    return JsonResponse({
+        'result': True,
+        'msg': f'{amount:.2f} {cb_currency_choice} gider olarak kaydedildi.',
     })
 
 

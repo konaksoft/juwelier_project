@@ -24,7 +24,7 @@ class BankTransactionAdmin(admin.ModelAdmin):
         'other_iban', 'iban', 'note', 'doc_no', 'reference',
     )
     readonly_fields = ('id', 'created_on', 'updated_on', 'api_created_date')
-    raw_id_fields = ('customer', 'invoice', 'store')
+    raw_id_fields = ('customer', 'store')
     ordering = ('-doc_date',)
     date_hierarchy = 'doc_date'
 
@@ -57,8 +57,8 @@ class BankTransactionAdmin(admin.ModelAdmin):
         ('Cari Eşleştirme', {
             'fields': ('customer', 'match_status', 'match_score'),
         }),
-        ('Fatura Bağlantısı', {
-            'fields': ('invoice', 'payment_status'),
+        ('Ödeme Durumu', {
+            'fields': ('payment_status',),
         }),
         ('Durum', {
             'fields': ('is_succeed', 'api_message', 'is_read'),

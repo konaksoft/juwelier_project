@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework.authtoken.views import obtain_auth_token
@@ -47,18 +48,18 @@ urlpatterns = [
     path('leads/', include('apps.crm.leads.urls'), name='leads'),
     path('proposals/', include('apps.crm.proposals.urls'), name='proposals'),
     path('devices/', include('apps.crm.devices.urls'), name='devices'),
-    path('invoices/', include('apps.invoices.urls'), name='invoices'),
+    # invoices, pavo, masak URL'leri kaldırıldı — bu app'ler Juwelier Plus'ta yok
     path('orders/', include('apps.orders.urls'), name='orders'),
-    path('pavo/', include('apps.pavo.urls'), name='pavo'),
     path('backups/', include('apps.backups.urls'), name='backups'),
     path('testimonials/', include('apps.testimonials.urls'), name='testimonials'),
     path('settings/', include('apps.settings.urls'), name='settings'),
-    path('masak/', include('apps.masak.urls'), name='masak'),
     path('live_board/', include('apps.live_board.urls'), name='live_board'),
     path('supports/', include('apps.supports.urls'), name='supports'),
     path('chambers/', include('apps.chambers.urls'), name='chambers'),
     path('banking/', include('apps.banking.urls'), name='banking'),
     path('banks/', include('apps.banking.bank_urls'), name='bank-management'),
+    # FAZ 46 — Şubeler Arası Transfer (Kasa)
+    path('store-transfers/', include('apps.store_transfers.urls'), name='store-transfers'),
 ]
 
 if settings.DEBUG:

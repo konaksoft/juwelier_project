@@ -8,6 +8,7 @@ from typing import Optional
 from typing import Any, Dict, List, Tuple
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core import signing
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db.models import Max, Q, Sum, OuterRef, Subquery, F
@@ -163,7 +164,7 @@ def update_product_stock(product, transaction_type, quantity_pieces, quantity_we
                 'stock_gram': Decimal('0.0000'),
                 'stock_pieces': 0,
                 'weighted_avg_cost_hs': Decimal('0.0000'),
-                'weighted_avg_cost_tl': Decimal('0.00'),
+                'weighted_avg_cost_eur': Decimal('0.00'),
             }
         )
         if hasattr(snapshot, 'incoming_stock_pieces'):
@@ -174,29 +175,29 @@ def update_product_stock(product, transaction_type, quantity_pieces, quantity_we
         return
 
     # Has Altin TL kuru (islem anindaki kur)
-    hs_rate_tl = Decimal('0.0000')
+    hs_rate_eur = Decimal('0.0000')
     try:
         hs_data = PriceService.get_price('GOLD_24K')
         if transaction_type == 'ENTRY':
-            hs_rate_tl = hs_data.get('buy_tl', Decimal('0'))
+            hs_rate_eur = hs_data.get('buy_tl', Decimal('0'))
         else:
-            hs_rate_tl = hs_data.get('sell_tl', Decimal('0'))
+            hs_rate_eur = hs_data.get('sell_tl', Decimal('0'))
 
         # Fallback: PriceService bos donerse eski Products tablosundan oku
-        if hs_rate_tl <= 0:
-            hs_prod = Products.objects.filter(name__icontains='Has Altın').only('sale_price_tl', 'buy_price_tl').first()
+        if hs_rate_eur <= 0:
+            hs_prod = Products.objects.filter(name__icontains='Has Altın').only('sale_price_eur', 'buy_price_eur').first()
             if hs_prod:
                 if transaction_type == 'ENTRY':
-                    hs_rate_tl = Decimal(str(hs_prod.buy_price_tl or 0))
+                    hs_rate_eur = Decimal(str(hs_prod.buy_price_eur or 0))
                 else:
-                    hs_rate_tl = Decimal(str(hs_prod.sale_price_tl or 0))
+                    hs_rate_eur = Decimal(str(hs_prod.sale_price_eur or 0))
     except Exception:
         pass
 
     # TL maliyet hesapla
-    unit_cost_tl = Decimal('0.00')
-    if hs_rate_tl > 0 and unit_cost_hs > 0:
-        unit_cost_tl = (Decimal(str(unit_cost_hs)) * hs_rate_tl).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    unit_cost_eur = Decimal('0.00')
+    if hs_rate_eur > 0 and unit_cost_hs > 0:
+        unit_cost_eur = (Decimal(str(unit_cost_hs)) * hs_rate_eur).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     # Reason mapping: description'dan en uygun StockLedger.Reason'i sec
     reason_map_entry = {
@@ -234,8 +235,8 @@ def update_product_stock(product, transaction_type, quantity_pieces, quantity_we
             ref_type='process',
             ref_id=_ledger_ref_id,
             unit_cost_hs=Decimal(str(unit_cost_hs or 0)),
-            unit_cost_tl=unit_cost_tl,
-            hs_rate_tl=hs_rate_tl,
+            unit_cost_eur=unit_cost_eur,
+            hs_rate_eur=hs_rate_eur,
             user=user,
             notes=description or f"ENTRY islemi",
         )
@@ -252,14 +253,32 @@ def update_product_stock(product, transaction_type, quantity_pieces, quantity_we
                 reason=reason,
                 ref_type='process',
                 ref_id=_ledger_ref_id,
-                hs_rate_tl=hs_rate_tl,
+                hs_rate_eur=hs_rate_eur,
                 user=user,
                 notes=description or f"EXIT islemi",
             )
-        except InsufficientStockError:
+        except InsufficientStockError as exc:
+            # FAZ 48 (2026-05-03): Teşhis bilgisi ile zenginleştirilmiş hata mesajı.
+            # Eski mesaj sadece ürün adını gösteriyordu → kullanıcı "stoğa ekledim ama
+            # düşmüyor" durumunda hangi senaryonun (snapshot yok / pieces yetersiz /
+            # gram yetersiz) tetiklendiğini göremiyordu. InsufficientStockError zaten
+            # available/requested/deficit alanlarını taşıyor; bunları görüntüye taşıyoruz.
+            _avail = getattr(exc, 'available', None)
+            _req = getattr(exc, 'requested', None)
+            _unit = getattr(exc, 'unit', '')
+            _deficit = getattr(exc, 'deficit', None)
+            _detail = ""
+            if _avail is not None and _req is not None:
+                _detail = (
+                    f"<br>Mevcut: {_avail}{_unit}"
+                    f"<br>Talep: {_req}{_unit}"
+                )
+                if _deficit is not None:
+                    _detail += f"<br>Eksik: {_deficit}{_unit}"
             raise ValidationError(
                 "Yetersiz stok!<br>"
                 f"Ürün adı: {product.name}"
+                f"{_detail}"
             )
     else:
         raise ValueError(f"Geçersiz işlem türü: {transaction_type}")
@@ -294,11 +313,11 @@ def calc_process_summary(process_no):
 
     net_paid = paid_in - paid_out
 
-    balance_tl = net_total_tl - net_paid
+    balance_eur = net_total_tl - net_paid
 
     balance_hs = Decimal('0')
     if net_total_tl != 0:
-        balance_hs = (balance_tl / net_total_tl) * net_total_hs
+        balance_hs = (balance_eur / net_total_tl) * net_total_hs
 
     def fmt_bucket(source):
         return {
@@ -317,10 +336,10 @@ def calc_process_summary(process_no):
         "paid_out": _fmt_tl(paid_out),
         "by_type_in": fmt_bucket(in_buckets),
         "by_type_out": fmt_bucket(out_buckets),
-        "balance": _fmt_tl(abs(balance_tl)),
-        "balance_tl": _fmt_tl(abs(balance_tl)),
-        "balance_tl_raw": balance_tl,
-        "balance_raw": balance_tl,
+        "balance": _fmt_tl(abs(balance_eur)),
+        "balance_eur": _fmt_tl(abs(balance_eur)),
+        "balance_eur_raw": balance_eur,
+        "balance_raw": balance_eur,
         "net_hs": _fmt_hs(net_total_hs),
         "balance_hs": _fmt_hs(abs(balance_hs))
     }
@@ -511,9 +530,9 @@ def get_all(request):
         hs_rate_buy = None
         for p in procs:
             if hs_rate_sale is None and p.transaction_type in EXIT_SET:
-                hs_rate_sale = getattr(p, "hs_rate_sale_tl", None)
+                hs_rate_sale = getattr(p, "hs_rate_sale_eur", None)
             if hs_rate_buy is None and p.transaction_type in ENTRY_SET:
-                hs_rate_buy = getattr(p, "hs_rate_buy_tl", None)
+                hs_rate_buy = getattr(p, "hs_rate_buy_eur", None)
             if hs_rate_sale is not None and hs_rate_buy is not None:
                 break
 
@@ -566,8 +585,8 @@ def get_all(request):
             "date": (first_proc.date if first_proc else None),
 
             "price_hs": net_hs,
-            "hs_rate_sale_tl": hs_rate_sale,
-            "hs_rate_buy_tl": hs_rate_buy,
+            "hs_rate_sale_eur": hs_rate_sale,
+            "hs_rate_buy_eur": hs_rate_buy,
 
             "purchase_amount": tl_purchase,
             "sale_amount": tl_sale,
@@ -638,7 +657,7 @@ def delete(request):
                                 product=product, store=store
                             ).first()
                             u_hs = snap.weighted_avg_cost_hs if snap else Decimal('0')
-                            u_tl = snap.weighted_avg_cost_tl if snap else Decimal('0')
+                            u_tl = snap.weighted_avg_cost_eur if snap else Decimal('0')
                             try:
                                 StockService.record_exit(
                                     product=product,
@@ -648,7 +667,7 @@ def delete(request):
                                     reason=StockLedger.Reason.RETURN_OUT,
                                     ref_type='process_cancel',
                                     ref_id=str(record.id),
-                                    unit_cost_hs=u_hs, unit_cost_tl=u_tl,
+                                    unit_cost_hs=u_hs, unit_cost_eur=u_tl,
                                     user=request.user,
                                     notes=f"İşlem iptali (Process.delete): {record.process_no}",
                                 )
@@ -675,7 +694,14 @@ def delete(request):
                     record.save(update_fields=['is_status', 'is_deleted'])
 
                     # --- Havuz boşsa ilgili Bracelets/Scraps satırını gizle ---
-                    if product and store:
+                    # FAZ 65: Barkodlu (tekil) GoldPurchases urunleri "havuz" degildir
+                    # — gram-tabanli aggregate stok degil, piece-tabanli tekil urundur.
+                    # Pool cleanup mantigi yalnizca hurda/bilezik POOL urunleri icin
+                    # tasarlanmistir. Restore edilmis barkodlu urunlerde StockSnapshot
+                    # eksik oldugunda pool_empty=True yanlis tetiklenip
+                    # Products.is_active=False ile urun veri kaybi olusturuyordu.
+                    _is_barcoded = bool(getattr(product, 'barcode', None)) if product else False
+                    if product and store and not _is_barcoded:
                         snap_after = StockSnapshot.objects.filter(
                             product=product, store=store
                         ).first()
@@ -718,9 +744,22 @@ def delete(request):
 
 @login_required(login_url='login')
 def process_detail_page(request, process_no: str):
+    _ENTRY_SET = {"PURCHASE", "STOCK_IN", "RETURN", "ORDER_IN"}
+    _PROC_TYPE_LABELS = {
+        'RETAIL': 'Perakende', 'WHOLESALE': 'Toptan', 'FAST_PROCESS': 'Hızlı İşlem'
+    }
+    _STATUS_MAP = {
+        'COMPLETED':    ('bg-light-success text-success', 'TAMAMLANDI'),
+        'PENDING':      ('bg-light-warning text-warning', 'BEKLİYOR'),
+        'IN_PROGRESS':  ('bg-light-info text-info',       'AKTİF'),
+        'OPEN_BINDING': ('bg-light-primary text-primary', 'AÇIK BAĞLAMA'),
+        'WAITING_STOCK':('bg-light-warning text-warning', 'STOK BEKLİYOR'),
+        'CANCELED':     ('bg-light-danger text-danger',   'İPTAL'),
+    }
+
     qs = (Process.objects
           .filter(process_no=process_no, is_deleted=False)
-          .select_related("product", "employee", "customer", "store")
+          .select_related("product", "product__category", "employee", "customer", "store")
           .order_by("date"))
 
     if not qs.exists():
@@ -728,67 +767,40 @@ def process_detail_page(request, process_no: str):
 
     first = qs.first()
     customer = first.customer
+    store = first.store
 
-    # --- 1. İŞLEM KALEMLERİ ---
+    # --- 1. ZENGİN İŞLEM KALEMLERİ ---
     items = []
+    total_profit_hs = Decimal('0')
+    any_legacy = False
     for p in qs:
-        t_type = p.get_transaction_type_display()
-        icon = "bi-box"
-        color_class = "text-dark"
-
-        if p.transaction_type == 'SALE':
-            icon = "bi-arrow-up-right-circle"
-            color_class = "text-success"
-        elif p.transaction_type == 'PURCHASE':
-            icon = "bi-arrow-down-left-circle"
-            color_class = "text-danger"
-        elif p.transaction_type == 'RETURN':
-            icon = "bi-arrow-counterclockwise"
-            color_class = "text-warning"
-
-        qty_display = ""
-        if p.gram > 0:
-            qty_display = f"{_fmt_hs(p.gram)} gr"
-        else:
-            qty_display = f"{p.piece} ad"
-
-        items.append({
-            "product_name": p.product.name if p.product else "Tanımsız Ürün",
-            "type": t_type,
-            "type_code": p.transaction_type,
-            "icon": icon,
-            "color": color_class,
-            "quantity": qty_display,
-            "unit_price": _fmt_tl(p.unit_price),
-            "total_price": _fmt_tl(p.amount),
-            "has_price": _fmt_hs(p.price_hs),
-            "is_unique": getattr(p.product, 'barcode', None) is not None
-        })
+        payload = _build_xray_item_payload(p, _ENTRY_SET)
+        items.append(payload)
+        gp = payload['financials'].get('gross_profit_hs')
+        if gp is not None:
+            total_profit_hs += Decimal(str(gp))
+        if payload['data_quality'].get('is_legacy'):
+            any_legacy = True
 
     # --- 2. ÖDEME DETAYLARI ---
     pays = Payment.objects.filter(process_no=process_no).order_by("date")
-    payment_list = []
-
-    payment_methods = {
-        'CASH': {'label': 'Nakit', 'icon': 'bi-cash-stack'},
-        'CREDIT_CARD': {'label': 'Kredi Kartı', 'icon': 'bi-credit-card'},
-        'TRANSFER': {'label': 'Havale / EFT', 'icon': 'bi-bank'},
+    _PAY_META = {
+        'CASH':        {'label': 'Nakit',       'icon': 'fa-solid fa-money-bill-wave', 'color': 'success'},
+        'CREDIT_CARD': {'label': 'Kredi Kartı', 'icon': 'fa-regular fa-credit-card',  'color': 'info'},
+        'TRANSFER':    {'label': 'Havale / EFT','icon': 'fa-solid fa-building-columns','color': 'warning'},
     }
-
-    has_partial_payment = False
-    if pays.count() > 1:
-        has_partial_payment = True
-
+    payment_list = []
     for pay in pays:
-        pm = payment_methods.get(pay.payment_type, {'label': 'Diğer', 'icon': 'bi-wallet2'})
-
+        pm = _PAY_META.get(pay.payment_type, {'label': 'Diğer', 'icon': 'fa-solid fa-coins', 'color': 'secondary'})
         payment_list.append({
             "type_label": pm['label'],
             "icon": pm['icon'],
+            "color": pm['color'],
             "date": pay.date.strftime("%d.%m.%Y %H:%M"),
+            "amount_raw": float(pay.amount),
             "amount": _fmt_tl(pay.amount),
             "is_refund": pay.is_output,
-            "installment": pay.installment if pay.installment > 1 else None
+            "installment": pay.installment if pay.installment > 1 else None,
         })
 
     # --- 3. EMANET DURUMU ---
@@ -798,49 +810,315 @@ def process_detail_page(request, process_no: str):
         custody_info = {
             "type": custody_ledger.get_custody_type_display(),
             "amount_hs": _fmt_hs(custody_ledger.amount_hs),
-            "desc": custody_ledger.description
+            "desc": custody_ledger.description,
         }
 
     # --- 4. ÖZET VE BAKİYE ---
     summary = calc_process_summary(process_no)
-
-    balance_badge = {}
     raw_bal = summary['balance_raw']
-
     if raw_bal > Decimal('0.01'):
-        balance_badge = {
-            "text": "Borçlu (Eksik Ödeme)",
-            "class": "bg-danger",
-            "icon": "bi-exclamation-circle"
-        }
+        balance_state = {'cls': 'bg-light-danger text-danger', 'text': 'Borçlu', 'icon': 'fa-solid fa-circle-exclamation'}
     elif raw_bal < Decimal('-0.01'):
-        balance_badge = {
-            "text": "Alacaklı (Fazla Ödeme)",
-            "class": "bg-warning text-dark",
-            "icon": "bi-info-circle"
-        }
+        balance_state = {'cls': 'bg-light-warning text-warning', 'text': 'Alacaklı', 'icon': 'fa-solid fa-circle-info'}
     else:
-        balance_badge = {
-            "text": "Tamamlandı (Ödendi)",
-            "class": "bg-success",
-            "icon": "bi-check-circle"
-        }
+        balance_state = {'cls': 'bg-light-success text-success', 'text': 'Kapandı', 'icon': 'fa-solid fa-circle-check'}
+
+    # --- 5. DURUM VE META ---
+    status_code = first.is_status or 'IN_PROGRESS'
+    is_canceled = bool(getattr(first, 'is_cancelled', False))
+    if is_canceled:
+        status_cls, status_text = 'bg-light-danger text-danger', 'İPTAL EDİLDİ'
+    else:
+        status_cls, status_text = _STATUS_MAP.get(status_code, ('bg-light text-secondary', status_code))
+
+    profit_cls = 'text-success' if total_profit_hs >= Decimal('0') else 'text-danger'
+
+    # --- 6. WhatsApp paylaşım için imzalı token ---
+    public_token = make_public_process_token(process_no)
+    customer_phone_clean = ''
+    if customer and getattr(customer, 'phone', None):
+        digits = ''.join(ch for ch in str(customer.phone) if ch.isdigit())
+        if digits:
+            if digits.startswith('90'):
+                customer_phone_clean = digits
+            elif digits.startswith('0'):
+                customer_phone_clean = '90' + digits[1:]
+            else:
+                customer_phone_clean = '90' + digits
 
     context = {
         "process_no": process_no,
         "date": first.date.strftime("%d.%m.%Y %H:%M"),
-        "employee": f"{first.employee.first_name} {first.employee.last_name}" if first.employee else "-",
+        "employee_name": f"{first.employee.first_name} {first.employee.last_name}".strip() if first.employee else "—",
+        "employee_username": getattr(first.employee, 'username', '') or '',
         "customer": customer,
+        "store_name": getattr(store, 'name', '—') or '—',
+        "process_type": first.process_type or 'RETAIL',
+        "process_type_label": _PROC_TYPE_LABELS.get(first.process_type, first.process_type or '—'),
+        "status_cls": status_cls,
+        "status_text": status_text,
+        "is_canceled": is_canceled,
         "items": items,
         "payments": payment_list,
-        "has_partial_payment": has_partial_payment,
+        "has_partial_payment": len(payment_list) > 1,
         "summary": summary,
-        "balance_badge": balance_badge,
+        "balance_state": balance_state,
         "custody_info": custody_info,
-        "title": f"İşlem Detayı #{process_no}"
+        "any_legacy": any_legacy,
+        "total_profit_hs": _fmt_hs(total_profit_hs) if items else None,
+        "total_profit_hs_raw": float(total_profit_hs),
+        "profit_cls": profit_cls,
+        "public_token": public_token,
+        "customer_phone_clean": customer_phone_clean,
+        "title": f"İşlem Detayı — {process_no}",
     }
 
     return render(request, 'management/process/detail.html', context)
+
+
+# ═══ FAZ 40.3 — Public (Login'siz) İşlem Özeti ════════════════════════════════
+# Müşteri WhatsApp ile gelen linkten herhangi bir kimlik doğrulama olmadan
+# işlemi görüntüleyebilir. Token kriptografik imzalıdır (signing.dumps), tahmin
+# edilemez. Maliyet/kâr/WAC/personel iç verileri MÜŞTERİYE GÖSTERİLMEZ.
+# ───────────────────────────────────────────────────────────────────────────────
+
+PUBLIC_PROCESS_TOKEN_SALT = 'public-process-detail-v1'
+PUBLIC_PROCESS_TOKEN_MAX_AGE = 60 * 60 * 24 * 365  # 1 yıl
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 68.1 — URL-Safe Token Separator
+#   Django'nun varsayılan `signing.dumps()` çıktısı 'data:timestamp:signature'
+#   formatında olup ':' karakteri içerir. Bu karakter URL path segment'inde
+#   teknik olarak izinli olsa da:
+#     - WhatsApp URL butonu native render'ında ':' scheme separator olarak
+#       yorumlanıp token'ı truncate edebilir,
+#     - Bazı Nginx/CDN/proxy konfigürasyonları ':' içeren path'leri reddeder,
+#     - URL-encode (%3A) edilirse Django routing eşleşse de signature
+#       doğrulaması bozulur.
+#   Çözüm: Separator olarak '.' kullanılır (URL-safe, base64url alfabesinde
+#   bulunmaz, signing.Signer tarafından kabul edilir).
+#
+#   Geriye Uyumluluk: ':' içeren eski token'lar 1 yıl geçerli kalmaya devam
+#   eder. verify_public_process_token() önce yeni format ('.'), başarısızsa
+#   eski format (':') ile dener — kademeli geçiş sağlanır.
+# ─────────────────────────────────────────────────────────────────────────────
+PUBLIC_PROCESS_TOKEN_SEP = '.'  # URL-safe separator
+
+
+def _build_public_process_signer():
+    """
+    URL-safe separator ('.') ile TimestampSigner örneği döndürür.
+    Lazy import — modül yüklenirken settings hazır olmasa da güvenli.
+    """
+    return signing.TimestampSigner(salt=PUBLIC_PROCESS_TOKEN_SALT, sep=PUBLIC_PROCESS_TOKEN_SEP)
+
+
+def make_public_process_token(process_no: str) -> str:
+    """
+    Process numarasından kriptografik imzalı (geri-açılabilir) token üretir.
+    URL-safe separator ('.') kullanır → WhatsApp URL butonunda ve tüm web
+    sunucularında sorunsuz çalışır.
+    """
+    signer = _build_public_process_signer()
+    return signer.sign_object({'pn': str(process_no)}, compress=True)
+
+
+def verify_public_process_token(token: str):
+    """
+    Token'ı doğrular, geçerliyse process_no döndürür, aksi halde None.
+
+    Iki separator destekler (kademeli geçiş için):
+      1) Yeni format: '.' separator (FAZ 68.1+)
+      2) Eski format: ':' separator (FAZ 40.3 default)
+    """
+    if not token:
+        return None
+
+    # 1) Yeni format ('.') ile dene
+    try:
+        signer = _build_public_process_signer()
+        data = signer.unsign_object(token, max_age=PUBLIC_PROCESS_TOKEN_MAX_AGE)
+        if isinstance(data, dict):
+            pn = data.get('pn')
+            if pn:
+                return pn
+    except (signing.BadSignature, signing.SignatureExpired):
+        pass
+    except Exception:
+        pass
+
+    # 2) Geriye uyum — eski format (':') ile dene
+    try:
+        data = signing.loads(token, salt=PUBLIC_PROCESS_TOKEN_SALT,
+                             max_age=PUBLIC_PROCESS_TOKEN_MAX_AGE)
+        if isinstance(data, dict):
+            return data.get('pn')
+    except signing.BadSignature:
+        return None
+    except Exception:
+        return None
+
+    return None
+
+
+def _build_public_item_payload(p, ENTRY_SET):
+    """
+    Müşteri-yönlü payload — iç finansal veriler (WAC, maliyet, kâr) HARİÇ.
+    """
+    is_entry = (getattr(p, 'transaction_type', '') or '') in ENTRY_SET
+    prod = getattr(p, 'product', None)
+
+    image_url = ''
+    karat_label = ''
+    milyem = 0
+    jewelry_type = ''
+    name = 'Nakit / Diğer'
+    barcode = ''
+
+    if prod is not None:
+        try:
+            img = getattr(prod, 'image', None)
+            if img:
+                image_url = img.url
+        except Exception:
+            image_url = ''
+        try:
+            milyem = int(float(getattr(prod, 'product_mileage', 0) or 0))
+        except Exception:
+            milyem = 0
+        karat_label = _karat_label_from_mileage(milyem)
+        jewelry_type = _safe_str(getattr(prod, 'jewelry_type', ''), '')
+        name = _safe_str(getattr(prod, 'name', None), 'Ürün')
+        barcode = _safe_str(getattr(prod, 'barcode', ''), '')
+
+    # Miktar
+    try:
+        gram_val = Decimal(str(getattr(p, 'gram', 0) or 0))
+    except Exception:
+        gram_val = Decimal('0')
+    try:
+        piece_val = int(getattr(p, 'piece', 0) or 0)
+    except Exception:
+        piece_val = 0
+
+    if piece_val > 0 and gram_val <= Decimal('0'):
+        qty_display = f"{piece_val} adet"
+    elif gram_val > Decimal('0') and piece_val == 0:
+        qty_display = f"{gram_val:.3f}".replace('.', ',') + " gr"
+    elif piece_val > 0 and gram_val > Decimal('0'):
+        qty_display = f"{piece_val} adet × {gram_val:.3f}".replace('.', ',') + " gr"
+    else:
+        qty_display = '—'
+
+    try:
+        tx_label = p.get_transaction_type_display()
+    except Exception:
+        tx_label = getattr(p, 'transaction_type', '') or '—'
+
+    return {
+        'name': name,
+        'image_url': image_url,
+        'karat_label': karat_label,
+        'milyem': milyem,
+        'jewelry_type': jewelry_type,
+        'barcode': barcode,
+        'qty_display': qty_display,
+        'gram': float(gram_val),
+        'piece': piece_val,
+        'transaction_label': tx_label,
+        'is_entry': is_entry,
+        'unit_price': float(getattr(p, 'unit_price', 0) or 0),
+        'amount_eur': float(getattr(p, 'amount', 0) or 0),
+        'amount_hs': float(getattr(p, 'price_hs', 0) or 0),
+    }
+
+
+def public_process_detail(request, token: str):
+    """
+    Login GEREKMEZ. WhatsApp linki üzerinden gelen müşteri görüntüler.
+    """
+    process_no = verify_public_process_token(token)
+    if not process_no:
+        return render(request, 'management/process/public_detail.html', {
+            'invalid_token': True,
+            'title': 'Geçersiz Bağlantı',
+        }, status=404)
+
+    _ENTRY_SET = {"PURCHASE", "STOCK_IN", "RETURN", "ORDER_IN"}
+
+    qs = (Process.objects
+          .filter(process_no=process_no, is_deleted=False)
+          .select_related('product', 'customer', 'store')
+          .order_by('date'))
+
+    if not qs.exists():
+        return render(request, 'management/process/public_detail.html', {
+            'invalid_token': True,
+            'title': 'İşlem Bulunamadı',
+        }, status=404)
+
+    first = qs.first()
+    customer = first.customer
+    store = first.store
+
+    items = [_build_public_item_payload(p, _ENTRY_SET) for p in qs]
+
+    # Ödemeler — sadece müşteri-yönlü görünüm
+    pays = Payment.objects.filter(process_no=process_no).order_by('date')
+    _PAY_LABEL = {'CASH': 'Nakit', 'CREDIT_CARD': 'Kredi Kartı', 'TRANSFER': 'Havale / EFT'}
+    payments_pub = []
+    for pay in pays:
+        payments_pub.append({
+            'label': _PAY_LABEL.get(pay.payment_type, 'Diğer'),
+            'date': pay.date.strftime('%d.%m.%Y %H:%M'),
+            'amount': _fmt_tl(pay.amount),
+            'amount_raw': float(pay.amount),
+            'is_refund': pay.is_output,
+            'installment': pay.installment if pay.installment > 1 else None,
+        })
+
+    summary = calc_process_summary(process_no)
+    raw_bal = summary['balance_raw']
+    if raw_bal > Decimal('0.01'):
+        bal_state = {'cls': 'pub-bal-debt', 'text': 'Kalan Borç', 'icon': 'fa-exclamation-circle'}
+    elif raw_bal < Decimal('-0.01'):
+        bal_state = {'cls': 'pub-bal-credit', 'text': 'Alacaklı (Fazla Ödeme)', 'icon': 'fa-info-circle'}
+    else:
+        bal_state = {'cls': 'pub-bal-paid', 'text': 'Tamamen Ödendi', 'icon': 'fa-circle-check'}
+
+    # Mağaza branding
+    store_logo = ''
+    try:
+        if store and getattr(store, 'avatar', None):
+            store_logo = store.avatar.url
+    except Exception:
+        store_logo = ''
+
+    store_info = {
+        'name': (getattr(store, 'title', None) or getattr(store, 'name', None) or '—') if store else '—',
+        'phone': getattr(store, 'phone', '') or '' if store else '',
+        'address': getattr(store, 'address', '') or '' if store else '',
+        'city': getattr(store, 'city', '') or '' if store else '',
+        'logo_url': store_logo,
+    }
+
+    is_canceled = bool(getattr(first, 'is_cancelled', False))
+
+    context = {
+        'invalid_token': False,
+        'process_no': process_no,
+        'date': first.date.strftime('%d.%m.%Y %H:%M'),
+        'customer_name': (f"{customer.first_name} {customer.last_name}".strip()
+                          if customer else 'Müşteri'),
+        'store': store_info,
+        'items': items,
+        'payments': payments_pub,
+        'summary': summary,
+        'balance_state': bal_state,
+        'is_canceled': is_canceled,
+        'title': f'İşlem Özeti — {process_no}',
+    }
+    return render(request, 'management/process/public_detail.html', context)
 
 
 @login_required(login_url="login")
@@ -934,9 +1212,9 @@ def process_receipt_view(request, process_no: str):
         "pay_breakdown_in": pay_breakdown_in,
         "pay_breakdown_out": pay_breakdown_out,
         "badge": summ and {
-            "kind": ("Kalan borcunuz" if summ["balance_tl_raw"] > 0 else "Alacağınız" if summ[
-                                                                                             "balance_tl_raw"] < 0 else "İşlem"),
-            "value": (summ["balance_tl"] + " TL" if summ["balance_tl_raw"] != 0 else "Tamamlandı")
+            "kind": ("Kalan borcunuz" if summ["balance_eur_raw"] > 0 else "Alacağınız" if summ[
+                                                                                             "balance_eur_raw"] < 0 else "İşlem"),
+            "value": (summ["balance_eur"] + " TL" if summ["balance_eur_raw"] != 0 else "Tamamlandı")
         }
     }
     return render(request, "management/process/receipt_thermal.html", ctx)
@@ -997,7 +1275,31 @@ def process_detail_view(request, process_no):
 
         satis_hasi_toplam = p.price_hs or Decimal('0.000')
 
-        qty_val = Decimal(p.piece) if (p.piece and p.piece > 0) else Decimal(p.gram or 0)
+        # FAZ 41/42 — WAC HS/gram birimindedir (StockService SSOT).
+        #
+        # FAZ 42: Barkodlu parça ürün (Process.gram=0, piece=1) fallback'i —
+        # retail_views.py:1102'de parça satışlarda gram sıfırlanıyor; WAC
+        # gram başına saklı olduğundan ürünün fiziksel ağırlığıyla çarp.
+        # Mantık:
+        #   1) Process.gram > 0           → gram_val
+        #   2) Process.gram=0, piece>0,
+        #      Products.gram > 0          → product.gram (barkodlu parça)
+        #   3) gram=0, product.gram=0     → piece_val (WATCH/DIAMOND)
+        _gram_dec = Decimal(str(p.gram or 0))
+        _piece_dec = Decimal(str(p.piece or 0))
+        _product_gram_dec = Decimal('0')
+        if p.product is not None:
+            try:
+                _product_gram_dec = Decimal(str(p.product.gram or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                _product_gram_dec = Decimal('0')
+
+        if _gram_dec > Decimal('0'):
+            qty_val = _gram_dec
+        elif _piece_dec > Decimal('0') and _product_gram_dec > Decimal('0'):
+            qty_val = _product_gram_dec
+        else:
+            qty_val = _piece_dec
 
         toplam_maliyet_hasi = (birim_maliyet_hasi * qty_val).quantize(Decimal('0.000'), rounding=ROUND_HALF_UP)
 
@@ -1009,7 +1311,11 @@ def process_detail_view(request, process_no):
         if p.product:
             product_name = p.product.name
             is_gram = getattr(p.product, 'is_gram_bullion', False)
-            qty_val = p.gram if is_gram else p.piece
+            # FAZ 41 — qty_val (WAC × miktar hesabı için) yukarıda gram>0 →
+            # gram, aksi halde piece olarak ayarlandı; burada override
+            # etmiyoruz. WAC HS/gram olduğundan gram tabanlı çarpım gerekli.
+            # Aşağıdaki `quantity_str` zaten 1015-1019 bloğuyla yeniden
+            # kuruluyor — bu satır artık placeholder.
             quantity_str = f"{p.gram} gr" if is_gram else f"{p.piece} adet"
 
             if is_gram or (p.gram and p.gram > 0 and not p.piece):
@@ -1027,8 +1333,8 @@ def process_detail_view(request, process_no):
                 hs_buy_tl = hs_price_data.get('buy_tl', Decimal('0'))
                 hs_sell_tl = hs_price_data.get('sell_tl', Decimal('0'))
             except Exception:
-                hs_buy_tl = Decimal(str(getattr(p.product, 'buy_price_tl', 0) or 0))
-                hs_sell_tl = Decimal(str(getattr(p.product, 'sale_price_tl', 0) or 0))
+                hs_buy_tl = Decimal(str(getattr(p.product, 'buy_price_eur', 0) or 0))
+                hs_sell_tl = Decimal(str(getattr(p.product, 'sale_price_eur', 0) or 0))
 
             # Anlik maliyet = WAC_HS * guncel_kur * miktar
             anlik_maliyet_tl = birim_maliyet_hasi * hs_buy_tl * Decimal(str(qty_val or 0))
@@ -1051,7 +1357,7 @@ def process_detail_view(request, process_no):
         satis_hasi = p.price_hs or Decimal('0.000')
         kar_tl = p.gross_profit or Decimal('0.00')
 
-        kur = p.hs_rate_sale_tl if (p.hs_rate_sale_tl and p.hs_rate_sale_tl > 0) else Decimal('1')
+        kur = p.hs_rate_sale_eur if (p.hs_rate_sale_eur and p.hs_rate_sale_eur > 0) else Decimal('1')
 
         # ── Ürün detay zenginleştirmesi (görsel, takı tipi, barkod, milyem) ──
         product_image_url = ''
@@ -1124,6 +1430,398 @@ def process_detail_view(request, process_no):
     }
 
     return render(request, 'management/process/process-detail.html', context)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FAZ 40 — İŞLEM DETAY MODAL JSON ENDPOINT (Lazy-Load)
+# ──────────────────────────────────────────────────────────────────────────────
+# İşlemler tablosundaki process_no badge'ine tıklandığında çağrılır.
+# Tarihsel WAC waterfall: StockLedger.unit_cost_hs → Process.cost_amount_hs → null.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _karat_label_from_mileage(milyem) -> str:
+    try:
+        m = int(float(milyem or 0))
+    except (ValueError, TypeError):
+        m = 0
+    if m >= 990:
+        return '24 Ayar'
+    if m >= 900:
+        return '22 Ayar'
+    if m >= 720:
+        return '18 Ayar'
+    if m >= 580:
+        return '14 Ayar'
+    if m >= 410:
+        return '10 Ayar'
+    if m >= 320:
+        return '8 Ayar'
+    return f'{m} M' if m else ''
+
+
+def _resolve_historical_wac_hs(proc) -> Tuple[Optional[Decimal], str]:
+    """
+    Tarihsel WAC waterfall.
+
+    Returns: (unit_cost_hs, source)
+      source ∈ {LEDGER, LEDGER_LEGACY_NORMALIZED, PROCESS_COST, UNAVAILABLE}
+
+    FAZ 44 — 1.05 EŞİK KURALI (SSOT):
+      Has altın için unit_cost_hs (HAS/gram) saf altın fraksiyonudur (≤ 1.000).
+      1.05 üzerinde okunan değer kesinlikle FAZ 34 öncesi "toplam maliyetin
+      birim alana yanlış yazılmış" legacy verisidir → render zamanı normalize.
+    """
+    # 1) StockLedger SSOT — işlem anında mühürlenmiş birim maliyet
+    try:
+        if proc.product_id:
+            led = (StockLedger.objects
+                   .filter(ref_type='process',
+                           ref_id=str(proc.id),
+                           product_id=proc.product_id)
+                   .order_by('-created_on')
+                   .first())
+            if led and led.unit_cost_hs and Decimal(str(led.unit_cost_hs)) > Decimal('0'):
+                wac = Decimal(str(led.unit_cost_hs))
+                # FAZ 44 — Legacy total tespiti: WAC > 1.05 imkansız (saf altın fraksiyonu).
+                # Bu durumda legacy "toplam maliyetin birim alana yazılmış hali" olduğunu
+                # varsayıp gram ile normalize et.
+                # FAZ 65.1 — Barkodlu parça satışında retail_views.py:1102 Process.gram=0
+                # yazıyor (sepet "1 adet" semantiği). proc.gram=0 ise Products.gram
+                # fiziksel ağırlığı fallback olarak kullanılır. Aksi halde restore edilmiş
+                # legacy ürünlerde normalizasyon devreye girmeyip 15× şişen maliyet üretir.
+                gram_proc = Decimal(str(proc.gram or 0))
+                if gram_proc <= Decimal('0'):
+                    piece_proc = int(getattr(proc, 'piece', 0) or 0)
+                    prod_gram = Decimal('0')
+                    try:
+                        if proc.product_id and getattr(proc, 'product', None) is not None:
+                            prod_gram = Decimal(str(getattr(proc.product, 'gram', 0) or 0))
+                    except Exception:
+                        prod_gram = Decimal('0')
+                    if piece_proc > 0 and prod_gram > Decimal('0'):
+                        gram_proc = prod_gram
+
+                if wac > Decimal('1.05') and gram_proc > Decimal('0'):
+                    return (
+                        (wac / gram_proc).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP),
+                        'LEDGER_LEGACY_NORMALIZED',
+                    )
+                return wac, 'LEDGER'
+    except Exception:
+        pass
+
+    # 2) Process.cost_amount_hs / gram → birim maliyet
+    try:
+        cost_total = Decimal(str(proc.cost_amount_hs or 0))
+        gram = Decimal(str(proc.gram or 0))
+        if cost_total > Decimal('0') and gram > Decimal('0'):
+            return (cost_total / gram).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP), 'PROCESS_COST'
+    except Exception:
+        pass
+
+    return None, 'UNAVAILABLE'
+
+
+def _safe_str(v, default='—'):
+    try:
+        s = str(v) if v is not None else ''
+        return s.strip() or default
+    except Exception:
+        return default
+
+
+def _build_xray_item_payload(p, ENTRY_SET):
+    """Tek bir Process satırı için payload üretir — her erişim defensive."""
+    is_entry = (getattr(p, 'transaction_type', '') or '') in ENTRY_SET
+
+    # ─── Ürün ───
+    product_payload = None
+    prod = getattr(p, 'product', None)
+    if prod is not None:
+        image_url = ''
+        try:
+            img = getattr(prod, 'image', None)
+            if img:
+                image_url = img.url
+        except Exception:
+            image_url = ''
+
+        milyem_int = 0
+        try:
+            milyem_int = int(float(getattr(prod, 'product_mileage', 0) or 0))
+        except (ValueError, TypeError):
+            milyem_int = 0
+
+        category_name = 'Kategorisiz'
+        try:
+            cat = getattr(prod, 'category', None)
+            if cat is not None and getattr(cat, 'name', None):
+                category_name = cat.name
+        except Exception:
+            pass
+
+        product_payload = {
+            'id': _safe_str(getattr(prod, 'id', None), '—'),
+            'name': _safe_str(getattr(prod, 'name', None), '—'),
+            'category': category_name,
+            'karat_label': _karat_label_from_mileage(milyem_int),
+            'milyem': milyem_int,
+            'image_url': image_url,
+            'jewelry_type': _safe_str(getattr(prod, 'jewelry_type', ''), ''),
+            'barcode': _safe_str(getattr(prod, 'barcode', ''), ''),
+            'is_currency': bool(getattr(prod, 'is_currency', False)),
+        }
+
+    # ─── Personel ───
+    employee_payload = None
+    emp = getattr(p, 'employee', None)
+    if emp is not None:
+        try:
+            full_name = f"{getattr(emp, 'first_name', '') or ''} {getattr(emp, 'last_name', '') or ''}".strip()
+            if not full_name:
+                full_name = getattr(emp, 'username', None) or '—'
+            employee_payload = {
+                'id': getattr(emp, 'id', None),
+                'full_name': full_name,
+                'username': getattr(emp, 'username', '') or '',
+            }
+        except Exception:
+            employee_payload = None
+
+    # ─── Miktar ───
+    try:
+        gram_val = Decimal(str(getattr(p, 'gram', 0) or 0))
+    except Exception:
+        gram_val = Decimal('0')
+    try:
+        piece_val = int(getattr(p, 'piece', 0) or 0)
+    except Exception:
+        piece_val = 0
+
+    if piece_val > 0 and gram_val <= Decimal('0'):
+        qty_display = f"{piece_val} adet"
+    elif gram_val > Decimal('0') and piece_val == 0:
+        qty_display = f"{gram_val:.3f} gr".replace('.', ',')
+    elif piece_val > 0 and gram_val > Decimal('0'):
+        qty_display = f"{piece_val} adet × {gram_val:.3f} gr".replace('.', ',')
+    else:
+        cur_safe = (getattr(prod, 'currency', None) if prod is not None else None) or 'TL'
+        qty_display = f"{getattr(p, 'amount', 0) or 0} {cur_safe}"
+
+    # ─── Tarihsel WAC ───
+    try:
+        wac_hs, wac_source = _resolve_historical_wac_hs(p)
+    except Exception:
+        wac_hs, wac_source = None, 'UNAVAILABLE'
+    is_legacy = (wac_source == 'UNAVAILABLE')
+    has_wac = (wac_hs is not None and wac_hs > Decimal('0'))
+    wac_anomaly = bool(has_wac and wac_hs > Decimal('1.05'))
+
+    # ─── Finansallar ───
+    try:
+        sale_price_eur = Decimal(str(getattr(p, 'amount', 0) or 0))
+    except Exception:
+        sale_price_eur = Decimal('0')
+    try:
+        sale_total_hs = Decimal(str(getattr(p, 'price_hs', 0) or 0))
+    except Exception:
+        sale_total_hs = Decimal('0')
+
+    cost_total_hs = None
+    gross_profit_hs = None
+    profit_margin_pct = None
+
+    # FAZ 41/42 — WAC her zaman HS/gram birimindedir (StockService.record_entry
+    # WAC formülü gram tabanlı:
+    #   new_wac_hs = ((old_gram * old_wac) + (qty_gram * unit_cost)) / new_total_gram
+    # ).
+    #
+    # FAZ 42 EKLEMESİ — Barkodlu Parça Ürün (gerdanlık/yüzük/bilezik) Fallback'i:
+    # retail_views.py:1102'de parça satışlarda Process.gram=0 olarak yazılıyor
+    # (sepet "1 adet" semantiği). Bu durumda WAC HS/gram cinsinden saklı
+    # olduğu için doğru maliyet ürünün fiziksel ağırlığıyla (Products.gram)
+    # çarpılmalı. Aksi halde piece_val=1 ile çarpıp 17.125 HS yerine 0.685
+    # HS gibi hatalı maliyet üretiliyor.
+    #
+    # Karar mantığı (üç dal):
+    #   1) Process.gram > 0           → qty_ref = gram_val           (toptan/gram satış)
+    #   2) Process.gram = 0, piece>0,
+    #      Products.gram > 0          → qty_ref = product.gram       (barkodlu parça)
+    #   3) gram=0, product.gram=0     → qty_ref = piece_val          (WATCH/DIAMOND)
+    _product_gram_xray = Decimal('0')
+    if prod is not None:
+        try:
+            _product_gram_xray = Decimal(str(getattr(prod, 'gram', 0) or 0))
+        except (InvalidOperation, TypeError, ValueError):
+            _product_gram_xray = Decimal('0')
+
+    if gram_val > Decimal('0'):
+        qty_ref = gram_val
+    elif piece_val > 0 and _product_gram_xray > Decimal('0'):
+        qty_ref = _product_gram_xray
+    else:
+        qty_ref = Decimal(piece_val or 0)
+
+    if has_wac and qty_ref > Decimal('0'):
+        try:
+            cost_total_hs = (wac_hs * qty_ref).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+            if not is_entry:
+                gross_profit_hs = (sale_total_hs - cost_total_hs).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+                if cost_total_hs > Decimal('0'):
+                    profit_margin_pct = float(
+                        (gross_profit_hs / cost_total_hs * Decimal('100')).quantize(
+                            Decimal('0.01'), rounding=ROUND_HALF_UP
+                        )
+                    )
+        except Exception:
+            cost_total_hs = None
+            gross_profit_hs = None
+            profit_margin_pct = None
+
+    try:
+        recorded_profit_tl = float(Decimal(str(getattr(p, 'gross_profit', 0) or 0)))
+    except Exception:
+        recorded_profit_tl = 0.0
+
+    # transaction type label
+    try:
+        tx_label = p.get_transaction_type_display()
+    except Exception:
+        tx_label = getattr(p, 'transaction_type', '') or '—'
+
+    currency_safe = 'TL'
+    if prod is not None:
+        try:
+            currency_safe = getattr(prod, 'currency', None) or 'TL'
+        except Exception:
+            currency_safe = 'TL'
+
+    return {
+        'transaction_type': getattr(p, 'transaction_type', '') or '',
+        'transaction_type_label': tx_label,
+        'is_entry': is_entry,
+        'product': product_payload,
+        'employee': employee_payload,
+        'qty': {
+            'piece': piece_val,
+            'gram': float(gram_val),
+            'display': qty_display,
+        },
+        'financials': {
+            'unit_price': float(getattr(p, 'unit_price', 0) or 0),
+            'currency': currency_safe,
+            'sale_price_eur': float(sale_price_eur),
+            'sale_total_hs': float(sale_total_hs),
+            'historical_wac_hs': (float(wac_hs) if wac_hs is not None else None),
+            'historical_wac_source': wac_source,
+            'cost_total_hs': (float(cost_total_hs) if cost_total_hs is not None else None),
+            'gross_profit_hs': (float(gross_profit_hs) if gross_profit_hs is not None else None),
+            'profit_margin_pct': profit_margin_pct,
+            'recorded_profit_tl': recorded_profit_tl,
+            'hs_rate_sale_eur': float(getattr(p, 'hs_rate_sale_eur', 0) or 0),
+        },
+        'data_quality': {
+            'has_wac': has_wac,
+            'is_legacy': is_legacy,
+            'wac_anomaly': wac_anomaly,
+        },
+    }
+
+
+@login_required(login_url='login')
+def process_detail_modal_json(request, process_no):
+    """
+    İşlemler tablosu satırından açılan röntgen modali için lazy-load JSON.
+    Her satır defensive — alan yoksa fallback değer döner, view 500 vermez.
+
+    GET /process/detail-modal-json/<process_no>/
+    """
+    try:
+        qs = (Process.objects
+              .filter(process_no=process_no, is_deleted=False)
+              .select_related('customer', 'product', 'product__category', 'employee', 'store')
+              .order_by('date'))
+
+        if not qs.exists():
+            return JsonResponse(
+                {'result': False, 'error_msg': f'"{process_no}" numaralı işlem bulunamadı.'},
+                status=404
+            )
+
+        first = qs.first()
+        ENTRY_SET = {'PURCHASE', 'STOCK_IN', 'RETURN', 'ORDER_IN'}
+
+        items = []
+        for p in qs:
+            try:
+                items.append(_build_xray_item_payload(p, ENTRY_SET))
+            except Exception:
+                logger.exception(f"process_detail_modal_json item build failed: process_no={process_no}, pid={getattr(p, 'id', '?')}")
+                # Tek satır başarısız olsa bile diğerleri görünmeli
+                items.append({
+                    'transaction_type': getattr(p, 'transaction_type', '') or '',
+                    'transaction_type_label': getattr(p, 'transaction_type', '') or '—',
+                    'is_entry': False,
+                    'product': None,
+                    'employee': None,
+                    'qty': {'piece': 0, 'gram': 0.0, 'display': '— (veri okuma hatası)'},
+                    'financials': {
+                        'unit_price': 0, 'currency': 'TL', 'sale_price_eur': 0, 'sale_total_hs': 0,
+                        'historical_wac_hs': None, 'historical_wac_source': 'UNAVAILABLE',
+                        'cost_total_hs': None, 'gross_profit_hs': None, 'profit_margin_pct': None,
+                        'recorded_profit_tl': 0, 'hs_rate_sale_eur': 0,
+                    },
+                    'data_quality': {'has_wac': False, 'is_legacy': True, 'wac_anomaly': False},
+                })
+
+        # Header verisi
+        customer_name = '—'
+        try:
+            if getattr(first, 'customer', None):
+                cname = f"{first.customer.first_name or ''} {first.customer.last_name or ''}".strip()
+                customer_name = cname or '—'
+            elif getattr(first, 'supplier', None):
+                customer_name = (
+                    getattr(first.supplier, 'company_name', None)
+                    or getattr(first.supplier, 'person_name', None)
+                    or '—'
+                )
+        except Exception:
+            customer_name = '—'
+
+        try:
+            tx_label = first.get_transaction_type_display()
+        except Exception:
+            tx_label = getattr(first, 'transaction_type', '') or '—'
+
+        store_name = '—'
+        try:
+            store_name = getattr(getattr(first, 'store', None), 'name', None) or '—'
+        except Exception:
+            pass
+
+        payload = {
+            'result': True,
+            'process_no': process_no,
+            'process_type': getattr(first, 'process_type', '') or '',
+            'transaction_type': getattr(first, 'transaction_type', '') or '',
+            'transaction_type_label': tx_label,
+            'status': getattr(first, 'is_status', '') or '',
+            'is_canceled': (getattr(first, 'is_status', '') == 'CANCELED'),
+            'date': first.date.isoformat() if getattr(first, 'date', None) else None,
+            'store_name': store_name,
+            'customer_name': customer_name,
+            'items': items,
+        }
+        return JsonResponse(payload)
+
+    except Exception as e:
+        logger.exception(f"process_detail_modal_json failed: process_no={process_no}")
+        return JsonResponse({
+            'result': False,
+            'error_msg': 'İşlem detayı yüklenirken bir hata oluştu.',
+            'debug': str(e)[:200] if settings.DEBUG else None,
+        }, status=500)
 
 
 # ======================================================================
@@ -1203,9 +1901,38 @@ def fulfill_waiting_stock(request):
                 mv = 'EXIT'
 
             # Has maliyeti hesapla
+            # FAZ 44 — Yön-duyarlı maliyet çözümlemesi:
+            #   1) cost_amount_hs varsa daima öncelikli (Process.cost_amount_hs TOPLAM HS)
+            #   2) ENTRY için: cost_amount_hs yoksa price_hs (alış toplamı) fallback olur
+            #   3) EXIT için: price_hs SATIŞ tutarıdır → WAC'a yazılması yasaktır.
+            #      Bunun yerine StockSnapshot.weighted_avg_cost_hs (zaten birim) kullan.
+            #   4) Hiçbiri yoksa unit_cost_hs=0 — StockService EXIT için WAC değişmez,
+            #      ENTRY için snapshot mevcut değerini korur.
             unit_cost_hs = Decimal('0.000')
-            if proc.has_value and gram > 0:
-                unit_cost_hs = Decimal(str(proc.has_value)) / gram if gram > 0 else Decimal('0')
+            cost_total_hs = Decimal(str(proc.cost_amount_hs or 0))
+
+            if cost_total_hs > Decimal('0') and gram > Decimal('0'):
+                unit_cost_hs = (cost_total_hs / gram).quantize(
+                    Decimal('0.0001'), rounding=ROUND_HALF_UP
+                )
+            elif mv == 'ENTRY':
+                entry_total_hs = Decimal(str(proc.price_hs or 0))
+                if entry_total_hs > Decimal('0') and gram > Decimal('0'):
+                    unit_cost_hs = (entry_total_hs / gram).quantize(
+                        Decimal('0.0001'), rounding=ROUND_HALF_UP
+                    )
+            else:
+                # EXIT — snapshot'tan birim WAC oku (zaten birim cinsinden)
+                try:
+                    _exit_snap = StockSnapshot.objects.filter(
+                        product=product, store=store
+                    ).only('weighted_avg_cost_hs').first()
+                    if _exit_snap and _exit_snap.weighted_avg_cost_hs:
+                        unit_cost_hs = Decimal(str(_exit_snap.weighted_avg_cost_hs)).quantize(
+                            Decimal('0.0001'), rounding=ROUND_HALF_UP
+                        )
+                except Exception:
+                    unit_cost_hs = Decimal('0.000')
 
             update_product_stock(
                 product=product,
@@ -1323,23 +2050,80 @@ def _build_profit_report_rows(store, filters):
             sale_count=Count('id', filter=sale_q),
             sale_piece=Coalesce(Sum('piece', filter=sale_q), 0),
             sale_gram=Coalesce(Sum('gram', filter=sale_q, output_field=DEC15_3), zero3),
-            sale_amount_tl=Coalesce(Sum('amount', filter=sale_q, output_field=DEC15_2), zero2),
-            sale_cost_tl=Coalesce(Sum('cost_amount_tl', filter=sale_q, output_field=DEC15_2), zero2),
+            sale_amount_eur=Coalesce(Sum('amount', filter=sale_q, output_field=DEC15_2), zero2),
+            sale_cost_tl=Coalesce(Sum('cost_amount_eur', filter=sale_q, output_field=DEC15_2), zero2),
             sale_profit_tl=Coalesce(Sum('gross_profit', filter=sale_q, output_field=DEC15_2), zero2),
             sale_hs=Coalesce(Sum('price_hs', filter=sale_q, output_field=DEC15_3), zero3),
             sale_cost_hs=Coalesce(Sum('cost_amount_hs', filter=sale_q, output_field=DEC15_3), zero3),
             buy_count=Count('id', filter=buy_q),
-            buy_amount_tl=Coalesce(Sum('amount', filter=buy_q, output_field=DEC15_2), zero2),
+            buy_amount_eur=Coalesce(Sum('amount', filter=buy_q, output_field=DEC15_2), zero2),
             buy_hs=Coalesce(Sum('price_hs', filter=buy_q, output_field=DEC15_3), zero3),
         )
         .order_by('category')
     )
 
+    # ════════════════════════════════════════════════════════════════════
+    # FAZ 44 — Perakende cost_amount_hs=0 → StockLedger fallback
+    # ════════════════════════════════════════════════════════════════════
+    # retail_views.py Process.cost_amount_hs alanını hiç set etmiyor; sadece
+    # fast_views (Hızlı İşlem) yazıyor. Sonuç: kategori toplamlarında perakende
+    # SALE'ler maliyet=0 ile geliyor → kar_hs şişiyor. Çözüm: cost_amount_hs=0
+    # olan SALE Process'leri için StockLedger.unit_cost_hs (1.05 normalize) ×
+    # gram türetip kategori bazında ekle.
+    missing_cost_processes = qs.filter(sale_q, cost_amount_hs=0).values(
+        'id', 'product_id', 'gram', 'piece', 'product__gram',
+        'product__category__name'
+    )
+    extra_cost_by_category = {}
+    if missing_cost_processes:
+        proc_ids = [str(mp['id']) for mp in missing_cost_processes]
+        led_map = {}
+        for led in StockLedger.objects.filter(
+            ref_type='process',
+            ref_id__in=proc_ids,
+        ).only('ref_id', 'product_id', 'unit_cost_hs'):
+            led_map[(str(led.ref_id), led.product_id)] = led.unit_cost_hs
+
+        for mp in missing_cost_processes:
+            cat = mp['product__category__name'] or 'Kategorisiz'
+            unit_cost = led_map.get((str(mp['id']), mp['product_id']))
+            if unit_cost is None or unit_cost <= 0:
+                continue
+            unit_cost = Decimal(str(unit_cost))
+            gram_val = Decimal(str(mp['gram'] or 0))
+            prod_gram = Decimal(str(mp['product__gram'] or 0))
+            piece_val = int(mp['piece'] or 0)
+
+            # FAZ 44 — 1.05 EŞİK KURALI: legacy total tespiti
+            qty_for_mult = gram_val
+            if gram_val <= Decimal('0') and piece_val > 0 and prod_gram > Decimal('0'):
+                # Barkodlu parça ürün: Process.gram=0, Products.gram fiziksel ağırlık
+                qty_for_mult = prod_gram
+
+            if unit_cost > Decimal('1.05'):
+                # Legacy: birim alana toplam yazılmış. Doğrudan toplam HS olarak kullan.
+                cost_total = unit_cost
+            elif qty_for_mult > Decimal('0'):
+                cost_total = (unit_cost * qty_for_mult).quantize(
+                    Decimal('0.001'), rounding=ROUND_HALF_UP
+                )
+            else:
+                cost_total = Decimal('0')
+
+            extra_cost_by_category[cat] = (
+                extra_cost_by_category.get(cat, Decimal('0')) + cost_total
+            )
+
     data = []
     for r in rows:
+        cat_name = r['category'] or 'Kategorisiz'
+        # FAZ 44 — Eksik maliyet ekle
+        extra = extra_cost_by_category.get(cat_name, Decimal('0'))
+        sale_cost_hs_eff = (Decimal(str(r['sale_cost_hs'] or 0)) + extra)
+
         # Kar Hası = Satış Hası - Maliyet Hası
-        kar_hs = float(r['sale_hs'] or 0) - float(r['sale_cost_hs'] or 0)
-        sale_tl = float(r['sale_amount_tl'] or 0)
+        kar_hs = float(r['sale_hs'] or 0) - float(sale_cost_hs_eff)
+        sale_tl = float(r['sale_amount_eur'] or 0)
         profit_tl = float(r['sale_profit_tl'] or 0)
         kar_pct = (profit_tl / sale_tl * 100.0) if sale_tl > 0 else 0.0
 
@@ -1348,25 +2132,25 @@ def _build_profit_report_rows(store, filters):
             'sale_count': r['sale_count'] or 0,
             'sale_piece': int(r['sale_piece'] or 0),
             'sale_gram': _proc_fmt_tr(r['sale_gram'], 2),
-            'sale_amount_tl': _proc_fmt_tr(r['sale_amount_tl'], 2),
+            'sale_amount_eur': _proc_fmt_tr(r['sale_amount_eur'], 2),
             'sale_cost_tl': _proc_fmt_tr(r['sale_cost_tl'], 2),
             'sale_profit_tl': _proc_fmt_tr(r['sale_profit_tl'], 2),
             'sale_hs': _proc_fmt_tr(r['sale_hs'], 3),
-            'sale_cost_hs': _proc_fmt_tr(r['sale_cost_hs'], 3),
+            'sale_cost_hs': _proc_fmt_tr(sale_cost_hs_eff, 3),
             'kar_hs': _proc_fmt_tr(kar_hs, 3),
             'kar_pct': _proc_fmt_tr(kar_pct, 2),
             'buy_count': r['buy_count'] or 0,
-            'buy_amount_tl': _proc_fmt_tr(r['buy_amount_tl'], 2),
+            'buy_amount_eur': _proc_fmt_tr(r['buy_amount_eur'], 2),
             'buy_hs': _proc_fmt_tr(r['buy_hs'], 3),
             # Ham değerler (JS ve toplam için)
-            '_raw_sale_amount_tl': float(r['sale_amount_tl'] or 0),
+            '_raw_sale_amount_eur': float(r['sale_amount_eur'] or 0),
             '_raw_sale_cost_tl': float(r['sale_cost_tl'] or 0),
             '_raw_sale_profit_tl': profit_tl,
             '_raw_sale_hs': float(r['sale_hs'] or 0),
-            '_raw_sale_cost_hs': float(r['sale_cost_hs'] or 0),
+            '_raw_sale_cost_hs': float(sale_cost_hs_eff),
             '_raw_kar_hs': kar_hs,
             '_raw_sale_gram': float(r['sale_gram'] or 0),
-            '_raw_buy_amount_tl': float(r['buy_amount_tl'] or 0),
+            '_raw_buy_amount_eur': float(r['buy_amount_eur'] or 0),
             '_raw_buy_hs': float(r['buy_hs'] or 0),
         })
     return data
@@ -1411,14 +2195,14 @@ def profit_report_pdf(request):
 
     # Genel toplamlar
     t_sale_count = sum(d['sale_count'] for d in data)
-    t_sale_tl = sum(d['_raw_sale_amount_tl'] for d in data)
+    t_sale_tl = sum(d['_raw_sale_amount_eur'] for d in data)
     t_cost_tl = sum(d['_raw_sale_cost_tl'] for d in data)
     t_profit_tl = sum(d['_raw_sale_profit_tl'] for d in data)
     t_sale_hs = sum(d['_raw_sale_hs'] for d in data)
     t_cost_hs = sum(d['_raw_sale_cost_hs'] for d in data)
     t_kar_hs = sum(d['_raw_kar_hs'] for d in data)
     t_buy_count = sum(d['buy_count'] for d in data)
-    t_buy_tl = sum(d['_raw_buy_amount_tl'] for d in data)
+    t_buy_tl = sum(d['_raw_buy_amount_eur'] for d in data)
     t_kar_pct = (t_profit_tl / t_sale_tl * 100.0) if t_sale_tl > 0 else 0.0
 
     store_name = (

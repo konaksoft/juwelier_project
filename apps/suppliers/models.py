@@ -171,7 +171,12 @@ class Suppliers(models.Model):
 class SupplierLedger(models.Model):
     ENTRY = 'ENTRY'
     EXIT = 'EXIT'
-    TX_CHOICES = [(ENTRY, 'Giriş (Borç)'), (EXIT, 'Çıkış (Alacak)')]
+    REVERSAL = 'REVRS'  # FAZ 51 (R-02) — Append-only iptal işareti.
+    TX_CHOICES = [
+        (ENTRY, 'Giriş (Borç)'),
+        (EXIT, 'Çıkış (Alacak)'),
+        (REVERSAL, 'İptal (Reversal)'),
+    ]
 
     # Çantacı İşlem Tipleri (sadece account_type=CANTACI olan tedarikçilerde anlamlıdır)
     class CantaciTxType(models.TextChoices):
@@ -181,7 +186,13 @@ class SupplierLedger(models.Model):
         TAHSILAT = 'TAHSILAT', 'Tahsilat'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    supplier = models.ForeignKey(Suppliers, on_delete=models.CASCADE,
+    # ------------------------------------------------------------------
+    # FAZ TS-1 (Tedarikçi Silme Güvenliği): on_delete=CASCADE -> SET_NULL
+    # Tedarikçi silindiğinde cari geçmişin (audit trail) kaybolmaması
+    # için CASCADE kaldırıldı. Silme akışında uygulama katmanı ayrıca
+    # bu kayıtların is_active=False yapılmasını yönetir.
+    # ------------------------------------------------------------------
+    supplier = models.ForeignKey(Suppliers, on_delete=models.SET_NULL,
                                  related_name='ledgers', null=True, blank=True)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL,
                                 null=True, blank=True)
@@ -208,7 +219,7 @@ class SupplierLedger(models.Model):
     # NULL izni: Eski kayitlar ve HS/HG metal birimli kayitlar icin
     # bu alan dolu olmayabilir; uygulama katmani fallback uygular.
     # ------------------------------------------------------------------
-    exchange_rate_tl = models.DecimalField(
+    exchange_rate_eur = models.DecimalField(
         max_digits=18,
         decimal_places=6,
         null=True,
@@ -222,8 +233,67 @@ class SupplierLedger(models.Model):
         ),
     )
     process_no = models.CharField(max_length=50)
+    # ------------------------------------------------------------------
+    # FAZ 21 / Bug 2B: Satir-bazli iptal icin Process UUID referansi
+    # ------------------------------------------------------------------
+    # cancel_row PROC dalinda, ayni process_no altinda yer alan diger
+    # SupplierLedger satirlarini etkilemeden yalnizca bu Process satirina
+    # ait cariyi pasiflestirebilmek icin eklendi. Legacy kayitlarda NULL.
+    # ------------------------------------------------------------------
+    source_process_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Kaynak Process UUID",
+        help_text=(
+            "Bu cari satirini olusturan Process satirinin UUID'si. "
+            "Coklu kalemli toptan seansda satir-bazli iptal icin kullanilir."
+        ),
+    )
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(auto_now_add=True)
+
+    # ------------------------------------------------------------------
+    # FAZ 51 (R-02): SupplierLedger Append-Only REVERSAL alanları.
+    # ------------------------------------------------------------------
+    # Mevcut akış orijinal satırı `is_active=False` ile pasifleştiriyor.
+    # Yeni REVERSAL pattern bu davranışı KORUR (balance_summary aynı kalır)
+    # fakat denetim için ayrı bir REVERSAL satırı yazar:
+    #   - parent: orijinal satıra FK (ne iptal edildiği)
+    #   - reversal_target_type: orijinal satırın tx_type'ı (audit kolaylığı)
+    #   - reversed_by/reversed_at/reverse_reason: kim/ne zaman/neden
+    #
+    # REVERSAL satırı da `is_active=False` ile yazılır → balance_summary
+    # toplama girmez → bakiye davranışı aynı, fakat denetim sorgusu
+    # `transaction_type='REVRS'` ile iptal hareketlerini izleyebilir.
+    # Eski (FAZ 51 öncesi) iptal kayıtlarında bu alanlar NULL'dur;
+    # raporlar varsayılan olarak "audit yok" gösterir.
+    # ------------------------------------------------------------------
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='reversals',
+        verbose_name="İptal Edilen Orijinal Satır",
+    )
+    reversal_target_type = models.CharField(
+        max_length=5,
+        null=True, blank=True,
+        verbose_name="İptal Edilen Tip",
+        help_text="Orijinal satırın transaction_type değeri (audit kolaylığı).",
+    )
+    reversed_by = models.ForeignKey(
+        Users,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='supplier_ledger_reversals',
+        verbose_name="İptal Eden",
+    )
+    reversed_at = models.DateTimeField(null=True, blank=True, verbose_name="İptal Zamanı")
+    reverse_reason = models.CharField(
+        max_length=255, null=True, blank=True,
+        verbose_name="İptal Nedeni",
+    )
 
     class Meta:
         db_table = 'SupplierLedgers'

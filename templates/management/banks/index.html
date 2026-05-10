@@ -124,6 +124,12 @@
                                     </div>
                                 </div>
                                 <div class="d-flex gap-2 mobile-action-btns">
+                                    <a href="{% url 'bank-management:expense_quick' %}"
+                                       class="btn btn-sm btn-light-warning fw-bold"
+                                       title="Hızlı gider girişi (Yemek, Kargo, Atölye vb.)">
+                                        <i class="bi bi-pencil-square me-md-1"></i>
+                                        <span class="d-none d-md-inline">Hızlı Gider</span>
+                                    </a>
                                     <button id="btnConsolidated" class="btn btn-sm btn-light-success fw-bold"
                                             title="Tum kasalarin genel durumu">
                                         <i class="fa-solid fa-chart-pie me-md-1"></i>
@@ -1248,7 +1254,16 @@
             },
             columns: [
                 {data: 'date'},
-                {data: 'process_no'},
+                {
+                    data: 'process_no',
+                    render: function (data) {
+                        if (!data) return '-';
+                        return '<span class="badge badge-light-primary fw-bold js-open-process-modal"'
+                            + ' data-process-no="' + data + '"'
+                            + ' style="cursor:pointer;letter-spacing:.3px;"'
+                            + ' title="İşlem röntgenini aç">' + data + '</span>';
+                    }
+                },
                 {data: 'payment_type_display'},
                 {
                     data: 'detail_html',

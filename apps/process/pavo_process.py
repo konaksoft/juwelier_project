@@ -1,7 +1,32 @@
 # Uygulama içi modeller ve view'lar
-from apps.invoices.models import *
+from django.conf import settings
+
 from apps.settings.models import *
 from apps.stores.models import *
+
+
+# FAZ 30 — StatusId merkezi SSOT. Settings'ten okunur, hem fast hem retail
+# aynı listeye bakar. Frontend de aynı listeye bakar (context_processor üzerinden).
+def _pavo_success_statuses():
+    """settings.PAVO_SUCCESS_STATUS_IDS'i int set olarak döner. Yoksa varsayılan."""
+    raw = getattr(settings, "PAVO_SUCCESS_STATUS_IDS", [4, 5, 6, 22])
+    out = set()
+    for x in (raw or []):
+        try:
+            out.add(int(x))
+        except (TypeError, ValueError):
+            continue
+    if not out:
+        out = {4, 5, 6, 22}
+    return out
+
+
+def _pavo_is_status_successful(status_id) -> bool:
+    """StatusId başarı set'inde mi? None/invalid değer için False."""
+    try:
+        return int(status_id) in _pavo_success_statuses()
+    except (TypeError, ValueError):
+        return False
 
 
 # --- YARDIMCI VE DÖNÜŞÜM FONKSİYONLARI ---

@@ -230,7 +230,14 @@
             <tbody>
             {% for r in rows %}
                 <tr>
-                    <td class="mono center">{{ r.process_no }}</td>
+                    <td class="mono center">
+                        {% if r.process_no %}
+                            <span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                  data-process-no="{{ r.process_no }}"
+                                  style="cursor:pointer;letter-spacing:.3px;"
+                                  title="İşlem röntgenini aç">{{ r.process_no }}</span>
+                        {% else %}-{% endif %}
+                    </td>
                     <td class="center">{{ r.datetime }}</td>
                     <td>{{ r.product }}</td>
                     <td>{{ r.customer }}</td>

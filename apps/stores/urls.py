@@ -17,8 +17,13 @@ urlpatterns = [
     path('manage/<uuid:store_id>/update-package-modules', update_store_package_modules, name='update-package-modules'),
 
     # --- SİLME VE SIFIRLAMA İŞLEMLERİ (DÜZELTİLDİ) ---
-    # Mağaza verilerini sıfırlama (Ürün, stok vs. siler, mağaza kalır)
+    # Mağaza verilerini sıfırlama (Ürün, stok vs. siler, mağaza kalır) — LEGACY (monolitik)
     path('hard-reset', hard_data_delete, name='hard_reset'),
+
+    # FAZ 9.2 — Parçalı (Granular) Sıfırlama Merkezi
+    path('reset-panel/', reset_panel_view, name='reset_panel'),
+    path('reset-panel/preview', reset_preview_endpoint, name='reset_preview'),
+    path('reset-panel/execute', reset_execute_endpoint, name='reset_execute'),
 
     # Mağazayı komple veritabanından silme
     path('store-hard-delete', store_hard_delete, name='store_hard_delete'),

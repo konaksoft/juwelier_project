@@ -1,0 +1,535 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{# ============================================================================
+   FAZ 61 — Gider Kategorisi Yönetimi
+   Mağaza-izole CRUD: ad/kısa kod/ikon/renk/sıralama. Sistem presetleri
+   kilitlidir; sadece display_order/icon/color değiştirilebilir, isim ve
+   silme korumalıdır.
+   ============================================================================ #}
+
+{% block header %}
+    <style>
+        .cat-card {
+            border: 1px solid rgba(0, 0, 0, 0.075);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+        }
+
+        .cat-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .cat-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .cat-table td {
+            padding: 12px 14px;
+            border-bottom: 1px dashed #e5e7eb;
+            vertical-align: middle;
+        }
+
+        .cat-row.is-inactive td {
+            opacity: 0.55;
+        }
+
+        .cat-name {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+
+        .preset-lock {
+            color: #f59e0b;
+            margin-left: 6px;
+        }
+
+        .col-actions {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .col-actions .btn-icon {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin-left: 4px;
+            border-radius: 6px;
+        }
+
+        .empty-state {
+            padding: 48px 16px;
+            text-align: center;
+            color: #94a3b8;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+
+                    <div class="card cat-card">
+                        <div class="card-body p-4 p-md-5">
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+                                <div>
+                                    <h1 class="page-heading text-dark fw-bold fs-3 my-0">
+                                        <i class="bi bi-tags text-primary me-2"></i>
+                                        Gider Kategorileri
+                                    </h1>
+                                    <div class="text-muted fs-7 fw-semibold">
+                                        Hızlı gider girişinde kullanılacak kategorileri yönetin
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'bank-management:expense_quick' %}"
+                                       class="btn btn-sm btn-light fw-bold">
+                                        <i class="bi bi-arrow-left me-1"></i> Hızlı Giriş
+                                    </a>
+                                    <button type="button" id="btnNewCat"
+                                            class="btn btn-sm btn-primary fw-bold">
+                                        <i class="bi bi-plus-lg me-1"></i> Yeni Kategori
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mb-3 flex-wrap">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-light-dark active" data-filter="ALL">
+                                        Tümü
+                                    </button>
+                                    <button type="button" class="btn btn-light-success" data-filter="ACTIVE">
+                                        Aktif
+                                    </button>
+                                    <button type="button" class="btn btn-light-secondary" data-filter="INACTIVE">
+                                        Pasif
+                                    </button>
+                                </div>
+                                <div class="ms-auto">
+                                    <input type="text" id="catSearch"
+                                           class="form-control form-control-sm form-control-solid"
+                                           placeholder="Kategori adı ara..." style="width:220px;">
+                                </div>
+                            </div>
+
+                            <div id="catTableWrap">
+                                <table class="cat-table" id="catTable">
+                                    <thead>
+                                    <tr>
+                                        <th style="width:60px;">Sıra</th>
+                                        <th>Kategori</th>
+                                        <th style="width:120px;">Kısa Kod</th>
+                                        <th style="width:100px;">Durum</th>
+                                        <th style="width:160px;" class="text-end">İşlemler</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="catTbody"></tbody>
+                                </table>
+                                <div class="empty-state" id="catEmpty" style="display:none;">
+                                    <i class="bi bi-inbox fs-2x"></i>
+                                    <div class="mt-2">Henüz kategori eklenmemiş.</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ───── Yeni / Düzenle Modal ───── #}
+    <div class="modal fade" id="catModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-500px">
+            <div class="modal-content">
+                <div class="modal-header py-3">
+                    <h5 class="modal-title fw-bold" id="catModalTitle">Yeni Kategori</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <input type="hidden" id="catId">
+                    <input type="hidden" id="catIsPreset" value="0">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Kategori Adı *</label>
+                        <input type="text" id="catName" class="form-control form-control-solid"
+                               placeholder="Örn: Yemek, Kargo" maxlength="100">
+                        <div class="form-text" id="catNameHint" style="display:none;">
+                            <i class="bi bi-lock-fill preset-lock"></i>
+                            Sistem preseti — adı değiştirilemez.
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Kısa Kod
+                                <span class="text-muted fs-8">(opsiyonel)</span>
+                            </label>
+                            <input type="text" id="catShortCode" class="form-control form-control-solid"
+                                   placeholder="YMK" maxlength="10">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Sıralama</label>
+                            <input type="number" id="catOrder" class="form-control form-control-solid"
+                                   placeholder="100" min="0" max="9999">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">İkon
+                                <span class="text-muted fs-8">(Bootstrap Icons)</span>
+                            </label>
+                            <input type="text" id="catIcon" class="form-control form-control-solid"
+                                   placeholder="bi-cup-hot" maxlength="30">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Renk</label>
+                            <input type="text" id="catColor" class="form-control form-control-solid"
+                                   placeholder="#0d47a1" maxlength="20">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-3">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" id="btnCatSave" class="btn btn-primary btn-sm fw-bold">
+                        <i class="bi bi-check-lg me-1"></i> Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        "use strict";
+
+        (function () {
+            const URLS = {
+                list: "{% url 'bank-management:expense_categories_list' %}",
+                save: "{% url 'bank-management:expense_categories_save' %}",
+                toggle: "{% url 'bank-management:expense_categories_toggle' %}",
+                del: "{% url 'bank-management:expense_categories_delete' %}"
+            };
+            const CSRF = (document.querySelector("input[name='csrfmiddlewaretoken']") || {}).value || '';
+
+            const tbody = document.getElementById('catTbody');
+            const empty = document.getElementById('catEmpty');
+            const search = document.getElementById('catSearch');
+
+            const _state = {
+                rows: [],
+                filter: 'ALL',
+                search: ''
+            };
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function showError(msg) {
+                if (window.Swal) Swal.fire({icon: 'error', title: 'Hata', text: msg});
+                else alert(msg);
+            }
+
+            function showSuccess(msg) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: msg,
+                        timer: 1800,
+                        showConfirmButton: false
+                    });
+                }
+            }
+
+            // ── Liste yükle ──
+            async function loadList() {
+                try {
+                    const resp = await fetch(URLS.list, {credentials: 'same-origin'});
+                    const data = await resp.json().catch(() => ({}));
+                    if (!data.result) {
+                        showError(data.msg || 'Liste yüklenemedi.');
+                        return;
+                    }
+                    _state.rows = data.data || [];
+                    render();
+                } catch (e) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                    console.error(e);
+                }
+            }
+
+            function render() {
+                const filtered = _state.rows.filter(r => {
+                    if (_state.filter === 'ACTIVE' && !r.is_active) return false;
+                    if (_state.filter === 'INACTIVE' && r.is_active) return false;
+                    if (_state.search) {
+                        const s = _state.search.toLocaleLowerCase('tr-TR');
+                        const hay = (r.name + ' ' + (r.short_code || '')).toLocaleLowerCase('tr-TR');
+                        if (!hay.includes(s)) return false;
+                    }
+                    return true;
+                });
+
+                tbody.innerHTML = '';
+                if (filtered.length === 0) {
+                    empty.style.display = '';
+                    return;
+                }
+                empty.style.display = 'none';
+
+                filtered.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'cat-row' + (r.is_active ? '' : ' is-inactive');
+                    const colorBg = r.color_css ? r.color_css + '20' : '#f3f4f6';
+                    const colorFg = r.color_css || '#6b7280';
+                    const iconHtml = r.icon ? `<i class="bi ${escapeHtml(r.icon)}"></i>` : '';
+                    const presetMark = r.is_system_preset
+                        ? `<i class="bi bi-lock-fill preset-lock" title="Sistem preseti"></i>`
+                        : '';
+
+                    tr.innerHTML = `
+                        <td>${r.display_order}</td>
+                        <td>
+                            <span class="cat-badge"
+                                  style="background:${colorBg};color:${colorFg}">
+                                ${iconHtml} ${escapeHtml(r.name)}
+                            </span>
+                            ${presetMark}
+                        </td>
+                        <td><code>${escapeHtml(r.short_code || '—')}</code></td>
+                        <td>
+                            ${r.is_active
+                            ? '<span class="badge bg-light-success text-success fw-bold">Aktif</span>'
+                            : '<span class="badge bg-light-secondary text-secondary fw-bold">Pasif</span>'}
+                        </td>
+                        <td class="col-actions">
+                            <button class="btn btn-icon btn-light-primary" data-act="edit" data-id="${r.id}"
+                                    title="Düzenle">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-icon ${r.is_active ? 'btn-light-warning' : 'btn-light-success'}"
+                                    data-act="toggle" data-id="${r.id}"
+                                    title="${r.is_active ? 'Pasif Yap' : 'Aktif Yap'}">
+                                <i class="bi ${r.is_active ? 'bi-pause-fill' : 'bi-play-fill'}"></i>
+                            </button>
+                            <button class="btn btn-icon btn-light-danger" data-act="del" data-id="${r.id}"
+                                    title="Sil" ${r.is_system_preset ? 'disabled' : ''}>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // ── Modal ──
+            function openModal(row) {
+                const modalEl = document.getElementById('catModal');
+                if (!modalEl || !window.bootstrap) return;
+
+                const title = document.getElementById('catModalTitle');
+                const idEl = document.getElementById('catId');
+                const isPresetEl = document.getElementById('catIsPreset');
+                const nameEl = document.getElementById('catName');
+                const nameHint = document.getElementById('catNameHint');
+                const shortEl = document.getElementById('catShortCode');
+                const orderEl = document.getElementById('catOrder');
+                const iconEl = document.getElementById('catIcon');
+                const colorEl = document.getElementById('catColor');
+
+                if (row) {
+                    title.textContent = 'Kategoriyi Düzenle';
+                    idEl.value = row.id;
+                    isPresetEl.value = row.is_system_preset ? '1' : '0';
+                    nameEl.value = row.name;
+                    nameEl.disabled = !!row.is_system_preset;
+                    nameHint.style.display = row.is_system_preset ? '' : 'none';
+                    shortEl.value = row.short_code || '';
+                    orderEl.value = row.display_order;
+                    iconEl.value = row.icon || '';
+                    colorEl.value = row.color_css || '';
+                } else {
+                    title.textContent = 'Yeni Kategori';
+                    idEl.value = '';
+                    isPresetEl.value = '0';
+                    nameEl.value = '';
+                    nameEl.disabled = false;
+                    nameHint.style.display = 'none';
+                    shortEl.value = '';
+                    orderEl.value = '';
+                    iconEl.value = '';
+                    colorEl.value = '';
+                }
+
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                setTimeout(() => nameEl?.focus(), 200);
+            }
+
+            async function saveCategory() {
+                const fd = new FormData();
+                fd.append('csrfmiddlewaretoken', CSRF);
+                fd.append('id', document.getElementById('catId').value);
+                fd.append('name', (document.getElementById('catName').value || '').trim());
+                fd.append('short_code', (document.getElementById('catShortCode').value || '').trim());
+                fd.append('display_order', document.getElementById('catOrder').value || '100');
+                fd.append('icon', (document.getElementById('catIcon').value || '').trim());
+                fd.append('color_css', (document.getElementById('catColor').value || '').trim());
+
+                try {
+                    const resp = await fetch(URLS.save, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'Kayıt başarısız.');
+                        return;
+                    }
+                    showSuccess('Kategori kaydedildi.');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('catModal')).hide();
+                    loadList();
+                } catch (e) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                    console.error(e);
+                }
+            }
+
+            async function toggleCategory(id) {
+                const fd = new FormData();
+                fd.append('csrfmiddlewaretoken', CSRF);
+                fd.append('id', id);
+                try {
+                    const resp = await fetch(URLS.toggle, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'İşlem başarısız.');
+                        return;
+                    }
+                    loadList();
+                } catch (e) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                }
+            }
+
+            async function deleteCategory(id) {
+                const row = _state.rows.find(r => r.id === id);
+                if (!row) return;
+                if (row.is_system_preset) {
+                    showError('Sistem preseti silinemez. Pasif yapabilirsiniz.');
+                    return;
+                }
+                let confirmed = false;
+                if (window.Swal) {
+                    const r = await Swal.fire({
+                        icon: 'warning',
+                        title: 'Silinsin mi?',
+                        text: `"${row.name}" kategorisi silinecek.`,
+                        showCancelButton: true,
+                        confirmButtonText: 'Evet, sil',
+                        cancelButtonText: 'Vazgeç'
+                    });
+                    confirmed = !!r.isConfirmed;
+                } else {
+                    confirmed = confirm(`"${row.name}" kategorisi silinsin mi?`);
+                }
+                if (!confirmed) return;
+
+                const fd = new FormData();
+                fd.append('csrfmiddlewaretoken', CSRF);
+                fd.append('id', id);
+                try {
+                    const resp = await fetch(URLS.del, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'Silme başarısız.');
+                        return;
+                    }
+                    showSuccess('Kategori silindi.');
+                    loadList();
+                } catch (e) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                }
+            }
+
+            // ── Bağlamalar ──
+            document.getElementById('btnNewCat').addEventListener('click', () => openModal(null));
+            document.getElementById('btnCatSave').addEventListener('click', saveCategory);
+
+            tbody.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                const act = btn.dataset.act;
+                if (act === 'edit') {
+                    const row = _state.rows.find(r => r.id === id);
+                    if (row) openModal(row);
+                } else if (act === 'toggle') {
+                    toggleCategory(id);
+                } else if (act === 'del') {
+                    deleteCategory(id);
+                }
+            });
+
+            document.querySelectorAll('[data-filter]').forEach(b => {
+                b.addEventListener('click', () => {
+                    document.querySelectorAll('[data-filter]').forEach(x => x.classList.remove('active'));
+                    b.classList.add('active');
+                    _state.filter = b.dataset.filter;
+                    render();
+                });
+            });
+
+            search.addEventListener('input', () => {
+                _state.search = search.value || '';
+                render();
+            });
+
+            // İlk yükleme
+            loadList();
+        })();
+    </script>
+{% endblock footer %}

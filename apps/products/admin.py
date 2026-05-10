@@ -38,7 +38,7 @@ class ProductsAdmin(admin.ModelAdmin):
     """
     list_display = (
         'name', 'barcode', 'material_type',
-        'gram', 'sale_price_tl', 'is_active',
+        'gram', 'sale_price_eur', 'is_active',
     )
     list_filter = (
         'material_type', 'is_active', 'is_scrap',

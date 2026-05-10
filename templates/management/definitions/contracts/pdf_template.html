@@ -262,7 +262,7 @@
     </tr>
 </table>
 <div class="dynamic-content">
-    {# linebreaks filtresini kaldırdık #}
+    <!-- linebreaks filtresini kaldırdık -->
     {{ contract_html|safe }}
 </div>
 
@@ -376,8 +376,47 @@
 
     {% if module_rows %}
 
-        {% if display_mode == 'package' %}
-        {# ═══════ PAKET MODU: Karşılaştırma Tablosu ═══════ #}
+        {% if is_contract_view %}
+        <!-- ═══════ SÖZLEŞME MODU (Faz 59): ABC Pattern Düz Tablo ═══════ -->
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 40%;">Özellik</th>
+                {% for pkg in packages %}
+                    <th class="text-center">
+                        {{ pkg.name }}
+                        {% if process.package and pkg.id == process.package.id %}
+                            <br>
+                            <span style="font-size: 7pt; color: #fff; background-color: #059669; padding: 1px 3px;">SEÇİLEN</span>
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in module_rows %}
+                <tr class="{% cycle 'row-even' 'row-odd' %}">
+                    <td style="padding-left: 8px; font-weight: 500;">{{ row.permission.name }}</td>
+                    {% for cell in row.cells %}
+                        <td class="text-center">
+                            {% if cell.available %}
+                                <span style="color: #059669; font-weight: bold;">✔</span>
+                            {% else %}
+                                <span style="color: #ccc;">-</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="font-size: 8pt; color: #64748b; font-style: italic; margin-top: 5px;">
+            * Tabloda (✔) ile işaretli özellikler ilgili pakete dahildir.
+        </div>
+
+        {% elif display_mode == 'package' %}
+        <!-- ═══════ PAKET MODU: Karşılaştırma Tablosu (legacy) ═══════ -->
         <table>
             <thead>
             <tr>
@@ -423,7 +462,7 @@
         </div>
 
         {% else %}
-        {# ═══════ MODÜL MODU: Satın Alınan Modüller Tablosu ═══════ #}
+        <!-- ═══════ MODÜL MODU: Satın Alınan Modüller Tablosu ═══════ -->
         <table>
             <thead>
             <tr>

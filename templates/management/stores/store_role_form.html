@@ -1,6 +1,6 @@
-{# templates/management/stores/store_role_form.html #}
-{# FAZ 4-5: Mağaza Bazlı Rol Oluşturma / Düzenleme — Restriction Model (Grup Bazlı) #}
-{# Kuyumcu bireysel yetki kodlarını görmez; yalnızca özellik gruplarını açıp kapatır. #}
+<!-- templates/management/stores/store_role_form.html -->
+<!-- FAZ 4-5: Mağaza Bazlı Rol Oluşturma / Düzenleme — Restriction Model (Grup Bazlı) -->
+<!-- Kuyumcu bireysel yetki kodlarını görmez; yalnızca özellik gruplarını açıp kapatır. -->
 {% extends 'management/base.html' %}
 {% load static %}
 
@@ -67,7 +67,7 @@
 {% block body %}
     <div class="app-main flex-column flex-row-fluid mt-2" id="kt_app_main">
         <div class="d-flex flex-column flex-column-fluid">
-            {# ── Toolbar ── #}
+            <!-- ── Toolbar ── -->
             <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
                 <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
                     <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
@@ -101,11 +101,11 @@
                 </div>
             </div>
 
-            {# ── Content ── #}
+            <!-- ── Content ── -->
             <div id="kt_app_content" class="app-content flex-column-fluid">
                 <div id="kt_app_content_container" class="app-container container-xxl">
 
-                    {# Flash mesajları #}
+                    <!-- Flash mesajları -->
                     {% if messages %}
                         {% for message in messages %}
                             <div class="alert alert-dismissible alert-{{ message.tags }} d-flex align-items-center p-5 mb-5">
@@ -134,7 +134,7 @@
                         {% csrf_token %}
 
                         <div class="row g-5">
-                            {# ── SOL KOLON: Rol Bilgileri + Kullanıcılar ── #}
+                            <!-- ── SOL KOLON: Rol Bilgileri + Kullanıcılar ── -->
                             <div class="col-12 col-xl-4">
                                 <div class="card mb-5">
                                     <div class="card-header">
@@ -166,7 +166,7 @@
                                     </div>
                                 </div>
 
-                                {# Rol düzenlemede: atanmış kullanıcılar tablosu #}
+                                <!-- Rol düzenlemede: atanmış kullanıcılar tablosu -->
                                 {% if form_action == 'update' and role_users %}
                                     <div class="card">
                                         <div class="card-header">
@@ -209,7 +209,7 @@
                                 {% endif %}
                             </div>
 
-                            {# ── SAĞ KOLON: Özellik Grupları (Restriction Model) ── #}
+                            <!-- ── SAĞ KOLON: Özellik Grupları (Restriction Model) ── -->
                             <div class="col-12 col-xl-8">
                                 <div class="card">
                                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -230,7 +230,7 @@
                                     </div>
 
                                     <div class="card-body">
-                                        {# Bilgilendirme kutusu #}
+                                        <!-- Bilgilendirme kutusu -->
                                         <div class="alert alert-dismissible bg-light-info border border-info d-flex flex-column flex-sm-row p-5 mb-5">
                                             <i class="ki-duotone ki-shield-tick fs-2hx text-info me-4 mb-5 mb-sm-0">
                                                 <span class="path1"></span><span class="path2"></span>

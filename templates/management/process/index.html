@@ -714,6 +714,8 @@
             </div>
         </div>
     </div>
+
+    {# FAZ 40 — Modal artık base.html üzerinden global olarak yükleniyor #}
 {% endblock body %}
 
 {% block footer %}
@@ -1034,8 +1036,14 @@
                     data: "process_no",
                     className: "dt-nowrap",
                     render: function (data, type, row) {
-                        // 1. DEĞİŞİKLİK: İşlem No linki artık /process/detail/ sayfasına gidiyor. (Bozuk HTML yapısı da düzeltildi)
-                        return `<a href="/process/detail/${data}/" style="text-decoration:none;"><span style="color:#1235e8;font-weight:600;cursor:pointer" class="open-process-modal" data-process-no="${data}">${data}</span></a>`;
+                        // FAZ 40 — Tıklama → JSON lazy-load + modal açılır (sayfa değişmez).
+                        // Sayfaya gitmek isteyen kullanıcı için "Detay" butonu sütunda kalmaya devam ediyor.
+                        return `<span class="badge badge-light-primary fw-bold open-process-modal"
+                                       data-process-no="${data}"
+                                       style="cursor:pointer; font-size:.85rem; letter-spacing:.5px;"
+                                       title="İşlem röntgenini görüntüle">
+                                    <i class="fa-solid fa-magnifying-glass-chart me-1"></i>${data}
+                                </span>`;
                     }
                 },
                 {
@@ -1393,7 +1401,7 @@
 
                 $.each(resp.data, function (i, r) {
                     var saleCount = parseInt(r.sale_count) || 0;
-                    var unitSaleTL = saleCount > 0 ? (r._raw_sale_amount_tl / saleCount) : 0;
+                    var unitSaleTL = saleCount > 0 ? (r._raw_sale_amount_eur / saleCount) : 0;
                     var unitCostTL = saleCount > 0 ? (r._raw_sale_cost_tl / saleCount) : 0;
 
                     var karCls = r._raw_sale_profit_tl >= 0 ? 'text-success' : 'text-danger';
@@ -1403,7 +1411,7 @@
                         '<td class="ps-3 fw-semibold">' + r.category + '</td>' +
                         '<td class="text-center">' + saleCount + '</td>' +
                         '<td class="text-end">' + r.sale_gram + '</td>' +
-                        '<td class="text-end fw-semibold text-success">' + r.sale_amount_tl + '</td>' +
+                        '<td class="text-end fw-semibold text-success">' + r.sale_amount_eur + '</td>' +
                         '<td class="text-end text-success">' + r.sale_hs + '</td>' +
                         '<td class="text-end text-muted">' + fmtTR(unitSaleTL) + '</td>' +
                         '<td class="text-end text-warning">' + r.sale_cost_tl + '</td>' +
@@ -1416,7 +1424,7 @@
 
                     tSaleCount += saleCount;
                     tSaleGr += parseFloat(r._raw_sale_gram) || 0;
-                    tSaleTL += parseFloat(r._raw_sale_amount_tl) || 0;
+                    tSaleTL += parseFloat(r._raw_sale_amount_eur) || 0;
                     tSaleHS += parseFloat(r._raw_sale_hs) || 0;
                     tCostTL += parseFloat(r._raw_sale_cost_tl) || 0;
                     tCostHS += parseFloat(r._raw_sale_cost_hs) || 0;
@@ -1453,6 +1461,10 @@
         }
 
         $('#profitReportModal').on('show.bs.modal', loadProfitReport);
+
+        // FAZ 40: İşlem Röntgen Modalı global partial'a taşındı
+        // (templates/management/_partials/process_xray_modal.html).
+        // .open-process-modal ve .js-open-process-modal class'ları otomatik dinleniyor.
 
         // Rapor
         function generateReport(period) {

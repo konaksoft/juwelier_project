@@ -517,11 +517,60 @@
                             <h3 class="fw-bold m-0">Firma Yedekleri</h3>
                         </div>
                         <div class="card-toolbar">
-                            <button class="btn btn-sm btn-light-primary" onclick="triggerBackupCreate()">
-                                <i class="ki-duotone ki-file-up fs-2 me-1"><span class="path1"></span><span
-                                        class="path2"></span></i>
-                                Yeni Yedek Al
-                            </button>
+                            {# FAZ B + C/D — Yedek formatı + Smart Export/Restore #}
+                            <div class="btn-group me-2">
+                                <button class="btn btn-sm btn-light-primary" onclick="triggerBackupCreate('json', false)" title="Klasik JSON yedek (geriye uyum)">
+                                    <i class="ki-duotone ki-file-up fs-2 me-1"><span class="path1"></span><span
+                                            class="path2"></span></i>
+                                    JSON Yedek
+                                </button>
+                                <button class="btn btn-sm btn-light-info" onclick="triggerBackupCreateZip()" title="ZIP yedek (multi-file + opsiyonel media)">
+                                    <i class="fa-solid fa-file-zipper me-1"></i>
+                                    ZIP Yedek
+                                </button>
+                                <a class="btn btn-sm btn-light-success" href="{% url 'backups:export_xlsx' %}?company_id={{ store.company.id }}" target="_blank" title="Anlık Excel raporu indir (sadece okuma)">
+                                    <i class="fa-solid fa-file-excel me-1"></i>
+                                    Excel Raporu
+                                </a>
+                            </div>
+                            {# FAZ C/D — Smart Export & Restore #}
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-light-warning dropdown-toggle" data-bs-toggle="dropdown" title="Smart Export — ilişkisel paket">
+                                    <i class="fa-solid fa-box-archive me-1"></i>
+                                    Smart Export
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li class="dropdown-header text-uppercase fs-8">Barkodlu Ürün Paketi</li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=gold_purchases&format=zip&include_media=true&optimize_media=true">
+                                        <i class="fa-solid fa-barcode me-2 text-warning"></i>Görseller Dahil <span class="badge badge-light-success ms-2">Optimize</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=gold_purchases&format=zip&include_media=true&optimize_media=false">
+                                        <i class="fa-solid fa-barcode me-2 text-warning"></i>Görseller Dahil <span class="badge badge-light ms-2">Orijinal</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=gold_purchases&format=zip&include_media=false">
+                                        <i class="fa-solid fa-barcode me-2 text-warning"></i>Sadece Veri <span class="badge badge-light ms-2">DB</span>
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-header text-uppercase fs-8">Müşteri Paketi</li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=customers&format=zip&include_media=true&optimize_media=true">
+                                        <i class="fa-solid fa-users me-2 text-info"></i>Kimlikler Dahil <span class="badge badge-light-success ms-2">Optimize</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=customers&format=zip&include_media=true&optimize_media=false">
+                                        <i class="fa-solid fa-users me-2 text-info"></i>Kimlikler Dahil <span class="badge badge-light ms-2">Orijinal</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=customers&format=zip&include_media=false">
+                                        <i class="fa-solid fa-users me-2 text-info"></i>Sadece Veri <span class="badge badge-light ms-2">DB</span>
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'backups:smart_export' %}?store_id={{ store.id }}&kind=settings&format=zip">
+                                        <i class="fa-solid fa-gears me-2 text-secondary"></i>Mağaza Ayarları Paketi
+                                    </a></li>
+                                </ul>
+                                <button class="btn btn-sm btn-light-warning" onclick="triggerSmartRestore()" title="Smart Restore — paket dosyası yükle (merge)">
+                                    <i class="fa-solid fa-cloud-arrow-up me-1"></i>
+                                    Smart Restore
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -539,6 +588,7 @@
                             <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                 <th>Tarih</th>
                                 <th>Not</th>
+                                <th>Format</th>{# FAZ B #}
                                 <th>Boyut</th>
                                 <th>Oluşturan</th>
                                 <th class="text-end">İşlemler</th>
@@ -763,7 +813,7 @@
                                     </div>
 
                                     {% if item.has_token and item.is_active %}
-                                        {# ── Entegrasyon mevcut: Durum kartları ── #}
+                                        <!-- ── Entegrasyon mevcut: Durum kartları ── -->
                                         <div class="row g-4 mb-4">
                                             <div class="col-md-3">
                                                 <div class="border rounded p-3 text-center h-100">
@@ -829,7 +879,7 @@
                                         </div>
 
                                     {% elif item.has_token and not item.is_active %}
-                                        {# ── Token var ama devre dışı ── #}
+                                        <!-- ── Token var ama devre dışı ── -->
                                         <div class="alert alert-warning d-flex align-items-center p-4 mb-3">
                                             <i class="fa-solid fa-triangle-exclamation fs-4 text-warning me-3"></i>
                                             <span>Bu mağazanın e-Süreç entegrasyonu devre dışı bırakılmış.</span>
@@ -842,7 +892,7 @@
                                         </div>
 
                                     {% else %}
-                                        {# ── Entegrasyon yok: Token oluştur butonu ── #}
+                                        <!-- ── Entegrasyon yok: Token oluştur butonu ── -->
                                         <div class="text-center py-3">
                                             <div class="mb-3">
                                                 <i class="ki-duotone ki-cloud-add fs-3x text-gray-300"><span class="path1"></span><span class="path2"></span></i>
@@ -924,7 +974,7 @@
                             </div>
                         </div>
                     </div>
-                    {# ── Modül Seçimi ── #}
+                    <!-- ── Modül Seçimi ── -->
                     {% if all_modules %}
                     <div class="row mb-3">
                         <div class="col-12">
@@ -1657,7 +1707,17 @@
                     },
                     columns: [
                         {data: 'created_at'},
-                        {data: 'note', render: (d) => d.length > 40 ? d.substr(0, 40) + '...' : d},
+                        {data: 'note', render: (d) => d && d.length > 40 ? d.substr(0, 40) + '...' : (d || '-')},
+                        {  // FAZ B — Format rozeti
+                            data: 'format',
+                            render: function (d) {
+                                if (!d || d === '-') return '<span class="badge badge-light">-</span>';
+                                if (d === 'JSON') return '<span class="badge badge-light-primary">JSON</span>';
+                                if (d === 'ZIP (DB)') return '<span class="badge badge-light-info">ZIP (DB)</span>';
+                                if (d === 'ZIP + Media') return '<span class="badge badge-light-success">ZIP + Media</span>';
+                                return '<span class="badge badge-light">' + d + '</span>';
+                            }
+                        },
                         {data: 'file_size'},
                         {data: 'created_by'},
                         {
@@ -1688,10 +1748,15 @@
             });
 
             // --- ASENKRON YEDEKLEME FONKSİYONU ---
-            function triggerBackupCreate() {
+            // FAZ B — fmt: 'json' | 'zip', includeMedia: bool
+            function triggerBackupCreate(fmt, includeMedia) {
+                fmt = fmt || 'json';
+                includeMedia = includeMedia === true;
+                const fmtLabel = (fmt === 'zip') ? (includeMedia ? 'ZIP + Media' : 'ZIP (DB)') : 'JSON';
+
                 // 1. Not Al
                 Swal.fire({
-                    title: 'Yedek Oluştur',
+                    title: `Yedek Oluştur (${fmtLabel})`,
                     text: "Bu yedek için bir not girin (Opsiyonel):",
                     input: 'text',
                     showCancelButton: true,
@@ -1704,7 +1769,13 @@
                         return $.ajax({
                             url: "{% url 'backups:create' %}",
                             type: "POST",
-                            data: {company_id: COMPANY_ID, note: note, csrfmiddlewaretoken: CSRF}
+                            data: {
+                                company_id: COMPANY_ID,
+                                note: note,
+                                format: fmt,
+                                include_media: includeMedia ? 'true' : 'false',
+                                csrfmiddlewaretoken: CSRF
+                            }
                         }).then(response => {
                             if (!response.result) throw new Error(response.error_msg || "Hata oluştu");
                             return response;
@@ -1762,6 +1833,422 @@
                     }
                 });
             }
+
+            // FAZ B — ZIP yedeği için media seçim modali
+            function triggerBackupCreateZip() {
+                Swal.fire({
+                    title: 'ZIP Yedek Seçenekleri',
+                    html: `
+                        <div class="text-start">
+                            <p class="text-muted mb-4">
+                                ZIP yedek <b>11 ayrı JSON</b> dosyası + <b>manifest.json</b> içerir.
+                                Geri yüklemede otomatik tespit edilir.
+                            </p>
+                            <div class="form-check form-check-custom form-check-solid mb-3">
+                                <input class="form-check-input" type="checkbox" id="zipIncludeMedia" />
+                                <label class="form-check-label fw-semibold" for="zipIncludeMedia">
+                                    Media dosyalarını dahil et
+                                    <small class="d-block text-muted">
+                                        Ürün görselleri + müşteri kimlik resimleri + mağaza/firma avatar'ları.
+                                        Yedek boyutu önemli ölçüde artar.
+                                    </small>
+                                </label>
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Devam',
+                    cancelButtonText: 'İptal',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        return {
+                            includeMedia: document.getElementById('zipIncludeMedia').checked
+                        };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        triggerBackupCreate('zip', result.value.includeMedia);
+                    }
+                });
+            }
+
+            // FAZ D — Smart Restore (paket dosyası yükle, dry-run zorunlu)
+            // Akış: 1) Dosya seç → 2) Dry-run rapor → 3) Onay → gerçek restore
+            function triggerSmartRestore() {
+                Swal.fire({
+                    title: 'Smart Restore — Paket Yükle',
+                    html: `
+                        <div class="text-start">
+                            <p class="text-muted mb-3">
+                                <b>Smart Restore</b> mevcut veriye dokunmaz; eksik tedarikçi/müşteri/ürünleri
+                                <b>merge</b> ile ekler. <br/>
+                                <small>Karar 5 (Konservatif): TCKN/Vergi No olmadan eşleşme yapılmaz —
+                                yeni kayıt oluşturulur.</small>
+                            </p>
+                            <input type="file" id="smartRestoreFile" class="form-control" accept=".zip,.json"
+                                   onchange="_pendingRestoreFile = (this.files && this.files[0]) ? this.files[0] : null;"/>
+                            <p class="text-muted mt-2 mb-0"><small>
+                                <b>ZIP</b> paketler ürün/müşteri görsellerini de geri yükler.
+                                <b>JSON</b> dosyalar yalnızca veri (eski format).
+                            </small></p>
+                            <p class="text-muted mt-2 mb-0"><small>
+                                <i class="fa-solid fa-bolt me-1 text-warning"></i>
+                                <b>80 MB üstü</b> dosyalar otomatik <b>parça parça</b> yüklenir
+                                (Cloudflare 100 MB limiti by-pass) — ilerleme çubuğu gösterilir,
+                                istediğiniz zaman iptal edebilirsiniz.
+                            </small></p>
+                            <p class="text-muted mt-3 mb-0"><small>
+                                Önce <b>dry-run</b> yapılır (hiçbir şey yazılmaz).
+                                Onaylarsanız gerçek restore başlar.
+                            </small></p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Dry-Run Çalıştır',
+                    cancelButtonText: 'İptal',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        // FAZ 60.2 FIX: File nesnesini SweetAlert2'nin result.value zincirinden
+                        // GEÇİRMİYORUZ. Safari/WebKit'te modal kapandığında DOM input siliniyor
+                        // ve File.size sıfırlanabiliyor → simple path tetikleniyordu.
+                        // onchange ile _pendingRestoreFile'a yazdığımız referansı kullanıyoruz.
+                        const fileInput = document.getElementById('smartRestoreFile');
+                        if (fileInput && fileInput.files && fileInput.files[0]) {
+                            _pendingRestoreFile = fileInput.files[0];
+                        }
+                        if (!_pendingRestoreFile) {
+                            Swal.showValidationMessage('Lütfen bir paket dosyası seçin.');
+                            return false;
+                        }
+                        // Sadece sinyal — gerçek File referansı modül seviyesinde tutuluyor.
+                        return true;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && _pendingRestoreFile) {
+                        const file = _pendingRestoreFile;
+                        // Referansı yerel değişkene aldıktan sonra modül seviyesini sıfırla.
+                        _pendingRestoreFile = null;
+                        _smartRestoreSubmit(file, true /* dry_run */);
+                    }
+                });
+            }
+
+            // FAZ 60.2: Chunked upload eşiği — bu boyutun altındaki dosyalar
+            // tek istekte gönderilir (eski endpoint), üstündekiler parça parça.
+            // 80 MB güvenli — Cloudflare Free 100 MB limitinin altında kalır.
+            const SMART_RESTORE_CHUNK_THRESHOLD = 80 * 1024 * 1024;
+            // Her parça 5 MB — Cloudflare için bol marj, küçük overhead.
+            const SMART_RESTORE_CHUNK_SIZE = 5 * 1024 * 1024;
+            // Aktif chunked upload session — abort için takip
+            let _smartChunkedUploadId = null;
+            let _smartChunkedAborted = false;
+            // FAZ 60.2 FIX: Safari/WebKit File.size=0 sorunu için doğrudan referans.
+            // SweetAlert2 modal'ı kapanınca DOM input siliniyor; preConfirm sonrası
+            // result.value zinciri File nesnesinin size'ını sıfırlayabiliyor.
+            // onchange ile bu değişkene yazıyoruz, modal kapanmadan referans alınmış oluyor.
+            let _pendingRestoreFile = null;
+
+            function _smartRestoreSubmit(file, dryRun) {
+                _smartChunkedAborted = false;
+                if (file.size > SMART_RESTORE_CHUNK_THRESHOLD) {
+                    return _smartRestoreSubmitChunked(file, dryRun);
+                }
+                return _smartRestoreSubmitSimple(file, dryRun);
+            }
+
+            // Klasik tek-istek upload (küçük dosyalar için)
+            function _smartRestoreSubmitSimple(file, dryRun) {
+                const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                const fd = new FormData();
+                fd.append('store_id', STORE_ID);
+                fd.append('dry_run', dryRun ? 'true' : 'false');
+                fd.append('file', file);
+                fd.append('csrfmiddlewaretoken', CSRF);
+
+                Swal.fire({
+                    title: dryRun ? 'Dry-Run Çalışıyor...' : 'Smart Restore Çalışıyor...',
+                    html: 'Lütfen bekleyin.',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                $.ajax({
+                    url: "{% url 'backups:smart_restore' %}",
+                    type: "POST",
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                }).done(function (res) {
+                    _handleSmartRestoreResponse(res, file, dryRun);
+                }).fail(function (xhr) {
+                    if (xhr.status === 413) {
+                        Swal.fire('Hata',
+                            'Dosya çok büyük (Cloudflare 413). Lütfen Smart Export sırasında ' +
+                            '"Görsel Optimize" seçeneğini açın veya görselsiz paket alın.',
+                            'error');
+                    } else {
+                        Swal.fire('Hata', 'İstek başarısız: ' + xhr.status, 'error');
+                    }
+                });
+            }
+
+            // FAZ 60.2: Chunked upload (büyük dosyalar için)
+            function _smartRestoreSubmitChunked(file, dryRun) {
+                const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                const totalChunks = Math.ceil(file.size / SMART_RESTORE_CHUNK_SIZE);
+
+                // Progress modal — abort butonlu
+                Swal.fire({
+                    title: 'Paket Yükleniyor (Parçalı)',
+                    html: `
+                        <div class="text-start">
+                            <p class="mb-2">
+                                <small>Dosya: <b>${_escapeHtml(file.name)}</b><br/>
+                                Boyut: <b>${(file.size / (1024*1024)).toFixed(1)} MB</b>
+                                · ${totalChunks} parça × ${(SMART_RESTORE_CHUNK_SIZE / (1024*1024)).toFixed(0)} MB</small>
+                            </p>
+                            <div class="progress" style="height:24px">
+                                <div id="chunkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                     role="progressbar" style="width: 0%">0%</div>
+                            </div>
+                            <p id="chunkProgressLabel" class="text-muted mt-2 mb-0"><small>Hazırlanıyor...</small></p>
+                        </div>
+                    `,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'İptal',
+                });
+                // Cancel button click → abort
+                document.querySelector('.swal2-cancel').onclick = function () {
+                    _smartChunkedAborted = true;
+                    if (_smartChunkedUploadId) {
+                        const fd = new FormData();
+                        fd.append('upload_id', _smartChunkedUploadId);
+                        fd.append('csrfmiddlewaretoken', CSRF);
+                        $.ajax({
+                            url: "{% url 'backups:chunked_upload_abort' %}",
+                            type: "POST", data: fd,
+                            processData: false, contentType: false,
+                        });
+                    }
+                    Swal.fire('İptal Edildi', 'Yükleme durduruldu.', 'info');
+                };
+
+                // 1) Init
+                const initFd = new FormData();
+                initFd.append('store_id', STORE_ID);
+                initFd.append('filename', file.name);
+                initFd.append('total_size', String(file.size));
+                initFd.append('chunk_size', String(SMART_RESTORE_CHUNK_SIZE));
+                initFd.append('csrfmiddlewaretoken', CSRF);
+
+                $.ajax({
+                    url: "{% url 'backups:chunked_upload_init' %}",
+                    type: "POST", data: initFd,
+                    processData: false, contentType: false,
+                }).done(function (initRes) {
+                    if (!initRes.result) {
+                        Swal.fire('Hata', initRes.error_msg || 'Oturum başlatılamadı.', 'error');
+                        return;
+                    }
+                    _smartChunkedUploadId = initRes.upload_id;
+                    _uploadChunksSequential(file, 0, totalChunks, CSRF, dryRun);
+                }).fail(function (xhr) {
+                    Swal.fire('Hata', 'Init başarısız: ' + xhr.status, 'error');
+                });
+            }
+
+            function _uploadChunksSequential(file, index, totalChunks, CSRF, dryRun) {
+                if (_smartChunkedAborted) return;
+                if (index >= totalChunks) {
+                    return _smartRestoreFinalize(CSRF, dryRun, file);
+                }
+                const start = index * SMART_RESTORE_CHUNK_SIZE;
+                const end = Math.min(file.size, start + SMART_RESTORE_CHUNK_SIZE);
+                const blob = file.slice(start, end);
+
+                const fd = new FormData();
+                fd.append('upload_id', _smartChunkedUploadId);
+                fd.append('chunk_index', String(index));
+                fd.append('chunk', blob, 'chunk_' + index + '.bin');
+                fd.append('csrfmiddlewaretoken', CSRF);
+
+                $.ajax({
+                    url: "{% url 'backups:chunked_upload_chunk' %}",
+                    type: "POST", data: fd,
+                    processData: false, contentType: false,
+                }).done(function (res) {
+                    if (_smartChunkedAborted) return;
+                    if (!res.result) {
+                        Swal.fire('Hata', res.error_msg || ('Chunk ' + index + ' yazılamadı.'), 'error');
+                        return;
+                    }
+                    const pct = res.progress_percent || 0;
+                    const bar = document.getElementById('chunkProgressBar');
+                    const lbl = document.getElementById('chunkProgressLabel');
+                    if (bar) { bar.style.width = pct + '%'; bar.textContent = pct + '%'; }
+                    if (lbl) {
+                        lbl.innerHTML = '<small>' +
+                            res.received_chunks + ' / ' + res.total_chunks + ' parça · ' +
+                            ((res.received_bytes || 0) / (1024 * 1024)).toFixed(1) + ' MB / ' +
+                            ((res.total_size || 0) / (1024 * 1024)).toFixed(1) + ' MB' +
+                            '</small>';
+                    }
+                    _uploadChunksSequential(file, index + 1, totalChunks, CSRF, dryRun);
+                }).fail(function (xhr) {
+                    if (xhr.status === 413) {
+                        Swal.fire('Hata',
+                            'Chunk hâlâ büyük (413). Chunk boyutu azaltılmalı.',
+                            'error');
+                    } else {
+                        Swal.fire('Hata',
+                            'Chunk ' + index + ' başarısız: ' + xhr.status +
+                            (xhr.responseJSON ? ' — ' + xhr.responseJSON.error_msg : ''),
+                            'error');
+                    }
+                });
+            }
+
+            function _smartRestoreFinalize(CSRF, dryRun, file) {
+                if (_smartChunkedAborted) return;
+                Swal.update({
+                    title: dryRun ? 'Dry-Run Çalışıyor...' : 'Smart Restore Çalışıyor...',
+                    html: '<p class="text-muted">Yükleme tamamlandı. Restore başlatılıyor...</p>',
+                    showCancelButton: false,
+                });
+                Swal.showLoading();
+
+                const fd = new FormData();
+                fd.append('upload_id', _smartChunkedUploadId);
+                fd.append('dry_run', dryRun ? 'true' : 'false');
+                fd.append('csrfmiddlewaretoken', CSRF);
+
+                $.ajax({
+                    url: "{% url 'backups:chunked_upload_finalize' %}",
+                    type: "POST", data: fd,
+                    processData: false, contentType: false,
+                }).done(function (res) {
+                    _handleSmartRestoreResponse(res, file, dryRun);
+                }).fail(function (xhr) {
+                    Swal.fire('Hata',
+                        'Finalize başarısız: ' + xhr.status +
+                        (xhr.responseJSON ? ' — ' + xhr.responseJSON.error_msg : ''),
+                        'error');
+                });
+            }
+
+            // Ortak response handler — basit + chunked yollar aynı UI'ı kullanır
+            function _handleSmartRestoreResponse(res, file, dryRun) {
+                if (!res.result) {
+                    Swal.fire('Hata', res.error_msg || 'Smart restore başarısız.', 'error');
+                    return;
+                }
+                const r = res.report || {};
+                const html = _renderSmartReport(r, dryRun);
+                if (dryRun) {
+                    Swal.fire({
+                        title: 'Dry-Run Sonucu',
+                        html: html,
+                        showCancelButton: true,
+                        confirmButtonText: 'Onayla ve Gerçekten Yükle',
+                        cancelButtonText: 'İptal',
+                        confirmButtonColor: '#d97706',
+                        width: 700,
+                    }).then((conf) => {
+                        if (conf.isConfirmed) {
+                            // Chunked yolda upload_id zaten READY — finalize'i tekrar çağır
+                            if (_smartChunkedUploadId) {
+                                const CSRF = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                                _smartRestoreFinalize(CSRF, false /* gerçek */, file);
+                            } else {
+                                _smartRestoreSubmit(file, false /* gerçek */);
+                            }
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: r.success ? 'success' : 'error',
+                        title: r.success ? 'Smart Restore Tamamlandı' : 'Hata',
+                        html: html,
+                        width: 700,
+                    });
+                    _smartChunkedUploadId = null;
+                    if (backupsDT) backupsDT.ajax.reload();
+                }
+            }
+
+            function _escapeHtml(s) {
+                return String(s || '').replace(/[&<>"']/g, function (c) {
+                    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+                });
+            }
+
+            function _renderSmartReport(r, dryRun) {
+                const skip = (r.idempotency_skips || []).length;
+                const conf = (r.barcode_conflicts || []).length;
+                const warn = (r.similarity_warnings || []).length;
+
+                let html = '<div class="text-start" style="font-size:0.92rem">';
+                html += '<table class="table table-sm">';
+                if (dryRun) {
+                    html += `<tr><td>Yeni tedarikçi oluşturulacak</td><td><b>${r.will_create_suppliers || 0}</b></td></tr>`;
+                    html += `<tr><td>Mevcut tedarikçi ile eşleşecek</td><td><b>${r.will_match_suppliers || 0}</b></td></tr>`;
+                    html += `<tr><td>Yeni müşteri oluşturulacak</td><td><b>${r.will_create_customers || 0}</b></td></tr>`;
+                    html += `<tr><td>Mevcut müşteri ile eşleşecek</td><td><b>${r.will_match_customers || 0}</b></td></tr>`;
+                    html += `<tr><td>Yeni ürün oluşturulacak</td><td><b>${r.will_create_products || 0}</b></td></tr>`;
+                } else {
+                    html += `<tr><td>Oluşturulan tedarikçi</td><td><b>${r.created_suppliers || 0}</b></td></tr>`;
+                    html += `<tr><td>Eşleşen tedarikçi</td><td><b>${r.matched_suppliers || 0}</b></td></tr>`;
+                    html += `<tr><td>Oluşturulan müşteri</td><td><b>${r.created_customers || 0}</b></td></tr>`;
+                    html += `<tr><td>Eşleşen müşteri</td><td><b>${r.matched_customers || 0}</b></td></tr>`;
+                    html += `<tr><td>Oluşturulan ürün</td><td><b>${r.created_products || 0}</b></td></tr>`;
+                    html += `<tr><td>Yazılan tedarikçi cari satırı</td><td><b>${r.created_supplier_ledger_entries || 0}</b></td></tr>`;
+                    html += `<tr><td>Yazılan müşteri cari satırı</td><td><b>${r.created_customer_ledger_entries || 0}</b></td></tr>`;
+                    if (r.media_attached) {
+                        html += `<tr class="table-success"><td><i class="fa-solid fa-images me-1"></i>Çıkarılan görsel dosyası</td><td><b>${r.media_extracted || 0}</b></td></tr>`;
+                        if (r.attached_product_images) {
+                            html += `<tr><td class="ps-4">↳ Ürün görseli bağlanan</td><td><b>${r.attached_product_images}</b></td></tr>`;
+                        }
+                        if (r.attached_customer_images) {
+                            html += `<tr><td class="ps-4">↳ Müşteri kimlik görseli bağlanan</td><td><b>${r.attached_customer_images}</b></td></tr>`;
+                        }
+                    }
+                }
+                html += `<tr><td class="text-warning">⚠ Idempotency atlandı</td><td><b>${skip}</b></td></tr>`;
+                html += `<tr><td class="text-warning">⚠ Barkod çakışması</td><td><b>${conf}</b></td></tr>`;
+                html += `<tr><td class="text-warning">⚠ Şüpheli benzerlik</td><td><b>${warn}</b></td></tr>`;
+                html += '</table>';
+
+                if (conf > 0 && r.barcode_conflicts) {
+                    html += '<div class="alert alert-warning mt-2"><b>Barkod Çakışmaları:</b><ul class="mb-0">';
+                    (r.barcode_conflicts.slice(0, 5)).forEach(b => {
+                        html += `<li>${b.original} → <b>${b.resolved}</b></li>`;
+                    });
+                    if (conf > 5) html += `<li>... ve ${conf - 5} adet daha</li>`;
+                    html += '</ul></div>';
+                }
+
+                if (warn > 0 && r.similarity_warnings) {
+                    html += '<div class="alert alert-info mt-2"><b>Manuel İnceleme Önerilen:</b><ul class="mb-0">';
+                    (r.similarity_warnings.slice(0, 5)).forEach(s => {
+                        const matchCount = (s.matches || []).length;
+                        html += `<li>${s.kind}: <b>${s.incoming}</b> — ${matchCount} benzer kayıt mevcut DB'de</li>`;
+                    });
+                    if (warn > 5) html += `<li>... ve ${warn - 5} adet daha</li>`;
+                    html += '</ul></div>';
+                }
+
+                if (r.error) {
+                    html += `<div class="alert alert-danger mt-2"><b>Hata:</b> ${r.error}</div>`;
+                }
+                html += '</div>';
+                return html;
+            }
+
+            // Mağaza ID — Smart Restore için (template'ten inject edilir)
+            const STORE_ID = "{{ store.id }}";
 
             // Geri Yükleme (Senkron - Güvenlik İçin)
             function triggerBackupRestore(backupId, dateStr) {

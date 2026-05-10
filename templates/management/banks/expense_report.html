@@ -1,0 +1,580 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{# ============================================================================
+   FAZ 61 — Gider Raporu
+   Tarih aralığı + kategori + kasa filtresi. Özet KPI'lar, kategori bazlı
+   yatay bar dağılımı, günlük trend, detay tablo + iptal aksiyonu.
+   ============================================================================ #}
+
+{% block header %}
+    <style>
+        .rpt-card {
+            border: 1px solid rgba(0, 0, 0, 0.075);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+        }
+
+        .kpi {
+            background: linear-gradient(135deg, #fafbfc, #f1f5f9);
+            border-radius: 10px;
+            padding: 16px 20px;
+        }
+
+        .kpi-label {
+            color: #64748b;
+            font-weight: 600;
+            font-size: .82rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            color: #0f172a;
+        }
+
+        .kpi-sub {
+            color: #94a3b8;
+            font-size: .78rem;
+        }
+
+        .cat-bar-row {
+            display: grid;
+            grid-template-columns: 220px 1fr 130px 60px;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .cat-bar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+            height: 22px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cat-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width .4s ease;
+        }
+
+        .cat-bar-amount {
+            text-align: right;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .cat-bar-cnt {
+            text-align: right;
+            color: #64748b;
+            font-size: .85rem;
+        }
+
+        .cat-bar-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .day-bar-row {
+            display: grid;
+            grid-template-columns: 130px 1fr 130px;
+            gap: 10px;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .day-bar-track {
+            background: #f8fafc;
+            border-radius: 6px;
+            height: 14px;
+            overflow: hidden;
+        }
+
+        .day-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #60a5fa, #2563eb);
+            border-radius: 6px;
+        }
+
+        .rpt-table th,
+        .rpt-table td {
+            padding: 10px 12px;
+            border-bottom: 1px dashed #e5e7eb;
+            font-size: .9rem;
+        }
+
+        .rpt-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: .76rem;
+            text-transform: uppercase;
+        }
+
+        .rpt-table .amount {
+            text-align: right;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            padding: 36px 16px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .filter-strip {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .filter-strip .field {
+            min-width: 160px;
+        }
+    </style>
+{% endblock header %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div class="container-fluid px-2 px-md-5">
+                <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+
+                    {# ───── Üst Bilgi + Filtreler ───── #}
+                    <div class="card rpt-card mb-4">
+                        <div class="card-body p-4 p-md-5">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+                                <div>
+                                    <h1 class="page-heading text-dark fw-bold fs-3 my-0">
+                                        <i class="bi bi-graph-up text-info me-2"></i>
+                                        Gider Raporu
+                                    </h1>
+                                    <div class="text-muted fs-7 fw-semibold">
+                                        Kategori, kasa ve tarih bazlı gider dökümü
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'bank-management:expense_quick' %}"
+                                       class="btn btn-sm btn-light-primary fw-bold">
+                                        <i class="bi bi-pencil-square me-1"></i> Hızlı Giriş
+                                    </a>
+                                    <a href="{% url 'bank-management:expense_categories' %}"
+                                       class="btn btn-sm btn-light fw-bold">
+                                        <i class="bi bi-tags me-1"></i> Kategoriler
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="filter-strip">
+                                <div class="field">
+                                    <label class="form-label fw-semibold mb-1 fs-7">Başlangıç</label>
+                                    <input type="date" id="dateFrom"
+                                           class="form-control form-control-sm form-control-solid">
+                                </div>
+                                <div class="field">
+                                    <label class="form-label fw-semibold mb-1 fs-7">Bitiş</label>
+                                    <input type="date" id="dateTo"
+                                           class="form-control form-control-sm form-control-solid">
+                                </div>
+                                <div class="field">
+                                    <label class="form-label fw-semibold mb-1 fs-7">Kategori</label>
+                                    <select id="filterCategory"
+                                            class="form-select form-select-sm form-select-solid">
+                                        <option value="">Tüm Kategoriler</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="form-label fw-semibold mb-1 fs-7">Kasa</label>
+                                    <select id="filterAccount"
+                                            class="form-select form-select-sm form-select-solid">
+                                        <option value="">Tüm Kasalar</option>
+                                        {% for a in accounts %}
+                                            <option value="{{ a.id }}">{{ a.name }} [{{ a.account_type }}]</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="field d-flex gap-2">
+                                    <button type="button" id="btnApply"
+                                            class="btn btn-sm btn-primary fw-bold">
+                                        <i class="bi bi-funnel me-1"></i> Uygula
+                                    </button>
+                                    <button type="button" id="btnReset"
+                                            class="btn btn-sm btn-light-secondary fw-bold">
+                                        Sıfırla
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── KPI ───── #}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="kpi">
+                                <div class="kpi-label">Toplam Gider</div>
+                                <div class="kpi-value" id="kpiTotal">—</div>
+                                <div class="kpi-sub" id="kpiPeriod">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="kpi">
+                                <div class="kpi-label">Kayıt Sayısı</div>
+                                <div class="kpi-value" id="kpiCount">—</div>
+                                <div class="kpi-sub">İptal edilenler hariç</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="kpi">
+                                <div class="kpi-label">Ortalama / Kayıt</div>
+                                <div class="kpi-value" id="kpiAvg">—</div>
+                                <div class="kpi-sub">TL</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── Kategori Dağılımı ───── #}
+                    <div class="card rpt-card mb-4">
+                        <div class="card-body p-4 p-md-5">
+                            <h3 class="fw-bold fs-5 mb-3">
+                                <i class="bi bi-pie-chart text-warning me-2"></i>
+                                Kategori Dağılımı
+                            </h3>
+                            <div id="catBars">
+                                <div class="empty-state">Filtre uygulanınca veriler burada listelenecek.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── Günlük Trend ───── #}
+                    <div class="card rpt-card mb-4">
+                        <div class="card-body p-4 p-md-5">
+                            <h3 class="fw-bold fs-5 mb-3">
+                                <i class="bi bi-calendar3 text-success me-2"></i>
+                                Günlük Trend
+                            </h3>
+                            <div id="dayBars">
+                                <div class="empty-state">Filtre uygulanınca veriler burada listelenecek.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ───── Detay Tablo ───── #}
+                    <div class="card rpt-card">
+                        <div class="card-body p-4 p-md-5">
+                            <h3 class="fw-bold fs-5 mb-3">
+                                <i class="bi bi-list-ul text-primary me-2"></i>
+                                Detay (Son 500 Kayıt)
+                            </h3>
+                            <div class="table-responsive">
+                                <table class="rpt-table" id="rptTable" style="width:100%;">
+                                    <thead>
+                                    <tr>
+                                        <th style="width:140px;">Tarih</th>
+                                        <th style="width:170px;">Kategori</th>
+                                        <th>Açıklama</th>
+                                        <th style="width:160px;">Kasa</th>
+                                        <th style="width:140px;" class="text-end">Tutar</th>
+                                        <th style="width:80px;" class="text-center">İptal</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="rptTbody">
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="empty-state">Filtre uygulanınca veriler burada listelenecek.</div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock body %}
+
+{% block footer %}
+    <script>
+        "use strict";
+
+        (function () {
+            const URLS = {
+                data: "{% url 'bank-management:expense_report_data' %}",
+                catOptions: "{% url 'bank-management:expense_categories_options' %}",
+                reverse: "{% url 'bank-management:expense_reverse' %}"
+            };
+            const CSRF = (document.querySelector("input[name='csrfmiddlewaretoken']") || {}).value || '';
+
+            const elDateFrom = document.getElementById('dateFrom');
+            const elDateTo = document.getElementById('dateTo');
+            const elFilterCat = document.getElementById('filterCategory');
+            const elFilterAcct = document.getElementById('filterAccount');
+
+            // ── Yardımcılar ──
+            function fmtTL(num) {
+                if (!isFinite(Number(num))) return '0,00';
+                return Number(num).toLocaleString('tr-TR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            function ymd(date) {
+                const d = date instanceof Date ? date : new Date(date);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${dd}`;
+            }
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function showError(msg) {
+                if (window.Swal) Swal.fire({icon: 'error', title: 'Hata', text: msg});
+                else alert(msg);
+            }
+
+            function showSuccess(msg) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: msg,
+                        timer: 1800,
+                        showConfirmButton: false
+                    });
+                }
+            }
+
+            // ── Tarih default'ları (son 30 gün) ──
+            (function setDefaults() {
+                const today = new Date();
+                const start = new Date();
+                start.setDate(today.getDate() - 30);
+                elDateFrom.value = ymd(start);
+                elDateTo.value = ymd(today);
+            })();
+
+            // ── Kategori dropdown'ı yükle ──
+            async function loadCategoryOptions() {
+                try {
+                    const resp = await fetch(URLS.catOptions, {credentials: 'same-origin'});
+                    const data = await resp.json().catch(() => ({}));
+                    if (!data.result) return;
+                    (data.data || []).forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        elFilterCat.appendChild(opt);
+                    });
+                } catch (e) {
+                    console.warn('Kategori dropdown yüklenemedi:', e);
+                }
+            }
+
+            // ── Verileri çek ──
+            async function fetchReport() {
+                const params = new URLSearchParams({
+                    date_from: elDateFrom.value,
+                    date_to: elDateTo.value
+                });
+                if (elFilterCat.value) params.append('category_id', elFilterCat.value);
+                if (elFilterAcct.value) params.append('account_id', elFilterAcct.value);
+
+                try {
+                    const resp = await fetch(URLS.data + '?' + params.toString(), {
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'Rapor yüklenemedi.');
+                        return;
+                    }
+                    renderAll(data);
+                } catch (e) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                    console.error(e);
+                }
+            }
+
+            function renderAll(data) {
+                renderKpi(data.summary, data.date_from, data.date_to);
+                renderCatBars(data.by_category);
+                renderDayBars(data.by_day);
+                renderRows(data.rows);
+            }
+
+            function renderKpi(s, df, dt) {
+                document.getElementById('kpiTotal').textContent = fmtTL(s.total_tl) + ' TL';
+                document.getElementById('kpiCount').textContent = String(s.count || 0);
+                document.getElementById('kpiAvg').textContent = fmtTL(s.avg_tl) + ' TL';
+                document.getElementById('kpiPeriod').textContent =
+                    `${df || ''} → ${dt || ''}`;
+            }
+
+            function renderCatBars(rows) {
+                const wrap = document.getElementById('catBars');
+                if (!rows || rows.length === 0) {
+                    wrap.innerHTML = '<div class="empty-state">Bu aralıkta kategori verisi yok.</div>';
+                    return;
+                }
+                const max = Math.max(...rows.map(r => parseFloat(r.total_tl.replace(/\./g, '').replace(',', '.')) || 0));
+                wrap.innerHTML = '';
+                rows.forEach(r => {
+                    const totalNum = parseFloat(r.total_tl.replace(/\./g, '').replace(',', '.')) || 0;
+                    const pct = max > 0 ? Math.max(2, Math.round((totalNum / max) * 100)) : 0;
+                    const color = r.color_css || '#64748b';
+                    const iconHtml = r.icon ? `<i class="bi ${escapeHtml(r.icon)}"></i>` : '';
+                    const div = document.createElement('div');
+                    div.className = 'cat-bar-row';
+                    div.innerHTML = `
+                        <div class="cat-bar-name" style="color:${color}">
+                            ${iconHtml} ${escapeHtml(r.name)}
+                        </div>
+                        <div class="cat-bar-track">
+                            <div class="cat-bar-fill"
+                                 style="width:${pct}%;background:${color}"></div>
+                        </div>
+                        <div class="cat-bar-amount">${fmtTL(totalNum)} TL</div>
+                        <div class="cat-bar-cnt">${r.count}</div>
+                    `;
+                    wrap.appendChild(div);
+                });
+            }
+
+            function renderDayBars(rows) {
+                const wrap = document.getElementById('dayBars');
+                if (!rows || rows.length === 0) {
+                    wrap.innerHTML = '<div class="empty-state">Bu aralıkta günlük veri yok.</div>';
+                    return;
+                }
+                const max = Math.max(...rows.map(r => parseFloat(r.total_tl.replace(/\./g, '').replace(',', '.')) || 0));
+                wrap.innerHTML = '';
+                rows.forEach(r => {
+                    const totalNum = parseFloat(r.total_tl.replace(/\./g, '').replace(',', '.')) || 0;
+                    const pct = max > 0 ? Math.max(2, Math.round((totalNum / max) * 100)) : 0;
+                    const div = document.createElement('div');
+                    div.className = 'day-bar-row';
+                    div.innerHTML = `
+                        <div class="text-muted fw-semibold">${escapeHtml(r.date)}</div>
+                        <div class="day-bar-track">
+                            <div class="day-bar-fill" style="width:${pct}%"></div>
+                        </div>
+                        <div class="cat-bar-amount">${fmtTL(totalNum)} TL</div>
+                    `;
+                    wrap.appendChild(div);
+                });
+            }
+
+            function renderRows(rows) {
+                const tbody = document.getElementById('rptTbody');
+                if (!rows || rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Bu kriterlerde gider kaydı bulunamadı.</div></td></tr>';
+                    return;
+                }
+                tbody.innerHTML = '';
+                rows.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(r.date)}</td>
+                        <td>${escapeHtml(r.category)}</td>
+                        <td>${escapeHtml(r.description || '—')}</td>
+                        <td>${escapeHtml(r.cashbox || '—')}</td>
+                        <td class="amount">${escapeHtml(r.amount_eur)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-icon btn-light-danger"
+                                    data-id="${r.id}" title="Bu gideri iptal et">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // ── Reverse aksiyonu ──
+            async function reverseEntry(entryId) {
+                let confirmed = false;
+                if (window.Swal) {
+                    const r = await Swal.fire({
+                        icon: 'warning',
+                        title: 'Gider iptal edilsin mi?',
+                        text: 'Kasa bakiyesi geri yüklenecek; rapora REVERSAL satırı yazılacak.',
+                        showCancelButton: true,
+                        confirmButtonText: 'Evet, iptal et',
+                        cancelButtonText: 'Vazgeç'
+                    });
+                    confirmed = !!r.isConfirmed;
+                } else {
+                    confirmed = confirm('Bu gider kaydı iptal edilsin mi? Bakiye geri yüklenecek.');
+                }
+                if (!confirmed) return;
+
+                const fd = new FormData();
+                fd.append('csrfmiddlewaretoken', CSRF);
+                fd.append('entry_id', entryId);
+
+                try {
+                    const resp = await fetch(URLS.reverse, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin'
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.result) {
+                        showError(data.msg || 'İptal başarısız.');
+                        return;
+                    }
+                    showSuccess(data.msg || 'Gider iptal edildi.');
+                    fetchReport();
+                } catch (e) {
+                    showError('Sunucuyla iletişim kurulamadı.');
+                    console.error(e);
+                }
+            }
+
+            // ── Bağlamalar ──
+            document.getElementById('btnApply').addEventListener('click', fetchReport);
+            document.getElementById('btnReset').addEventListener('click', () => {
+                const today = new Date();
+                const start = new Date();
+                start.setDate(today.getDate() - 30);
+                elDateFrom.value = ymd(start);
+                elDateTo.value = ymd(today);
+                elFilterCat.value = '';
+                elFilterAcct.value = '';
+                fetchReport();
+            });
+
+            document.getElementById('rptTbody').addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-id]');
+                if (!btn) return;
+                reverseEntry(btn.dataset.id);
+            });
+
+            // ── Init ──
+            loadCategoryOptions().then(fetchReport);
+        })();
+    </script>
+{% endblock footer %}

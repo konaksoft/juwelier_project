@@ -306,7 +306,71 @@
 
         }
 
+        /* FAZ 22 — Makbuz fiş alanı (ekran dışı, print() / html2pdf ile aktive) */
+        #custodyReceiptArea {
+            position: absolute; left: -9999px; top: 0;
+            width: 80mm; padding: 6px 8px;
+            background: #fff; color: #000;
+            font-family: 'Courier New', monospace; font-size: 11px;
+        }
+        #custodyReceiptArea .rcpt-title {
+            font-weight: bold; text-align: center; font-size: 13px; margin: 4px 0;
+        }
+        #custodyReceiptArea .rcpt-row {
+            display: flex; justify-content: space-between; gap: 6px; margin: 2px 0;
+        }
+        #custodyReceiptArea hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+        #custodyReceiptArea .rcpt-amount {
+            text-align: center; font-size: 14px; font-weight: bold; margin: 6px 0;
+        }
+        #custodyReceiptArea .rcpt-sign {
+            margin-top: 12px; display: flex; justify-content: space-between;
+            font-size: 10px;
+        }
+        #custodyReceiptArea .rcpt-sign div {
+            width: 48%; border-top: 1px solid #000; padding-top: 6px;
+            text-align: center;
+        }
+        #custodyReceiptArea .rcpt-warning {
+            font-size: 9px; text-align: center; margin-top: 6px; color: #444;
+        }
 
+        @media print {
+            body * { visibility: hidden; }
+            #custodyReceiptArea, #custodyReceiptArea * { visibility: visible; }
+            #custodyReceiptArea {
+                position: absolute; left: 0; top: 0; width: 80mm;
+            }
+        }
+
+        /* REVERSAL ikon butonu */
+        .btn-emanet-reverse {
+            background: #f1416c1c; color: #f1416c; border: 1px solid transparent;
+        }
+        .btn-emanet-reverse:hover { background: #f1416c; color: #fff; }
+
+        /* ── addCustodyModal — tahsilat ekranları stilinde ──────────── */
+        #addCustodyModal .modal-content { border-radius: 14px; overflow: hidden; }
+        #addCustodyModal .custody-panel {
+            background: linear-gradient(135deg, #f4f8ff 0%, #eaf3ff 100%);
+            border: 1px dashed #5e93f7;
+            border-radius: 12px;
+        }
+        #addCustodyModal .custody-panel--scrap {
+            background: linear-gradient(135deg, #fffbf0 0%, #fff5dc 100%);
+            border-color: #e0b956;
+        }
+        #addCustodyModal .custody-preview-card {
+            background: linear-gradient(135deg, #fffbf2 0%, #fff5dc 100%);
+            border: 1px dashed #e0b956;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        #addCustodyModal .custody-preview-card .label {
+            color: #7a6a3d; font-size: .78rem; font-weight: 600;
+        }
+        #addCustodyModal .custody-preview-card .value { color: #2a2a2a; }
+        #addCustodyModal .form-required::after { content: ' *'; color: #dc3545; font-weight: 800; }
     </style>
     <link href="{% static 'management/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet"/>
 {% endblock header %}
@@ -323,22 +387,45 @@
                                 <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
                                     Emanet Yönetimi</h1>
                             </div>
-                            <!-- KPI: Emanettekiler / Teslim Edilenler -->
-                            <div class="d-flex align-items-center justify-content-center mx-3" style="gap:12px;">
+                            <!-- FAZ 24 — KPI Genişletildi: Emanet Adedi / Net HS / TL Karşılığı / Müşteri Sayısı + Detay Butonu -->
+                            <div class="d-flex align-items-center justify-content-center mx-3 flex-wrap" style="gap:8px;">
                                 <div class="kpi-mini kpi-mini--violet">
                                     <div class="kpi-mini__icon"><i class="fa-solid fa-box"></i></div>
                                     <div class="kpi-mini__body">
-                                        <div class="kpi-mini__label">Emanettekiler</div>
+                                        <div class="kpi-mini__label">Aktif Emanet</div>
                                         <div class="kpi-mini__value" id="kpi_in_count">0</div>
                                     </div>
                                 </div>
-                                <div class="kpi-mini kpi-mini--green">
-                                    <div class="kpi-mini__icon"><i class="fa-solid fa-check"></i></div>
+                                <div class="kpi-mini kpi-mini--gold" style="background:#fff;border:1px solid #ffe9a8;">
+                                    <div class="kpi-mini__icon" style="background:rgba(255,205,2,.15);color:#b88a00;">
+                                        <i class="fa-solid fa-coins"></i>
+                                    </div>
                                     <div class="kpi-mini__body">
-                                        <div class="kpi-mini__label">Teslim Edilenler</div>
-                                        <div class="kpi-mini__value" id="kpi_out_count">0</div>
+                                        <div class="kpi-mini__label" style="color:#b88a00;">Toplam Has</div>
+                                        <div class="kpi-mini__value" id="kpi_net_hs" style="color:#b88a00;">0.000</div>
                                     </div>
                                 </div>
+                                <div class="kpi-mini kpi-mini--blue" style="background:#fff;border:1px solid #cfe2ff;">
+                                    <div class="kpi-mini__icon" style="background:rgba(13,110,253,.12);color:#0d6efd;">
+                                        <i class="fa-solid fa-lira-sign"></i>
+                                    </div>
+                                    <div class="kpi-mini__body">
+                                        <div class="kpi-mini__label" style="color:#0d6efd;">TL Karşılığı (Bugün)</div>
+                                        <div class="kpi-mini__value" id="kpi_tl_today" style="color:#0d6efd;">0,00</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-mini kpi-mini--green">
+                                    <div class="kpi-mini__icon"><i class="fa-solid fa-users"></i></div>
+                                    <div class="kpi-mini__body">
+                                        <div class="kpi-mini__label">Müşteri</div>
+                                        <div class="kpi-mini__value" id="kpi_cust_count">0</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-light-info btn-sm"
+                                        id="btnStoreSummaryDetail"
+                                        title="Mağaza Emanet Özeti">
+                                    <i class="fa-solid fa-chart-pie"></i>
+                                </button>
                             </div>
 
                             <div class="d-flex align-items-center gap-2 gap-lg-3">
@@ -403,7 +490,7 @@
                         <div class="col-md-12">
                             <div class="card ">
                                 <div class="card-body">
-                                    <div class="mb-4">
+                                    <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                                         <ul class="nav nav-tabs" id="custodyTabs" role="tablist">
                                             <li class="nav-item">
                                                 <button class="nav-link active" data-tab="IN" type="button">Emanet
@@ -413,7 +500,26 @@
                                                 <button class="nav-link" data-tab="OUT" type="button">Teslim Edilenler
                                                 </button>
                                             </li>
+                                            <!-- FAZ 22 — OFFSET / REVERSAL / Tümü -->
+                                            <li class="nav-item">
+                                                <button class="nav-link" data-tab="OFFSET" type="button">Mahsuplaşmalar
+                                                </button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link" data-tab="REVERSAL" type="button">İptaller
+                                                </button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link" data-tab="ALL" type="button">Tümü
+                                                </button>
+                                            </li>
                                         </ul>
+                                        <div class="form-check form-switch form-check-sm">
+                                            <input class="form-check-input" type="checkbox" id="showInactiveChk">
+                                            <label class="form-check-label small" for="showInactiveChk">
+                                                İptal/Pasif kayıtları göster
+                                            </label>
+                                        </div>
                                     </div>
 
                                     <div id="tableToolbar"
@@ -462,21 +568,39 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════
+             Emanet Ekle / Güncelle Modalı  (FAZ 50 — güzel tasarım)
+             ══════════════════════════════════════════════════════════ -->
         <div class="modal fade" id="addCustodyModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <form id="custodyForm" method="post" class="modal-content">
                     {% csrf_token %}
                     <input type="hidden" name="custody_id" value="">
 
-                    <div class="modal-header">
-                        <h5 class="modal-title"><i class="fa-solid fa-hand-holding-hand me-2"></i>Emanet Ekle</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <!-- BAŞLIK -->
+                    <div class="modal-header bg-light-primary py-3">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="symbol symbol-40px">
+                                <span class="symbol-label bg-primary text-white">
+                                    <i class="fa-solid fa-hand-holding-hand fs-3 text-white"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h3 class="modal-title fw-bold text-primary mb-0">Emanet Ekle</h3>
+                                <span class="text-muted fw-semibold fs-7">Müşteri emanet kaydı oluştur</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
                     </div>
 
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Müşteri <span class="text-danger">*</span></label>
-                            <select name="customer_id" id="custody_customer_id" class="form-select"
+                    <!-- GÖVDE -->
+                    <div class="modal-body py-4 px-lg-7">
+
+                        <!-- 1) MÜŞTERİ -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold form-required">Müşteri</label>
+                            <select name="customer_id" id="custody_customer_id"
+                                    class="form-select form-select-solid"
                                     data-control="select2" data-dropdown-parent="#addCustodyModal" required>
                                 <option value="">Seçiniz</option>
                                 {% for c in customers %}
@@ -485,31 +609,69 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Emanet Türü <span class="text-danger">*</span></label>
-                            <div class="d-flex gap-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="emanet_turu" id="tur_ziynet"
-                                           value="ziynet" checked>
-                                    <label class="form-check-label" for="tur_ziynet">Ziynet / Sarrafiye</label>
+                        <!-- 2) EMANET TÜRÜ — kart seçici (tahsilat yönü kartları gibi) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold form-required">Emanet Türü</label>
+                            <div class="row g-3" data-kt-buttons="true">
+                                <div class="col-4">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex text-start p-3 active"
+                                           data-custody-type="ziynet">
+                                        <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
+                                            <input class="form-check-input" type="radio" name="emanet_turu"
+                                                   id="tur_ziynet" value="ziynet" checked>
+                                        </span>
+                                        <span class="ms-3">
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">
+                                                <i class="fa-solid fa-coins text-primary me-1"></i> Ziynet
+                                            </span>
+                                            <span class="fs-8 text-muted">Çeyrek, sarrafiye</span>
+                                        </span>
+                                    </label>
                                 </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="emanet_turu" id="tur_hurda"
-                                           value="hurda">
-                                    <label class="form-check-label" for="tur_hurda">Hurda Altın</label>
+                                <div class="col-4">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-warning d-flex text-start p-3"
+                                           data-custody-type="hurda">
+                                        <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
+                                            <input class="form-check-input" type="radio" name="emanet_turu"
+                                                   id="tur_hurda" value="hurda">
+                                        </span>
+                                        <span class="ms-3">
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">
+                                                <i class="fa-solid fa-recycle text-warning me-1"></i> Hurda
+                                            </span>
+                                            <span class="fs-8 text-muted">Hurda altın gramajı</span>
+                                        </span>
+                                    </label>
                                 </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="emanet_turu" id="tur_bilezik"
-                                           value="bilezik">
-                                    <label class="form-check-label" for="tur_bilezik">Bilezik</label>
+                                <div class="col-4">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-success d-flex text-start p-3"
+                                           data-custody-type="bilezik">
+                                        <span class="form-check form-check-custom form-check-solid form-check-sm align-items-start mt-1">
+                                            <input class="form-check-input" type="radio" name="emanet_turu"
+                                                   id="tur_bilezik" value="bilezik">
+                                        </span>
+                                        <span class="ms-3">
+                                            <span class="fs-6 fw-bold text-gray-800 d-block">
+                                                <i class="fa-solid fa-ring text-success me-1"></i> Bilezik
+                                            </span>
+                                            <span class="fs-8 text-muted">Bilezik havuzuna ekle</span>
+                                        </span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="alan_ziynet" class="p-3 bg-light rounded mb-3 border">
+                        <!-- 3) ZİYNET / SARRAFİYE PANELİ
+                             Birim Has artık manuel düzenlenebilir. Ürün seçildiğinde
+                             buy_price_hs otomatik gelir; kuyumcu özel anlaşma yaptıysa
+                             değiştirebilir. Backend amount_hs'i kendi hesaplar. -->
+                        <div id="alan_ziynet" class="custody-panel p-4 rounded mb-3">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Ürün Seçiniz</label>
-                                <select name="product_id" id="custody_product_id" class="form-select"
+                                <label class="form-label fw-bold">
+                                    <i class="fa-solid fa-coins text-primary me-1"></i> Ürün Seçiniz
+                                </label>
+                                <select name="product_id" id="custody_product_id"
+                                        class="form-select form-select-solid"
                                         data-control="select2" data-dropdown-parent="#addCustodyModal">
                                     <option value="">(Örn: Çeyrek Altın, Yarım Altın vb.)</option>
                                     {% for p in products %}
@@ -521,58 +683,129 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div>
-                                <label class="form-label fw-bold">Adet</label>
-                                <input type="number" class="form-control" id="custody_quantity_piece"
-                                       name="quantity_piece" value="0" min="0">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold" id="lbl_custody_qty">Adet</label>
+                                    <input type="number" class="form-control form-control-solid"
+                                           id="custody_quantity_piece" name="quantity_piece" value="0" min="0">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-bold d-flex align-items-center gap-1">
+                                        Birim Has
+                                        <span class="badge badge-light-primary fs-9 fw-bold ms-1">
+                                            <i class="fa-solid fa-pen-to-square fs-10 me-1"></i>Düzenlenebilir
+                                        </span>
+                                    </label>
+                                    <div class="input-group input-group-solid">
+                                        <input type="number" step="0.001"
+                                               class="form-control form-control-solid fw-bold"
+                                               id="custody_unit_hs" name="unit_hs_override"
+                                               value="0.000" min="0">
+                                        <span class="input-group-text fw-bold text-muted">HS</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div id="alan_hurda_bilezik" class="p-3 bg-light rounded mb-3 border" style="display: none;">
+                        <!-- 4) HURDA / BİLEZİK PANELİ
+                             Ayar dropdown canonical etiket gönderir (havuz anahtarı).
+                             Milyem ayrı sayısal alan — otomatik gelir, kuyumcu özel
+                             milyem girebilir (581, 591, 847 vb.). İşçilik bilgisi alınmaz. -->
+                        <div id="alan_hurda_bilezik" class="custody-panel custody-panel--scrap p-4 rounded mb-3"
+                             style="display: none;">
+
+                            <!-- Bilezik adı — yalnızca bilezik türünde görünür -->
                             <div class="mb-3" id="div_bilezik_adi" style="display: none;">
-                                <label class="form-label fw-bold">Bilezik Adı / Modeli</label>
-                                <input type="text" class="form-control" name="bracelet_name"
-                                       placeholder="Örn: 22 Ayar Adana Burma">
+                                <label class="form-label fw-bold">
+                                    <i class="fa-solid fa-ring text-success me-1"></i> Bilezik Adı / Modeli
+                                </label>
+                                <input type="text" class="form-control form-control-solid"
+                                       name="bracelet_name" id="custody_bracelet_name"
+                                       placeholder="Örn: 22 Ayar Adana Burma" minlength="2">
+                                <div class="form-text text-muted fs-8">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    Aynı isimli aktif bilezik havuzu varsa o havuza eklenir; yoksa yeni havuz açılır (işçilik=0).
+                                </div>
                             </div>
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label class="form-label fw-bold">Ayar Seçiniz</label>
-                                    <select name="milyem" id="custody_milyem" class="form-select">
-                                        <option value="0">Seçiniz</option>
-                                        <option value="995">Has / 24 Ayar (995)</option>
-                                        <option value="916">22 Ayar (916)</option>
-                                        <option value="875">21 Ayar (875)</option>
-                                        <option value="750">18 Ayar (750)</option>
-                                        <option value="585">14 Ayar (585)</option>
-                                        <option value="333">8 Ayar (333)</option>
+
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">
+                                        <i class="fa-solid fa-layer-group text-warning me-1"></i> Ayar Seçiniz
+                                    </label>
+                                    <select id="custody_ayar_label" name="ayar_label"
+                                            class="form-select form-select-solid fw-bold">
+                                        <option value="">Seçiniz</option>
+                                        <option value="24 Ayar" data-mileage="995">Has / 24 Ayar (995‰)</option>
+                                        <option value="22 Ayar" data-mileage="916">22 Ayar (916‰)</option>
+                                        <option value="21 Ayar" data-mileage="875">21 Ayar (875‰)</option>
+                                        <option value="18 Ayar" data-mileage="750">18 Ayar (750‰)</option>
+                                        <option value="14 Ayar" data-mileage="585">14 Ayar (585‰)</option>
+                                        <option value="8 Ayar" data-mileage="333">8 Ayar (333‰)</option>
                                     </select>
                                 </div>
-                                <div class="col-6 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold d-flex align-items-center gap-1">
+                                        Milyem
+                                        <span class="badge badge-light-warning fs-9 fw-bold ms-1">
+                                            <i class="fa-solid fa-pen-to-square fs-10 me-1"></i>Düzenlenebilir
+                                        </span>
+                                    </label>
+                                    <div class="input-group input-group-solid">
+                                        <input type="number" step="1" min="1" max="999"
+                                               class="form-control form-control-solid fw-bold"
+                                               id="custody_milyem" name="milyem" value="0"
+                                               placeholder="Örn: 585">
+                                        <span class="input-group-text fw-bold text-muted">‰</span>
+                                    </div>
+                                    <div class="form-text text-muted fs-8">Piyasa milyemini girin (1–999)</div>
+                                </div>
+                                <div class="col-6">
                                     <label class="form-label fw-bold">Gram</label>
-                                    <input type="number" step="0.01" class="form-control" id="custody_quantity_gram"
-                                           name="quantity_gram" value="0" min="0">
+                                    <div class="input-group input-group-solid">
+                                        <input type="number" step="0.01"
+                                               class="form-control form-control-solid fw-bold"
+                                               id="custody_quantity_gram" name="quantity_gram"
+                                               value="0" min="0">
+                                        <span class="input-group-text fw-bold text-muted">gr</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-primary">Müşteri Alacağı (Toplam Has)</label>
-                            <input type="number" step="0.001" class="form-control text-primary fw-bold fs-5"
-                                   style="background-color: #e9f2ff;" id="custody_amount_hs" name="amount_hs"
-                                   value="0.000" readonly>
+                        <!-- 5) TOPLAM HAS — önizleme kartı (preview-card stili) -->
+                        <div class="custody-preview-card mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="label">
+                                        <i class="fa-solid fa-scale-balanced me-1"></i>
+                                        Müşteri Alacağı (Toplam Has)
+                                    </div>
+                                    <div class="value fs-2 fw-bolder mt-1" id="custody_amount_hs_display">0,000 HS</div>
+                                </div>
+                                <i class="fa-solid fa-coins fs-2x text-warning opacity-50"></i>
+                            </div>
+                            <input type="hidden" id="custody_amount_hs" name="amount_hs" value="0.000">
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Açıklama</label>
-                            <textarea class="form-control" name="description" rows="2"
+                        <!-- 6) AÇIKLAMA -->
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">
+                                <i class="fa-solid fa-note-sticky text-muted me-1"></i> Açıklama
+                            </label>
+                            <textarea class="form-control form-control-solid" name="description" rows="2"
                                       placeholder="Emanet detayı, şartlar vb..."></textarea>
                         </div>
-                    </div>
 
+                    </div><!-- /modal-body -->
+
+                    <!-- FOOTER -->
                     <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                        <button id="btnSaveCustody" type="submit" class="btn btn-primary"><i
-                                class="fa-solid fa-save me-1"></i> Emaneti Kaydet
+                        <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-times me-1"></i> İptal
+                        </button>
+                        <button id="btnSaveCustody" type="submit" class="btn btn-primary fw-bold">
+                            <i class="fa-solid fa-save me-1"></i> Emaneti Kaydet
                         </button>
                     </div>
                 </form>
@@ -632,6 +865,232 @@
             </div>
         </div>
     </div>
+
+    <!-- FAZ 22 — Emanet REVERSAL Modal (manuel iptal) -->
+    <div class="modal fade" id="custodyReverseModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">
+              <i class="fa-solid fa-undo me-2"></i> Emanet Hareketi İptali
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="custodyReverseForm" autocomplete="off">
+            <input type="hidden" id="custodyReverseId">
+            <div class="modal-body">
+              <div class="alert alert-warning mb-3">
+                <strong>APPEND-ONLY:</strong> Orijinal kayıt silinmeyecek, karşı
+                giriş (REVERSAL) yazılacak. Stok havuzu da aynı atomik işlemde
+                geri sarılacak.
+              </div>
+              <div class="mb-2 small text-muted">
+                <strong>Müşteri:</strong> <span id="custodyRevCustomer"></span><br>
+                <strong>Tip:</strong> <span id="custodyRevType"></span><br>
+                <strong>Has:</strong> <span id="custodyRevHs"></span> ·
+                <strong>Gram:</strong> <span id="custodyRevGram"></span>
+              </div>
+              <label class="form-label fw-bold">İptal Nedeni <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="custodyReverseReason" rows="3" required
+                        placeholder="Örn: Yanlış müşteri seçildi / Kayıt çift girildi..."></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+              <button type="submit" class="btn btn-danger">
+                <i class="fa-solid fa-undo me-1"></i> İptali Onayla
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAZ 22 / BLOK C — Standardize fiş alanı (80mm fiş yazıcı için) -->
+    <div id="custodyReceiptArea"></div>
+
+    <!-- FAZ 24 — GEREKSİNİM-2: Emanetten Stoğa Transfer modal -->
+    <div class="modal fade" id="custodyToStockModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title">
+              <i class="fa-solid fa-warehouse me-2"></i> Emanetten Stoğa Transfer
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="custodyToStockForm" autocomplete="off">
+            <input type="hidden" id="custodyToStockId">
+            <div class="modal-body">
+              <div class="alert alert-warning small mb-3">
+                <strong>Önemli:</strong> Bu işlem müşterinin emanetini mağaza
+                serbest stoğuna alır. Müşterinin cari hesabına eşdeğer
+                <strong>Has bazlı borç</strong> yazılır. Geri almak için
+                REVERSAL kullanın.
+              </div>
+              <div class="mb-2 small text-muted">
+                <strong>Müşteri:</strong> <span id="custodyToStockCustomer"></span><br>
+                <strong>Ürün:</strong> <span id="custodyToStockProduct"></span><br>
+                <strong>Mevcut Kalan:</strong>
+                <span id="custodyToStockRemGram"></span> gr
+                (<span id="custodyToStockRemHs"></span> HS)
+              </div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Transfer Edilecek Gram</label>
+                  <input type="number" id="custodyToStockGram"
+                         class="form-control" step="0.001" min="0" value="0">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">veya Adet</label>
+                  <input type="number" id="custodyToStockPiece"
+                         class="form-control" step="1" min="0" value="0">
+                </div>
+              </div>
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox"
+                       id="custodyToStockWriteDebt" checked>
+                <label class="form-check-label" for="custodyToStockWriteDebt">
+                  Müşterinin cari hesabına Has borç yaz (önerilir)
+                </label>
+              </div>
+              <div class="mb-2 mt-3">
+                <label class="form-label fw-bold">Açıklama</label>
+                <textarea id="custodyToStockDesc" class="form-control" rows="2"
+                          placeholder="Örn: Çeyrek emanet stoğa alındı, satışta kullanılacak."></textarea>
+              </div>
+              <div class="form-text small text-muted">
+                Boş bırakırsanız <em>kalan miktarın tamamı</em> transfer edilir.
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+              <button type="submit" class="btn btn-warning">
+                <i class="fa-solid fa-warehouse me-1"></i> Stoğa Al
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAZ 24 — GEREKSİNİM-3: Multi-Method Settlement Wizard -->
+    <div class="modal fade" id="custodySettlementModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">
+              <i class="fa-solid fa-handshake me-2"></i> Emanet Kapatma (Settlement)
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="custodySettlementForm" autocomplete="off">
+            <input type="hidden" id="settleCustomerId">
+            <div class="modal-body">
+              <div id="settleSummaryBox" class="bg-light p-3 rounded mb-3 small">
+                <div><strong>Müşteri:</strong> <span id="settleCustName">-</span></div>
+                <div><strong>Emanet Bakiyesi:</strong> <span id="settleCustodyBal">0</span> HS</div>
+                <div><strong>Açık Borç:</strong> <span id="settleOpenBal">0</span> HS</div>
+                <div><strong>Bugünkü Kur:</strong> <span id="settleCurRate">0</span> TL/HS</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Kapatılacak Has Miktarı</label>
+                <input type="number" id="settleAmountHs" class="form-control"
+                       step="0.001" min="0" value="0">
+                <div class="form-text small text-muted">
+                  TL Karşılığı (Bugün): <span id="settleAmountTl">0,00</span>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Kapatma Yöntemi</label>
+                <div class="d-flex gap-2 flex-wrap">
+                  <input type="radio" class="btn-check" name="settleMethod" id="settleMethodOffset" value="offset" checked>
+                  <label class="btn btn-outline-primary btn-sm" for="settleMethodOffset">
+                    <i class="fa-solid fa-scale-balanced me-1"></i> Cari Mahsuplaşma
+                  </label>
+
+                  <input type="radio" class="btn-check" name="settleMethod" id="settleMethodCash" value="cash">
+                  <label class="btn btn-outline-success btn-sm" for="settleMethodCash">
+                    <i class="fa-solid fa-money-bill me-1"></i> Nakit (TL)
+                  </label>
+
+                  <input type="radio" class="btn-check" name="settleMethod" id="settleMethodFx" value="fx">
+                  <label class="btn btn-outline-info btn-sm" for="settleMethodFx">
+                    <i class="fa-solid fa-globe me-1"></i> Döviz
+                  </label>
+
+                  <input type="radio" class="btn-check" name="settleMethod" id="settleMethodProduct" value="product">
+                  <label class="btn btn-outline-warning btn-sm" for="settleMethodProduct">
+                    <i class="fa-solid fa-gem me-1"></i> Başka Ürün ile
+                  </label>
+                </div>
+              </div>
+
+              <!-- Method-specific fields -->
+              <div id="settleMethodFields"></div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Açıklama</label>
+                <textarea id="settleDesc" class="form-control" rows="2"></textarea>
+              </div>
+
+              <div id="settleFxPreview" class="alert alert-info small d-none"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-check me-1"></i> Kapatmayı Onayla
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAZ 24 — GEREKSİNİM-1: Mağaza Emanet Özeti modal -->
+    <div class="modal fade" id="storeSummaryModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-info text-white">
+            <h5 class="modal-title">
+              <i class="fa-solid fa-chart-pie me-2"></i> Mağaza Emanet Özeti
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3 mb-3" id="storeSummaryTotals"></div>
+            <h6 class="mt-3 mb-2 fw-bold">Kategori Kırılımı</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered" id="storeSummaryCatTable">
+                <thead class="table-light"><tr>
+                  <th>Kategori</th><th class="text-end">Adet</th>
+                  <th class="text-end">HS</th><th class="text-end">TL (Bugün)</th>
+                </tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="fw-bold">En Yüksek Bakiyeli 5 Müşteri</h6>
+                <table class="table table-sm" id="storeSummaryTopCust">
+                  <thead><tr><th>Müşteri</th><th class="text-end">Bakiye HS</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <h6 class="fw-bold">En Eski 5 Emanet</h6>
+                <table class="table table-sm" id="storeSummaryOldest">
+                  <thead><tr><th>Müşteri</th><th>Ürün</th><th class="text-end">Gün</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     {% csrf_token %}
 {% endblock body %}
 
@@ -645,36 +1104,103 @@
             let activeTab = 'IN';
             let tbl;
 
+            // FAZ 24 — KPI'lar artık /custody/store-summary tek endpoint'inden gelir.
             function loadCustodyKpis() {
                 $.ajax({
-                    url: "{% url 'custody:get_all' %}",
-                    data: {
-                        draw: 1,
-                        start: 0,
-                        length: 1,
-                        custody_type: 'IN',
-                        is_returned: 'false'
-                    },
+                    url: "{% url 'custody:store_summary' %}",
+                    method: 'GET',
                     kpSkipLoader: true,
                     success: function (res) {
-                        $('#kpi_in_count').text((res && res.recordsFiltered) ?? 0);
+                        if (!res || !res.result) return;
+                        const t = res.totals || {};
+                        $('#kpi_in_count').text(t.entry_count ?? 0);
+                        $('#kpi_net_hs').text(t.net_remaining_hs ?? '0.000');
+                        $('#kpi_tl_today').text(_formatTL(t.total_tl_today));
+                        $('#kpi_cust_count').text(t.customer_count ?? 0);
                     }
+                });
+            }
+
+            function _formatTL(v) {
+                const n = parseFloat(String(v || '0').replace(',', '.'));
+                if (!isFinite(n)) return '0,00';
+                return n.toLocaleString('tr-TR', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                });
+            }
+
+            // FAZ 24 — Mağaza Özet Detay Modal
+            $(document).on('click', '#btnStoreSummaryDetail', function () {
+                $.ajax({
+                    url: "{% url 'custody:store_summary' %}",
+                    method: 'GET',
+                    kpSkipLoader: true,
+                    success: function (res) {
+                        if (!res || !res.result) {
+                            Swal.fire('Hata', 'Özet verisi alınamadı.', 'error');
+                            return;
+                        }
+                        _renderStoreSummary(res);
+                        new bootstrap.Modal(document.getElementById('storeSummaryModal')).show();
+                    },
+                    error: function () { Swal.fire('Hata', 'Sunucu hatası.', 'error'); }
+                });
+            });
+
+            function _renderStoreSummary(res) {
+                const t = res.totals || {};
+                const $tot = $('#storeSummaryTotals').empty();
+                const items = [
+                    {label: 'Aktif Emanet Adedi', val: t.entry_count, color: '#6f42c1'},
+                    {label: 'Net Kalan HS', val: t.net_remaining_hs, color: '#b88a00'},
+                    {label: 'TL Karşılığı (Bugün)', val: _formatTL(t.total_tl_today), color: '#0d6efd'},
+                    {label: 'Müşteri Sayısı', val: t.customer_count, color: '#1f8d3d'},
+                ];
+                items.forEach(it => {
+                    $tot.append(
+                        '<div class="col-md-3 col-6"><div class="border rounded p-2 text-center">' +
+                        '<div class="small text-muted">' + it.label + '</div>' +
+                        '<div class="fw-bold fs-5" style="color:' + it.color + ';">' + (it.val ?? '-') + '</div>' +
+                        '</div></div>'
+                    );
                 });
 
-                $.ajax({
-                    url: "{% url 'custody:get_all' %}",
-                    data: {
-                        draw: 1,
-                        start: 0,
-                        length: 1,
-                        custody_type: 'OUT',
-                        is_returned: 'true'
-                    },
-                    kpSkipLoader: true,
-                    success: function (res) {
-                        $('#kpi_out_count').text((res && res.recordsFiltered) ?? 0);
-                    }
+                const $catTbody = $('#storeSummaryCatTable tbody').empty();
+                (res.by_category || []).forEach(c => {
+                    $catTbody.append(
+                        '<tr><td>' + (c.category || '-') + '</td>' +
+                        '<td class="text-end">' + (c.count || 0) + '</td>' +
+                        '<td class="text-end">' + (c.total_hs || '0') + '</td>' +
+                        '<td class="text-end">' + _formatTL(c.total_tl_today) + '</td></tr>'
+                    );
                 });
+                if (!(res.by_category || []).length) {
+                    $catTbody.append('<tr><td colspan="4" class="text-center text-muted">Veri yok</td></tr>');
+                }
+
+                const $topTbody = $('#storeSummaryTopCust tbody').empty();
+                (res.top_customers || []).forEach(c => {
+                    $topTbody.append(
+                        '<tr><td><a href="/customers/detail/' + c.customer_id + '" class="cust-link">' +
+                        (c.full_name || '-') + '</a></td>' +
+                        '<td class="text-end">' + (c.balance_hs || '0') + '</td></tr>'
+                    );
+                });
+                if (!(res.top_customers || []).length) {
+                    $topTbody.append('<tr><td colspan="2" class="text-center text-muted">Veri yok</td></tr>');
+                }
+
+                const $oldTbody = $('#storeSummaryOldest tbody').empty();
+                (res.oldest_entries || []).forEach(e => {
+                    $oldTbody.append(
+                        '<tr><td>' + (e.customer || '-') + '</td>' +
+                        '<td>' + (e.product || '-') + '</td>' +
+                        '<td class="text-end">' + (e.days_open || 0) + '</td></tr>'
+                    );
+                });
+                if (!(res.oldest_entries || []).length) {
+                    $oldTbody.append('<tr><td colspan="3" class="text-center text-muted">Veri yok</td></tr>');
+                }
             }
 
             const initDatatable = (tabType, skipLoader = false) => {
@@ -715,12 +1241,25 @@
                         url: "{% url 'custody:get_all' %}",
                         kpSkipLoader: skipLoader,
                         data: d => {
+                            // FAZ 22 — Tab filtreleri
                             if (tabType === 'IN') {
                                 d.custody_type = 'IN';
                                 d.is_returned = 'false';
-                            } else {
+                            } else if (tabType === 'OUT') {
                                 d.custody_type = 'OUT';
                                 d.is_returned = 'true';
+                            } else if (tabType === 'OFFSET') {
+                                d.custody_type = 'OFFSET';
+                                // is_returned filtresi gönderme
+                            } else if (tabType === 'REVERSAL') {
+                                d.custody_type = 'REVERSAL';
+                            } else if (tabType === 'ALL') {
+                                // Tüm tipler — filtre gönderme
+                            }
+                            // İptal/Pasif kayıtlar
+                            const showInactive = document.getElementById('showInactiveChk');
+                            if (showInactive && showInactive.checked) {
+                                d.show_inactive = 'true';
                             }
                         }
                     },
@@ -779,28 +1318,98 @@
                         {data: 'amount_hs', className: 'text-end'},
                         {data: 'created_on'},
                         {
-                            data: 'is_returned', className: 'text-center',
-                            render: d => d
-                                ? "<span class='badge bg-success'>Teslim Edildi</span>"
-                                : "<span class='badge bg-info'>Emanette</span>"
+                            // FAZ 22 — Durum kolonu zenginleştirildi
+                            data: null,
+                            className: 'text-center',
+                            orderable: false,
+                            render: function (_d, _t, row) {
+                                if (row.is_deleted) return "<span class='badge bg-secondary'>Silindi</span>";
+                                if (!row.is_active) return "<span class='badge bg-secondary'>Pasif</span>";
+                                if (row.has_reversal) return "<span class='badge bg-danger'>İptal Edildi</span>";
+                                if (row.custody_type === 'REVERSAL') return "<span class='badge bg-danger'>İPTAL</span>";
+                                if (row.custody_type === 'OFFSET') return "<span class='badge bg-warning'>Mahsuplaştı</span>";
+                                if (row.is_returned) return "<span class='badge bg-success'>Teslim Edildi</span>";
+                                return "<span class='badge bg-info'>Emanette</span>";
+                            }
                         },
                         {
+                            // FAZ 22 — Aksiyon: Teslim Et + Fiş Yazdır + İptal (REVERSAL)
+                            // FAZ 26 — Bug Fix: hasRemaining koşulu eklendi.
+                            //   Append-only tam teslim sonrası IN kaydının is_returned'i
+                            //   False kalıyor; ancak remaining_amount_hs=0 oluyor.
+                            //   Eski koşul yalnız is_returned'e bakıyordu → kalan=0
+                            //   olan IN'lerde "Teslim Et" + "Stoğa Transfer" butonları
+                            //   yanlışlıkla aktif kalıyordu. hasRemaining ile bloklanır.
                             data: "id",
                             orderable: false,
                             className: "text-end",
-                            render: function (data, type, row) {
-                                const isReturned = !!row.is_returned;
-                                const btnText = isReturned ? 'Emanete Al' : 'Teslim Et';
-                                const btnTitle = isReturned ? 'Teslim Edileni Geri Al (Emanete Al)' : 'Emaneti Teslim Et';
-                                const btnClass = isReturned ? 'btn-emanet-light' : 'btn-light-success';
+                            render: function (_data, _type, row) {
+                                const isReturned    = !!row.is_returned;
+                                const isInactive    = !row.is_active || row.is_deleted;
+                                const isReversed    = !!row.has_reversal;
+                                const isReversal    = row.custody_type === 'REVERSAL';
+                                const isOffset      = row.custody_type === 'OFFSET';
+                                // KURAL 9 — locale & NaN audit: parseFloat + isFinite
+                                const _remRaw       = (row.remaining_amount_hs || '0').toString().replace(',', '.');
+                                const _remParsed    = parseFloat(_remRaw);
+                                const remHs         = isFinite(_remParsed) ? _remParsed : 0;
+                                const hasRemaining  = remHs > 0.0005;
 
-                                return `
-                                      <button type="button"
-                                              class="btn ${btnClass} btn-sm"
-                                              title="${btnTitle}"
-                                              onclick="toggle_custody_status('${row.id}')">
-                                        <i class="fa-solid fa-circle-check me-1"></i>${btnText}
-                                      </button>`;
+                                let buttons = '';
+
+                                // Aktif IN + KALAN BAKİYE > 0 için Teslim Et
+                                if (!isInactive && !isReversed && !isReversal && !isOffset && !isReturned
+                                        && row.custody_type === 'IN' && hasRemaining) {
+                                    buttons += `
+                                        <button type="button" class="btn btn-light-success btn-sm me-1"
+                                                title="Emaneti Teslim Et"
+                                                onclick="toggle_custody_status('${row.id}')">
+                                            <i class="fa-solid fa-circle-check me-1"></i>Teslim Et
+                                        </button>`;
+                                    // FAZ 24 — GEREKSİNİM-3: Settlement (kapatma) butonu
+                                    buttons += `
+                                        <button type="button" class="btn btn-light-primary btn-sm me-1"
+                                                title="Kapat (Settlement)"
+                                                onclick="custody_open_settlement('${row.customer_id}','${(row.customer_full || '').replace(/'/g, '&#39;')}')">
+                                            <i class="fa-solid fa-handshake"></i>
+                                        </button>`;
+                                }
+
+                                // Fiş Yazdır — her aktif kayıt için
+                                if (!isInactive) {
+                                    buttons += `
+                                        <button type="button" class="btn btn-light-primary btn-sm me-1"
+                                                title="Makbuz/Fiş Yazdır"
+                                                onclick="custody_print_receipt('${row.id}')">
+                                            <i class="fa-solid fa-receipt"></i>
+                                        </button>`;
+                                }
+
+                                // FAZ 24 — GEREKSİNİM-2: Stoğa Transfer (aktif IN + kalan > 0)
+                                if (!isInactive && !isReversed && !isReversal && !isOffset && !isReturned
+                                        && row.custody_type === 'IN' && hasRemaining) {
+                                    buttons += `
+                                        <button type="button" class="btn btn-light-warning btn-sm me-1"
+                                                title="Stoğa Transfer Et"
+                                                onclick="custody_open_to_stock('${row.id}','${row.product || ''}','${row.remaining_gram || row.quantity_gram}','${row.remaining_amount_hs || row.amount_hs}','${(row.customer_full || '').replace(/'/g, '&#39;')}')">
+                                            <i class="fa-solid fa-warehouse"></i>
+                                        </button>`;
+                                }
+
+                                // REVERSAL butonu — REVERSAL/Pasif/Silinmiş hariç hepsi
+                                if (!isInactive && !isReversed && !isReversal) {
+                                    buttons += `
+                                        <button type="button" class="btn btn-emanet-reverse btn-sm"
+                                                title="İptal (REVERSAL)"
+                                                onclick="custody_open_reverse('${row.id}','${row.custody_type}','${row.amount_hs}','${row.quantity_gram}','${(row.customer_full || '').replace(/'/g, '&#39;')}')">
+                                            <i class="fa-solid fa-undo"></i>
+                                        </button>`;
+                                }
+
+                                if (!buttons) {
+                                    buttons = '<span class="text-muted">—</span>';
+                                }
+                                return buttons;
                             }
                         }
                     ]
@@ -811,11 +1420,16 @@
                 $('#custodyTabs').on('click', 'button', function () {
                     $('#custodyTabs button').removeClass('active');
                     $(this).addClass('active');
-                    activeTab = $(this).data('tab'); // 'IN' | 'OUT'
+                    activeTab = $(this).data('tab'); // 'IN' | 'OUT' | 'OFFSET' | 'REVERSAL' | 'ALL'
 
                     initDatatable(activeTab, true);
                 });
             }
+
+            // FAZ 22 — İptal/Pasif checkbox tetikleme
+            $(document).on('change', '#showInactiveChk', function () {
+                initDatatable(activeTab, true);
+            });
 
             initDatatable('IN', false);
 
@@ -848,29 +1462,64 @@
                 $('.checkAll').prop('checked', false);
             });
 
+            // FAZ 22 — A-1: "Silme" artık APPEND-ONLY soft-delete + REVERSAL.
+            // Backend (custody:delete) her seçili kayıt için REVERSAL yazar
+            // ve bağlı StockLedger satırını cancel_stock_entry ile geri sarar.
+            // Kullanıcıdan sebep istemeden iptal yazılmaz.
             function deleteSelectedItems() {
                 const ids = $('.row-check:checked').map((_, el) => $(el).val()).get();
                 if (!ids.length) {
                     Swal.fire('Hata', 'Lütfen en az bir kayıt seçin.', 'error');
                     return;
                 }
-                $.post("{% url 'custody:delete' %}", {
-                    ids,
-                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
-                }, res => {
-                    if (res.result) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Silindi',
-                            text: 'Seçili Kayıtlar başarıyla silindi.',
-                            timer: 1200,
-                            showConfirmButton: false
-                        });
-                        tbl.ajax.reload(null, false);
-                        loadCustodyKpis();
-                    } else {
-                        Swal.fire('Hata', res.error_msg || 'Silinemedi.', 'error');
-                    }
+                Swal.fire({
+                    title: `${ids.length} kayıt iptal edilecek`,
+                    html: `
+                        <div class="text-start">
+                            <div class="alert alert-warning small mb-2">
+                                <strong>APPEND-ONLY:</strong> Kayıt fiziksel olarak
+                                silinmeyecek; her biri için REVERSAL karşı girişi
+                                yazılacak ve stok havuzu geri sarılacak.
+                            </div>
+                            <label class="form-label fw-bold">İptal Nedeni <span class="text-danger">*</span></label>
+                            <textarea id="bulkReverseReason" class="form-control" rows="2"
+                                      placeholder="Örn: Yanlış kayıtlar, kontroller sonrası iptal..."></textarea>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'İptali Onayla',
+                    cancelButtonText: 'Vazgeç',
+                    confirmButtonColor: '#f1416c',
+                    preConfirm: () => {
+                        const txt = (document.getElementById('bulkReverseReason') || {}).value || '';
+                        const reason = txt.trim();
+                        if (!reason) {
+                            Swal.showValidationMessage('İptal nedeni zorunludur.');
+                            return false;
+                        }
+                        return reason;
+                    },
+                }).then(result => {
+                    if (!result.isConfirmed) return;
+                    $.post("{% url 'custody:delete' %}", {
+                        'ids[]': ids,
+                        reason: result.value,
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                    }, res => {
+                        if (res && res.result) {
+                            const skip = (res.skipped_count || 0);
+                            const txt = `${res.cancelled || 0} kayıt iptal edildi.` +
+                                (skip ? ` (${skip} kayıt atlandı: zaten iptal edilmiş veya hata)` : '');
+                            Swal.fire({
+                                icon: 'success', title: 'İptal Yazıldı', text: txt,
+                                timer: 2000, showConfirmButton: false,
+                            });
+                            tbl.ajax.reload(null, false);
+                            loadCustodyKpis();
+                        } else {
+                            Swal.fire('Hata', (res && res.error_msg) || 'İptal yazılamadı.', 'error');
+                        }
+                    });
                 });
             }
 
@@ -952,50 +1601,67 @@
                 });
             });
 
-            // Tür seçimine göre alanları göster/gizle
+            // Sayfa yüklenince varsayılan tür (Ziynet) geçerli; hurda/bilezik paneli disabled
+            $('#alan_hurda_bilezik :input').prop('disabled', true);
+
+            // ==========================================================
+            // FAZ 49 — Tür seçimi: alan göster/gizle + sıfırlama
+            // ==========================================================
             $('input[name="emanet_turu"]').on('change', function () {
                 var tur = $(this).val();
 
-                // Alanları sıfırla
+                // Alanları sıfırla (form state guard)
                 $('#custody_product_id').val('').trigger('change');
                 $('#custody_quantity_piece').val('0');
                 $('#custody_quantity_gram').val('0');
+                $('#custody_unit_hs').val('0.000');
                 $('#custody_milyem').val('0');
+                $('#custody_ayar_label').val('');
+                $('#custody_bracelet_name').val('');
                 $('#custody_amount_hs').val('0.000');
+                $('#custody_amount_hs_display').text('0,000 HS');
 
                 if (tur === 'ziynet') {
                     $('#alan_ziynet').show();
+                    $('#alan_ziynet :input').prop('disabled', false);
                     $('#alan_hurda_bilezik').hide();
+                    $('#alan_hurda_bilezik :input').prop('disabled', true);
                     $('#div_bilezik_adi').hide();
                 } else if (tur === 'hurda') {
                     $('#alan_ziynet').hide();
+                    $('#alan_ziynet :input').prop('disabled', true);
                     $('#alan_hurda_bilezik').show();
+                    $('#alan_hurda_bilezik :input').prop('disabled', false);
                     $('#div_bilezik_adi').hide();
+                    $('#custody_bracelet_name').prop('disabled', true);
                 } else if (tur === 'bilezik') {
                     $('#alan_ziynet').hide();
+                    $('#alan_ziynet :input').prop('disabled', true);
                     $('#alan_hurda_bilezik').show();
+                    $('#alan_hurda_bilezik :input').prop('disabled', false);
                     $('#div_bilezik_adi').show();
                 }
             });
 
-            // Has Hesaplama Fonksiyonu
+            // ==========================================================
+            // FAZ 49 — Has Hesaplama (canlı, frontend)
+            // ----------------------------------------------------------
+            // Backend daima kendi amount_hs'ini hesaplar; bu fonksiyon
+            // yalnızca kullanıcıya canlı önizleme verir.
+            // ==========================================================
             function calculateCustodyHas() {
                 var tur = $('input[name="emanet_turu"]:checked').val();
                 var totalHas = 0;
 
                 if (tur === 'ziynet') {
-                    var selectedOption = $('#custody_product_id').find('option:selected');
-
-                    var productHsStr = String(selectedOption.data('product-hs') || '0').replace(',', '.');
-                    var productHs = parseFloat(productHsStr) || 0;
-
-                    // Input id'si quantity_piece ama artık gram için de bu alanı kullanıyoruz
+                    // Ziynet: amount_hs = miktar × birim_has (kullanıcı override)
+                    var unitHsStr = String($('#custody_unit_hs').val() || '0').replace(',', '.');
+                    var unitHs = parseFloat(unitHsStr) || 0;
                     var amountStr = String($('#custody_quantity_piece').val() || '0').replace(',', '.');
                     var amount = parseFloat(amountStr) || 0;
-
-                    totalHas = amount * productHs;
+                    totalHas = amount * unitHs;
                 } else {
-                    // Hurda veya Bilezik
+                    // Hurda / Bilezik: amount_hs = gram × (milyem / 1000)
                     var milyem = parseFloat($('#custody_milyem').val()) || 0;
                     var gramStr = String($('#custody_quantity_gram').val() || '0').replace(',', '.');
                     var gram = parseFloat(gramStr) || 0;
@@ -1003,31 +1669,55 @@
                 }
 
                 $('#custody_amount_hs').val(totalHas.toFixed(3));
+                $('#custody_amount_hs_display').text(
+                    totalHas.toLocaleString('tr-TR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' HS'
+                );
             }
 
-            // Yeni: Ürün seçildiğinde Gram / Adet ayrımını yap
+            // ==========================================================
+            // FAZ 49 — Sarrafiye ürün seçimi:
+            //   1) Birim has'ı otofill et (manuel override mümkün)
+            //   2) Adet/Gram label'ını ürün tipine göre değiştir
+            // ==========================================================
             $('#custody_product_id').on('change', function () {
                 var selectedOption = $(this).find('option:selected');
                 var isGram = selectedOption.data('is-gram') === true;
+                var productHsStr = String(selectedOption.data('product-hs') || '0').replace(',', '.');
+                var productHs = parseFloat(productHsStr) || 0;
 
-                var $label = $('#custody_quantity_piece').siblings('label');
+                // Birim Has otofill — kullanıcı sonradan değiştirebilir
+                $('#custody_unit_hs').val(productHs.toFixed(3));
+
+                // Adet / Gram label
+                var $label = $('#lbl_custody_qty');
                 var $input = $('#custody_quantity_piece');
-
                 if (isGram) {
                     $label.text('Gram');
-                    $input.attr('step', '0.01'); // Ondalıklı gram değerlerine izin ver
+                    $input.attr('step', '0.01');
                 } else {
                     $label.text('Adet');
-                    $input.attr('step', '1');    // Adet tam sayı olmalı
+                    $input.attr('step', '1');
                 }
 
                 calculateCustodyHas();
             });
 
-            // Değerler değiştikçe hesabı tetikle
-            $('#custody_product_id, #custody_quantity_piece, #custody_quantity_gram, #custody_milyem').on('input change', function () {
+            // ==========================================================
+            // FAZ 49 — Ayar dropdown değişimi: milyem otofill
+            //   Kullanıcı 14 Ayar seçince milyem 585 olur; isterse
+            //   piyasa değerini (581, 591 vb.) elle girer.
+            // ==========================================================
+            $('#custody_ayar_label').on('change', function () {
+                var defaultMileage = parseInt($(this).find('option:selected').data('mileage'), 10);
+                if (defaultMileage > 0) {
+                    $('#custody_milyem').val(defaultMileage);
+                }
                 calculateCustodyHas();
             });
+
+            // Değerler değiştikçe canlı hesabı tetikle
+            $('#custody_product_id, #custody_quantity_piece, #custody_unit_hs, #custody_quantity_gram, #custody_milyem')
+                .on('input change', calculateCustodyHas);
 
             // Modal Kapanınca Sıfırla
             $('#addCustodyModal').on('hidden.bs.modal', function () {
@@ -1036,10 +1726,18 @@
                 $('[name="custody_id"]').val('');
                 $('#custody_customer_id').val('').trigger('change');
                 $('#custody_product_id').val('').trigger('change');
+                // FAZ 49 — yeni alanlar
+                $('#custody_ayar_label').val('');
+                $('#custody_milyem').val('0');
+                $('#custody_unit_hs').val('0.000');
+                $('#custody_bracelet_name').val('');
+
+                $('#custody_amount_hs_display').text('0,000 HS');
 
                 // Varsayılan duruma dön (Ziynet açık)
                 $('#tur_ziynet').prop('checked', true).trigger('change');
-                $('#addCustodyModal .modal-title').html('<i class="fa-solid fa-hand-holding-hand me-2"></i>Emanet Ekle');
+                $('#addCustodyModal .modal-title').text('Emanet Ekle');
+                $('#addCustodyModal .modal-header .text-muted').text('Müşteri emanet kaydı oluştur');
             });
 
 
@@ -1055,7 +1753,8 @@
                     return;
                 }
 
-                $('#addCustodyModal .modal-title').html('<i class="fa-solid fa-pen-to-square me-2"></i>Emanet Güncelle');
+                $('#addCustodyModal .modal-title').text('Emanet Güncelle');
+                $('#addCustodyModal .modal-header .text-muted').text('Mevcut emanet kaydını düzenle');
                 $('[name="custody_id"]').val(rowData.id);
 
                 // Select2'leri tetikle
@@ -1084,28 +1783,73 @@
         });
 
         function toggle_custody_status(id) {
+            // FAZ 26 — BUG-FIX (Teslim Et hata zinciri):
+            //   A) `isReturned` değişkeni eskiden bu fonksiyonda tanımlı değildi
+            //      (yalnız DataTable render scope'unda vardı) → ReferenceError
+            //      → SweetAlert hiç açılmıyordu. Artık `rowData.is_returned`
+            //      üzerinden okunuyor.
+            //   B) Sıfır kalan (remaining=0) IN kayıtları için erken guard
+            //      eklendi; dialog açılmadan kullanıcı bilgilendirilir.
+            //   C) maxVal hesabındaki `origGram` fallback'ı kaldırıldı; artık
+            //      remaining=0 olduğunda dialog hiç açılmadığı için fallback
+            //      gereksiz. Bu, kullanıcının yanlışlıkla origGram'ı onaylayıp
+            //      backend'de InsufficientStockError görmesini engeller.
+
             const dt = $('#custody_table').DataTable();
             const rowData = dt.rows().data().toArray().find(r => r.id == id) || {};
 
-            const isReturned = !!rowData.is_returned;
-            const actionButton = isReturned ? 'Emanete Al' : 'Teslim Et';
-            const actionTitle = isReturned ? 'Geri Alınacak Miktar' : 'Teslim Edilecek Miktar';
+            // KURAL 9 — locale & NaN audit
+            const _toNum = (v) => {
+                if (v === null || v === undefined) return 0;
+                const s = v.toString().replace(',', '.');
+                const n = parseFloat(s);
+                return isFinite(n) ? n : 0;
+            };
 
+            const origGram     = _toNum(rowData.quantity_gram);
+            const origPiece    = parseInt(rowData.quantity_piece) || 0;
+            const remGram      = _toNum(rowData.remaining_gram);
+            const remHs        = _toNum(rowData.remaining_amount_hs);
+            const isGram       = origGram > 0;
+            const isIN         = (rowData.custody_type === 'IN');
+            const isReturnedV  = !!rowData.is_returned;
 
-            let valGram = parseFloat(rowData.quantity_gram) || 0;
-            let valPiece = parseInt(rowData.quantity_piece) || 0;
+            // Erken guard: IN ve kalan bakiye yoksa dialog hiç açma.
+            // (Frontend buton koşulu da bunu yakalamalı; ek savunma katmanı.)
+            if (isIN && remHs <= 0.0005) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Teslim Edildi',
+                    text: 'Bu emanette teslim edilebilecek kalan bakiye bulunmuyor.',
+                    confirmButtonText: 'Tamam',
+                    confirmButtonColor: '#6c757d'
+                });
+                return;
+            }
 
-            let isGram = valGram > 0;
-            let maxVal = isGram ? valGram : valPiece;
-            let unitLabel = isGram ? "Gram" : "Adet";
-            let stepVal = isGram ? "0.001" : "1";
-            let defaultVal = maxVal;
+            // maxVal: IN kayıtlarında remaining; diğer tiplerde orijinal.
+            // FAZ 26: origGram fallback'ı kaldırıldı (yukarıdaki guard nedeniyle
+            // remGram=0 senaryosu zaten dialog açmadan return ediyor).
+            const maxVal = isIN
+                ? (isGram ? remGram : (parseInt(rowData.remaining_gram) > 0
+                                          ? parseInt(rowData.remaining_gram) : origPiece))
+                : (isGram ? origGram : origPiece);
+
+            const unitLabel  = isGram ? "Gram" : "Adet";
+            const stepVal    = isGram ? "0.001" : "1";
+            const defaultVal = maxVal;
+            const totalLabel = isIN
+                ? `Kalan: <strong>${maxVal} ${unitLabel}</strong> ` +
+                  `<small class="text-muted">(Orijinal: ${isGram ? origGram : origPiece})</small>`
+                : `Toplam: <strong>${maxVal} ${unitLabel}</strong>`;
+            const actionButton = 'Teslim Et';
+            const actionTitle  = 'Teslim Edilecek Miktar';
 
             Swal.fire({
                 title: actionTitle,
                 html: `
                     <div class="mb-3 text-start">
-                        Toplam Mevcut: <strong>${maxVal} ${unitLabel}</strong>
+                        ${totalLabel}
                         <br>
                         <small class="text-muted">Ürün: ${rowData.product || '-'}</small>
                     </div>
@@ -1121,7 +1865,7 @@
                 showCancelButton: true,
                 confirmButtonText: `Onayla ve ${actionButton}`,
                 cancelButtonText: 'Vazgeç',
-                confirmButtonColor: isReturned ? '#6f42c1' : '#28a745',
+                confirmButtonColor: isReturnedV ? '#6f42c1' : '#28a745',
                 showLoaderOnConfirm: true,
                 preConfirm: (amount) => {
                     if (!amount || amount <= 0) {
@@ -1144,33 +1888,59 @@
                         return response;
                     }).catch(error => {
                         let errMsg = error.message || error.statusText || "Sunucu ile iletişim kurarken bir hata oluştu.";
-                        Swal.showValidationMessage(
-                            `${errMsg}`
-                        )
+                        Swal.showValidationMessage(`${errMsg}`);
+                        // FAZ 27 — BUG-FIX (Senaryo 1 / Hata 1.C):
+                        //   Eski kodda return yoktu; preConfirm undefined ile
+                        //   çözülüyor ve bazı SweetAlert2 sürümlerinde dialog
+                        //   yine kapanabiliyordu. `false` dönerek validation
+                        //   message ile dialog'un açık kalması garanti altına
+                        //   alınır; hata akışında "İşlem Başarılı" Swal'ının
+                        //   yanlışlıkla tetiklenmesi engellenir.
+                        return false;
                     });
                 },
                 allowOutsideClick: () => !Swal.isLoading()
             }).then((result) => {
-                if (result.isConfirmed) {
-                    $('#custody_table').DataTable().ajax.reload(null, false);
+                if (result.isConfirmed && result.value) {
+                    // FAZ 27 — BUG-FIX (Senaryo 1 / Hata 1.A):
+                    //   Eski kodda ajax.reload async iken success Swal hemen
+                    //   açılıyor, kullanıcı tabloyu güncellenmemiş gibi
+                    //   görüyordu. Reload callback'i ile DataTable render
+                    //   tamamlandıktan sonra success bildirimi gösterilir.
+                    //   loadCustodyKpis() KPI endpoint'inin kendi async
+                    //   çağrısını yapar; tablo callback'inden bağımsız
+                    //   tetiklenir (her ikisi de paralel çalışır).
                     if (typeof loadCustodyKpis === 'function') loadCustodyKpis();
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'İşlem Başarılı',
-                        text: 'Miktar başarıyla transfer edildi.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    $('#custody_table').DataTable().ajax.reload(function () {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'İşlem Başarılı',
+                            text: 'Miktar başarıyla transfer edildi.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }, false);
                 }
             });
         }
     </script>
 
     <script>
+        // FAZ 24 — BUG-1: Emanet kayıtlarının process_no'su CUS+10 rakam.
+        // Eski kod /process/get-process-details çağırıyordu — bu endpoint
+        // satış/işlem süreçleri için tasarlandığı ve CUS-prefixli numaralar
+        // bu tabloda olmadığı için "Detay alınamadı" hatası veriyordu.
+        // Yeni mantık: CUS prefix → /custody/by-process-no/<no> üzerinden
+        // emanet detay modalı; diğer prefixler eski akışı kullanır.
         $('#custody_table').on('click', '.open-process-modal', function () {
             var processNo = $(this).data('process-no');
             if (!processNo) return;
+
+            // CUS prefix → emanet hareket detay modal
+            if (typeof processNo === 'string' && processNo.toUpperCase().startsWith('CUS')) {
+                _openCustodyProcessDetail(processNo);
+                return;
+            }
 
             $.ajax({
                 url: '/process/get-process-details',
@@ -1186,10 +1956,8 @@
                     var processes = response.processes || [];
                     var firstProcess = processes[0] || {};
 
-                    // Modal başlık
                     $('#processDetailsModalLabel').text('İşlem Detayları - İşlem No: ' + processNo);
 
-                    // Üst bilgiler
                     $('#employeeName').text(
                         (firstProcess.employee__first_name || '-') + ' ' + (firstProcess.employee__last_name || '')
                     );
@@ -1225,6 +1993,76 @@
                 }
             });
         });
+
+        // FAZ 24 — BUG-1: Emanet işlemi detay modalı (yeni)
+        function _openCustodyProcessDetail(processNo) {
+            $.ajax({
+                url: '/custody/by-process-no/' + encodeURIComponent(processNo),
+                type: 'GET',
+                kpSkipLoader: true,
+                success: function (response) {
+                    if (!response || !response.result) {
+                        Swal.fire('Hata!', (response && response.error_msg) || 'Emanet detayı alınamadı.', 'error');
+                        return;
+                    }
+                    var entries = response.entries || [];
+                    if (!entries.length) {
+                        Swal.fire('Bilgi', 'Bu işlem numarasına ait emanet hareketi bulunamadı.', 'info');
+                        return;
+                    }
+                    var first = entries[0];
+                    $('#processDetailsModalLabel').text('Emanet Hareket Detayı - ' + processNo);
+                    $('#employeeName').text(first.created_by || '-');
+                    $('#customerName').text(first.customer_full || '-');
+                    $('#customerPhone').text(first.customer_phone || '-');
+
+                    var $tbody = $('#processDetailsTable tbody');
+                    $tbody.empty();
+                    // Emanet için kolon başlıklarını dinamik güncelle
+                    var $thead = $('#processDetailsTable thead tr');
+                    $thead.html(
+                        '<th style="border:1px solid #000;padding:3px;text-align:left;">Tip</th>' +
+                        '<th style="border:1px solid #000;padding:3px;text-align:left;">Ürün</th>' +
+                        '<th style="border:1px solid #000;padding:3px;text-align:right;">Gram</th>' +
+                        '<th style="border:1px solid #000;padding:3px;text-align:right;">HS</th>' +
+                        '<th style="border:1px solid #000;padding:3px;text-align:left;">Tarih</th>'
+                    );
+                    entries.forEach(function (e) {
+                        var typeBadgeColor = ({
+                            'IN': '#28a745', 'OUT': '#0d6efd',
+                            'OFFSET': '#ffc107', 'REVERSAL': '#dc3545'
+                        })[e.custody_type] || '#6c757d';
+                        var statusInfo = '';
+                        if (e.is_deleted) statusInfo = ' <span style="color:#999">(Silindi)</span>';
+                        else if (!e.is_active) statusInfo = ' <span style="color:#999">(Pasif)</span>';
+                        else if (e.has_reversal) statusInfo = ' <span style="color:#dc3545">(İptal)</span>';
+                        var tr =
+                            '<tr>' +
+                            '<td><span style="background:' + typeBadgeColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">' +
+                                (e.custody_type_label || e.custody_type) + '</span>' + statusInfo + '</td>' +
+                            '<td>' + (e.product || '-') + '</td>' +
+                            '<td style="text-align:right;">' + (e.quantity_gram || '0') + '</td>' +
+                            '<td style="text-align:right;">' + (e.amount_hs || '0') + '</td>' +
+                            '<td>' + (e.created_on || '-') + '</td>' +
+                            '</tr>';
+                        $tbody.append(tr);
+                    });
+
+                    var s = response.summary || {};
+                    $('#totalAmountSale').text((s.in_total_hs || '0') + ' HS');
+                    $('#totalAmountPurchaseReturn').text((s.out_total_hs || '0') + ' HS');
+                    var balance = parseFloat(s.balance_hs || '0');
+                    $('#totalAmount')
+                        .text((s.balance_hs || '0') + ' HS')
+                        .css('color', (balance < 0) ? 'red' : '#32cd32');
+
+                    $('#processDetailsModal').modal('show');
+                },
+                error: function () {
+                    Swal.fire('Hata!', 'Sunucu hatası oluştu.', 'error');
+                }
+            });
+        }
 
         function exportToExcel() {
             let processNo = $('#processDetailsModalLabel').text().split(': ')[1];
@@ -1263,6 +2101,410 @@
             window.print();
             document.body.innerHTML = originalContents;
             location.reload();
+        }
+
+        // ════════════════════════════════════════════════════════
+        // FAZ 22 / BLOK B-1, B-2, B-7 — REVERSAL + FİŞ YAZDIR
+        // ════════════════════════════════════════════════════════
+
+        // Defansif yardımcılar (KURAL 6)
+        function _safeText(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val == null ? '' : String(val);
+        }
+        function _safeVal(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.value = val == null ? '' : String(val);
+        }
+        function _esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ─── REVERSAL ──────────────────────────────────────────
+        window.custody_open_reverse = function (id, custodyType, amountHs, quantityGram, customerFull) {
+            _safeVal('custodyReverseId', id);
+            _safeText('custodyRevType', custodyType || '');
+            _safeText('custodyRevHs', `${amountHs || '0.000'} HS`);
+            _safeText('custodyRevGram', `${quantityGram || '0.000'} gr`);
+            _safeText('custodyRevCustomer', customerFull || '');
+            _safeVal('custodyReverseReason', '');
+            const m = new bootstrap.Modal(document.getElementById('custodyReverseModal'));
+            m.show();
+        };
+
+        $(document).on('submit', '#custodyReverseForm', function (e) {
+            e.preventDefault();
+            const id = (document.getElementById('custodyReverseId') || {}).value || '';
+            const reason = ((document.getElementById('custodyReverseReason') || {}).value || '').trim();
+            if (!id) {
+                Swal.fire('Hata', 'Kayıt seçilmedi.', 'error');
+                return;
+            }
+            if (!reason) {
+                Swal.fire('Hata', 'İptal nedeni zorunludur.', 'error');
+                return;
+            }
+            $.post("{% url 'custody:reverse' %}", {
+                id: id,
+                reason: reason,
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            }).done(function (res) {
+                if (res && res.result) {
+                    bootstrap.Modal.getInstance(document.getElementById('custodyReverseModal'))?.hide();
+                    Swal.fire({
+                        icon: 'success', title: 'İptal Yazıldı',
+                        text: 'Emanet hareketi REVERSAL ile iptal edildi.',
+                        timer: 1300, showConfirmButton: false,
+                    });
+                    $('#custody_table').DataTable().ajax.reload(null, false);
+                    if (typeof loadCustodyKpis === 'function') loadCustodyKpis();
+                } else {
+                    Swal.fire('Hata', (res && res.error_msg) || 'İptal yazılamadı.', 'error');
+                }
+            }).fail(function (xhr) {
+                let msg = 'Sunucu hatası.';
+                try {
+                    const j = JSON.parse(xhr.responseText || '{}');
+                    msg = j.error_msg || msg;
+                } catch (e) { /* yut */ }
+                Swal.fire('Hata', msg, 'error');
+            });
+        });
+
+        // ════════════════════════════════════════════════════════
+        // FAZ 24 — GEREKSİNİM-2: Emanetten Stoğa Transfer
+        // ════════════════════════════════════════════════════════
+        window.custody_open_to_stock = function (id, productName, remGram, remHs, customerFull) {
+            _safeVal('custodyToStockId', id);
+            _safeText('custodyToStockCustomer', customerFull || '');
+            _safeText('custodyToStockProduct', productName || '-');
+            _safeText('custodyToStockRemGram', remGram || '0');
+            _safeText('custodyToStockRemHs', remHs || '0');
+            _safeVal('custodyToStockGram', '');
+            _safeVal('custodyToStockPiece', '');
+            _safeVal('custodyToStockDesc', '');
+            const chk = document.getElementById('custodyToStockWriteDebt');
+            if (chk) chk.checked = true;
+            new bootstrap.Modal(document.getElementById('custodyToStockModal')).show();
+        };
+
+        $(document).on('submit', '#custodyToStockForm', function (e) {
+            e.preventDefault();
+            const id = (document.getElementById('custodyToStockId') || {}).value || '';
+            const gram = (document.getElementById('custodyToStockGram') || {}).value || '';
+            const piece = (document.getElementById('custodyToStockPiece') || {}).value || '';
+            const desc = (document.getElementById('custodyToStockDesc') || {}).value || '';
+            const writeDebt = !!(document.getElementById('custodyToStockWriteDebt') || {}).checked;
+            if (!id) {
+                Swal.fire('Hata', 'Kayıt seçilmedi.', 'error');
+                return;
+            }
+            $.post("{% url 'custody:to_stock' %}", {
+                id: id,
+                quantity_gram: gram,
+                quantity_piece: piece,
+                description: desc,
+                write_debt: writeDebt ? 'true' : 'false',
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            }).done(function (res) {
+                if (res && res.result) {
+                    bootstrap.Modal.getInstance(document.getElementById('custodyToStockModal'))?.hide();
+                    Swal.fire({
+                        icon: 'success', title: 'Stoğa Alındı',
+                        html: 'Transfer: <strong>' + res.transferred_gram + ' gr</strong> · ' +
+                              '<strong>' + res.transferred_hs + ' HS</strong>',
+                        timer: 2000, showConfirmButton: false,
+                    });
+                    $('#custody_table').DataTable().ajax.reload(null, false);
+                    if (typeof loadCustodyKpis === 'function') loadCustodyKpis();
+                } else {
+                    Swal.fire('Hata', (res && res.error_msg) || 'Transfer yapılamadı.', 'error');
+                }
+            }).fail(function (xhr) {
+                let msg = 'Sunucu hatası.';
+                try {
+                    const j = JSON.parse(xhr.responseText || '{}');
+                    msg = j.error_msg || msg;
+                } catch (e) { /* yut */ }
+                Swal.fire('Hata', msg, 'error');
+            });
+        });
+
+        // ════════════════════════════════════════════════════════
+        // FAZ 24 — GEREKSİNİM-3: Multi-Method Settlement
+        // ════════════════════════════════════════════════════════
+        window.custody_open_settlement = function (customerId, customerName) {
+            _safeVal('settleCustomerId', customerId);
+            _safeText('settleCustName', customerName || '-');
+            _safeVal('settleAmountHs', '0');
+            _safeText('settleAmountTl', '0,00');
+            _safeVal('settleDesc', '');
+            $('#settleFxPreview').addClass('d-none').empty();
+            $('#settleMethodOffset').prop('checked', true).trigger('change');
+            _renderSettleMethodFields('offset');
+
+            // Müşteri bakiye + kur ön bilgilerini çek
+            $.get("{% url 'custody:settlement_preview' %}", {customer_id: customerId}, function (res) {
+                if (!res || !res.result) return;
+                _safeText('settleCustodyBal', res.custody_balance_hs || '0');
+                _safeText('settleOpenBal', res.open_balance_hs || '0');
+                _safeText('settleCurRate', res.current_rate_tl || '0');
+            });
+            new bootstrap.Modal(document.getElementById('custodySettlementModal')).show();
+        };
+
+        function _renderSettleMethodFields(method) {
+            const $f = $('#settleMethodFields').empty();
+            if (method === 'cash') {
+                $f.html(
+                    '<div class="row g-2">' +
+                    '<div class="col-md-6"><label class="form-label fw-bold">Kasa</label>' +
+                    '<select id="settleBankAccount" class="form-select"><option value="">— Kasa seçin —</option></select></div>' +
+                    '<div class="col-md-6"><label class="form-label fw-bold">Nakit Tutarı (TL)</label>' +
+                    '<input type="number" id="settleCashAmount" class="form-control" step="0.01" min="0"></div>' +
+                    '</div>'
+                );
+                _loadSettleBankAccounts('TRY');
+            } else if (method === 'fx') {
+                $f.html(
+                    '<div class="row g-2">' +
+                    '<div class="col-md-4"><label class="form-label fw-bold">Para Birimi</label>' +
+                    '<select id="settleFxCurrency" class="form-select">' +
+                    '<option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option>' +
+                    '</select></div>' +
+                    '<div class="col-md-4"><label class="form-label fw-bold">Kasa</label>' +
+                    '<select id="settleBankAccount" class="form-select"><option value="">— Kasa seçin —</option></select></div>' +
+                    '<div class="col-md-4"><label class="form-label fw-bold">Tutar</label>' +
+                    '<input type="number" id="settleFxAmount" class="form-control" step="0.01" min="0"></div>' +
+                    '</div>'
+                );
+                _loadSettleBankAccounts('USD');
+                $('#settleFxCurrency').on('change', function () { _loadSettleBankAccounts($(this).val()); });
+            } else if (method === 'product') {
+                $f.html(
+                    '<div class="alert alert-warning small mb-0">' +
+                    '<strong>Akış:</strong> Bu seçenek müşterinin emaneti karşılığında ' +
+                    'bir <em>alacak</em> oluşturur. Sonra normal satış akışından ürün satarsanız ' +
+                    'bu alacak satış borcuna karşı mahsup edilir.' +
+                    '</div>'
+                );
+            } else { // offset
+                $f.html(
+                    '<div class="alert alert-info small mb-0">' +
+                    'Müşterinin <strong>Has bazlı açık borcu</strong> emanet karşılığında ' +
+                    'kapatılır. Eşik üstü kur farkı varsa otomatik FX_GAIN/FX_LOSS satırı yazılır.' +
+                    '</div>'
+                );
+            }
+        }
+
+        function _loadSettleBankAccounts(currency) {
+            // Mevcut bir API yoksa, sayfa yüklenirken context'ten alabiliriz.
+            // Geçici çözüm: kullanıcıya manuel ID girişi iste yerine /banking endpoint'ini denesin.
+            // Burada en temiz yol: backend'den dropdown sunmak.
+            $.get('/banking/cashbox-accounts', {currency: currency}, function (res) {
+                const $sel = $('#settleBankAccount');
+                $sel.empty().append('<option value="">— Kasa seçin —</option>');
+                ((res && res.accounts) || []).forEach(function (a) {
+                    $sel.append('<option value="' + a.id + '">' + (a.name || a.id) + ' (' + (a.currency || '') + ')</option>');
+                });
+            }).fail(function () {
+                // Sessiz yut — kullanıcı endpoint kuruluysa görür
+            });
+        }
+
+        $(document).on('change', 'input[name="settleMethod"]', function () {
+            _renderSettleMethodFields($(this).val());
+        });
+
+        // FX preview (KURAL 7 — kullanıcı yazdığı alana yeniden yazma yok)
+        let _settleFxTimer = null;
+        $(document).on('input', '#settleAmountHs', function () {
+            const amt = parseFloat($(this).val() || '0');
+            const rate = parseFloat($('#settleCurRate').text() || '0');
+            $('#settleAmountTl').text(((isFinite(amt) && isFinite(rate)) ? (amt * rate) : 0)
+                .toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+
+            if (_settleFxTimer) clearTimeout(_settleFxTimer);
+            _settleFxTimer = setTimeout(function () {
+                const customerId = ($('#settleCustomerId').val() || '').trim();
+                if (!customerId || amt <= 0) {
+                    $('#settleFxPreview').addClass('d-none').empty();
+                    return;
+                }
+                $.get("{% url 'custody:settlement_preview' %}", {
+                    customer_id: customerId, amount_hs: amt
+                }, function (res) {
+                    if (!res || !res.result || !res.fx_preview) {
+                        $('#settleFxPreview').addClass('d-none').empty();
+                        return;
+                    }
+                    const f = res.fx_preview;
+                    const dirText = ({GAIN: 'Mağaza Zararı', LOSS: 'Mağaza Karı', FLAT: 'Fark Yok'})[f.fx_direction] || '';
+                    $('#settleFxPreview').removeClass('d-none').html(
+                        '<strong>Kur Farkı Önizlemesi:</strong> ' +
+                        f.amount_eur_at_custody + ' TL (emanet kuru) → ' +
+                        f.amount_eur_at_current + ' TL (bugün) · ' +
+                        '<strong>Fark: ' + f.fx_diff_tl + ' TL (' + dirText + ')</strong>'
+                    );
+                });
+            }, 350);
+        });
+
+        $(document).on('submit', '#custodySettlementForm', function (e) {
+            e.preventDefault();
+            const customerId = ($('#settleCustomerId').val() || '').trim();
+            const amountHs = ($('#settleAmountHs').val() || '0').trim();
+            const method = ($('input[name="settleMethod"]:checked').val() || 'offset');
+            const desc = ($('#settleDesc').val() || '').trim();
+
+            if (!customerId) { Swal.fire('Hata', 'Müşteri seçilmedi.', 'error'); return; }
+            if (parseFloat(amountHs) <= 0) { Swal.fire('Hata', 'Geçerli bir miktar girin.', 'error'); return; }
+
+            const payload = {
+                customer_id: customerId,
+                amount_hs: amountHs,
+                method: method,
+                description: desc,
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+            };
+
+            if (method === 'cash') {
+                payload.bank_account_id = ($('#settleBankAccount').val() || '').trim();
+                payload.cash_amount_eur = ($('#settleCashAmount').val() || '0').trim();
+                if (!payload.bank_account_id) { Swal.fire('Hata', 'Kasa seçimi zorunlu.', 'error'); return; }
+            } else if (method === 'fx') {
+                payload.bank_account_id = ($('#settleBankAccount').val() || '').trim();
+                payload.currency = ($('#settleFxCurrency').val() || 'USD');
+                payload.fx_amount = ($('#settleFxAmount').val() || '0').trim();
+                if (!payload.bank_account_id) { Swal.fire('Hata', 'Kasa seçimi zorunlu.', 'error'); return; }
+                if (parseFloat(payload.fx_amount) <= 0) { Swal.fire('Hata', 'Döviz tutarı girin.', 'error'); return; }
+            }
+
+            $.post("{% url 'custody:settlement' %}", payload).done(function (res) {
+                if (res && res.result) {
+                    bootstrap.Modal.getInstance(document.getElementById('custodySettlementModal'))?.hide();
+                    Swal.fire({
+                        icon: 'success', title: 'Kapatıldı',
+                        text: 'Emanet ' + method + ' yöntemi ile kapatıldı.',
+                        timer: 1800, showConfirmButton: false,
+                    });
+                    $('#custody_table').DataTable().ajax.reload(null, false);
+                    if (typeof loadCustodyKpis === 'function') loadCustodyKpis();
+                } else {
+                    Swal.fire('Hata', (res && res.error_msg) || 'İşlem yapılamadı.', 'error');
+                }
+            }).fail(function (xhr) {
+                let msg = 'Sunucu hatası.';
+                try {
+                    const j = JSON.parse(xhr.responseText || '{}');
+                    msg = j.error_msg || msg;
+                } catch (e) { /* yut */ }
+                Swal.fire('Hata', msg, 'error');
+            });
+        });
+
+        // ─── FİŞ YAZDIR (B-1 / B-2) — BLOK C standardize fiş ──
+        window.custody_print_receipt = function (id) {
+            $.ajax({
+                url: `/custody/receipt/${id}`,
+                method: 'GET',
+                kpSkipLoader: true,
+            }).done(function (res) {
+                if (!res || !res.result) {
+                    Swal.fire('Hata', (res && res.error_msg) || 'Fiş verisi alınamadı.', 'error');
+                    return;
+                }
+                _renderCustodyReceipt(res.data);
+                window.print();
+            }).fail(function () {
+                Swal.fire('Hata', 'Fiş verisi alınamadı.', 'error');
+            });
+        };
+
+        function _renderCustodyReceipt(d) {
+            const area = document.getElementById('custodyReceiptArea');
+            if (!area) return;
+
+            const isOut = (d.custody_type === 'OUT' || d.flags?.is_returned);
+            const isOffset = (d.custody_type === 'OFFSET');
+            const isReversal = (d.custody_type === 'REVERSAL');
+
+            let title = 'EMANET MAKBUZU';
+            if (isOffset) title = 'CARİ MAHSUPLAŞMA FİŞİ';
+            else if (isReversal) title = 'EMANET İPTAL FİŞİ';
+            else if (isOut) title = 'EMANET TESLİM MAKBUZU';
+
+            const a = d.amounts || {};
+            const c = d.customer || {};
+            const s = d.store || {};
+            const p = d.product || {};
+            const st = d.staff || {};
+
+            const milyemLine = p.mileage
+                ? `<div class="rcpt-row"><span>Milyem (Ayar):</span><span>${_esc(p.mileage)}</span></div>`
+                : '';
+            const adetLine = (a.quantity_piece && parseInt(a.quantity_piece) > 0)
+                ? `<div class="rcpt-row"><span>Adet:</span><span>${_esc(a.quantity_piece)}</span></div>`
+                : '';
+            const gramLine = (parseFloat(a.quantity_gram) > 0)
+                ? `<div class="rcpt-row"><span>Gram:</span><span>${_esc(a.quantity_gram)} gr</span></div>`
+                : '';
+
+            const remaining = d.remaining || {};
+            const remainingLine = (d.custody_type === 'IN' && parseFloat(remaining.amount_hs) > 0
+                                && parseFloat(remaining.amount_hs) !== parseFloat(a.amount_hs))
+                ? `<div class="rcpt-row"><span>Bu Fişten Kalan:</span><span>${_esc(remaining.amount_hs)} HS</span></div>`
+                : '';
+
+            const reverseLine = (d.reverse_reason)
+                ? `<div class="rcpt-row"><span>İptal Nedeni:</span><span>${_esc(d.reverse_reason)}</span></div>`
+                : '';
+
+            const warningText = isReversal
+                ? 'Bu fiş iptal makbuzudur.'
+                : (isOffset
+                    ? 'Bu mahsuplaşma cari hesabınızdan düşülmüştür.'
+                    : (isOut
+                        ? 'Bu fiş emanet teslim makbuzudur. Müşteri emanetini geri almıştır.'
+                        : 'Bu fiş emanet makbuzudur. Mülkiyet devri değildir. Geri talep halinde bu makbuz ibrazı zorunludur.'));
+
+            area.innerHTML = `
+                <div class="rcpt-title">${_esc(s.name || 'MAĞAZA')}</div>
+                ${s.address ? `<div style="text-align:center;font-size:9px;">${_esc(s.address)}</div>` : ''}
+                ${s.phone   ? `<div style="text-align:center;font-size:9px;">Tel: ${_esc(s.phone)}</div>` : ''}
+                <hr>
+                <div class="rcpt-title">${_esc(title)}</div>
+                <div class="rcpt-row"><span>Fiş No:</span><span>${_esc(d.process_no || '-')}</span></div>
+                <div class="rcpt-row"><span>Tarih:</span><span>${_esc(d.created_on)}</span></div>
+                <hr>
+                <div class="rcpt-row"><span>Müşteri:</span><span>${_esc(c.full_name || '-')}</span></div>
+                ${c.phone ? `<div class="rcpt-row"><span>Tel:</span><span>${_esc(c.phone)}</span></div>` : ''}
+                ${c.tc    ? `<div class="rcpt-row"><span>TC No:</span><span>${_esc(c.tc)}</span></div>` : ''}
+                <hr>
+                <div class="rcpt-row"><span>Ürün:</span><span>${_esc(p.name || '-')}</span></div>
+                ${milyemLine}
+                ${adetLine}
+                ${gramLine}
+                <div class="rcpt-row"><span>Has Karşılığı:</span><span>${_esc(a.amount_hs)} HS</span></div>
+                ${remainingLine}
+                <div class="rcpt-row"><span>Kur (1 gr Has):</span><span>${_esc(a.exchange_rate_eur)} TL</span></div>
+                <div class="rcpt-row"><span>TL Karşılığı:</span><span>${_esc(a.amount_eur)} TL</span></div>
+                ${reverseLine}
+                <hr>
+                <div class="rcpt-row"><span>Teslim Alan:</span><span>${_esc(st.received_by || '-')}</span></div>
+                ${(isOut || isReversal) ? `<div class="rcpt-row"><span>Teslim Eden:</span><span>${_esc(st.delivered_by || '-')}</span></div>` : ''}
+                <div class="rcpt-row"><span>Düzenleyen:</span><span>${_esc(st.created_by || '-')}</span></div>
+                ${d.description ? `<hr><div style="font-size:10px;"><strong>Açıklama:</strong> ${_esc(d.description)}</div>` : ''}
+                <div class="rcpt-amount">${_esc(a.amount_hs || '0')} HS</div>
+                <div class="rcpt-sign">
+                    <div>Müşteri Adı / İmza</div>
+                    <div>Mağaza Yetkilisi / Kaşe</div>
+                </div>
+                <div class="rcpt-warning">${_esc(warningText)}</div>
+            `;
         }
     </script>
 {% endblock footer %}

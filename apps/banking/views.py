@@ -22,7 +22,7 @@ from apps.banking.services import (
 )
 from apps.banking.models import POSCommissionRate
 from apps.customers.models import Customers
-from apps.invoices.models import Invoice
+# Invoice kaldırıldı — invoices app Juwelier Plus'ta yok
 from apps.process.models import Payment
 
 log = logging.getLogger(__name__)
@@ -308,19 +308,9 @@ def match_transaction(request):
                 bank_txn.match_score = 100
                 messages.append(f"Cari atandı: {customer.first_name} {customer.last_name}")
 
+            # invoice_id: fatura bağlama bu projede devre dışı (invoices app yok)
             if invoice_id:
-                invoice = Invoice.objects.select_for_update().get(id=invoice_id, store=store)
-                bank_txn.invoice = invoice
-
-                if not bank_txn.customer and invoice.customer:
-                    bank_txn.customer = invoice.customer
-                    messages.append("Faturanın müşterisi otomatik atandı.")
-
-                pay_status = PaymentStatusService.compute_for_invoice(invoice)
-                bank_txn.payment_status = pay_status
-
-                PaymentStatusService.update_invoice(invoice)
-                messages.append(f"Faturaya bağlandı (Ödeme: {pay_status}).")
+                messages.append("Fatura bağlama bu projede desteklenmiyor.")
 
             bank_txn.match_status = BankTransaction.MatchStatus.MANUAL_MATCHED
             bank_txn.save()
@@ -329,7 +319,7 @@ def match_transaction(request):
 
     except BankTransaction.DoesNotExist:
         return JsonResponse({'result': False, 'msg': 'Banka hareketi bulunamadı.'})
-    except (Customers.DoesNotExist, Invoice.DoesNotExist):
+    except Customers.DoesNotExist:
         return JsonResponse({'result': False, 'msg': 'Hedef kayıt bulunamadı.'})
     except Exception as e:
         return JsonResponse({'result': False, 'msg': str(e)[:300]})
@@ -1460,131 +1450,142 @@ def reconcile_payments_list(request):
 @login_required(login_url='login')
 def bulk_invoice_from_bank_transactions(request):
     """
-    SY-01: Seçili banka hareketlerinden tek tıkla 24 ayar altın faturası oluşturur.
+    SY-01 (FAZ B.2 / GAP-06 sonrası BİRLEŞTİRİLMİŞ AKIŞ):
 
-    POST body: { "transaction_ids": ["uuid1", "uuid2", ...] }
+    Bu view, eski "tek tıkla 24 ayar PROFORMA" akışından, mağazanın
+    `StoreEInvoiceSettings` kayıtlı ayarlarına göre `BankBulkInvoiceService`
+    metal+işçilik ayrıştırması yapan birleşik servise delege edilmiştir.
 
-    İş kuralları:
-      - Yalnızca DEBIT (gelen para) hareketler faturalanabilir
-      - Hareketin eşleştirilmiş müşterisi olmalı
-      - Mağaza ayarlarında varsayılan 24 ayar ürün seçili olmalı
-      - Her hareket için ayrı bir taslak fatura oluşturulur
-      - Fatura kalemi: product=24 ayar, quantity=1, unit_price=havale tutarı, KDV=%0
+    NEDEN:
+        İki paralel toplu fatura akışı (SY-01 + bulk_invoice_with_defaults)
+        farklı doc_class (PROFORMA vs E_ARCHIVE), farklı kalem yapısı (tek
+        kalem vs metal+işçilik) ve farklı ayar kaynağı (default_24k_product
+        vs StoreEInvoiceSettings) kullanıyordu. Aynı mağazada iki butonun
+        farklı matrahlarla fatura kesmesi GİB karşılaştırmalı denetimde
+        tutarsızlık riski yaratıyordu (Gap Analiz Raporu Bölüm 2.2 / R-2.3).
 
-    Sonra kullanıcı faturayı düzenleyip (gram düzeltme) e-Süreç'e gönderebilir.
+    AKIŞ (yeni):
+        1. POST body: { "transaction_ids": [...], "send_to_gib": false }
+        2. BulkInvoicePreflight → engelleyici hata varsa 400 döner
+        3. BankBulkInvoiceService.build_bulk(safe_txn_ids, send_to_gib)
+        4. Mevcut response şeması korunur: { result, msg, created, skipped }
+        5. mark-invoiced (FAZ A.2) ve preflight (FAZ A.3) otomatik devreye girer
+
+    GERİYE UYUMLULUK:
+        - URL aynı (banking/bulk-invoice/), UI'ın değişmesine gerek yok.
+        - JSON response şeması (`created`, `skipped`, `invoice_ids`) korundu.
+        - StoreConfiguration.default_24k_product ARTIK KULLANILMIYOR;
+          eksikse uyarı/log; StoreEInvoiceSettings birincil kaynak.
     """
     if request.method != 'POST':
-        return JsonResponse({'result': False, 'msg': 'Geçersiz istek.'})
+        return JsonResponse({'result': False, 'msg': 'Geçersiz istek.'}, status=405)
 
     store = _get_store(request)
     if not store:
         return JsonResponse({'result': False, 'msg': 'Mağazaya bağlı kullanıcı bulunamadı.'})
 
+    # ── Body parse ──
     try:
         body = json.loads(request.body.decode('utf-8'))
-        txn_ids = body.get('transaction_ids', [])
     except Exception:
-        txn_ids = request.POST.getlist('transaction_ids[]', [])
+        body = {}
+
+    txn_ids = (
+        body.get('transaction_ids')
+        or body.get('bank_transaction_ids')
+        or request.POST.getlist('transaction_ids[]')
+        or []
+    )
+    txn_ids = [str(t) for t in txn_ids if t]
 
     if not txn_ids:
         return JsonResponse({'result': False, 'msg': 'Banka hareketi seçilmedi.'})
 
-    # Mağaza ayarından varsayılan 24 ayar ürünü al
-    config = getattr(store, 'config', None)
-    if not config or not config.default_24k_product:
+    send_to_gib = bool(body.get('send_to_gib', False))
+
+    # ── Servis + Preflight ──
+    try:
+        from apps.banking.services_bulk_invoice import (
+            BankBulkInvoiceService, BulkInvoicePreflight,
+        )
+    except Exception as e:
+        log.exception("[SY-01] Servis import hatası: %s", type(e).__name__)
+        return JsonResponse(
+            {'result': False, 'msg': 'Servis yüklenemedi.'}, status=500,
+        )
+
+    try:
+        preflight = BulkInvoicePreflight(store=store)
+        report = preflight.validate(txn_ids)
+    except ValueError as ve:
+        return JsonResponse({'result': False, 'msg': str(ve)}, status=422)
+    except Exception as e:
+        log.exception("[SY-01] Preflight hatası: %s", type(e).__name__)
+        return JsonResponse(
+            {'result': False, 'msg': 'Pre-flight kontrol hatası.'}, status=500,
+        )
+
+    # ── Engelleyici hata varsa hiç başlatma ──
+    if report.has_blocking_errors and not report.safe_txn_ids:
         return JsonResponse({
             'result': False,
-            'msg': 'Mağaza Ayarları > Varsayılan 24 Ayar Altın Ürünü seçili değil. '
-                   'Önce bu ayarı yapılandırın.',
-        })
+            'msg': 'Pre-flight kontrolünden geçen banka hareketi yok. '
+                   'Lütfen ayarları ve hareket detaylarını gözden geçirin.',
+            'preflight': report.to_dict(),
+            'created': [],
+            'skipped': [
+                {'bank_txn_id': i.txn_id, 'reason': i.message}
+                for i in report.errors if i.txn_id
+            ][:20],
+            'invoice_ids': [],
+        }, status=422)
 
-    default_product = config.default_24k_product
-    from apps.invoices.models import InvoiceItem
+    # ── Toplu fatura ──
+    try:
+        service = BankBulkInvoiceService(store=store)
+        result = service.build_bulk(
+            txn_ids=report.safe_txn_ids,
+            send_to_gib=send_to_gib,
+        )
+    except Exception as e:
+        log.exception("[SY-01] build_bulk hatası: %s", type(e).__name__)
+        return JsonResponse({
+            'result': False,
+            'msg': f'Fatura oluşturma hatası: {type(e).__name__}',
+        }, status=500)
 
-    created = []
-    skipped = []
-
-    for txn_id in txn_ids:
-        try:
-            txn = BankTransaction.objects.select_related('customer').get(
-                id=txn_id, store=store,
-            )
-
-            # Doğrulamalar
-            if txn.plus_minus != BankTransaction.PlusMinus.DEBIT:
-                skipped.append(f'{txn.doc_no or txn_id}: Giden para, faturalanmaz.')
-                continue
-
-            if txn.invoice_id:
-                skipped.append(f'{txn.doc_no or txn_id}: Zaten faturası var.')
-                continue
-
-            if not txn.customer:
-                skipped.append(f'{txn.doc_no or txn_id}: Müşteri eşleştirilmemiş.')
-                continue
-
-            # Fatura oluştur
-            with db_transaction.atomic():
-                invoice_no, seq_no = Invoice.next_number_for(store)
-
-                inv = Invoice.objects.create(
-                    store=store,
-                    customer=txn.customer,
-                    invoice_no=invoice_no,
-                    sequence_no=seq_no,
-                    issue_date=timezone.now(),
-                    invoice_type=Invoice.Type.SALE,
-                    doc_class=Invoice.DocumentClass.PROFORMA,
-                    status=Invoice.Status.DRAFT,
-                    currency='TRY',
-                    notes=f'Banka havalesi: {txn.doc_no or ""} ({txn.bank_name or ""})',
-                )
-
-                item = InvoiceItem.objects.create(
-                    invoice=inv,
-                    product=default_product,
-                    product_name=default_product.name or '24 Ayar Altın',
-                    barcode=getattr(default_product, 'barcode', '') or '',
-                    is_gram_bullion=True,
-                    quantity=Decimal('1.000'),
-                    unit=InvoiceItem.Unit.PIECE,
-                    unit_price=Decimal(str(txn.amount)),
-                    vat_rate=Decimal('0.00'),
-                    exemption_reason='KDVK Madde 17/4-g',
-                    notes='KDVK 17/4-g — 24 ayar külçe altın',
-                )
-                item.recompute(save=True)
-                inv.recompute_totals(save=True)
-
-                # Banka hareketini fatura ile eşleştir
-                txn.invoice = inv
-                txn.payment_status = BankTransaction.PaymentStatus.PAID
-                txn.save(update_fields=['invoice', 'payment_status', 'updated_on'])
-
-            created.append({
-                'invoice_id': str(inv.id),
-                'invoice_no': inv.invoice_no,
-                'customer': f'{txn.customer.first_name} {txn.customer.last_name}'.strip(),
-                'amount': str(txn.amount),
-                'bank_doc_no': txn.doc_no or '',
+    # ── Response (UI uyumlu şekil) ──
+    # Skipped + blocked'ı birleştir; UI'ın gördüğü "skipped" alanı
+    # geçmişle uyumlu kalsın.
+    skipped_combined = list(result.skipped)
+    for issue in report.errors:
+        if issue.txn_id and issue.txn_id in report.blocked_txn_ids:
+            skipped_combined.append({
+                'bank_txn_id': issue.txn_id,
+                'reason': f'[Pre-flight] {issue.message}',
             })
 
-        except BankTransaction.DoesNotExist:
-            skipped.append(f'{txn_id}: Banka hareketi bulunamadı.')
-        except Exception as e:
-            log.exception(f"[SY-01] Fatura oluşturma hatası (txn={txn_id}): {type(e).__name__}")
-            skipped.append(f'{txn_id}: İşlem hatası ({type(e).__name__})')
+    msg_parts = []
+    if result.created:
+        msg_parts.append(f'{len(result.created)} fatura oluşturuldu')
+    if skipped_combined:
+        msg_parts.append(f'{len(skipped_combined)} hareket atlandı')
+    if result.failed:
+        msg_parts.append(f'{len(result.failed)} hareket hata aldı')
+    if send_to_gib and result.gib_queued:
+        msg_parts.append(f"{result.gib_queued} fatura GİB'e gönderim kuyruğuna alındı")
 
-    msg = f'{len(created)} fatura oluşturuldu.'
-    if skipped:
-        msg += f' {len(skipped)} hareket atlandı.'
+    msg = ', '.join(msg_parts) + '.' if msg_parts else 'İşlenecek hareket bulunamadı.'
 
     return JsonResponse({
-        'result': len(created) > 0,
+        'result': len(result.created) > 0,
         'msg': msg,
-        'created': created,
-        'skipped': skipped[:10],
-        'invoice_ids': [c['invoice_id'] for c in created],
+        'created': result.created,
+        'skipped': skipped_combined[:20],
+        'failed': result.failed[:20],
+        'gib_queued': result.gib_queued,
+        'invoice_ids': [c['invoice_id'] for c in result.created],
+        'preflight_warnings': [w.to_dict() for w in report.warnings][:20],
     })
 
 
@@ -1670,7 +1671,7 @@ def bulk_invoice_with_defaults(request):
         }, status=422)
 
     # ── Anlık kur kontrolü (sadece uyarı) ──
-    if service.has_sale_tl <= 0:
+    if service.has_sale_eur <= 0:
         # Kurumsal hata değil — kullanıcı bilgisel uyarı alır ama devam eder
         log.warning(
             "[BulkInvoice] Mağazanın has satış kuru 0 — gram hesabı yapılamayacak. "

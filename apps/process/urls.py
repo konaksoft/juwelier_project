@@ -4,6 +4,7 @@ from apps.process.retail_views import *
 from apps.process.fast_views import *
 from apps.process.wholesale_views import *
 from apps.process.operations import *
+from apps.process.goods_entry_views import goods_entry_dispatch
 
 app_name = 'process'
 
@@ -38,6 +39,10 @@ urlpatterns = [
     path('add-scrap-to-wholesale', add_scrap_to_wholesale_process, name='add-scrap-wholesale'),
     path('add-bracelet-to-wholesale', add_bracelet_to_wholesale_process, name='add-bracelet-wholesale'),
 path('process-detail/<str:process_no>/', process_detail_view, name='process_detail'),
+    # FAZ 40 — Lazy-load JSON endpoint for transactions table modal
+    path('detail-modal-json/<str:process_no>/', process_detail_modal_json, name='detail-modal-json'),
+    # FAZ 40.3 — Public (login'siz) müşteri işlem özeti — WhatsApp linki için
+    path('p/<str:token>/', public_process_detail, name='public-detail'),
 path('add-bracelet-to-retail-process', add_bracelet_to_retail_process, name='add-bracelet-retail'),
 
     # FAZ 21: Tedarikçi nakit ödeme (kasa entegrasyonu)
@@ -45,6 +50,11 @@ path('add-bracelet-to-retail-process', add_bracelet_to_retail_process, name='add
 
     # Çoklu Hurda Girişi (Multi-Row)
     path('add-scrap-multi-to-wholesale', add_scrap_multi_to_wholesale_process, name='add-scrap-multi-wholesale'),
+
+    # UAT BULGU 2 — Birleşik Mal Girişi router (tek modal, dinamik tip)
+    # Frontend tek endpoint'e POST eder; entry_type+channel'a göre
+    # mevcut handler'lara yönlendirilir.
+    path('goods-entry/', goods_entry_dispatch, name='goods-entry'),
 
     # Bekleyen stok tamamlama
     path('fulfill-waiting-stock', fulfill_waiting_stock, name='fulfill-waiting-stock'),

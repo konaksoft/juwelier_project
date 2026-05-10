@@ -233,7 +233,7 @@
     </table>
 </div>
 
-{# ─── 1. EKSIK / KAYIP URUNLER (KATEGORi GRUPLU) ─── #}
+<!-- ─── 1. EKSIK / KAYIP URUNLER (KATEGORi GRUPLU) ─── -->
 {% if missing_groups %}
     <div class="section-title" style="color: #cc0000;">1. EKSIK / KAYIP URUNLER LISTESI ({{ summary.missing_qty }}
         Adet)
@@ -266,7 +266,7 @@
     <div style="font-size: 8pt; margin-bottom: 10px;">Tebrikler! Sistemdeki tum urunler eksiksiz sayildi.</div>
 {% endif %}
 
-{# ─── 2. HATALI / YABANCI URUNLER (KATEGORi GRUPLU) ─── #}
+<!-- ─── 2. HATALI / YABANCI URUNLER (KATEGORi GRUPLU) ─── -->
 {% if error_groups %}
     <div class="section-title" style="color: #e65100;">2. HATALI / YABANCI URUNLER LISTESI ({{ summary.error_qty }}
         Adet)
@@ -296,7 +296,7 @@
     {% endfor %}
 {% endif %}
 
-{# ─── 3. BULUNAN URUNLER (KATEGORi GRUPLU) ─── #}
+<!-- ─── 3. BULUNAN URUNLER (KATEGORi GRUPLU) ─── -->
 {% if found_groups %}
     <div class="section-title" style="color: #2e7d32;">3. BULUNAN / ONAYLANAN URUNLER LISTESI
         ({{ summary.found_qty }}

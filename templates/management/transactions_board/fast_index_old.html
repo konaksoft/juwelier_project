@@ -1065,10 +1065,10 @@
             let buy_kur = 1;
             if (selectedProduct && !selectedProduct.is_currency) {
                 if (selectedProduct.sale_price_hs && selectedProduct.sale_price_hs > 0) {
-                    sale_kur = Number(selectedProduct.sale_price_tl / selectedProduct.sale_price_hs);
+                    sale_kur = Number(selectedProduct.sale_price_eur / selectedProduct.sale_price_hs);
                 }
                 if (selectedProduct.buy_price_hs && selectedProduct.buy_price_hs > 0) {
-                    buy_kur = Number(selectedProduct.buy_price_tl / selectedProduct.buy_price_hs);
+                    buy_kur = Number(selectedProduct.buy_price_eur / selectedProduct.buy_price_hs);
                 }
             }
             let e_id = element ? $(element).attr("id") : null;
@@ -1180,16 +1180,16 @@
                 return;
             }
             document.getElementById('txtUrun').value = p.name || '';
-            document.getElementById('txtSatisFiyat').value = p.sale_price_tl || '';
-            document.getElementById('txtAlisFiyat').value = p.buy_price_tl || '';
-            document.getElementById('txt-buy-fiyat').value = p.buy_price_tl || '';
+            document.getElementById('txtSatisFiyat').value = p.sale_price_eur || '';
+            document.getElementById('txtAlisFiyat').value = p.buy_price_eur || '';
+            document.getElementById('txt-buy-fiyat').value = p.buy_price_eur || '';
 
             // FAZ 21 FIX: Döviz ürünlerinde Has alanları anlamsızdır (API kuru zaten TL).
             // Has inputlarına TL değeri yazılır ki HS↔TL oranı 1:1 olsun,
             // böylece calculateTotalFast'taki sale_kur/buy_kur = 1 olur.
             if (p.is_currency) {
-                document.getElementById('txt-satis-has').value = p.sale_price_tl || '';
-                document.getElementById('txt-buy-has').value = p.buy_price_tl || '';
+                document.getElementById('txt-satis-has').value = p.sale_price_eur || '';
+                document.getElementById('txt-buy-has').value = p.buy_price_eur || '';
             } else {
                 document.getElementById('txt-satis-has').value = p.sale_price_hs || '';
                 document.getElementById('txt-buy-has').value = p.buy_price_hs || '';
@@ -2203,7 +2203,7 @@
                         (x.name || '').toLowerCase().includes('has 24')
                     );
                     if (p) {
-                        hasPrice = parseFloat(p.sale_price_tl || 0);
+                        hasPrice = parseFloat(p.sale_price_eur || 0);
                         break;
                     }
                 }

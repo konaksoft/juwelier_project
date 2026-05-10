@@ -48,7 +48,7 @@ class DailyStoreReport(models.Model):
     )
 
     # --- Satış Metrikleri ---
-    total_sales_tl = models.DecimalField(
+    total_sales_eur = models.DecimalField(
         max_digits=18, decimal_places=2, default=Decimal('0.00'),
         verbose_name='Toplam Satış (TL)',
     )
@@ -64,7 +64,7 @@ class DailyStoreReport(models.Model):
     )
 
     # --- Alış Metrikleri ---
-    total_purchases_tl = models.DecimalField(
+    total_purchases_eur = models.DecimalField(
         max_digits=18, decimal_places=2, default=Decimal('0.00'),
         verbose_name='Toplam Alış (TL)',
     )
@@ -77,7 +77,7 @@ class DailyStoreReport(models.Model):
     )
 
     # --- İade Metrikleri ---
-    total_returns_tl = models.DecimalField(
+    total_returns_eur = models.DecimalField(
         max_digits=18, decimal_places=2, default=Decimal('0.00'),
         verbose_name='Toplam İade (TL)',
     )
@@ -131,7 +131,7 @@ class DailyStoreReport(models.Model):
     )
 
     # --- Stok Değer Snapshot (Altın - Mevcut) ---
-    stock_value_tl = models.DecimalField(
+    stock_value_eur = models.DecimalField(
         max_digits=18, decimal_places=2, default=Decimal('0.00'),
         verbose_name='Stok Değeri (WAC TL)',
         help_text='Gün sonunda StockSnapshot WAC bazlı toplam stok değeri.',
@@ -162,7 +162,7 @@ class DailyStoreReport(models.Model):
         verbose_name='Gümüş Stok Değeri (Has Gümüş)',
         help_text='Material_type=SILVER WAC Has Gümüş cinsinden toplam değer.',
     )
-    silver_stock_value_tl = models.DecimalField(
+    silver_stock_value_eur = models.DecimalField(
         max_digits=18, decimal_places=2,
         null=True, blank=True, default=None,
         verbose_name='Gümüş Stok Değeri (TL)',
@@ -175,7 +175,7 @@ class DailyStoreReport(models.Model):
         verbose_name='Pırlanta Stok (Adet)',
         help_text='Material_type=DIAMOND ürünlerin toplam adedi.',
     )
-    diamond_stock_value_tl = models.DecimalField(
+    diamond_stock_value_eur = models.DecimalField(
         max_digits=18, decimal_places=2,
         null=True, blank=True, default=None,
         verbose_name='Pırlanta Stok Değeri (TL)',
@@ -188,7 +188,7 @@ class DailyStoreReport(models.Model):
         verbose_name='Saat Stok (Adet)',
         help_text='Material_type=WATCH ürünlerin toplam adedi.',
     )
-    watch_stock_value_tl = models.DecimalField(
+    watch_stock_value_eur = models.DecimalField(
         max_digits=18, decimal_places=2,
         null=True, blank=True, default=None,
         verbose_name='Saat Stok Değeri (TL)',
@@ -219,7 +219,7 @@ class DailyStoreReport(models.Model):
         ]
 
     def __str__(self):
-        return f"[{self.store}] {self.report_date} | Satış: {self.total_sales_tl} TL"
+        return f"[{self.store}] {self.report_date} | Satış: {self.total_sales_eur} TL"
 
     @property
     def net_cash_flow(self) -> Decimal:
@@ -231,7 +231,7 @@ class DailyStoreReport(models.Model):
     @property
     def net_sales(self) -> Decimal:
         """Net satış: Satış - Alış - İade."""
-        return self.total_sales_tl - self.total_purchases_tl - self.total_returns_tl
+        return self.total_sales_eur - self.total_purchases_eur - self.total_returns_eur
 
 
 # ============================================================================
@@ -261,7 +261,7 @@ class DailyEmployeeReport(models.Model):
 
     # --- Satış ---
     sale_count = models.IntegerField(default=0)
-    total_sales_tl = models.DecimalField(
+    total_sales_eur = models.DecimalField(
         max_digits=18, decimal_places=2, default=Decimal('0.00'),
     )
     total_sales_hs = models.DecimalField(
@@ -273,7 +273,7 @@ class DailyEmployeeReport(models.Model):
 
     # --- Alış ---
     purchase_count = models.IntegerField(default=0)
-    total_purchases_tl = models.DecimalField(
+    total_purchases_eur = models.DecimalField(
         max_digits=18, decimal_places=2, default=Decimal('0.00'),
     )
 

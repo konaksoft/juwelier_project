@@ -1,0 +1,1207 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+<style>
+    /* FAZ 46 — Transfer ekranı renk paleti (ABC1545D) */
+    .badge-status-DRAFT              { background:#9da6b4; color:#fff; }
+    .badge-status-IN_TRANSIT         { background:#0d6efd; color:#fff; }
+    .badge-status-ACCEPTED           { background:#198754; color:#fff; }
+    .badge-status-PARTIALLY_ACCEPTED { background:#ffc107; color:#212529; }
+    .badge-status-REJECTED           { background:#dc3545; color:#fff; }
+    .badge-status-CANCELLED          { background:#6c757d; color:#fff; }
+
+    .badge-status-DRAFT,
+    .badge-status-IN_TRANSIT,
+    .badge-status-ACCEPTED,
+    .badge-status-PARTIALLY_ACCEPTED,
+    .badge-status-REJECTED,
+    .badge-status-CANCELLED {
+        font-weight:600;
+        padding:.4rem .65rem;
+        border-radius:.4rem;
+        display:inline-block;
+        font-size:.78rem;
+        letter-spacing:.02em;
+    }
+
+    .transfer-direction-arrow {
+        font-size:1.25rem;
+        color:#0d47a1;
+        margin:0 .35rem;
+    }
+
+    .pending-pulse {
+        animation: pulse-warn 2s infinite;
+    }
+    @keyframes pulse-warn {
+        0%   { box-shadow: 0 0 0 0 rgba(13,110,253,0.55); }
+        70%  { box-shadow: 0 0 0 12px rgba(13,110,253,0); }
+        100% { box-shadow: 0 0 0 0 rgba(13,110,253,0); }
+    }
+
+    .item-row-cash {
+        background:#f8f9fa;
+        border:1px solid #e3e6ec;
+        border-radius:.5rem;
+        padding:.65rem .85rem;
+        margin-bottom:.5rem;
+    }
+
+    #transfer_table tbody td {
+        vertical-align: middle;
+    }
+
+    .nav-tabs-faz46 .nav-link {
+        font-weight:600;
+        color:#5a6477;
+    }
+    .nav-tabs-faz46 .nav-link.active {
+        color:#0d47a1;
+        border-bottom:3px solid #0d47a1;
+        background:transparent;
+    }
+    .inbound-count-pill {
+        background:#dc3545;
+        color:#fff;
+        border-radius:1rem;
+        padding:.1rem .55rem;
+        font-size:.72rem;
+        margin-left:.4rem;
+    }
+</style>
+{% endblock header %}
+
+{% block body %}
+<div class="app-content flex-column-fluid" id="kt_app_content">
+
+    <!-- Toolbar -->
+    <div id="kt_app_toolbar_container" class="app-toolbar container-fluid d-flex flex-stack mb-5">
+        <div class="page-title d-flex flex-column">
+            <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 my-0">
+                <i class="fa-solid fa-arrows-left-right me-2 text-primary"></i>
+                Şubeler Arası Transfer
+            </h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                <li class="breadcrumb-item text-muted">Mağaza</li>
+                <li class="breadcrumb-item text-muted">Transfer</li>
+                {% if store %}
+                    <li class="breadcrumb-item text-gray-700">
+                        {{ store.title|default:store.store_id }}
+                        {% if store.branch_code %} ({{ store.branch_code }}){% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if pending_inbound_count > 0 %}
+                <span class="badge bg-light-danger text-danger fw-bold pending-pulse"
+                      id="kpi_pending_inbound" title="Onay bekleyen gelen transfer">
+                    <i class="fa-solid fa-bell me-1"></i>
+                    <span id="kpi_pending_inbound_count">{{ pending_inbound_count }}</span> Gelen Bekliyor
+                </span>
+            {% else %}
+                <span class="badge bg-light-success text-success fw-bold d-none" id="kpi_pending_inbound">
+                    <i class="fa-solid fa-check me-1"></i>
+                    <span id="kpi_pending_inbound_count">0</span> Gelen Bekliyor
+                </span>
+            {% endif %}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTransferModal" id="btnNewTransfer">
+                <i class="fa-solid fa-plus me-1"></i> Yeni Transfer
+            </button>
+        </div>
+    </div>
+
+    <!-- Ana Kart -->
+    <div class="content flex-column-fluid" id="kt_content_container">
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <ul class="nav nav-tabs nav-tabs-faz46 fs-6 border-0 w-100" id="transferTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-direction="inbound" href="#inboundTab"
+                           data-bs-toggle="tab" role="tab">
+                            <i class="fa-solid fa-arrow-down-to-bracket me-2"></i>
+                            Gelen Transferler
+                            {% if pending_inbound_count > 0 %}
+                                <span class="inbound-count-pill" id="tab_inbound_count">{{ pending_inbound_count }}</span>
+                            {% else %}
+                                <span class="inbound-count-pill d-none" id="tab_inbound_count">0</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-direction="outbound" href="#outboundTab"
+                           data-bs-toggle="tab" role="tab">
+                            <i class="fa-solid fa-arrow-up-from-bracket me-2"></i>
+                            Gönderilen Transferler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-direction="all" href="#allTab"
+                           data-bs-toggle="tab" role="tab">
+                            <i class="fa-solid fa-list-check me-2"></i>
+                            Tümü
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body py-5">
+                <!-- Status filter -->
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <label class="fw-semibold text-muted">Durum:</label>
+                    <select id="filterStatus" class="form-select form-select-sm" style="width:auto;">
+                        <option value="">Tümü</option>
+                        <option value="DRAFT">Taslak</option>
+                        <option value="IN_TRANSIT" selected>Yolda (Bekliyor)</option>
+                        <option value="ACCEPTED">Kabul Edildi</option>
+                        <option value="PARTIALLY_ACCEPTED">Kısmen Kabul</option>
+                        <option value="REJECTED">Reddedildi</option>
+                        <option value="CANCELLED">İptal</option>
+                    </select>
+                    <button class="btn btn-sm btn-light-primary" id="btnRefresh">
+                        <i class="fa-solid fa-rotate"></i> Yenile
+                    </button>
+                </div>
+
+                <table id="transfer_table" class="table table-row-bordered table-hover gy-4 align-middle">
+                    <thead class="text-uppercase fw-bold text-muted small">
+                        <tr>
+                            <th>Transfer No</th>
+                            <th>Yön</th>
+                            <th>Karşı Şube</th>
+                            <th class="text-end">Toplam (TL)</th>
+                            <th class="text-center">Kalem</th>
+                            <th>Durum</th>
+                            <th>Tarih</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+
+{% block footer %}
+
+<!-- =================================================================== -->
+<!-- YENİ TRANSFER MODAL'I                                                -->
+<!-- =================================================================== -->
+<div class="modal fade" id="newTransferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <form id="newTransferForm" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-arrows-left-right me-2 text-primary"></i>
+                    Yeni Şubeler Arası Transfer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Hedef Şube <span class="text-danger">*</span></label>
+                        <select id="ntDestStore" class="form-select" required>
+                            <option value="">— Şube Seçin —</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tahmini Varış Tarihi</label>
+                        <input type="date" id="ntExpectedDate" class="form-control">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Gönderen Notu</label>
+                        <textarea id="ntNotes" class="form-control" rows="2"
+                                  placeholder="Açıklama ekleyebilirsiniz..."></textarea>
+                    </div>
+                </div>
+
+                <hr class="my-5">
+
+                <!-- ── İÇ TAB: NAKİT / STOK ──────────────────────────── -->
+                <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-4 fs-6" id="ntKindTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#ntCashPanel" role="tab">
+                            <i class="fa-solid fa-coins me-2"></i> Nakit / Döviz / HS
+                        </a>
+                    </li>
+                    {% if can_stock_transfer %}
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#ntStockPanel" role="tab">
+                            <i class="fa-solid fa-boxes-stacked me-2"></i> Stok (Ürün / Gram)
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div class="tab-content">
+                    <!-- ─── NAKİT PANEL ─── -->
+                    <div class="tab-pane fade show active" id="ntCashPanel" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="m-0 fw-bold text-gray-800">
+                                <i class="fa-solid fa-coins me-1"></i> Nakit Kalemleri
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btnAddItem">
+                                <i class="fa-solid fa-plus"></i> Kalem Ekle
+                            </button>
+                        </div>
+                        <div id="ntItemsContainer">
+                            <!-- CASH satırları JS ile eklenir -->
+                        </div>
+                        <div class="text-muted small mt-2" id="ntItemsHint">
+                            Henüz kalem eklenmedi. Yukarıdaki "Kalem Ekle" butonuyla başlayın.
+                        </div>
+                    </div>
+
+                    {% if can_stock_transfer %}
+                    <!-- ─── STOK PANEL (FAZ 47) ─── -->
+                    <div class="tab-pane fade" id="ntStockPanel" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="m-0 fw-bold text-gray-800">
+                                <i class="fa-solid fa-boxes-stacked me-1"></i> Stok Kalemleri
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btnAddStockItem">
+                                <i class="fa-solid fa-plus"></i> Ürün Ekle
+                            </button>
+                        </div>
+                        <div class="alert alert-light-info d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-circle-info text-info me-2"></i>
+                            <small>
+                                Hedef şubede aynı ürün tanımlı değilse, kabul anında <strong>otomatik ayna kayıt</strong>
+                                oluşturulur. WAC ağırlıklı ortalama ile hedef stoğa yansıtılır.
+                                <br>
+                                <em>WATCH/DIAMOND tipi ürünler için hedefte aynı barkodlu kayıt önceden tanımlı olmalıdır.</em>
+                            </small>
+                        </div>
+                        <div id="ntStockContainer">
+                            <!-- STOCK satırları JS ile eklenir -->
+                        </div>
+                        <div class="text-muted small mt-2" id="ntStockHint">
+                            Henüz ürün eklenmedi. Yukarıdaki "Ürün Ekle" butonuyla arama başlatın.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-light-warning d-flex align-items-center mt-5" role="alert">
+                    <i class="fa-solid fa-circle-info fs-3 text-warning me-3"></i>
+                    <div>
+                        <strong>Bilgi:</strong> "Yola Çıkar" seçilirse kaynak kasalardan tutar
+                        anında düşülür ve transit hesaba aktarılır. Hedef şube kabul edene kadar
+                        para "yolda" görünür.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-light-primary" id="btnSaveDraft">
+                    <i class="fa-solid fa-save me-1"></i> Taslak Olarak Kaydet
+                </button>
+                <button type="submit" class="btn btn-primary" id="btnDispatchNow">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Yola Çıkar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- =================================================================== -->
+<!-- TRANSFER DETAY MODAL                                                 -->
+<!-- =================================================================== -->
+<div class="modal fade" id="transferDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-receipt me-2"></i>
+                    Transfer Detayı
+                    <span class="badge ms-3" id="dtStatusBadge"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dtBody">
+                <!-- JS dolduruyor -->
+            </div>
+            <div class="modal-footer bg-light" id="dtFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <!-- Aksiyon butonları JS tarafından eklenir -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'management/js/custom/money-utils.js' %}"></script>
+<script>
+(function() {
+    'use strict';
+
+    // -----------------------------------------------------------------
+    // 1. Sabitler ve yardımcılar
+    // -----------------------------------------------------------------
+    const URLS = {
+        getAll:           "{% url 'store_transfers:get_all' %}",
+        destinationStores:"{% url 'store_transfers:destination_stores' %}",
+        sourceAccounts:   "{% url 'store_transfers:source_accounts' %}",
+        sourceProducts:   "{% url 'store_transfers:source_products' %}",  // FAZ 47
+        create:           "{% url 'store_transfers:create' %}",
+        detail:           (id) => `/store-transfers/${id}/detail`,
+        dispatch:         (id) => `/store-transfers/${id}/dispatch`,
+        accept:           (id) => `/store-transfers/${id}/accept`,
+        reject:           (id) => `/store-transfers/${id}/reject`,
+        cancel:           (id) => `/store-transfers/${id}/cancel`,
+    };
+
+    const CAN_STOCK_TRANSFER = {{ can_stock_transfer|yesno:"true,false" }};
+
+    const CSRF = $('input[name="csrfmiddlewaretoken"]').val();
+    const CURRENCIES = ['TRY', 'USD', 'EUR', 'GBP', 'HS'];
+    const CCY_LABELS = { TRY:'₺ TRY', USD:'$ USD', EUR:'€ EUR', GBP:'£ GBP', HS:'⚖ HS (gr)' };
+
+    let activeDirection = 'inbound';
+    let activeStatus = 'IN_TRANSIT';
+    let dtTable = null;
+
+    function fmtMoney(v) {
+        const n = parseFloat(v || 0);
+        if (isNaN(n)) return '0,00';
+        return n.toLocaleString('tr-TR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '-';
+        try {
+            return new Date(iso).toLocaleString('tr-TR', {
+                year:'numeric', month:'2-digit', day:'2-digit',
+                hour:'2-digit', minute:'2-digit'
+            });
+        } catch (e) { return iso; }
+    }
+
+    function statusBadge(status, label) {
+        return `<span class="badge-status-${status}">${label || status}</span>`;
+    }
+
+    function showError(msg) {
+        Swal.fire({ icon:'error', title:'Hata', text: msg || 'Bir hata oluştu.', scrollbarPadding:false });
+    }
+
+    function showSuccess(msg) {
+        Swal.fire({
+            icon:'success', title:'Başarılı', text: msg || 'İşlem tamamlandı.',
+            timer:1400, showConfirmButton:false, scrollbarPadding:false
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // 2. DataTable Init
+    // -----------------------------------------------------------------
+    function initTable() {
+        dtTable = $('#transfer_table').DataTable({
+            destroy: true,
+            serverSide: true,
+            processing: true,
+            paging: true,
+            order: [],
+            ordering: false,
+            lengthMenu: [[25, 50, 100, -1], [25, 50, 100, 'Tümü']],
+            pageLength: 25,
+            ajax: {
+                url: URLS.getAll,
+                data: d => {
+                    d.direction = activeDirection;
+                    d.status = activeStatus;
+                }
+            },
+            columns: [
+                {
+                    data: 'transfer_no',
+                    render: (d, t, r) => {
+                        const code = d || `<em class="text-muted">DRAFT</em>`;
+                        return `<a href="javascript:void(0)" class="text-primary fw-bold view-detail" data-id="${r.id}">${code}</a>`;
+                    }
+                },
+                {
+                    data: null,
+                    render: (d, t, r) => {
+                        if (activeDirection === 'inbound')
+                            return `<i class="fa-solid fa-arrow-down text-success" title="Gelen"></i>`;
+                        if (activeDirection === 'outbound')
+                            return `<i class="fa-solid fa-arrow-up text-primary" title="Gönderilen"></i>`;
+                        // 'all': yön ipucu
+                        const myStore = "{{ store.id|default:'' }}";
+                        const isOut = r.source_store && r.source_store.id === myStore;
+                        return isOut
+                            ? `<i class="fa-solid fa-arrow-up text-primary" title="Gönderilen"></i>`
+                            : `<i class="fa-solid fa-arrow-down text-success" title="Gelen"></i>`;
+                    }
+                },
+                {
+                    data: null,
+                    render: (d, t, r) => {
+                        const myStore = "{{ store.id|default:'' }}";
+                        const isOut = r.source_store && r.source_store.id === myStore;
+                        const counterparty = isOut ? r.destination_store : r.source_store;
+                        const code = counterparty.branch_code ? ` <small class="text-muted">(${counterparty.branch_code})</small>` : '';
+                        return `<span class="fw-semibold">${counterparty.title}</span>${code}`;
+                    }
+                },
+                {
+                    data: 'total_cash_tl_equivalent',
+                    className: 'text-end fw-bold',
+                    render: d => fmtMoney(d) + ' ₺'
+                },
+                {
+                    data: 'line_count',
+                    className: 'text-center',
+                    render: d => `<span class="badge bg-light-primary text-primary">${d || 0}</span>`
+                },
+                {
+                    data: null,
+                    render: (d, t, r) => {
+                        let extra = '';
+                        if (r.is_overdue) extra = ` <i class="fa-solid fa-clock text-danger ms-1" title="Süresi aştı"></i>`;
+                        return statusBadge(r.status, r.status_label) + extra;
+                    }
+                },
+                {
+                    data: 'created_on',
+                    render: (d, t, r) => fmtDate(r.completed_at || r.dispatched_at || r.initiated_at)
+                },
+                {
+                    data: 'id',
+                    className: 'text-end',
+                    render: (d, t, r) => {
+                        return `<button class="btn btn-sm btn-light-primary view-detail" data-id="${d}">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>`;
+                    }
+                }
+            ],
+            language: {
+                processing: '<i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...',
+                emptyTable: 'Bu kategori için transfer bulunamadı.',
+                zeroRecords: 'Sonuç yok.',
+                lengthMenu: 'Sayfa başına _MENU_ kayıt',
+                info: '_START_ - _END_ / _TOTAL_',
+                infoEmpty: '0 kayıt',
+                paginate: { first: 'İlk', previous: '«', next: '»', last: 'Son' }
+            },
+            dom: '<"top d-flex justify-content-end"f>rt<"bottom"lp>',
+        });
+
+        $('#transfer_table tbody').on('click', '.view-detail', function() {
+            openDetail($(this).data('id'));
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // 3. Tab Değişimi
+    // -----------------------------------------------------------------
+    $('#transferTabs .nav-link').on('shown.bs.tab', function() {
+        activeDirection = $(this).data('direction');
+        // "Gelen" sekmesi aktif olduğunda IN_TRANSIT default; diğerinde tümü
+        if (activeDirection === 'inbound') {
+            $('#filterStatus').val('IN_TRANSIT');
+            activeStatus = 'IN_TRANSIT';
+        }
+        if (dtTable) dtTable.ajax.reload();
+    });
+
+    $('#filterStatus').on('change', function() {
+        activeStatus = this.value;
+        if (dtTable) dtTable.ajax.reload();
+    });
+
+    $('#btnRefresh').on('click', function() {
+        if (dtTable) dtTable.ajax.reload(null, false);
+    });
+
+    // -----------------------------------------------------------------
+    // 4. Yeni Transfer Modalı
+    // -----------------------------------------------------------------
+    $('#newTransferModal').on('show.bs.modal', function() {
+        // Reset
+        $('#newTransferForm')[0].reset();
+        $('#ntItemsContainer').empty();
+        $('#ntItemsHint').show();
+        $('#ntStockContainer').empty();
+        $('#ntStockHint').show();
+        // İlk tab'a dön
+        $('#ntKindTabs .nav-link').first().tab('show');
+
+        // Hedef şubeleri yükle
+        $.get(URLS.destinationStores, function(res) {
+            const $sel = $('#ntDestStore').empty().append('<option value="">— Şube Seçin —</option>');
+            (res.stores || []).forEach(s => {
+                const code = s.branch_code ? ` (${s.branch_code})` : '';
+                $sel.append(`<option value="${s.id}">${s.title}${code}</option>`);
+            });
+        }).fail(() => showError('Hedef şubeler yüklenemedi.'));
+    });
+
+    let itemRowSeq = 0;
+    function addItemRow() {
+        itemRowSeq++;
+        const id = `item${itemRowSeq}`;
+        const html = `
+        <div class="item-row-cash" id="${id}_row">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">Para Birimi</label>
+                    <select class="form-select form-select-sm js-ccy" data-row="${id}">
+                        ${CURRENCIES.map(c => `<option value="${c}">${CCY_LABELS[c]}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted m-0">Kaynak Kasa</label>
+                    <select class="form-select form-select-sm js-account" data-row="${id}">
+                        <option value="">— Önce Para Birimi —</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">Tutar</label>
+                    <input type="text" class="form-control form-control-sm js-money js-amount" data-row="${id}" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">Kur (TRY ise boş)</label>
+                    <input type="text" class="form-control form-control-sm js-money js-rate" data-row="${id}" placeholder="örn 34,00">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">TL Karşılığı</label>
+                    <input type="text" class="form-control form-control-sm js-money js-tlamt" data-row="${id}" placeholder="0,00">
+                </div>
+                <div class="col-md-1 text-end">
+                    <button type="button" class="btn btn-sm btn-light-danger js-rm" data-row="${id}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        $('#ntItemsContainer').append(html);
+        $('#ntItemsHint').hide();
+
+        // Trigger initial source-account load for default currency
+        loadAccountsForRow(id, 'TRY');
+    }
+
+    function loadAccountsForRow(rowId, currency) {
+        const $sel = $(`select.js-account[data-row="${rowId}"]`);
+        $sel.html('<option value="">Yükleniyor...</option>');
+        $.get(URLS.sourceAccounts, { currency: currency }, function(res) {
+            $sel.empty().append('<option value="">— Kasa Seçin —</option>');
+            (res.accounts || []).forEach(a => {
+                const bal = parseFloat(a.balance || 0);
+                const balLabel = bal.toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2});
+                $sel.append(
+                    `<option value="${a.id}">${a.name} (${a.currency} bakiye: ${balLabel})</option>`
+                );
+            });
+        });
+    }
+
+    // Currency değiştiğinde kaynak kasaları güncelle + TL karşılığı sıfırla
+    $('#ntItemsContainer').on('change', '.js-ccy', function() {
+        const rowId = $(this).data('row');
+        const ccy = this.value;
+        loadAccountsForRow(rowId, ccy);
+        // TRY ise rate'i kilitle
+        const $rate = $(`input.js-rate[data-row="${rowId}"]`);
+        if (ccy === 'TRY') {
+            $rate.val('').prop('disabled', true);
+        } else {
+            $rate.prop('disabled', false);
+        }
+        recalcTLForRow(rowId);
+    });
+
+    function recalcTLForRow(rowId) {
+        const ccy = $(`select.js-ccy[data-row="${rowId}"]`).val();
+        const amount = KPMoney.parseMoney($(`input.js-amount[data-row="${rowId}"]`).val()) || 0;
+        const rate = KPMoney.parseMoney($(`input.js-rate[data-row="${rowId}"]`).val()) || 0;
+        let tl = 0;
+        if (ccy === 'TRY') {
+            tl = amount;
+        } else if (rate > 0) {
+            tl = amount * rate;
+        }
+        const $tl = $(`input.js-tlamt[data-row="${rowId}"]`);
+        if (tl > 0) {
+            $tl.val(tl.toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        } else {
+            $tl.val('');
+        }
+    }
+
+    $('#ntItemsContainer').on('input', '.js-amount, .js-rate', function() {
+        recalcTLForRow($(this).data('row'));
+    });
+
+    $('#ntItemsContainer').on('click', '.js-rm', function() {
+        const rowId = $(this).data('row');
+        $(`#${rowId}_row`).remove();
+        if ($('#ntItemsContainer').children().length === 0) {
+            $('#ntItemsHint').show();
+        }
+    });
+
+    $('#btnAddItem').on('click', addItemRow);
+
+    // -----------------------------------------------------------------
+    // 4.5. STOK Kalem Yönetimi (FAZ 47)
+    // -----------------------------------------------------------------
+    let stockRowSeq = 0;
+    function addStockRow() {
+        if (!CAN_STOCK_TRANSFER) return;
+        stockRowSeq++;
+        const id = `stock${stockRowSeq}`;
+        const html = `
+        <div class="item-row-cash" id="${id}_row" data-product-id="" data-mt="">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted m-0">Ürün Ara (isim/barkod)</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control form-control-sm js-stock-search" data-row="${id}" placeholder="En az 2 karakter..." autocomplete="off">
+                        <div class="dropdown-menu w-100 p-0 js-stock-results" data-row="${id}" style="max-height:280px; overflow:auto;"></div>
+                    </div>
+                    <div class="small mt-1 js-stock-selected" data-row="${id}" style="color:#0d47a1;"></div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">Adet</label>
+                    <input type="number" min="0" step="1" class="form-control form-control-sm js-stock-pieces" data-row="${id}" value="0">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">Gram</label>
+                    <input type="text" class="form-control form-control-sm js-money js-stock-gram" data-row="${id}" placeholder="0,000">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted m-0">WAC HS (kopya)</label>
+                    <input type="text" class="form-control form-control-sm js-stock-wac" data-row="${id}" readonly placeholder="auto">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small text-muted m-0">Stok</label>
+                    <div class="small fw-bold js-stock-available" data-row="${id}">-</div>
+                </div>
+                <div class="col-md-1 text-end">
+                    <button type="button" class="btn btn-sm btn-light-danger js-rm-stock" data-row="${id}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        $('#ntStockContainer').append(html);
+        $('#ntStockHint').hide();
+    }
+
+    let stockSearchTimer = null;
+    $('#ntStockContainer').on('input', '.js-stock-search', function() {
+        const $inp = $(this);
+        const rowId = $inp.data('row');
+        const term = ($inp.val() || '').trim();
+        const $results = $(`.js-stock-results[data-row="${rowId}"]`);
+
+        if (term.length < 2) {
+            $results.hide().empty();
+            return;
+        }
+
+        clearTimeout(stockSearchTimer);
+        stockSearchTimer = setTimeout(() => {
+            $.get(URLS.sourceProducts, { q: term, limit: 30 }, function(res) {
+                if (!res.result) return;
+                const products = res.products || [];
+                if (products.length === 0) {
+                    $results.html('<div class="dropdown-item text-muted small py-2">Sonuç yok.</div>').show();
+                    return;
+                }
+                const html = products.map(p => {
+                    const tag = p.material_type === 'GOLD' ? 'success'
+                              : p.material_type === 'SILVER' ? 'secondary'
+                              : p.material_type === 'WATCH' ? 'warning'
+                              : p.material_type === 'DIAMOND' ? 'info' : 'primary';
+                    const stockLabel = p.stock_gram > 0
+                        ? `${parseFloat(p.stock_gram).toLocaleString('tr-TR', {minimumFractionDigits:3, maximumFractionDigits:3})} gr`
+                        : `${p.stock_pieces} ad`;
+                    const bc = p.barcode ? ` <span class="text-muted">[${p.barcode}]</span>` : '';
+                    return `
+                    <a href="javascript:void(0)" class="dropdown-item js-pick-stock py-2"
+                       data-row="${rowId}"
+                       data-pid="${p.product_id}"
+                       data-name="${(p.name||'').replace(/"/g,'&quot;')}"
+                       data-mt="${p.material_type}"
+                       data-stock-gram="${p.stock_gram}"
+                       data-stock-pieces="${p.stock_pieces}"
+                       data-wac-hs="${p.wac_hs}"
+                       data-wac-tl="${p.wac_tl}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-light-${tag} text-${tag} me-2">${p.material_type}</span>
+                                <strong>${p.name}</strong>${bc}
+                            </div>
+                            <div class="text-end small">
+                                <div>${stockLabel}</div>
+                                <div class="text-muted">WAC: ${parseFloat(p.wac_hs).toFixed(4)} HS</div>
+                            </div>
+                        </div>
+                    </a>`;
+                }).join('');
+                $results.html(html).show();
+            });
+        }, 250);
+    });
+
+    $('#ntStockContainer').on('click', '.js-pick-stock', function() {
+        const $a = $(this);
+        const rowId = $a.data('row');
+        const pid = $a.data('pid');
+        const name = $a.data('name');
+        const mt = $a.data('mt');
+        const sg = parseFloat($a.data('stock-gram') || 0);
+        const sp = parseInt($a.data('stock-pieces') || 0, 10);
+        const wac = parseFloat($a.data('wac-hs') || 0);
+
+        const $row = $(`#${rowId}_row`);
+        $row.attr('data-product-id', pid).attr('data-mt', mt);
+        $(`.js-stock-search[data-row="${rowId}"]`).val(name);
+        $(`.js-stock-results[data-row="${rowId}"]`).hide().empty();
+        $(`.js-stock-selected[data-row="${rowId}"]`).text(`✓ ${name} (${mt})`);
+        $(`.js-stock-wac[data-row="${rowId}"]`).val(wac.toFixed(4));
+        $(`.js-stock-available[data-row="${rowId}"]`).text(
+            sg > 0 ? `${sg.toLocaleString('tr-TR', {minimumFractionDigits:3, maximumFractionDigits:3})} gr` : `${sp} ad`
+        );
+        // Tek seferlik akıllı varsayılan: gramı varsa gram alanına stoğu yaz
+        if (sg > 0) {
+            $(`.js-stock-gram[data-row="${rowId}"]`).val('').focus();
+        } else {
+            $(`.js-stock-pieces[data-row="${rowId}"]`).focus();
+        }
+    });
+
+    // Sonuçlar dropdown'unu dış tıklamada gizle
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.js-stock-search, .js-stock-results').length) {
+            $('.js-stock-results').hide();
+        }
+    });
+
+    $('#ntStockContainer').on('click', '.js-rm-stock', function() {
+        const rowId = $(this).data('row');
+        $(`#${rowId}_row`).remove();
+        if ($('#ntStockContainer').children().length === 0) {
+            $('#ntStockHint').show();
+        }
+    });
+
+    $('#btnAddStockItem').on('click', addStockRow);
+
+    // -----------------------------------------------------------------
+    // 5. Form Validasyon ve Submit
+    // -----------------------------------------------------------------
+    function collectItemsPayload() {
+        const items = [];
+        let validation = null;
+
+        // CASH kalemleri
+        $('#ntItemsContainer .item-row-cash').each(function() {
+            const rowId = $(this).attr('id').replace('_row', '');
+            const ccy = $(`select.js-ccy[data-row="${rowId}"]`).val();
+            const accId = $(`select.js-account[data-row="${rowId}"]`).val();
+            const amount = KPMoney.parseMoney($(`input.js-amount[data-row="${rowId}"]`).val());
+            const rate = KPMoney.parseMoney($(`input.js-rate[data-row="${rowId}"]`).val());
+            const tl = KPMoney.parseMoney($(`input.js-tlamt[data-row="${rowId}"]`).val());
+
+            if (!ccy)            { validation = 'Para birimi seçin.'; return false; }
+            if (!accId)          { validation = 'Kaynak kasa seçin.'; return false; }
+            if (!amount || amount <= 0) { validation = 'Geçerli bir tutar girin.'; return false; }
+            if (ccy !== 'TRY' && (!rate || rate <= 0)) { validation = 'Yabancı para için kur zorunlu.'; return false; }
+
+            items.push({
+                item_type: 'CASH',
+                currency: ccy,
+                amount: amount.toFixed(4),
+                amount_eur: (tl || amount).toFixed(2),
+                rate: ccy === 'TRY' ? null : rate.toFixed(4),
+                source_bank_account_id: accId,
+            });
+        });
+        if (validation) return { items, validation };
+
+        // STOCK kalemleri (FAZ 47)
+        if (CAN_STOCK_TRANSFER) {
+            $('#ntStockContainer .item-row-cash').each(function() {
+                const $row = $(this);
+                const rowId = $row.attr('id').replace('_row', '');
+                const pid = $row.attr('data-product-id') || '';
+                const pieces = parseInt($(`.js-stock-pieces[data-row="${rowId}"]`).val() || 0, 10);
+                const gram = KPMoney.parseMoney($(`.js-stock-gram[data-row="${rowId}"]`).val()) || 0;
+                const wac = parseFloat($(`.js-stock-wac[data-row="${rowId}"]`).val() || 0);
+
+                if (!pid) {
+                    validation = 'Stok kalemi için ürün seçin.'; return false;
+                }
+                if (pieces <= 0 && gram <= 0) {
+                    validation = 'Stok kalemi için adet veya gramdan en az birini girin.'; return false;
+                }
+                items.push({
+                    item_type: 'STOCK',
+                    product_id: pid,
+                    quantity_pieces: pieces,
+                    quantity_gram: gram.toFixed(3),
+                    unit_cost_hs: wac.toFixed(4),
+                });
+            });
+        }
+
+        return { items, validation };
+    }
+
+    function submitTransfer(dispatchNow) {
+        const destId = $('#ntDestStore').val();
+        if (!destId) return showError('Hedef şubeyi seçin.');
+
+        const { items, validation } = collectItemsPayload();
+        if (validation) return showError(validation);
+        if (items.length === 0) return showError('En az bir kalem ekleyin.');
+
+        const payload = {
+            destination_store_id: destId,
+            notes_sender: $('#ntNotes').val() || '',
+            expected_arrival_date: $('#ntExpectedDate').val() || null,
+            dispatch_now: !!dispatchNow,
+            items: items,
+        };
+
+        $.ajax({
+            url: URLS.create,
+            method: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': CSRF },
+            data: JSON.stringify(payload),
+            success: function(res) {
+                if (!res.result) return showError(res.error_msg);
+                $('#newTransferModal').modal('hide');
+                showSuccess(dispatchNow ? 'Transfer yola çıkarıldı.' : 'Taslak kaydedildi.');
+                if (dtTable) dtTable.ajax.reload();
+                refreshInboundCount();
+            },
+            error: function(xhr) {
+                const msg = (xhr.responseJSON && xhr.responseJSON.error_msg) || 'İşlem başarısız oldu.';
+                showError(msg);
+            }
+        });
+    }
+
+    $('#btnSaveDraft').on('click', e => { e.preventDefault(); submitTransfer(false); });
+    $('#newTransferForm').on('submit', e => { e.preventDefault(); submitTransfer(true); });
+
+    // -----------------------------------------------------------------
+    // 6. Detay Modal — Aksiyonlar
+    // -----------------------------------------------------------------
+    let currentTransfer = null;
+    const MY_STORE_ID = "{{ store.id|default:'' }}";
+
+    function openDetail(id) {
+        $.get(URLS.detail(id), function(res) {
+            if (!res.result) return showError(res.error_msg);
+            currentTransfer = res.transfer;
+            renderDetail(currentTransfer);
+            new bootstrap.Modal('#transferDetailModal').show();
+        }).fail(() => showError('Detay yüklenemedi.'));
+    }
+
+    function renderDetail(t) {
+        $('#dtStatusBadge')
+            .removeClass()
+            .addClass('badge ms-3 badge-status-' + t.status)
+            .text(t.status_label);
+
+        const direction = (t.source_store.id === MY_STORE_ID) ? 'OUT' : 'IN';
+
+        // Kalemleri tip bazında ayır (CASH ve STOCK ayrı tablolarda görünür)
+        const cashItems = (t.items || []).filter(i => i.item_type === 'CASH');
+        const stockItems = (t.items || []).filter(i => i.item_type === 'STOCK');
+
+        const renderItemBadge = (status) =>
+              status === 'PENDING'  ? '<span class="badge bg-light-primary text-primary">Beklemede</span>'
+            : status === 'ACCEPTED' ? '<span class="badge bg-light-success text-success">Kabul</span>'
+            :                          '<span class="badge bg-light-danger text-danger">Reddedildi</span>';
+
+        const cashRowsHtml = cashItems.map(it => {
+            const srcAcc = it.source_bank_account ? it.source_bank_account.name : '-';
+            const destAcc = it.destination_bank_account ? it.destination_bank_account.name : '-';
+            const rejReason = it.rejection_reason
+                ? `<div class="small text-danger mt-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>${it.rejection_reason}</div>`
+                : '';
+            return `
+            <tr>
+                <td><strong>${fmtMoney(it.amount)} ${it.currency}</strong></td>
+                <td class="text-end">${fmtMoney(it.amount_eur_equivalent)} ₺</td>
+                <td>${srcAcc}</td>
+                <td>${destAcc}</td>
+                <td>${renderItemBadge(it.item_status)}${rejReason}</td>
+            </tr>`;
+        }).join('');
+
+        const stockRowsHtml = stockItems.map(it => {
+            const productLabel = it.product
+                ? `<strong>${it.product.name}</strong>${it.product.barcode ? ` <small class="text-muted">[${it.product.barcode}]</small>` : ''}`
+                : '<em class="text-muted">Ürün silinmiş</em>';
+            const mt = it.product ? it.product.material_type : '';
+            const mtTag = mt === 'GOLD' ? 'success' : mt === 'SILVER' ? 'secondary'
+                       : mt === 'WATCH' ? 'warning' : mt === 'DIAMOND' ? 'info' : 'primary';
+            const qtyLabel = (parseFloat(it.quantity_gram) > 0)
+                ? `${fmtMoney(it.quantity_gram)} gr`
+                : `${it.quantity_pieces} adet`;
+            const wacLabel = `${parseFloat(it.unit_cost_hs).toFixed(4)} HS / ${fmtMoney(it.unit_cost_eur)} TL`;
+            const linkBadge = (it.has_source_ledger ? '<span class="badge bg-light-info text-info ms-1" title="Kaynak ledger yazıldı">↗</span>' : '')
+                            + (it.has_destination_ledger ? '<span class="badge bg-light-success text-success ms-1" title="Hedef ledger yazıldı">↙</span>' : '');
+            const rejReason = it.rejection_reason
+                ? `<div class="small text-danger mt-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>${it.rejection_reason}</div>`
+                : '';
+            return `
+            <tr>
+                <td>
+                    ${mt ? `<span class="badge bg-light-${mtTag} text-${mtTag} me-1">${mt}</span>` : ''}
+                    ${productLabel}
+                </td>
+                <td class="text-end fw-bold">${qtyLabel}</td>
+                <td class="text-end small text-muted">${wacLabel}</td>
+                <td>${renderItemBadge(it.item_status)}${linkBadge}${rejReason}</td>
+            </tr>`;
+        }).join('');
+
+        const cashTable = cashItems.length === 0 ? '' : `
+        <h6 class="fw-bold text-gray-800 mb-3"><i class="fa-solid fa-coins me-1"></i> Nakit Kalemleri</h6>
+        <table class="table table-sm table-row-bordered mb-5">
+            <thead class="text-muted small">
+                <tr>
+                    <th>Tutar</th>
+                    <th class="text-end">TL Karşılığı</th>
+                    <th>Kaynak Kasa</th>
+                    <th>Hedef Kasa</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody>${cashRowsHtml}</tbody>
+            <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="1" class="text-end">TOPLAM TL:</td>
+                    <td class="text-end fs-5 text-primary">${fmtMoney(t.total_cash_tl_equivalent)} ₺</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+        </table>`;
+
+        const stockTable = stockItems.length === 0 ? '' : `
+        <h6 class="fw-bold text-gray-800 mb-3"><i class="fa-solid fa-boxes-stacked me-1"></i> Stok Kalemleri</h6>
+        <table class="table table-sm table-row-bordered">
+            <thead class="text-muted small">
+                <tr>
+                    <th>Ürün</th>
+                    <th class="text-end">Miktar</th>
+                    <th class="text-end">WAC (kopya)</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody>${stockRowsHtml}</tbody>
+        </table>`;
+
+        const itemsHtml = (cashTable || stockTable)
+            || '<div class="text-muted text-center py-4">Kalem bulunmuyor.</div>';
+
+        const html = `
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="border rounded p-3 bg-light-primary">
+                    <div class="text-muted small fw-bold">GÖNDEREN</div>
+                    <div class="fs-5 fw-bold text-gray-900">${t.source_store.title}</div>
+                    ${t.source_store.branch_code ? `<small class="text-muted">${t.source_store.branch_code}</small>` : ''}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="border rounded p-3 bg-light-success">
+                    <div class="text-muted small fw-bold">ALAN</div>
+                    <div class="fs-5 fw-bold text-gray-900">${t.destination_store.title}</div>
+                    ${t.destination_store.branch_code ? `<small class="text-muted">${t.destination_store.branch_code}</small>` : ''}
+                </div>
+            </div>
+
+            <div class="col-md-3"><div class="text-muted small">Transfer No</div><div class="fw-bold">${t.transfer_no || '<em>Taslak</em>'}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Başlatan</div><div>${t.initiated_by || '-'}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Yola Çıkış</div><div>${fmtDate(t.dispatched_at)}</div></div>
+            <div class="col-md-3"><div class="text-muted small">Tamamlandı</div><div>${fmtDate(t.completed_at)}</div></div>
+
+            ${t.notes_sender ? `<div class="col-12"><div class="text-muted small">Gönderen Notu</div><div class="fst-italic">"${t.notes_sender}"</div></div>` : ''}
+            ${t.notes_receiver ? `<div class="col-12"><div class="text-muted small">Alan Şube Notu</div><div class="fst-italic text-warning">"${t.notes_receiver}"</div></div>` : ''}
+        </div>
+
+        ${itemsHtml}`;
+        $('#dtBody').html(html);
+
+        // Aksiyon butonları
+        const $f = $('#dtFooter');
+        $f.find('.action-btn').remove();
+        const btns = [];
+
+        if (t.status === 'DRAFT' && direction === 'OUT') {
+            btns.push(`<button class="btn btn-light-danger action-btn" id="btnDtCancel"><i class="fa-solid fa-trash me-1"></i> Taslağı İptal Et</button>`);
+            btns.push(`<button class="btn btn-primary action-btn" id="btnDtDispatch"><i class="fa-solid fa-paper-plane me-1"></i> Yola Çıkar</button>`);
+        }
+        if (t.status === 'IN_TRANSIT' && direction === 'IN') {
+            btns.push(`<button class="btn btn-danger action-btn" id="btnDtReject"><i class="fa-solid fa-xmark me-1"></i> Reddet</button>`);
+            btns.push(`<button class="btn btn-success action-btn" id="btnDtAccept"><i class="fa-solid fa-check me-1"></i> Tamamını Kabul Et</button>`);
+        }
+
+        btns.forEach(b => $f.append(b));
+    }
+
+    // -----------------------------------------------------------------
+    // 7. Detay Modal Aksiyon Butonları
+    // -----------------------------------------------------------------
+    $(document).on('click', '#btnDtCancel', function() {
+        if (!currentTransfer) return;
+        Swal.fire({
+            icon:'question', title:'Taslağı İptal Et?',
+            text:'Bu taslağı silmek üzeresiniz.', input:'text',
+            inputPlaceholder:'(opsiyonel) iptal sebebi',
+            showCancelButton:true, confirmButtonText:'Evet, İptal Et',
+            cancelButtonText:'Vazgeç', scrollbarPadding:false
+        }).then(r => {
+            if (!r.isConfirmed) return;
+            $.ajax({
+                url: URLS.cancel(currentTransfer.id),
+                method:'POST', contentType:'application/json',
+                headers: { 'X-CSRFToken': CSRF },
+                data: JSON.stringify({ reason: r.value || '' }),
+                success: function(res) {
+                    if (!res.result) return showError(res.error_msg);
+                    $('#transferDetailModal').modal('hide');
+                    showSuccess('Taslak iptal edildi.');
+                    if (dtTable) dtTable.ajax.reload();
+                },
+                error: () => showError('İptal başarısız.')
+            });
+        });
+    });
+
+    $(document).on('click', '#btnDtDispatch', function() {
+        if (!currentTransfer) return;
+        Swal.fire({
+            icon:'warning', title:'Transfer Yola Çıksın mı?',
+            html:`<strong>${fmtMoney(currentTransfer.total_cash_tl_equivalent)} ₺</strong> tutarındaki transfer hedef şubeye gönderilecek.<br>
+                  Kaynak kasalardan tutar düşülecek.`,
+            showCancelButton:true, confirmButtonText:'Evet, Gönder',
+            cancelButtonText:'Vazgeç', scrollbarPadding:false
+        }).then(r => {
+            if (!r.isConfirmed) return;
+            $.ajax({
+                url: URLS.dispatch(currentTransfer.id),
+                method:'POST', headers: { 'X-CSRFToken': CSRF },
+                success: function(res) {
+                    if (!res.result) return showError(res.error_msg);
+                    $('#transferDetailModal').modal('hide');
+                    showSuccess('Transfer yola çıkarıldı.');
+                    if (dtTable) dtTable.ajax.reload();
+                    refreshInboundCount();
+                },
+                error: function(xhr) {
+                    const msg = (xhr.responseJSON && xhr.responseJSON.error_msg) || 'İşlem başarısız.';
+                    showError(msg);
+                }
+            });
+        });
+    });
+
+    $(document).on('click', '#btnDtAccept', function() {
+        if (!currentTransfer) return;
+        Swal.fire({
+            icon:'question', title:'Transferi Tamamen Kabul Et?',
+            text:'Tüm kalemler hedef kasalara aktarılacak.',
+            input:'text', inputPlaceholder:'(opsiyonel) not',
+            showCancelButton:true, confirmButtonText:'Evet, Kabul Et',
+            cancelButtonText:'Vazgeç', scrollbarPadding:false
+        }).then(r => {
+            if (!r.isConfirmed) return;
+            $.ajax({
+                url: URLS.accept(currentTransfer.id),
+                method:'POST', contentType:'application/json',
+                headers: { 'X-CSRFToken': CSRF },
+                data: JSON.stringify({ notes_receiver: r.value || '' }),
+                success: function(res) {
+                    if (!res.result) return showError(res.error_msg);
+                    $('#transferDetailModal').modal('hide');
+                    showSuccess('Transfer kabul edildi.');
+                    if (dtTable) dtTable.ajax.reload();
+                    refreshInboundCount();
+                },
+                error: function(xhr) {
+                    showError((xhr.responseJSON && xhr.responseJSON.error_msg) || 'İşlem başarısız.');
+                }
+            });
+        });
+    });
+
+    $(document).on('click', '#btnDtReject', function() {
+        if (!currentTransfer) return;
+        Swal.fire({
+            icon:'warning', title:'Transferi Reddet?',
+            text:'Reddedilen tutar kaynak kasaya iade edilecek.',
+            input:'textarea', inputPlaceholder:'Red sebebi (zorunlu)',
+            inputValidator: v => !v ? 'Red sebebi zorunlu.' : null,
+            showCancelButton:true, confirmButtonText:'Evet, Reddet',
+            cancelButtonText:'Vazgeç', scrollbarPadding:false
+        }).then(r => {
+            if (!r.isConfirmed) return;
+            $.ajax({
+                url: URLS.reject(currentTransfer.id),
+                method:'POST', contentType:'application/json',
+                headers: { 'X-CSRFToken': CSRF },
+                data: JSON.stringify({ reason: r.value }),
+                success: function(res) {
+                    if (!res.result) return showError(res.error_msg);
+                    $('#transferDetailModal').modal('hide');
+                    showSuccess('Transfer reddedildi, tutar iade edildi.');
+                    if (dtTable) dtTable.ajax.reload();
+                    refreshInboundCount();
+                },
+                error: function(xhr) {
+                    showError((xhr.responseJSON && xhr.responseJSON.error_msg) || 'İşlem başarısız.');
+                }
+            });
+        });
+    });
+
+    // -----------------------------------------------------------------
+    // 8. Inbound Pending Counter (top-right + tab)
+    // -----------------------------------------------------------------
+    function refreshInboundCount() {
+        $.get(URLS.getAll, { direction:'inbound', status:'IN_TRANSIT', length: 1, draw: 9 }, function(res) {
+            const cnt = res.recordsTotal || 0;
+            $('#kpi_pending_inbound_count, #tab_inbound_count').text(cnt);
+            if (cnt > 0) {
+                $('#kpi_pending_inbound').removeClass('d-none bg-light-success text-success').addClass('bg-light-danger text-danger pending-pulse');
+                $('#tab_inbound_count').removeClass('d-none');
+            } else {
+                $('#kpi_pending_inbound').removeClass('bg-light-danger text-danger pending-pulse').addClass('d-none');
+                $('#tab_inbound_count').addClass('d-none');
+            }
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // 9. Init
+    // -----------------------------------------------------------------
+    $(function() {
+        initTable();
+        // Sayfa yüklendiğinde her 60 sn'de bir gelen sayacını tazele
+        setInterval(refreshInboundCount, 60_000);
+    });
+
+})();
+</script>
+
+{% endblock footer %}

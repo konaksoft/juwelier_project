@@ -220,8 +220,18 @@ def get_categories_with_products(request):
         Products.objects
         .filter(is_active=True, is_deleted=False)
         .exclude(name__icontains="TRY - Türk Lirası")
-        .order_by('order')
-        .filter(Q(is_protected=True) | Q(store=store))
+        # T2 (2026-04-29): Eski `order` CharField (lexicographic) yerine yeni
+        # `display_order` IntegerField kullanılıyor. Aynı sıra Hızlı İşlem
+        # (get_product_details), Ürün Yönetimi (get_all) ve Perakende ekranlarında
+        # birebir simetrik. `name` ikincil tie-breaker.
+        .order_by('display_order', 'name')
+        # ─── UAT V3 P1-B (2026-04-29): Ghost filter düzeltmesi ───────────────
+        # `is_protected=False` + `store=None` kombinasyonundaki sistem ürünleri
+        # (örn. "22 Ayar Gram") önceden Perakende kataloğuna düşmüyordu çünkü
+        # filtre yalnızca Q(is_protected=True) | Q(store=store) ile sınırlıydı.
+        # `get_all` (Ürün Yönetimi) zaten Q(store__isnull=True) ile bu ürünleri
+        # gösteriyor; SSOT için Perakende de aynı kümeyi göstermelidir.
+        .filter(Q(is_protected=True) | Q(store=store) | Q(store__isnull=True))
         .select_related('watch_detail', 'diamond_detail')  # FAZ S1: N+1 koruması
         .annotate(
             total_stock_pieces=Coalesce(
@@ -239,7 +249,7 @@ def get_categories_with_products(request):
                 Decimal('0.000')
             ),
             avg_cost_tl=Coalesce(
-                Max('stock_snapshots__weighted_avg_cost_tl',
+                Max('stock_snapshots__weighted_avg_cost_eur',
                     filter=models.Q(stock_snapshots__store=store)),
                 Decimal('0.00')
             ),
@@ -269,12 +279,12 @@ def get_categories_with_products(request):
     categories = (
         Categories.objects
         .filter(is_active=True, is_deleted=False)
+        .exclude(name='Altın')  # <-- BU SATIRI EKLEYİN
         .order_by('order')
         .prefetch_related(
             Prefetch('products', queryset=products_qs, to_attr='pref_products')
         )
     )
-
     categories_data = []
     for category in categories:
         # ÖNEMLİ: Artık category.products.all() DEĞİL, prefetched listeyi kullan!
@@ -305,6 +315,7 @@ def get_categories_with_products(request):
                 "height": p.height,
                 "profit": p.profit,
                 "order": p.order,
+                "display_order": p.display_order,  # T2 (2026-04-29): yeni IntegerField
                 "gold_dry": p.gold_dry,
                 "is_scrap": p.is_scrap,
                 "is_gram_bullion": p.is_gram_bullion,
@@ -318,9 +329,9 @@ def get_categories_with_products(request):
                 "stock_gram": float(p.total_stock_gram),
                 "category_name": p.category.name if p.category_id else "",
                 "buy_price_hs": p.buy_price_hs,
-                "buy_price_tl": p.buy_price_tl,
+                "buy_price_eur": p.buy_price_eur,
                 "sale_price_hs": p.sale_price_hs,
-                "sale_price_tl": p.sale_price_tl,
+                "sale_price_eur": p.sale_price_eur,
                 "gram": p.gram,
                 "certificate": p.certificate,
                 "gender": p.gender,
@@ -335,7 +346,7 @@ def get_categories_with_products(request):
                 "custom_fixed_labor": str(p.custom_fixed_labor),
                 # ─── FAZ S1 (PIVOT): Çoklu Maden Genişletmesi ───
                 # WATCH/DIAMOND için kâr/maliyet hesabı TL bazlıdır (HS=0 olduğu için).
-                "weighted_buy_price_tl": float(p.avg_cost_tl),
+                "weighted_buy_price_eur": float(p.avg_cost_tl),
                 # ─── YOL 2 (SSOT): Döviz SSOT alanları ───
                 "is_currency": _is_currency,
                 "fx_currency": _fx_currency or "",
@@ -364,7 +375,11 @@ def get_categories_with_products_wholesale(request):
             queryset=Products.objects.filter(
                 is_active=True,
                 is_deleted=False
-            ).order_by('order')
+            )
+            # T2 (2026-04-29): display_order IntegerField kullanılıyor (eski
+            # `order` CharField lexicographic davranıyordu). Toptan İşlem
+            # ekranında Hızlı/Perakende/Ürün Yönetimi ile aynı sıra.
+            .order_by('display_order', 'name')
             .select_related('watch_detail', 'diamond_detail')  # FAZ S1: N+1 koruması
             .annotate(
                 total_stock_pieces=Coalesce(
@@ -382,7 +397,7 @@ def get_categories_with_products_wholesale(request):
                     Decimal('0.000')
                 ),
                 avg_cost_tl=Coalesce(
-                    Max('stock_snapshots__weighted_avg_cost_tl',
+                    Max('stock_snapshots__weighted_avg_cost_eur',
                         filter=models.Q(stock_snapshots__store=store)),
                     Decimal('0.00')
                 ),
@@ -407,7 +422,13 @@ def get_categories_with_products_wholesale(request):
                 # Global meta veri urunleri (Ziynet, Doviz gibi is_protected=True).
                 # is_protected=True olanlarin stogu 0 olsa bile listelenmesi gerekir
                 # cunku toptan alis (giris) yapilabilmesi icin listede gorunmelidir.
-                models.Q(store=store) | models.Q(is_protected=True)
+                #
+                # ─── UAT V3 P1-B (2026-04-29): Ghost filter düzeltmesi ───────
+                # `is_protected=False` + `store=None` sistem ürünleri (22 Ayar
+                # Gram vb.) Toptan kataloğuna da dahil edildi. Perakende ile
+                # birebir simetri. `get_all` (Ürün Yönetimi) zaten bu kümeyi
+                # gösteriyor.
+                models.Q(store=store) | models.Q(is_protected=True) | models.Q(store__isnull=True)
             ).filter(
                 # ── Hurda ek filtresi: stogu 0 olan hurdalari gizle ──
                 (
@@ -435,6 +456,7 @@ def get_categories_with_products_wholesale(request):
                 "height": product.height,
                 "profit": product.profit,
                 "order": product.order,
+                "display_order": product.display_order,  # T2 (2026-04-29): yeni IntegerField
                 "gold_dry": product.gold_dry,
                 "is_scrap": product.is_scrap,
                 "is_gram_bullion": product.is_gram_bullion,
@@ -446,9 +468,9 @@ def get_categories_with_products_wholesale(request):
                 "stock_pieces": product.total_stock_pieces,
                 "stock_gram": float(product.total_stock_gram),
                 "buy_price_hs": product.buy_price_hs,
-                "buy_price_tl": product.buy_price_tl,
+                "buy_price_eur": product.buy_price_eur,
                 "sale_price_hs": product.sale_price_hs,
-                "sale_price_tl": product.sale_price_tl,
+                "sale_price_eur": product.sale_price_eur,
                 "category_name": product.category.name,
                 "gram": product.gram,
                 "certificate": product.certificate,
@@ -463,7 +485,7 @@ def get_categories_with_products_wholesale(request):
 
                 "custom_fixed_labor": str(product.custom_fixed_labor),
                 # ─── FAZ S1 (PIVOT): Çoklu Maden Genişletmesi ───
-                "weighted_buy_price_tl": float(product.avg_cost_tl),
+                "weighted_buy_price_eur": float(product.avg_cost_tl),
                 **_get_material_extras(product),
             }
             for product in category.products.all()

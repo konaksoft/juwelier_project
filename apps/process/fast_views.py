@@ -14,7 +14,7 @@ from django.utils import timezone
 from apps.products.models import Products
 from apps.customers.models import Customers
 from apps.process.models import Process, Payment
-from apps.pavo.models import PavoTerminal, PavoLocalSale
+# PavoTerminal, PavoLocalSale kaldırıldı — pavo app Juwelier Plus'ta yok
 from apps.settings.models import StoreConfiguration
 
 # Yardımcı Modüller
@@ -27,19 +27,17 @@ from apps.banking.services import (
     FXBalanceReader,
     InsufficientFXBalanceError,
     get_currency_code_from_product,
+    detect_currency_from_name,
+    PRODUCT_NAME_FROM_CURRENCY,
+    SUPPORTED_FX_CURRENCIES,
 )
 
 # --- FAZ 3: StockSnapshot ve PriceService entegrasyonu ---
 from apps.stock_management.models import StockSnapshot
 from apps.stock_management.services.price_service import PriceService
 
-# YENİ: Ayrıştırılmış Mantık Dosyaları
-from apps.process.pavo_process import (
-    _pavo_extract_data,
-    _pavo_extract_status_id,
-    _pavo_pick_inquiry_fields
-)
-from apps.process.invoice_process import create_invoice_from_process  # <-- Fatura Mantığı Buradan Geliyor
+# pavo_process ve invoice_process kaldırıldı — pavo/invoices app Juwelier Plus'ta yok
+from apps.process.invoice_process import create_invoice_from_process  # stub
 
 log = logging.getLogger(__name__)
 
@@ -66,21 +64,17 @@ def _get_store_config(user):
 # --- FAZ 17: DÖVİZ KURU YARDIMCI FONKSİYONLARI ---
 
 # Döviz kodu → Ürün adı eşlemesi.
-# Bu ürünlerin sale_price_tl değeri, 1 birim döviz = X TL kurunu verir.
-_CURRENCY_PRODUCT_MAP = {
-    'USD': 'USDTRY',
-    'EUR': 'EURTRY',
-    'GBP': 'GBPTRY',
-    'CAD': 'CADTRY',
-    'QAR': 'QARTRY',
-}
+# Bu ürünlerin sale_price_eur değeri, 1 birim döviz = X TL kurunu verir.
+# Faz 13: SSOT — apps.banking.services.PRODUCT_NAME_FROM_CURRENCY üzerinden okunur.
+# Yeni döviz eklemek yalnızca services.CURRENCY_FROM_PRODUCT_NAME güncellemesi gerektirir.
+_CURRENCY_PRODUCT_MAP = dict(PRODUCT_NAME_FROM_CURRENCY)
 
 
 def _get_exchange_rate_for_currency(currency_code):
     """
     Verilen döviz kodu için güncel kuru Products tablosundan çeker.
 
-    Döviz ürünlerinin (USDTRY, EURTRY vb.) sale_price_tl değeri
+    Döviz ürünlerinin (USDTRY, EURTRY vb.) sale_price_eur değeri
     1 birim döviz = X TL kurunu temsil eder.
 
     Args:
@@ -99,24 +93,24 @@ def _get_exchange_rate_for_currency(currency_code):
         return None
 
     prod = Products.objects.filter(name__icontains=product_name_key).first()
-    if prod and prod.sale_price_tl and prod.sale_price_tl > 0:
-        return Decimal(str(prod.sale_price_tl))
+    if prod and prod.sale_price_eur and prod.sale_price_eur > 0:
+        return Decimal(str(prod.sale_price_eur))
 
     log.warning(
-        "FAZ17: %s ürünü bulunamadı veya sale_price_tl=0. "
+        "FAZ17: %s ürünü bulunamadı veya sale_price_eur=0. "
         "Döviz kuru hesaplanamıyor.", product_name_key,
     )
     return None
 
 
-def _build_currency_extra(bank_account, amount_tl):
+def _build_currency_extra(bank_account, amount_eur):
     """
     Eğer banka hesabının para birimi TRY değilse,
     Payment kaydına eklenecek currency_amount ve exchange_rate dict'ini döndürür.
 
     Args:
         bank_account: BankAccount instance (veya None)
-        amount_tl: Decimal — TL cinsinden ödeme tutarı
+        amount_eur: Decimal — TL cinsinden ödeme tutarı
 
     Returns:
         dict — {'currency_amount': Decimal, 'exchange_rate': Decimal} veya {}
@@ -137,7 +131,7 @@ def _build_currency_extra(bank_account, amount_tl):
         )
         return {}
 
-    currency_amount = (amount_tl / rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    currency_amount = (amount_eur / rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     return {
         'currency_amount': currency_amount,
         'exchange_rate': rate,
@@ -250,7 +244,7 @@ def _get_approval_status(user):
 
 
 def _process_currency_exchange(
-    process_no, product, qty, unit_price, total_amount_tl,
+    process_no, product, qty, unit_price, total_amount_eur,
     operation_type, user, needs_approval,
     try_bank_account_id=None, fx_bank_account_id=None,
 ):
@@ -263,18 +257,18 @@ def _process_currency_exchange(
 
     Bir döviz ürünü (is_currency=True, ör. USDTRY) işlem gördüğünde:
     - PURCHASE (Döviz Alışı — müşteriden USD alıyoruz):
-        • USD kasasına +qty GİRİŞ (currency_amount=qty, amount=total_amount_tl)
-        • TRY kasasından -total_amount_tl ÇIKIŞ
+        • USD kasasına +qty GİRİŞ (currency_amount=qty, amount=total_amount_eur)
+        • TRY kasasından -total_amount_eur ÇIKIŞ
     - SALE (Döviz Satışı — müşteriye USD veriyoruz):
-        • USD kasasından -qty ÇIKIŞ (currency_amount=qty, amount=total_amount_tl)
-        • TRY kasasına +total_amount_tl GİRİŞ
+        • USD kasasından -qty ÇIKIŞ (currency_amount=qty, amount=total_amount_eur)
+        • TRY kasasına +total_amount_eur GİRİŞ
 
     Args:
         process_no: str — işlem numarası
         product: Products instance (is_currency=True olan döviz ürünü)
         qty: Decimal — döviz miktarı (ör. 50 USD)
         unit_price: Decimal — kur (ör. 46.29 TL/USD)
-        total_amount_tl: Decimal — TL toplam (qty × unit_price)
+        total_amount_eur: Decimal — TL toplam (qty × unit_price)
         operation_type: 'SALE' veya 'PURCHASE'
         user: User instance
         needs_approval: bool — is_approved=False olacak mı
@@ -286,18 +280,16 @@ def _process_currency_exchange(
     if not store:
         raise ValidationError("Mağaza bilgisi bulunamadı.")
 
-    # Döviz kodunu ürün adından çıkar: "USDTRY" → "USD", "EURTRY" → "EUR"
-    product_name = (product.name or '').upper().strip()
-    fx_currency = None
-    for code in ['USD', 'EUR', 'GBP', 'CAD', 'QAR']:
-        if product_name.startswith(code):
-            fx_currency = code
-            break
-
+    # Faz 13: Döviz kodu tespiti SSOT üzerinden. Tüm desteklenen para birimleri
+    # (USD/EUR/GBP/CAD/QAR/SAR/CHF/AUD) services.CURRENCY_FROM_PRODUCT_NAME'den
+    # gelir. Eskiden burada hardcoded ['USD','EUR','GBP','CAD','QAR'] döngüsü
+    # vardı; SARTRY/CHFTRY/AUDTRY için "Döviz kodu tespit edilemedi" hatası
+    # buradan fırlardı. Artık tek doğrulama: get_currency_code_from_product.
+    fx_currency = get_currency_code_from_product(product)
     if not fx_currency:
         raise ValidationError(
             f"Döviz kodu tespit edilemedi: '{product.name}'. "
-            "Ürün adı USDTRY, EURTRY vb. formatında olmalı."
+            "Ürün adı USDTRY, EURTRY, SARTRY, CHFTRY vb. formatında olmalı."
         )
 
     from apps.banking.models import BankAccount
@@ -336,25 +328,32 @@ def _process_currency_exchange(
     _is_approved = not needs_approval
     exchange_rate = unit_price  # 1 birim döviz = X TL
 
+    # Faz 13: Payment.reference her FX kaydında [KOD] etiketi taşır.
+    # Bu, _get_fx_breakdown'ın doğru kırılım yapması için ZORUNLU SSOT alanıdır.
+    # Eskiden reference boş kalıyordu ve sistem _guess_fx_code_from_rate fallback'ine
+    # düşüp gerçek kuru aralığa göre yorumluyordu (GBP→EUR cross-wiring kök nedeni).
+    fx_reference = f'[{fx_currency}] Döviz {operation_type} (Hızlı)'
+
     if operation_type == 'PURCHASE':
         # Döviz ALIŞI: Müşteriden döviz alıyoruz
         # 1) Döviz kasasına GİRİŞ (+qty döviz)
         Payment.objects.create(
             process_no=process_no,
             payment_type='CASH',
-            amount=total_amount_tl,
+            amount=total_amount_eur,
             currency_amount=qty,
             exchange_rate=exchange_rate,
             is_output=False,  # GİRİŞ
             bank_account=fx_account,
             reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
             is_approved=_is_approved,
+            reference=fx_reference,
         )
         # 2) TRY kasasından ÇIKIŞ (-TL tutar)
         Payment.objects.create(
             process_no=process_no,
             payment_type='CASH',
-            amount=total_amount_tl,
+            amount=total_amount_eur,
             is_output=True,  # ÇIKIŞ
             bank_account=try_account,
             reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
@@ -376,29 +375,30 @@ def _process_currency_exchange(
         Payment.objects.create(
             process_no=process_no,
             payment_type='CASH',
-            amount=total_amount_tl,
+            amount=total_amount_eur,
             currency_amount=qty,
             exchange_rate=exchange_rate,
             is_output=True,  # ÇIKIŞ
             bank_account=fx_account,
             reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
             is_approved=_is_approved,
+            reference=fx_reference,
         )
         # 2) TRY kasasına GİRİŞ (+TL tutar)
         Payment.objects.create(
             process_no=process_no,
             payment_type='CASH',
-            amount=total_amount_tl,
+            amount=total_amount_eur,
             is_output=False,  # GİRİŞ
             bank_account=try_account,
             reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
             is_approved=_is_approved,
         )
 
-    return total_amount_tl, fx_account, try_account
+    return total_amount_eur, fx_account, try_account
 
 
-def _process_barter_currency_entry(process_no, product, qty, unit_price, total_amount_tl, user, needs_approval):
+def _process_barter_currency_entry(process_no, product, qty, unit_price, total_amount_eur, user, needs_approval):
     """
     FAZ 19: TAKAS — Tek Yönlü Döviz Kasa Girişi.
 
@@ -417,7 +417,7 @@ def _process_barter_currency_entry(process_no, product, qty, unit_price, total_a
         product: Products instance (is_currency=True olan döviz ürünü)
         qty: Decimal — döviz miktarı (ör. 100 EUR)
         unit_price: Decimal — kur (ör. 51.13 TL/EUR)
-        total_amount_tl: Decimal — TL karşılığı (qty × unit_price)
+        total_amount_eur: Decimal — TL karşılığı (qty × unit_price)
         user: User instance
         needs_approval: bool
 
@@ -429,14 +429,8 @@ def _process_barter_currency_entry(process_no, product, qty, unit_price, total_a
         log.warning("FAZ19: Mağaza bilgisi bulunamadı — barter currency entry atlanıyor.")
         return None, Decimal('0')
 
-    # Döviz kodunu ürün adından çıkar
-    product_name = (product.name or '').upper().strip()
-    fx_currency = None
-    for code in ['USD', 'EUR', 'GBP', 'CAD', 'QAR']:
-        if product_name.startswith(code):
-            fx_currency = code
-            break
-
+    # Faz 13: SSOT üzerinden döviz tespiti (USD/EUR/GBP/CAD/QAR/SAR/CHF/AUD).
+    fx_currency = get_currency_code_from_product(product)
     if not fx_currency:
         log.warning("FAZ19: Döviz kodu tespit edilemedi: '%s'", product.name)
         return None, Decimal('0')
@@ -454,21 +448,23 @@ def _process_barter_currency_entry(process_no, product, qty, unit_price, total_a
     exchange_rate = unit_price
 
     # TEK YÖNLÜ: Döviz kasasına GİRİŞ (TRY karşılığı ÇIKIŞ YOK)
+    # Faz 13: reference [KOD] etiketi zorunlu — _get_fx_breakdown SSOT'u için.
     Payment.objects.create(
         process_no=process_no,
         payment_type='CASH',
-        amount=total_amount_tl,
+        amount=total_amount_eur,
         currency_amount=qty,
         exchange_rate=exchange_rate,
         is_output=False,  # GİRİŞ
         bank_account=fx_account,
         reconciliation_status=Payment.ReconciliationStatus.NOT_REQUIRED,
         is_approved=_is_approved,
+        reference=f'[{fx_currency}] Takas — Döviz Girişi',
     )
 
     log.info(
         "FAZ19 BARTER_FX_ENTRY: process_no=%s currency=%s qty=%s rate=%s tl=%s",
-        process_no, fx_currency, qty, exchange_rate, total_amount_tl,
+        process_no, fx_currency, qty, exchange_rate, total_amount_eur,
     )
 
     return fx_account, qty
@@ -487,7 +483,8 @@ def _fast_normalize_total_to_tl(product, total_amount):
     """
     try:
         price_cur = (getattr(product, 'price_currency', '') or '').upper()
-        if price_cur in ('USD', 'EUR', 'GBP', 'CAD', 'QAR'):
+        # Faz 13: TRY hariç desteklenen tüm döviz kodları SSOT'tan okunur.
+        if price_cur and price_cur != 'TRY' and price_cur in SUPPORTED_FX_CURRENCIES:
             rate = _get_exchange_rate_for_currency(price_cur)
             if rate and rate > 0:
                 return total_amount * Decimal(str(rate))
@@ -581,7 +578,9 @@ def _handle_pavo_transaction(raw_pavo, total_amount, pos_reference):
     pavo_data = _pavo_extract_data(pavo_obj)
     pavo_status_id = _pavo_extract_status_id(pavo_data)
 
-    if pavo_status_id != 4:
+    # FAZ 30 — StatusId artık settings.PAVO_SUCCESS_STATUS_IDS'e bakıyor.
+    # Frontend de aynı set'e bakar; backend/frontend uyumsuzluğu giderildi.
+    if not _pavo_is_status_successful(pavo_status_id):
         raise ValidationError('POS ödemesi cihazda tamamlanmadı veya iptal edildi.')
 
     try:
@@ -631,18 +630,18 @@ def _calculate_and_save_profit(process, operation_type, purchase_amount, sale_am
                 ).first()
 
                 urun_has_maliyet = _snap.weighted_avg_cost_hs if _snap else Decimal('0')
-                urun_tl_maliyet = _snap.weighted_avg_cost_tl if _snap else Decimal('0')
+                urun_tl_maliyet = _snap.weighted_avg_cost_eur if _snap else Decimal('0')
 
                 # Fallback: Snapshot yoksa ürün kartından oku
                 if not _snap or (urun_has_maliyet <= Decimal('0') and urun_tl_maliyet <= Decimal('0')):
                     urun_has_maliyet = getattr(process.product, 'buy_price_hs', 0)
-                    urun_tl_maliyet = getattr(process.product, 'buy_price_tl', 0)
+                    urun_tl_maliyet = getattr(process.product, 'buy_price_eur', 0)
 
                 # 1. Has Maliyeti varsa, işlem anındaki kur ile TL'ye çevir
                 if urun_has_maliyet and _dec(urun_has_maliyet) > Decimal('0'):
-                    kur = _dec(getattr(process, 'hs_rate_buy_tl', 0))
+                    kur = _dec(getattr(process, 'hs_rate_buy_eur', 0))
                     if kur <= Decimal('0'):
-                        kur = _dec(getattr(process, 'hs_rate_sale_tl', 0))
+                        kur = _dec(getattr(process, 'hs_rate_sale_eur', 0))
 
                     if kur > Decimal('0'):
                         p_cost = _dec(urun_has_maliyet) * kur
@@ -653,24 +652,24 @@ def _calculate_and_save_profit(process, operation_type, purchase_amount, sale_am
 
             # Maliyet ve Satış 0'dan büyükse veritabanına kârı yaz
             if p_cost > Decimal('0') and p_sale > Decimal('0'):
-                cost_amount_tl = _dec(p_cost * qty, '0.01')
+                cost_amount_eur = _dec(p_cost * qty, '0.01')
                 gross_profit_val = (p_sale - p_cost) * qty
 
                 process.gross_profit = _dec(gross_profit_val, '0.01')
 
                 tax_amount = gross_profit_val * Decimal('0.20')
                 process.net_profit = _dec(gross_profit_val - tax_amount, '0.01')
-                process.cost_amount_tl = cost_amount_tl
+                process.cost_amount_eur = cost_amount_eur
 
-                # cost_amount_hs: TL maliyetini Has'a çevir (hs_rate_buy_tl kullan)
+                # cost_amount_hs: TL maliyetini Has'a çevir (hs_rate_buy_eur kullan)
                 hs_rate = _dec(
-                    getattr(process, 'hs_rate_buy_tl', None) or getattr(process, 'hs_rate_sale_tl', None) or 0)
+                    getattr(process, 'hs_rate_buy_eur', None) or getattr(process, 'hs_rate_sale_eur', None) or 0)
                 if hs_rate > Decimal('0'):
-                    process.cost_amount_hs = _dec(cost_amount_tl / hs_rate, '0.001')
+                    process.cost_amount_hs = _dec(cost_amount_eur / hs_rate, '0.001')
                 else:
                     process.cost_amount_hs = Decimal('0.000')
 
-                process.save(update_fields=['gross_profit', 'net_profit', 'cost_amount_tl', 'cost_amount_hs'])
+                process.save(update_fields=['gross_profit', 'net_profit', 'cost_amount_eur', 'cost_amount_hs'])
         except Exception as e:
             # İsteğe bağlı: Hataları görmek için loglayabilirsiniz
             import logging
@@ -680,7 +679,7 @@ def _calculate_and_save_profit(process, operation_type, purchase_amount, sale_am
 def _process_payments_and_balances(
         request, process_no, total_amount, operation_type,
         is_manual, is_pos_flow, payment_type, pos_mode,
-        customer, hs_rate_sale_tl, hs_rate_buy_tl, user
+        customer, hs_rate_sale_eur, hs_rate_buy_eur, user
 ):
     """
     Ödeme ve Bakiye (Has Altın) İşlemleri.
@@ -893,8 +892,8 @@ def _process_payments_and_balances(
         balance_diff = total_amount - _paid_net_of_commission
 
         if abs(balance_diff) > Decimal('0.01'):
-            sale_rate = hs_rate_sale_tl
-            buy_rate = hs_rate_buy_tl if hs_rate_buy_tl > 0 else sale_rate
+            sale_rate = hs_rate_sale_eur
+            buy_rate = hs_rate_buy_eur if hs_rate_buy_eur > 0 else sale_rate
 
             if not is_output:  # SATIŞ
                 if balance_diff > 0:  # Eksik Ödeme -> Borç
@@ -1246,19 +1245,19 @@ def add_fast_process(request):
             # --- FAZ 3: HAS ALTIN FİYATLANDIRMA - PriceService ---
             try:
                 hs_data = PriceService.get_price('GOLD_24K')
-                hs_rate_sale_tl = _dec(hs_data.get('sell_tl', Decimal('0')), '0.01')
-                hs_rate_buy_tl = _dec(hs_data.get('buy_tl', hs_rate_sale_tl), '0.01')
+                hs_rate_sale_eur = _dec(hs_data.get('sell_tl', Decimal('0')), '0.01')
+                hs_rate_buy_eur = _dec(hs_data.get('buy_tl', hs_rate_sale_eur), '0.01')
             except Exception:
-                hs_rate_sale_tl = Decimal('0')
-                hs_rate_buy_tl = Decimal('0')
+                hs_rate_sale_eur = Decimal('0')
+                hs_rate_buy_eur = Decimal('0')
 
             # Fallback: PriceService boş dönerse eski Products tablosundan oku
-            if hs_rate_sale_tl <= 0:
-                hs_prod = Products.objects.filter(name__icontains='Has Altın').only('sale_price_tl', 'buy_price_tl').first()
-                if not hs_prod or not getattr(hs_prod, 'sale_price_tl', None):
+            if hs_rate_sale_eur <= 0:
+                hs_prod = Products.objects.filter(name__icontains='Has Altın').only('sale_price_eur', 'buy_price_eur').first()
+                if not hs_prod or not getattr(hs_prod, 'sale_price_eur', None):
                     return JsonResponse({'error': True, 'error_msg': 'Sistemde Has Altın ürünü tanımlı değil.'}, status=500)
-                hs_rate_sale_tl = _dec(hs_prod.sale_price_tl, '0.01')
-                hs_rate_buy_tl = _dec(getattr(hs_prod, 'buy_price_tl', hs_rate_sale_tl), '0.01')
+                hs_rate_sale_eur = _dec(hs_prod.sale_price_eur, '0.01')
+                hs_rate_buy_eur = _dec(getattr(hs_prod, 'buy_price_eur', hs_rate_sale_eur), '0.01')
 
             # Karat
             prod_karat = None
@@ -1341,8 +1340,8 @@ def add_fast_process(request):
                 unit_price=_dec(unit_price, '0.01'),
                 amount=_dec(total_amount, '0.01'),
                 price_hs=price_hs,
-                hs_rate_sale_tl=hs_rate_sale_tl,
-                hs_rate_buy_tl=hs_rate_buy_tl,
+                hs_rate_sale_eur=hs_rate_sale_eur,
+                hs_rate_buy_eur=hs_rate_buy_eur,
                 karat=(prod_karat or None),
                 labor_amount=_dec(labor_net, '0.01'),
                 employee=user,
@@ -1377,7 +1376,7 @@ def add_fast_process(request):
                     product=product,
                     qty=qty,
                     unit_price=unit_price,
-                    total_amount_tl=total_amount,
+                    total_amount_eur=total_amount,
                     operation_type=operation_type,
                     user=user,
                     needs_approval=_needs_approval,
@@ -1394,7 +1393,7 @@ def add_fast_process(request):
                 paid_total, effective_payment_type, cash_amt, card_amt, transfer_amt = _process_payments_and_balances(
                     request, process_no, total_amount, operation_type,
                     is_manual, is_pos_flow, payment_type, pos_mode,
-                    customer, hs_rate_sale_tl, hs_rate_buy_tl, user
+                    customer, hs_rate_sale_eur, hs_rate_buy_eur, user
                 )
 
             # --- FATURA OLUŞTURMA (YENİ MODÜL KULLANIMI) ---
@@ -1455,13 +1454,13 @@ def add_fast_process(request):
                         direction_text = "Kısmi Ödeme"
 
                     item_data = [{"product_name": getattr(product, 'name', 'Ürün'), "qty_str": qty_str,
-                                  "amount_tl": fmt_tl(total_amount)}]
+                                  "amount_eur": fmt_tl(total_amount)}]
                     payments_ctx = {
                         "cash": float(cash_amt), "credit_card": float(card_amt), "transfer": float(transfer_amt),
                         "paid_total_tl": float(paid_total), "has_any": paid_total > 0,
                         "direction_text": direction_text, "installment": installment
                     }
-                    totals_ctx = {"net_tl_abs": fmt_tl(total_amount), "total_sales_tl": fmt_tl(total_amount)}
+                    totals_ctx = {"net_tl_abs": fmt_tl(total_amount), "total_sales_eur": fmt_tl(total_amount)}
                     summary_note = ""
                     if total_amount != paid_total:
                         diff = total_amount - paid_total

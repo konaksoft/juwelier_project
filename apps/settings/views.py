@@ -9,6 +9,11 @@ from decimal import Decimal
 
 import json
 
+# Beyaz listeler — model seviyesindeki choices ile tutarlı olmalı
+VALID_LANGUAGE_CODES = {'tr', 'de', 'en'}
+VALID_BASE_SPOT_CURRENCIES = {'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF'}
+VALID_BASE_SPOT_UNITS = {'OZ', 'GRAM', 'KILO', 'TOLA'}
+
 
 @login_required
 @require_POST
@@ -18,9 +23,15 @@ def update_configuration(request):
     value = request.POST.get('value')
 
     ALLOWED_FIELDS = [
+        # --- Dil & Bölgesel (juwelier_plus port) ---
+        'language_code',
+        'base_spot_currency',
+        'base_spot_unit',
+
         'price_margin_percent',
         'use_average_labor',
         'use_manual_has_calculation',
+        'use_manual_currency_rate',  # T3 (2026-04-29): Manuel Kur switch
         'active_pricing_chamber_id',
 
         'enforce_cash_limit',
@@ -33,6 +44,10 @@ def update_configuration(request):
         'enforce_customer_always',
         'require_customer_phone',
         'require_customer_tckn',
+
+        # --- FAZ 38: Cari borç birim modu + fazla tahsilat varsayılanı ---
+        'debt_currency_mode',          # 'HS' | 'TL' (choice field)
+        'allow_overpayment_default',   # boolean
 
         'notify_email_2fa',
         'notify_email_password_reset',
@@ -59,7 +74,31 @@ def update_configuration(request):
 
         config, created = StoreConfiguration.objects.get_or_create(store=store)
 
-        if key == 'price_margin_percent':
+        if key == 'language_code':
+            _v = (value or '').strip().lower()
+            if _v not in VALID_LANGUAGE_CODES:
+                return JsonResponse({'success': False, 'error': f'Geçersiz dil kodu: {_v}'})
+            config.language_code = _v
+            # Dil cache'ini temizle (StoreLanguageMiddleware yeniden okusun)
+            try:
+                from django.core.cache import cache
+                cache.delete(f'store_lang_{store.id}')
+            except Exception:
+                pass
+
+        elif key == 'base_spot_currency':
+            _v = (value or '').strip().upper()
+            if _v not in VALID_BASE_SPOT_CURRENCIES:
+                return JsonResponse({'success': False, 'error': f'Geçersiz spot para birimi: {_v}'})
+            config.base_spot_currency = _v
+
+        elif key == 'base_spot_unit':
+            _v = (value or '').strip().upper()
+            if _v not in VALID_BASE_SPOT_UNITS:
+                return JsonResponse({'success': False, 'error': f'Geçersiz spot birimi: {_v}'})
+            config.base_spot_unit = _v
+
+        elif key == 'price_margin_percent':
             try:
                 clean_val = str(value).replace(',', '.')
                 if not clean_val.strip():
@@ -73,6 +112,16 @@ def update_configuration(request):
                 setattr(config, key, value)
             else:
                 setattr(config, key, None)
+
+        elif key == 'debt_currency_mode':
+            # FAZ 38 — Borç birim modu choice field. Yalnızca 'HS' veya 'TL'.
+            valid = {c[0] for c in StoreConfiguration.DEBT_MODE_CHOICES}
+            if value not in valid:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Geçersiz borç modu: {value} (beklenen: HS / TL).',
+                })
+            setattr(config, key, value)
 
         else:
             new_bool = (str(value).lower() == 'true')
@@ -99,6 +148,73 @@ def update_configuration(request):
 
         write_log(request, "Ayarlar", f"Ayar güncellendi: {key} -> {value}")
         return JsonResponse({'success': True})
+
+    except Stores.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Mağaza bulunamadı.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+# ============================================================================
+# T3 (2026-04-29): Manuel Kur (Döviz) Değerlerini Toplu Güncelleme
+# ============================================================================
+# Frontend, "Manuel Kur Ayarı" switch'i açıkken döviz ürünleri için alış/satış
+# TL inputlarını gösterir. Kullanıcı "Kaydet" deyince burası çağrılır.
+#
+# POST data:
+#   store_id: <uuid>
+#   rates:    JSON string -> { "<product_uuid>": {"buy_tl": "45.20", "sell_tl": "46.50"} }
+#
+# Backend StoreConfiguration.manual_currency_rates JSONField'ına yazar.
+# is_currency=True ürünlerinde StockSnapshot ölü veri olduğu için bu yapıya yazma
+# StockLedger / WAC / FXBalance hiçbir hesabı etkilemez — sadece view'da
+# fiyat üretimi için override sağlar.
+# ============================================================================
+
+@login_required
+@require_POST
+def update_manual_currency_rates(request):
+    store_id = request.POST.get('store_id')
+    raw = request.POST.get('rates') or '{}'
+
+    try:
+        rates = json.loads(raw)
+        if not isinstance(rates, dict):
+            raise ValueError('rates dict olmalı')
+    except (ValueError, json.JSONDecodeError) as e:
+        return JsonResponse({'success': False, 'error': f'Geçersiz JSON: {e}'})
+
+    try:
+        if request.user.is_superuser:
+            store = Stores.objects.get(id=store_id)
+        else:
+            store = request.user.store
+            if not store or str(store.id) != str(store_id):
+                return JsonResponse({'success': False, 'error': 'Yetkisiz işlem.'})
+
+        # Veri sanitize: pozitif Decimal değerleri string olarak sakla
+        clean = {}
+        for pid, entry in rates.items():
+            if not isinstance(entry, dict):
+                continue
+            try:
+                buy = Decimal(str(entry.get('buy_tl') or '0').replace(',', '.'))
+                sell = Decimal(str(entry.get('sell_tl') or '0').replace(',', '.'))
+            except Exception:
+                continue
+            if buy < 0 or sell < 0:
+                continue
+            clean[str(pid)] = {
+                'buy_tl': f'{buy:.4f}',
+                'sell_tl': f'{sell:.4f}',
+            }
+
+        config, _ = StoreConfiguration.objects.get_or_create(store=store)
+        config.manual_currency_rates = clean
+        config.save(update_fields=['manual_currency_rates', 'updated_at'])
+
+        write_log(request, "Ayarlar", f"Manuel kur override güncellendi ({len(clean)} ürün)")
+        return JsonResponse({'success': True, 'count': len(clean)})
 
     except Stores.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Mağaza bulunamadı.'})

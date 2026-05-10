@@ -178,7 +178,7 @@ def import_excel_as_products_and_purchases(
             "store_id": store_id,
             "price_currency": default_price_currency,
             "buy_price_hs": buy_hs or Decimal("0"),
-            "buy_price_tl": buy_tl or Decimal("0"),
+            "buy_price_eur": buy_tl or Decimal("0"),
             "sale_price_hs": sale_hs or Decimal("0"),
             "gram": gram or Decimal("0"),
             "product_mileage": _to_int_str(milyem),

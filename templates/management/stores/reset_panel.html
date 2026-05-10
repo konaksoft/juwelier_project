@@ -1,0 +1,596 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+    <style>
+        /* ─── Sayfa Başlığı: Tehlike Bandı ─────────────────────────── */
+        .reset-danger-banner {
+            background: linear-gradient(135deg, #b02a37 0%, #dc3545 100%);
+            color: #fff;
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 6px 24px rgba(220, 53, 69, .25);
+        }
+
+        .reset-danger-banner h3 { color: #fff; margin: 0; font-weight: 700; }
+        .reset-danger-banner p  { margin: .25rem 0 0; opacity: .9; font-size: .9rem; }
+
+        /* ─── Bucket Kartı ─────────────────────────────────────────── */
+        .bucket-card {
+            border: 2px solid #e4e6ef;
+            border-radius: 12px;
+            transition: all .2s ease;
+            background: #fff;
+            position: relative;
+        }
+        .bucket-card.is-selected   { border-color: #dc3545; background: #fff5f5; }
+        .bucket-card.is-cascaded   { border-color: #f1bc00; background: #fffbe6; }
+        .bucket-card.is-locked     { opacity: .55; pointer-events: none; }
+
+        .bucket-card .bucket-header {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f1f4;
+        }
+        .bucket-card .bucket-body {
+            padding: .75rem 1.25rem 1rem;
+            font-size: .87rem;
+            color: #6c757d;
+        }
+        .bucket-card .bucket-icon {
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 10px;
+            background: #f5f5f7;
+            font-size: 1.25rem;
+        }
+        .bucket-card.is-selected .bucket-icon { background: #f8d7da; color: #842029; }
+
+        .lock-overlay {
+            position: absolute; top: .75rem; right: .75rem;
+            background: #ffe7c2; color: #8a5a00;
+            padding: .25rem .5rem; border-radius: 6px;
+            font-size: .72rem; font-weight: 600;
+        }
+
+        .cascade-badge {
+            display: inline-block;
+            background: #f1bc00; color: #4a3a00;
+            padding: .15rem .5rem; border-radius: 4px;
+            font-size: .68rem; font-weight: 700;
+            text-transform: uppercase;
+            margin-left: .5rem;
+        }
+
+        /* ─── Önizleme Tablosu ─────────────────────────────────────── */
+        .preview-table th { font-weight: 600; color: #3f4254; }
+        .preview-table td.count { text-align: right; font-variant-numeric: tabular-nums; }
+
+        .grand-total-pill {
+            display: inline-flex; align-items: center; gap: .5rem;
+            padding: .5rem 1rem; border-radius: 999px;
+            background: #dc3545; color: #fff; font-weight: 700;
+        }
+
+        /* ─── Onay Modali ─────────────────────────────────────────── */
+        #confirmInput {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            letter-spacing: .5px;
+        }
+        #confirmInput.match { border-color: #198754; box-shadow: 0 0 0 .15rem rgba(25, 135, 84, .15); }
+
+        .countdown-pill {
+            display: inline-block;
+            background: #6c757d; color: #fff;
+            padding: .25rem .75rem; border-radius: 999px;
+            font-weight: 600; font-size: .85rem;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+        <div class="d-flex flex-column flex-column-fluid">
+            <div id="kt_app_content" class="app-content flex-column-fluid">
+                <div id="kt_app_content_container" class="container-fluid">
+
+                    <!-- ── Tehlike Banner ─────────────────────────────────── -->
+                    <div class="reset-danger-banner mb-5">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-exclamation-octagon-fill" style="font-size: 2.25rem;"></i>
+                            <div>
+                                <h3>Mağaza Sıfırlama Merkezi</h3>
+                                <p>Bu ekran yalnızca yetkili yöneticiler içindir. Silinen veriler geri getirilemez.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Mağaza Seçici ─────────────────────────────────── -->
+                    {% if locked_store %}
+                        <!-- Detay sayfasından gelindi: mağaza kilitli, seçim yok -->
+                        <div class="card mb-5 shadow-sm border-start border-4 border-danger">
+                            <div class="card-body py-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div>
+                                    <div class="text-muted small mb-1">Sıfırlanacak Mağaza</div>
+                                    <div class="fs-4 fw-bold">
+                                        <i class="bi bi-shop me-2"></i>
+                                        {{ locked_store.title|default:"(Adsız)" }}
+                                        <span class="text-muted fs-6 ms-2">— {{ locked_store.store_id }}</span>
+                                    </div>
+                                </div>
+                                <a href="{% url 'stores:store-detail' locked_store.id %}"
+                                   class="btn btn-light">
+                                    <i class="bi bi-arrow-left me-1"></i> Mağaza Detayına Dön
+                                </a>
+                            </div>
+                        </div>
+                        <input type="hidden" id="lockedStoreId"
+                               value="{{ locked_store.id }}"
+                               data-title="{{ locked_store.title|default:locked_store.store_id }}">
+                    {% else %}
+                        <div class="card mb-5 shadow-sm">
+                            <div class="card-body py-4">
+                                <label class="form-label fw-bold mb-2">Mağaza</label>
+                                <select id="storeSelector" class="form-select form-select-lg">
+                                    <option value="">— Sıfırlanacak mağazayı seçin —</option>
+                                    {% for s in stores %}
+                                        <option value="{{ s.id }}"
+                                                data-title="{{ s.title|default:s.store_id }}">
+                                            {{ s.title|default:"(Adsız)" }} — {{ s.store_id }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- ── Bucket Listesi ────────────────────────────────── -->
+                    <div id="bucketsContainer" class="row g-4 mb-5"></div>
+
+                    <!-- ── Önizleme + Aksiyon ───────────────────────────── -->
+                    <div class="card shadow-sm" id="previewCard" style="display:none;">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">
+                                <i class="bi bi-eye me-2"></i> Silme Önizlemesi
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="previewLoader" class="text-center py-4" style="display:none;">
+                                <div class="spinner-border text-danger"></div>
+                                <p class="text-muted mt-2 mb-0">Sayım hesaplanıyor...</p>
+                            </div>
+                            <div id="previewContent"></div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <div>
+                                Toplam:
+                                <span class="grand-total-pill" id="grandTotalPill">0 kayıt</span>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-lg"
+                                    id="openConfirmBtn" disabled>
+                                <i class="bi bi-trash3 me-1"></i> Seçilenleri Sıfırla
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Onay Modali ═══════════════════════════════════════════════ -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                        Tehlikeli İşlem — Onay Gerekli
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        Bu işlem <strong>geri alınamaz.</strong> Aşağıdaki veri grupları
+                        seçili mağazadan kalıcı olarak silinecektir:
+                    </div>
+
+                    <ul class="list-group mb-4" id="confirmBucketList"></ul>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Devam etmek için aşağıya mağazanın <u>tam adını</u> yazın:
+                        </label>
+                        <div class="text-muted small mb-2">
+                            Beklenen: <code id="expectedTitleHint"></code>
+                        </div>
+                        <input type="text" id="confirmInput" class="form-control"
+                               autocomplete="off" placeholder="Mağaza adını buraya yazın...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        İptal
+                    </button>
+                    <button type="button" class="btn btn-danger" id="executeBtn" disabled>
+                        <span id="executeBtnText">
+                            <i class="bi bi-trash3 me-1"></i> Onayla ve Sıfırla
+                        </span>
+                        <span id="executeBtnCountdown" style="display:none;">
+                            <span class="countdown-pill">5</span> sn sonra etkinleşir...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+{% endblock %}
+
+{% block footer %}
+    <script>
+        (function () {
+            // ── Sabitler / Endpoint'ler ─────────────────────────────
+            const URL_PREVIEW = "{% url 'stores:reset_preview' %}";
+            const URL_EXECUTE = "{% url 'stores:reset_execute' %}";
+            const CSRF_TOKEN  = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const BUCKET_META = {{ bucket_meta_json|safe }};
+
+            const TR_DEPENDENCY_LABELS = {
+                'A': 'İşlem ve Finans Geçmişi',
+                'B': 'Operasyonel Geçmiş',
+                'C1': 'Müşteriler & Tedarikçiler',
+                'C2': 'Ürün Kataloğu',
+                'D': 'Finansal Altyapı',
+            };
+
+            // ── State ────────────────────────────────────────────────
+            let selectedBuckets = new Set();   // kullanıcı checkbox'ı
+            let cascadedBuckets = new Set();   // bağımlılıkla otomatik
+            let currentStoreId = null;
+            let currentStoreTitle = '';
+            let previewTimer = null;
+            let countdownInterval = null;
+
+            // ── Bucket Kartlarını Render Et ─────────────────────────
+            function renderBuckets() {
+                const container = document.getElementById('bucketsContainer');
+                container.innerHTML = BUCKET_META.map(b => `
+                    <div class="col-12 col-lg-6">
+                        <div class="bucket-card" data-code="${b.code}">
+                            <div class="lock-overlay" style="display:none;">
+                                <i class="bi bi-lock-fill"></i> Bağımlılıkla seçildi
+                            </div>
+                            <div class="bucket-header">
+                                <div class="bucket-icon">
+                                    <i class="bi ${b.icon}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <strong>Grup ${b.code} — ${b.title}</strong>
+                                        ${b.is_financial
+                                            ? '<span class="badge bg-dark ms-2">Finans</span>'
+                                            : ''}
+                                    </div>
+                                    ${b.requires.length
+                                        ? `<small class="text-muted">
+                                             Gerektirir: ${b.requires.map(r => 'Grup ' + r).join(', ')}
+                                           </small>`
+                                        : ''}
+                                </div>
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input bucket-toggle"
+                                           type="checkbox"
+                                           data-code="${b.code}"
+                                           role="switch"
+                                           style="width:3rem; height:1.5rem;">
+                                </div>
+                            </div>
+                            <div class="bucket-body">${b.description}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.querySelectorAll('.bucket-toggle').forEach(input => {
+                    input.addEventListener('change', onBucketToggle);
+                });
+            }
+
+            // ── Bucket'a tıklandığında ──────────────────────────────
+            function onBucketToggle(e) {
+                const code = e.target.dataset.code;
+                if (e.target.checked) {
+                    selectedBuckets.add(code);
+                } else {
+                    selectedBuckets.delete(code);
+                }
+                recomputeCascade();
+                refreshUI();
+                schedulePreview();
+            }
+
+            // ── Bağımlılıkları çöz ──────────────────────────────────
+            function recomputeCascade() {
+                cascadedBuckets = new Set();
+                const stack = [...selectedBuckets];
+                while (stack.length) {
+                    const code = stack.pop();
+                    const meta = BUCKET_META.find(b => b.code === code);
+                    if (!meta) continue;
+                    meta.requires.forEach(r => {
+                        if (!selectedBuckets.has(r) && !cascadedBuckets.has(r)) {
+                            cascadedBuckets.add(r);
+                            stack.push(r);
+                        }
+                    });
+                }
+            }
+
+            // ── Kart görsellerini güncelle ──────────────────────────
+            function refreshUI() {
+                document.querySelectorAll('.bucket-card').forEach(card => {
+                    const code = card.dataset.code;
+                    const lockEl = card.querySelector('.lock-overlay');
+                    const toggle = card.querySelector('.bucket-toggle');
+                    card.classList.remove('is-selected', 'is-cascaded', 'is-locked');
+                    lockEl.style.display = 'none';
+
+                    if (selectedBuckets.has(code)) {
+                        card.classList.add('is-selected');
+                        toggle.checked = true;
+                        toggle.disabled = false;
+                    } else if (cascadedBuckets.has(code)) {
+                        card.classList.add('is-cascaded', 'is-locked');
+                        toggle.checked = true;
+                        toggle.disabled = true;
+                        lockEl.style.display = 'block';
+                    } else {
+                        toggle.checked = false;
+                        toggle.disabled = !currentStoreId;
+                    }
+                });
+            }
+
+            // ── Önizleme isteği (debounce) ──────────────────────────
+            function schedulePreview() {
+                clearTimeout(previewTimer);
+                previewTimer = setTimeout(fetchPreview, 250);
+            }
+
+            function fetchPreview() {
+                if (!currentStoreId || selectedBuckets.size === 0) {
+                    document.getElementById('previewCard').style.display = 'none';
+                    return;
+                }
+
+                const allBuckets = [...selectedBuckets, ...cascadedBuckets];
+                const previewCard = document.getElementById('previewCard');
+                const loader = document.getElementById('previewLoader');
+                const content = document.getElementById('previewContent');
+                const execBtn = document.getElementById('openConfirmBtn');
+
+                previewCard.style.display = '';
+                loader.style.display = '';
+                content.innerHTML = '';
+                execBtn.disabled = true;
+
+                const fd = new FormData();
+                fd.append('store_id', currentStoreId);
+                fd.append('buckets', allBuckets.join(','));
+
+                fetch(URL_PREVIEW, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                    body: fd,
+                }).then(r => r.json()).then(data => {
+                    loader.style.display = 'none';
+                    if (!data.result) {
+                        content.innerHTML = `<div class="alert alert-danger">${data.error_msg || 'Hata'}</div>`;
+                        return;
+                    }
+                    renderPreview(data.preview);
+                    execBtn.disabled = data.preview.grand_total === 0;
+                }).catch(err => {
+                    loader.style.display = 'none';
+                    content.innerHTML = `<div class="alert alert-danger">Sunucu hatası: ${err}</div>`;
+                });
+            }
+
+            function renderPreview(preview) {
+                const content = document.getElementById('previewContent');
+                let html = '';
+
+                preview.effective_buckets.forEach(code => {
+                    const meta = BUCKET_META.find(b => b.code === code);
+                    const isCascaded = cascadedBuckets.has(code);
+                    const detail = preview.details[code] || {};
+                    const total = preview.totals[code] || 0;
+                    const rows = Object.entries(detail)
+                        .filter(([_, v]) => v > 0)
+                        .map(([k, v]) => `
+                            <tr>
+                                <td class="text-muted ps-4">${k}</td>
+                                <td class="count"><strong>${v.toLocaleString('tr-TR')}</strong></td>
+                            </tr>
+                        `).join('');
+
+                    html += `
+                        <div class="mb-4">
+                            <h6 class="d-flex align-items-center mb-2">
+                                <i class="bi ${meta.icon} me-2"></i>
+                                Grup ${code} — ${meta.title}
+                                ${isCascaded ? '<span class="cascade-badge">Bağımlılıkla</span>' : ''}
+                                <span class="ms-auto badge bg-${meta.color}">${total.toLocaleString('tr-TR')} kayıt</span>
+                            </h6>
+                            ${rows
+                                ? `<table class="table table-sm preview-table mb-0">${rows}</table>`
+                                : '<div class="text-muted small ps-4">Bu grupta silinecek kayıt yok.</div>'}
+                        </div>
+                    `;
+                });
+
+                content.innerHTML = html;
+                document.getElementById('grandTotalPill').textContent =
+                    preview.grand_total.toLocaleString('tr-TR') + ' kayıt';
+            }
+
+            // ── Onay Modali ─────────────────────────────────────────
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+            document.getElementById('openConfirmBtn').addEventListener('click', () => {
+                if (!currentStoreId) return;
+
+                // Modal içerik doldur
+                const allBuckets = [...selectedBuckets, ...cascadedBuckets];
+                const list = document.getElementById('confirmBucketList');
+                list.innerHTML = allBuckets.map(code => {
+                    const meta = BUCKET_META.find(b => b.code === code);
+                    const isCascade = cascadedBuckets.has(code);
+                    return `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="bi ${meta.icon} me-2"></i>
+                                <strong>Grup ${code}</strong> — ${meta.title}
+                            </span>
+                            ${isCascade ? '<span class="cascade-badge">Bağımlılıkla</span>' : ''}
+                        </li>
+                    `;
+                }).join('');
+
+                document.getElementById('expectedTitleHint').textContent = currentStoreTitle;
+                document.getElementById('confirmInput').value = '';
+                document.getElementById('confirmInput').classList.remove('match');
+                document.getElementById('executeBtn').disabled = true;
+
+                startCountdown();
+                confirmModal.show();
+            });
+
+            // ── 5 sn'lik gecikme ────────────────────────────────────
+            function startCountdown() {
+                clearInterval(countdownInterval);
+                let remaining = 5;
+                const btnText = document.getElementById('executeBtnText');
+                const cdEl = document.getElementById('executeBtnCountdown');
+                btnText.style.display = 'none';
+                cdEl.style.display = '';
+                cdEl.querySelector('.countdown-pill').textContent = remaining;
+
+                countdownInterval = setInterval(() => {
+                    remaining--;
+                    if (remaining <= 0) {
+                        clearInterval(countdownInterval);
+                        cdEl.style.display = 'none';
+                        btnText.style.display = '';
+                        validateConfirmInput();
+                    } else {
+                        cdEl.querySelector('.countdown-pill').textContent = remaining;
+                    }
+                }, 1000);
+            }
+
+            // ── Onay metni doğrulaması ──────────────────────────────
+            function validateConfirmInput() {
+                const input = document.getElementById('confirmInput');
+                const btn = document.getElementById('executeBtn');
+                const isMatch = input.value.trim() === currentStoreTitle.trim();
+                input.classList.toggle('match', isMatch);
+
+                // Geri sayım hâlâ aktifse buton aktifleşmez
+                const cdEl = document.getElementById('executeBtnCountdown');
+                const countdownDone = cdEl.style.display === 'none';
+                btn.disabled = !(isMatch && countdownDone);
+            }
+
+            document.getElementById('confirmInput').addEventListener('input', validateConfirmInput);
+
+            // ── Asıl silme isteği ───────────────────────────────────
+            document.getElementById('executeBtn').addEventListener('click', function () {
+                const btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Siliniyor...';
+
+                const allBuckets = [...selectedBuckets, ...cascadedBuckets];
+                const fd = new FormData();
+                fd.append('store_id', currentStoreId);
+                fd.append('buckets', allBuckets.join(','));
+                fd.append('confirm_title', document.getElementById('confirmInput').value.trim());
+
+                fetch(URL_EXECUTE, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                    body: fd,
+                }).then(r => r.json()).then(data => {
+                    confirmModal.hide();
+                    if (!data.result) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Sıfırlama Başarısız',
+                            text: data.error_msg || 'Bilinmeyen hata',
+                        });
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-trash3 me-1"></i> Onayla ve Sıfırla';
+                        return;
+                    }
+
+                    const totalDeleted = Object.values(data.before)
+                        .reduce((sum, group) => sum + Object.values(group).reduce((a, b) => a + b, 0), 0);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sıfırlama Tamamlandı',
+                        html: `
+                            <p><strong>${data.executed.join(', ')}</strong> grupları başarıyla sıfırlandı.</p>
+                            <p class="text-muted">Toplam <strong>${totalDeleted.toLocaleString('tr-TR')}</strong> kayıt silindi.</p>
+                        `,
+                        confirmButtonText: 'Tamam',
+                    }).then(() => {
+                        // State'i sıfırla
+                        selectedBuckets.clear();
+                        cascadedBuckets.clear();
+                        refreshUI();
+                        document.getElementById('previewCard').style.display = 'none';
+                    });
+                }).catch(err => {
+                    confirmModal.hide();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Sunucu Hatası',
+                        text: String(err),
+                    });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-trash3 me-1"></i> Onayla ve Sıfırla';
+                });
+            });
+
+            // ── Mağaza Seçici (varsa) ───────────────────────────────
+            const storeSelector = document.getElementById('storeSelector');
+            if (storeSelector) {
+                storeSelector.addEventListener('change', function () {
+                    currentStoreId = this.value || null;
+                    const opt = this.options[this.selectedIndex];
+                    currentStoreTitle = opt ? (opt.dataset.title || '') : '';
+
+                    selectedBuckets.clear();
+                    cascadedBuckets.clear();
+                    refreshUI();
+                    document.getElementById('previewCard').style.display = 'none';
+                });
+            }
+
+            // ── Kilitli mağaza (detay sayfasından gelindi) ─────────
+            const lockedEl = document.getElementById('lockedStoreId');
+            if (lockedEl) {
+                currentStoreId = lockedEl.value;
+                currentStoreTitle = lockedEl.dataset.title || '';
+            }
+
+            // ── Init ────────────────────────────────────────────────
+            renderBuckets();
+            refreshUI();
+        })();
+    </script>
+{% endblock %}

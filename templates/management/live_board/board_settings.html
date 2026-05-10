@@ -669,6 +669,187 @@
         }
 
         /* ========================================
+           FAZ 20 (2026-04-30): URUN GORUNURLUK & SIRALAMA
+           ======================================== */
+        .item-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .item-group-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.06);
+            border-left: 3px solid var(--accent-gold);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .item-group-title i {
+            font-size: 0.95rem;
+        }
+
+        .item-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            margin-bottom: 0.4rem;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .item-row:hover {
+            background: rgba(255, 215, 0, 0.04);
+            border-color: rgba(255, 215, 0, 0.2);
+        }
+
+        .item-row.is-hidden {
+            opacity: 0.5;
+        }
+
+        .item-helper-text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.6rem 0.85rem;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            background: rgba(108, 99, 255, 0.06);
+            border: 1px solid rgba(108, 99, 255, 0.18);
+            border-radius: 8px;
+        }
+
+        .item-helper-text i {
+            color: #6C63FF;
+            font-size: 0.95rem;
+        }
+
+        .item-drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: grab;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .item-drag-handle:active {
+            cursor: grabbing;
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--accent-gold);
+        }
+
+        .item-name {
+            flex: 1;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 500;
+        }
+
+        .item-name-secondary {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-left: 0.4rem;
+        }
+
+        .item-toggle {
+            position: relative;
+            width: 42px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .item-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .item-toggle .toggle-slider-mini {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 22px;
+            transition: 0.2s ease;
+            cursor: pointer;
+        }
+
+        .item-toggle .toggle-slider-mini::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 3px;
+            top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.2s ease;
+        }
+
+        .item-toggle input:checked + .toggle-slider-mini {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .item-toggle input:checked + .toggle-slider-mini::before {
+            transform: translateX(20px);
+        }
+
+        .sortable-ghost-item {
+            opacity: 0.4;
+            background: rgba(255, 215, 0, 0.15) !important;
+        }
+
+        .sortable-chosen-item {
+            background: rgba(255, 215, 0, 0.08) !important;
+        }
+
+        .item-actions-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-mini {
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .btn-mini:hover {
+            background: rgba(255, 215, 0, 0.08);
+            color: var(--accent-gold);
+            border-color: rgba(255, 215, 0, 0.35);
+        }
+
+        /* ========================================
            RESPONSIVE
            ======================================== */
         @media (max-width: 768px) {
@@ -692,6 +873,10 @@
 
             .toggle-row {
                 padding: 0.85rem 0;
+            }
+
+            .item-name {
+                font-size: 0.82rem;
             }
         }
     </style>
@@ -925,6 +1110,72 @@
         </div>
 
         <!-- ==========================================
+             FAZ 20 (2026-04-30): Ürün Görünürlük & Sıralama
+             Her ürünü ayrı ayrı göster/gizle + drag-drop ile sırala
+             ========================================== -->
+        <div class="settings-card">
+            <div class="card-top">
+                <div class="card-top-left">
+                    <div class="card-top-icon visibility">
+                        <i class="bi bi-list-check"></i>
+                    </div>
+                    <span class="card-top-title">Ürün Görünürlük & Sıralama</span>
+                </div>
+                <span class="card-top-badge">Canlı Ekran</span>
+            </div>
+            <div class="card-body">
+                <div id="itemVisibilityArea">
+                    {% regroup all_live_items by group_label as item_groups %}
+                    {% for group in item_groups %}
+                    <div class="item-group">
+                        <div class="item-group-title">
+                            <i class="bi bi-collection"></i>
+                            <span>{{ group.grouper }}</span>
+                        </div>
+                        <ul class="item-list" data-group="{{ group.list.0.group }}">
+                            {% for it in group.list %}
+                            <li class="item-row {% if it.is_hidden %}is-hidden{% endif %}"
+                                data-db-name="{{ it.db_name }}">
+                                <span class="item-drag-handle" title="Surukleyerek sirala">
+                                    <i class="bi bi-grip-vertical"></i>
+                                </span>
+                                <span class="item-name">
+                                    {{ it.display_name }}
+                                    {% if it.db_name != it.display_name %}
+                                    <span class="item-name-secondary">({{ it.db_name }})</span>
+                                    {% endif %}
+                                </span>
+                                <label class="item-toggle">
+                                    <input type="checkbox"
+                                           class="item-visibility-toggle"
+                                           data-db-name="{{ it.db_name }}"
+                                           {% if not it.is_hidden %}checked{% endif %}>
+                                    <span class="toggle-slider-mini"></span>
+                                </label>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="item-helper-text">
+                    <i class="bi bi-info-circle"></i>
+                    Sürükleyerek sıralayabilir, anahtarlarla canlı ekranda gizleyebilirsiniz. Mağazaya özel ürünler ayrı grupta listelenir.
+                </div>
+
+                <div class="item-actions-row">
+                    <button type="button" class="btn-mini" onclick="setAllItemVisibility(true)">
+                        <i class="bi bi-eye"></i> Tümünü Göster
+                    </button>
+                    <button type="button" class="btn-mini" onclick="setAllItemVisibility(false)">
+                        <i class="bi bi-eye-slash"></i> Tümünü Gizle
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
              KAYDET BUTONU
              ========================================== -->
         <div class="save-area">
@@ -939,6 +1190,9 @@
     <!-- ============================================
          JAVASCRIPT
          ============================================ -->
+    <!-- FAZ 20 (2026-04-30): SortableJS — drag-drop ile urun siralama -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
     <script>
         /* =============================================
            DOSYA SECIM GOSTERIMI
@@ -955,6 +1209,88 @@
                     nameEl.classList.remove('show');
                 }
             });
+        }
+
+        /* =============================================
+           FAZ 20 (2026-04-30): URUN GORUNURLUK & SIRALAMA
+           ============================================= */
+
+        // Tum urun listelerini Sortable yap (her grup ayri liste).
+        // KURAL 6 — defensive DOM (null-check zorunlu).
+        (function initItemSortables() {
+            var lists = document.querySelectorAll('#itemVisibilityArea .item-list');
+            if (!lists || !lists.length) return;
+            for (var i = 0; i < lists.length; i++) {
+                try {
+                    Sortable.create(lists[i], {
+                        animation: 150,
+                        handle: '.item-drag-handle',
+                        ghostClass: 'sortable-ghost-item',
+                        chosenClass: 'sortable-chosen-item',
+                    });
+                } catch (e) {
+                    if (window.console) console.warn('Sortable init hatasi:', e);
+                }
+            }
+        })();
+
+        // Urun gizle/goster toggle handler — gorsel feedback
+        document.addEventListener('change', function(e) {
+            var t = e.target;
+            if (t && t.classList && t.classList.contains('item-visibility-toggle')) {
+                var row = t.closest('.item-row');
+                if (row) {
+                    if (t.checked) {
+                        row.classList.remove('is-hidden');
+                    } else {
+                        row.classList.add('is-hidden');
+                    }
+                }
+            }
+        });
+
+        // Toplu goster/gizle butonlari
+        function setAllItemVisibility(visible) {
+            var toggles = document.querySelectorAll('.item-visibility-toggle');
+            if (!toggles) return;
+            for (var i = 0; i < toggles.length; i++) {
+                toggles[i].checked = !!visible;
+                var row = toggles[i].closest('.item-row');
+                if (row) {
+                    if (visible) {
+                        row.classList.remove('is-hidden');
+                    } else {
+                        row.classList.add('is-hidden');
+                    }
+                }
+            }
+        }
+
+        // Mevcut UI durumundan hidden_items + live_board_item_order payload'larini olustur
+        function collectItemPayload() {
+            var hidden = [];
+            var orderMap = {};
+            var lists = document.querySelectorAll('#itemVisibilityArea .item-list');
+            if (!lists || !lists.length) {
+                return { hidden_items: hidden, live_board_item_order: orderMap };
+            }
+            // Liste sirasi gozonune alinarak order_index 0-bazli atanir.
+            // Birden fazla grup olduğu icin global counter kullaniyoruz —
+            // tum gruplarin uretiminde ardisik artan sira saglanir.
+            var globalIndex = 0;
+            for (var i = 0; i < lists.length; i++) {
+                var rows = lists[i].querySelectorAll('.item-row');
+                for (var j = 0; j < rows.length; j++) {
+                    var dbName = rows[j].getAttribute('data-db-name');
+                    if (!dbName) continue;
+                    orderMap[dbName] = globalIndex++;
+                    var toggle = rows[j].querySelector('.item-visibility-toggle');
+                    if (toggle && !toggle.checked) {
+                        hidden.push(dbName);
+                    }
+                }
+            }
+            return { hidden_items: hidden, live_board_item_order: orderMap };
         }
 
         /* =============================================
@@ -994,6 +1330,9 @@
             var logoInput = document.getElementById('inputCustomLogo');
             var hasFile = logoInput && logoInput.files && logoInput.files.length > 0;
 
+            // FAZ 20 (2026-04-30): hidden_items + live_board_item_order topla
+            var itemPayload = collectItemPayload();
+
             if (hasFile) {
                 /* Multipart form-data (logo dosyasi var) */
                 var formData = new FormData();
@@ -1003,6 +1342,9 @@
                 formData.append('show_currency_section', document.getElementById('toggleShowCurrency').checked ? 'true' : 'false');
                 formData.append('show_sarrafiye_section', document.getElementById('toggleShowSarrafiye').checked ? 'true' : 'false');
                 formData.append('custom_board_logo', logoInput.files[0]);
+                // FAZ 20: JSON-encoded list/dict olarak ekle (multipart text fields)
+                formData.append('hidden_items', JSON.stringify(itemPayload.hidden_items));
+                formData.append('live_board_item_order', JSON.stringify(itemPayload.live_board_item_order));
 
                 fetch('/live_board/api/live-board-settings/', {
                     method: 'POST',
@@ -1024,7 +1366,10 @@
                     show_custom_name: document.getElementById('toggleShowName').checked,
                     show_custom_logo: document.getElementById('toggleShowLogo').checked,
                     show_currency_section: document.getElementById('toggleShowCurrency').checked,
-                    show_sarrafiye_section: document.getElementById('toggleShowSarrafiye').checked
+                    show_sarrafiye_section: document.getElementById('toggleShowSarrafiye').checked,
+                    // FAZ 20: Urun gorunurluk & siralama
+                    hidden_items: itemPayload.hidden_items,
+                    live_board_item_order: itemPayload.live_board_item_order
                 };
 
                 fetch('/live_board/api/live-board-settings/', {

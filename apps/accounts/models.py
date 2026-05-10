@@ -62,6 +62,97 @@ class ContactConsent(models.Model):
         ]
 
 
+# ============================================================================
+# FAZ 45 — Multi-Branch: Kullanıcı-Şube Çoklu Erişim Tablosu
+# ============================================================================
+#
+# Mevcut Users.store FK'si tek-şube bağlamında doğrudur ve kaldırılmaz —
+# sistemdeki 200+ view bu alanı okumaktadır. Bu tablo onun ÜZERİNE bir
+# katman eklenir: çoklu şube erişimi olan kullanıcılar (patron, genel
+# müdür, denetçi) için ek erişim hakları tanımlar.
+#
+# DAVRANIŞ KURALI:
+#   - is_primary=True olan kayıt, daima Users.store FK'si ile senkron
+#     tutulur. (Veri migration'ı bunu kuracak — FAZ 45.3 backfill.)
+#   - Sıradan personel için tek satır olur (kendi şubesi, is_primary=True).
+#   - Patron için birden fazla satır olabilir; biri is_primary=True.
+#   - get_active_store(request) helper'ı session'a bakar; çok şubeli
+#     kullanıcılar için aktif şubeyi döner. Tek şubeliler için Users.store
+#     fallback olarak kullanılır.
+#
+# Bu tablo FAZ 45'te DORMANT'tır — hiçbir view/middleware henüz okumaz.
+# FAZ 48 (Konsolide Patron Dashboard) aktivasyonunda canlı kullanılacaktır.
+# ============================================================================
+
+class UserStoreAccess(models.Model):
+    """Bir kullanıcının erişebileceği şubeleri ve her şubedeki rolünü tutar.
+
+    Çoklu şube modelinin temelidir. Tek-şube davranışında her kullanıcı için
+    is_primary=True olan TEK kayıt vardır ve Users.store ile senkron çalışır.
+    Çok-şube aktivasyonunda (FAZ 48) ek satırlar oluşturulur.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.ForeignKey(
+        'accounts.Users',
+        on_delete=models.CASCADE,
+        related_name='store_accesses',
+        verbose_name='Kullanıcı',
+    )
+    store = models.ForeignKey(
+        Stores,
+        on_delete=models.CASCADE,
+        related_name='user_accesses',
+        verbose_name='Şube',
+    )
+    role = models.ForeignKey(
+        Roles,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='store_accesses',
+        verbose_name='Bu Şubedeki Rol',
+        help_text='Kullanıcının bu özel şubedeki rolü. NULL ise Users.role kullanılır.',
+    )
+
+    is_primary = models.BooleanField(
+        default=True,
+        verbose_name='Birincil Şube mi?',
+        help_text='Kullanıcının varsayılan şubesi. Users.store FK ile senkron tutulur. Her kullanıcı için tam olarak 1 satır True olmalıdır.',
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Erişim Aktif mi?',
+        help_text='Geçici erişim kapatma için. Pasif erişimler get_active_store tarafından kabul edilmez.',
+    )
+
+    granted_at = models.DateTimeField(default=timezone.now, verbose_name='Erişim Verildi')
+    granted_by = models.ForeignKey(
+        'accounts.Users',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='+',
+        verbose_name='Erişimi Veren',
+        help_text='Bu çoklu erişimi atayan üst yönetici (audit için).',
+    )
+    notes = models.CharField(max_length=255, blank=True, default='', verbose_name='Not')
+
+    class Meta:
+        db_table = 'UserStoreAccesses'
+        verbose_name = 'Kullanıcı-Şube Erişimi'
+        verbose_name_plural = 'Kullanıcı-Şube Erişimleri'
+        unique_together = (('user', 'store'),)
+        indexes = [
+            models.Index(fields=['user', 'is_active'], name='usa_user_active_idx'),
+            models.Index(fields=['store', 'is_active'], name='usa_store_active_idx'),
+            models.Index(fields=['user', 'is_primary'], name='usa_user_primary_idx'),
+        ]
+
+    def __str__(self):
+        primary = ' (Birincil)' if self.is_primary else ''
+        return f"{self.user.username} → {self.store}{primary}"
+
+
 class OtpCode(models.Model):
     PURPOSE_CHOICES = (
         ('verify_email', 'verify_email'),

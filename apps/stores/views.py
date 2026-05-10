@@ -19,7 +19,6 @@ from apps.definitions.contracts.models import *
 # --- FAZ 4: StockSnapshot ve StockLedger entegrasyonu ---
 from apps.stock_management.models import StockSnapshot, StockLedger
 from apps.orders.models import *
-from apps.pavo.models import PavoTerminal
 from apps.process.models import Process
 from apps.products.models import Products
 from apps.repairs.models import Repairs
@@ -693,16 +692,24 @@ def hard_data_delete(request):
     FAZ 9.1 — MAĞAZA SIFIRLAMA (Hard Reset)
     Mağaza kaydı kalır, içindeki tüm veriler silinir.
 
-    Silme sırası (14 katman): Çocuk tablolar → Ebeveyn tablolar.
+    Silme sırası (15 katman): Çocuk tablolar → Ebeveyn tablolar.
     ─────────────────────────────────────────────────────────────
     PROTECT FK'lar:
-      • StockSnapshot.product → Products : PROTECT
-      • StockLedger.product   → Products : PROTECT
-      • Proposals.created_by  → Users    : PROTECT
-    Bu FK'lar, sahip oldukları tablolar ilgili ebeveyn tablodan ÖNCE
-    silinmezse ProtectedError fırlatır.
+      • CashboxLedger.related_payment → Payment        : PROTECT
+      • CashboxLedger.related_expense → IncomeExpenseLedger : PROTECT
+      • CashboxLedger.parent → self                    : PROTECT (REVERSAL)
+      • IncomeExpenseLedger.related_customer_ledger → CustomerLedger : PROTECT
+      • IncomeExpenseLedger.parent → self              : PROTECT (REVERSAL)
+      • CustomerLedger.customer → Customers            : PROTECT
+      • CustomerLedger.store → Stores                  : PROTECT
+      • CustomerLedger.parent → self                   : PROTECT (REVERSAL)
+      • StockSnapshot.product → Products               : PROTECT
+      • StockLedger.product → Products                 : PROTECT
+      • Proposals.created_by → Users                   : PROTECT
+      • StoreTransferItem.product / .source/dest_bank_account : PROTECT
+      • StoreTransfer.source_store / .destination_store : PROTECT
 
-    Payment tablosu: process_group FK + process_no fallback (çift sorgu).
+    Payment tablosu: store FK ile direkt silme (process_no fallback yedek).
     Customers: M2M — exclusive sil, shared clear.
     Users: Süper admin, protected ve isteği yapan kullanıcı korunur.
     """
@@ -714,7 +721,102 @@ def hard_data_delete(request):
         with transaction.atomic():
             store = get_object_or_404(Stores, id=store_id)
 
-            # ── 1. PROTECT FK'lı tablolar ──────────────────────────────────
+            # ── 0. Mağaza Transferleri ──────────────────────────────────────
+            #     StoreTransfer.source/destination_store → PROTECT (Stores'a)
+            #     StoreTransferItem.product → PROTECT (Products'a)
+            #     StoreTransferItem.source/dest_bank_account → PROTECT (BankAccount'a)
+            try:
+                from apps.store_transfers.models import StoreTransfer, StoreTransferItem
+                _st_qs = StoreTransfer.objects.filter(
+                    Q(source_store=store) | Q(destination_store=store)
+                )
+                StoreTransferItem.objects.filter(transfer__in=_st_qs).delete()
+                _st_qs.delete()
+            except Exception:
+                pass
+
+            # ── 1. CashboxLedger — 3 eksenli güvenli temizlik ──────────────
+            #     Payment ve IncomeExpenseLedger silimini blokluyor.
+            #     Sadece store FK YETMEZ: REVERSAL (child) kayıtları farklı
+            #     store'a veya NULL store'a kayıtlı olabilir. 3 eksen
+            #     (store / bank_account / related_payment) + 4 seviye derinlik.
+            from apps.banking.models import (
+                CashboxLedger, IncomeExpenseLedger, BankAccount,
+            )
+            from apps.process.models import Payment
+
+            # Mağazaya ait Payment ID'lerini topla — Payment.store FK YOK,
+            # 3 yol: bank_account.store / process_group.store / process_no eşleşmesi
+            _ba_ids = list(BankAccount.objects.filter(store=store).values_list('id', flat=True))
+            _store_process_nos_for_pay = list(
+                Process.objects.filter(store=store)
+                .exclude(process_no__isnull=True).exclude(process_no__exact='')
+                .values_list('process_no', flat=True).distinct()
+            )
+            _pay_filter = Q(process_group__store=store)
+            if _ba_ids:
+                _pay_filter |= Q(bank_account_id__in=_ba_ids)
+            if _store_process_nos_for_pay:
+                _pay_filter |= Q(process_no__in=_store_process_nos_for_pay)
+            _pay_ids = list(Payment.objects.filter(_pay_filter).values_list('id', flat=True))
+
+            # 1a) CashboxLedger root ID'lerini 3 eksenden topla
+            cb_root_ids = set(
+                CashboxLedger.objects.filter(store=store).values_list('id', flat=True)
+            )
+            if _ba_ids:
+                cb_root_ids |= set(
+                    CashboxLedger.objects.filter(cashbox_id__in=_ba_ids)
+                                          .values_list('id', flat=True)
+                )
+            if _pay_ids:
+                cb_root_ids |= set(
+                    CashboxLedger.objects.filter(related_payment_id__in=_pay_ids)
+                                          .values_list('id', flat=True)
+                )
+
+            # 1b) Çocukları 4 seviyeye kadar topla, child-first sil
+            if cb_root_ids:
+                _lvl2 = set(CashboxLedger.objects.filter(parent__in=cb_root_ids).values_list('id', flat=True))
+                _lvl3 = set(CashboxLedger.objects.filter(parent__in=_lvl2).values_list('id', flat=True)) if _lvl2 else set()
+                _lvl4 = set(CashboxLedger.objects.filter(parent__in=_lvl3).values_list('id', flat=True)) if _lvl3 else set()
+                if _lvl4:
+                    CashboxLedger.objects.filter(id__in=_lvl4).delete()
+                if _lvl3:
+                    CashboxLedger.objects.filter(id__in=_lvl3).delete()
+                if _lvl2:
+                    CashboxLedger.objects.filter(id__in=_lvl2).delete()
+                CashboxLedger.objects.filter(id__in=cb_root_ids).delete()
+
+            # ── 2. IncomeExpenseLedger — child-first ────────────────────────
+            #     Self-ref parent PROTECT + CustomerLedger'a PROTECT FK var.
+            iel_ids = set(
+                IncomeExpenseLedger.objects.filter(store=store).values_list('id', flat=True)
+            )
+            if iel_ids:
+                _il2 = set(IncomeExpenseLedger.objects.filter(parent__in=iel_ids).values_list('id', flat=True))
+                _il3 = set(IncomeExpenseLedger.objects.filter(parent__in=_il2).values_list('id', flat=True)) if _il2 else set()
+                if _il3:
+                    IncomeExpenseLedger.objects.filter(id__in=_il3).delete()
+                if _il2:
+                    IncomeExpenseLedger.objects.filter(id__in=_il2).delete()
+                IncomeExpenseLedger.objects.filter(id__in=iel_ids).delete()
+
+            # ── 3. CustomerLedger — child-first ─────────────────────────────
+            #     Self-ref parent PROTECT.  Customers tablosunu PROTECT eden
+            #     birincil bağ; Customers silinmeden önce temizlenmeli.
+            from apps.customers.models import CustomerLedger
+            cl_ids = set(CustomerLedger.objects.filter(store=store).values_list('id', flat=True))
+            if cl_ids:
+                _cl2 = set(CustomerLedger.objects.filter(parent__in=cl_ids).values_list('id', flat=True))
+                _cl3 = set(CustomerLedger.objects.filter(parent__in=_cl2).values_list('id', flat=True)) if _cl2 else set()
+                if _cl3:
+                    CustomerLedger.objects.filter(id__in=_cl3).delete()
+                if _cl2:
+                    CustomerLedger.objects.filter(id__in=_cl2).delete()
+                CustomerLedger.objects.filter(id__in=cl_ids).delete()
+
+            # ── 4. PROTECT FK'lı Stok Tabloları ─────────────────────────────
             #    StockSnapshot.product ve StockLedger.product = PROTECT.
             #    Hem store bazlı hem product bazlı silme: çapraz mağaza
             #    snapshot/ledger kayıtlarını da temizler (transfer senaryosu).
@@ -729,7 +831,7 @@ def hard_data_delete(request):
                 StockLedger.objects.filter(product_id__in=store_product_ids).delete()
                 StockSnapshot.objects.filter(product_id__in=store_product_ids).delete()
 
-            # ── 2. Fatura Zinciri ───────────────────────────────────────────
+            # ── 5. Fatura Zinciri ───────────────────────────────────────────
             #    InvoiceSyncLog, InvoicePaymentAllocation, InvoiceItem
             #    hepsi Invoice'dan CASCADE. Güvenlik için açık sil.
             from apps.invoices.models import (
@@ -743,13 +845,21 @@ def hard_data_delete(request):
             store_invoices.delete()
             InvoiceSequence.objects.filter(store=store).delete()
 
-            # ── 3. İşlem Zinciri (Payment → Process → ProcessGroup) ────────
-            from apps.process.models import Payment, ProcessGroup
+            # ── 6. İşlem Zinciri (Payment → Process → ProcessGroup) ────────
+            #    Payment.store alanı YOK — 3 yoldan filtre uyguluyoruz:
+            #      a) bank_account.store        (FK)
+            #      b) process_group.store       (FK)
+            #      c) process_no__in=[...]      (CharField legacy)
+            from apps.process.models import ProcessGroup
 
-            # 3a. process_group FK'sı dolu olanlar
+            # 6a. Yukarıda toplanmış _pay_ids ile direkt silme
+            if _pay_ids:
+                Payment.objects.filter(id__in=_pay_ids).delete()
+
+            # 6b. Güvence: process_group.store filtresi
             Payment.objects.filter(process_group__store=store).delete()
 
-            # 3b. process_group NULL olanlar (process_no fallback)
+            # 6c. Güvence: process_no fallback
             store_process_nos = list(
                 Process.objects.filter(store=store)
                 .values_list('process_no', flat=True)
@@ -758,18 +868,16 @@ def hard_data_delete(request):
             if store_process_nos:
                 Payment.objects.filter(
                     process_no__in=store_process_nos,
-                    process_group__isnull=True,
                 ).delete()
 
             Process.objects.filter(store=store).delete()
             ProcessGroup.objects.filter(store=store).delete()
 
-            # ── 4. Ürüne bağlı modüller ────────────────────────────────────
-            try:
-                from apps.gold_purchases.models import GoldPurchases
-                GoldPurchases.objects.filter(store=store).delete()
-            except ImportError:
-                pass
+            # ── 7. Ürüne bağlı modüller ────────────────────────────────────
+            # NOT: GoldPurchases (Hurda Altın Alımları) bilinçli olarak HARİÇ
+            # tutulmuştur. Bu tablo izole bir kategori olup yalnızca yeni
+            # "Sıfırlama Merkezi"nde Grup E açıkça seçildiğinde silinir.
+            # Hiçbir monolitik/zincirleme silme operasyonu bu tabloya dokunmaz.
 
             Scraps.objects.filter(store=store).delete()
 
@@ -779,7 +887,13 @@ def hard_data_delete(request):
             except ImportError:
                 pass
 
-            # ── 5. Eski (Legacy) Tablolar ───────────────────────────────────
+            try:
+                from apps.custody.models import CustomerCustodyLedger
+                CustomerCustodyLedger.objects.filter(store=store).delete()
+            except ImportError:
+                pass
+
+            # ── 8. Eski (Legacy) Tablolar ───────────────────────────────────
             try:
                 from apps.inventories.models import Inventories, InventoryMovement
                 InventoryMovement.objects.filter(store=store).delete()
@@ -787,17 +901,19 @@ def hard_data_delete(request):
             except ImportError:
                 pass
 
-            # ── 6. Sayım Tabloları ──────────────────────────────────────────
+            # ── 9. Sayım Tabloları ──────────────────────────────────────────
             try:
                 from apps.counts.models import InventoryCountSession
                 InventoryCountSession.objects.filter(store=store).delete()
             except ImportError:
                 pass
 
-            # ── 7. Bankacılık Tabloları ─────────────────────────────────────
+            # ── 10. Bankacılık Tabloları ────────────────────────────────────
+            #     CashboxLedger Adım 1'de zaten temizlendi; BankAccount şimdi
+            #     güvenle silinebilir.
             try:
                 from apps.banking.models import (
-                    BankTransaction, BankAccount, EsurecTenantCredential,
+                    BankTransaction, EsurecTenantCredential,
                 )
                 BankTransaction.objects.filter(store=store).delete()
                 BankAccount.objects.filter(store=store).delete()
@@ -805,29 +921,29 @@ def hard_data_delete(request):
             except ImportError:
                 pass
 
-            # ── 8. Müşteriye / Tedarikçiye bağlı modüller ──────────────────
+            # ── 11. Müşteriye / Tedarikçiye bağlı modüller ─────────────────
             Repairs.objects.filter(store=store).delete()
 
             from apps.suppliers.models import SupplierLedger
             SupplierLedger.objects.filter(supplier__store=store).delete()
 
-            # ── 9. Sipariş Tabloları (OrderItem CASCADE from Order) ─────────
+            # ── 12. Sipariş Tabloları (OrderItem CASCADE from Order) ────────
             try:
                 Order.objects.filter(store=store).delete()
             except Exception:
                 pass
 
-            # ── 10. E-Fatura Ayarları ───────────────────────────────────────
+            # ── 13. E-Fatura Ayarları ───────────────────────────────────────
             try:
                 StoreEInvoiceSettings.objects.filter(store=store).delete()
                 EInvoiceCreditRequest.objects.filter(store=store).delete()
             except Exception:
                 pass
 
-            # ── 11. Ebeveyn: Products ───────────────────────────────────────
+            # ── 14. Ebeveyn: Products ───────────────────────────────────────
             Products.objects.filter(store=store).delete()
 
-            # ── 12. Ebeveyn: Customers (M2M ilişki) ────────────────────────
+            # ── 15. Ebeveyn: Customers (M2M ilişki) ────────────────────────
             #    Customers.store = ManyToManyField. Doğrudan .delete()
             #    müşteriyi TÜM mağazalardan kaldırır.
             #    Çözüm: exclusive → sil, shared → M2M bağını kopar.
@@ -842,11 +958,11 @@ def hard_data_delete(request):
             if exclusive_customer_ids:
                 Customers.objects.filter(id__in=exclusive_customer_ids).delete()
 
-            # ── 13. Bağımsız modüller ───────────────────────────────────────
+            # ── 16. Bağımsız modüller ───────────────────────────────────────
             Suppliers.objects.filter(store=store).delete()
             Workshops.objects.filter(store=store).delete()
 
-            # ── 14. Personel (Users) ────────────────────────────────────────
+            # ── 17. Personel (Users) ────────────────────────────────────────
             #    Proposals.created_by = PROTECT → Users silinmeden önce
             #    bu FK NULL yapılmalı, aksi halde ProtectedError fırlar.
             #    Korunan kullanıcılar: superuser, is_protected, request.user.
@@ -1069,7 +1185,7 @@ def wa_usage_me(request):
 
 TEMPLATE_FRIENDLY_NAMES = {
     "hello_world": "👋 Hoşgeldin Mesajı (Test)",
-    "islem_ozeti_kp_min_v2": "📝 İşlem Özeti (Kuyum Plus)",
+    "islem_ozeti_kp_min_v3": "📝 İşlem Özeti (Kuyum Plus)",
     "tamir_bilgi_min_v1": "🛠️ Tamir Bilgilendirme",
     "twofa_login_v1": "🔐 Giriş Doğrulama (2FA)",
     "verify_phone_v1": "📱 Telefon Numarası Doğrulama",
@@ -1284,6 +1400,35 @@ def store_detail_view(request, store_id):
         karat_choices = []
         labor_type_choices = []
 
+    # ── T3 (2026-04-29): Manuel Kur Ayarı için döviz ürünleri ──
+    # is_currency=True ürünleri Manuel Kur paneline beslemek için listele.
+    # TRY baz para birimi olduğu için "TRY - Türk Lirası" hariç tutulur.
+    currency_products = []
+    try:
+        from apps.products.models import Products
+        existing_rates = {}
+        try:
+            existing_rates = (store.config.manual_currency_rates or {}) if hasattr(store, 'config') else {}
+        except Exception:
+            existing_rates = {}
+        for p in (
+            Products.objects
+            .filter(store=store, is_currency=True, is_active=True, is_deleted=False)
+            .exclude(name__icontains='TRY - Türk Lirası')
+            .order_by('name')
+        ):
+            entry = existing_rates.get(str(p.id)) or {}
+            currency_products.append({
+                'id': str(p.id),
+                'name': p.name,
+                'manual_buy_tl': entry.get('buy_tl', ''),
+                'manual_sell_tl': entry.get('sell_tl', ''),
+                'api_buy_tl': float(p.buy_price_eur or 0),
+                'api_sale_tl': float(p.sale_price_eur or 0),
+            })
+    except Exception:
+        currency_products = []
+
     ctx = {
         "record": store,
         "personnel_count": personnel_count,
@@ -1303,6 +1448,8 @@ def store_detail_view(request, store_id):
         "store_isolated_role_count": store_isolated_role_count,
         # Paket/Modül güncelleme için
         "packages": Packages.objects.filter(is_active=True).order_by('order', 'name'),
+        # T3: Manuel Kur Ayarı paneli için döviz ürünleri
+        "currency_products": currency_products,
     }
     ctx["credit_packages"] = [
         {"amount": 50, "price": 50},
@@ -1312,6 +1459,17 @@ def store_detail_view(request, store_id):
         {"amount": 1000, "price": 900},
         {"amount": 2000, "price": 1800},
     ]
+
+    # ── FAZ 57: Yedekleme permission flag'leri ──
+    # Template'te role-based yetki kontrolü için view katmanında hesaplanır.
+    from apps.backups.views import (
+        _user_can_create_backup, _user_can_restore_full,
+        _user_can_restore_smart, _user_can_view_audit,
+    )
+    ctx["can_create_backup"] = _user_can_create_backup(request.user)
+    ctx["can_restore_full"] = _user_can_restore_full(request.user)
+    ctx["can_restore_smart"] = _user_can_restore_smart(request.user)
+    ctx["can_view_audit"] = _user_can_view_audit(request.user)
 
     return render(request, 'management/stores/store_detail.html', ctx)
 
@@ -2268,3 +2426,154 @@ def store_personnel_change_role(request):
         'result': True,
         'message': f'{target_user.username} kullanıcısına "{new_role.name}" rolü atandı.',
     })
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  FAZ 9.2 — GRANULAR STORE RESET (Parçalı Mağaza Sıfırlama)
+# ═══════════════════════════════════════════════════════════════════════
+#  Mimari: 5 mantıksal "bucket" (A, B, C1, C2, D) — bağımlılık zincirine
+#  göre sıralı silinir. Detay: apps/stores/reset_service.py
+# ═══════════════════════════════════════════════════════════════════════
+
+from apps.stores import reset_service as _reset_service
+
+
+@login_required(login_url='login')
+@user_passes_test(lambda u: u.is_superuser)
+@require_GET
+def reset_panel_view(request):
+    """
+    Superuser parçalı sıfırlama merkezi (UI).
+    Sadece superuser erişebilir.
+    """
+    # ?store_id=<uuid> ile gelirse o mağazayı kilitli (locked) önseçili getir.
+    locked_store = None
+    locked_store_id = request.GET.get('store_id')
+    if locked_store_id:
+        try:
+            locked_store = Stores.objects.get(id=locked_store_id, is_deleted=False)
+        except Stores.DoesNotExist:
+            locked_store = None
+
+    stores = Stores.objects.filter(is_deleted=False).order_by('title', 'store_id')
+
+    bucket_meta = []
+    for code, meta in _reset_service.BUCKET_META.items():
+        bucket_meta.append({
+            'code': code,
+            'title': meta['title'],
+            'icon': meta['icon'],
+            'color': meta['color'],
+            'description': meta['description'],
+            'requires': meta['requires'],
+            'is_financial': meta['is_financial'],
+        })
+
+    context = {
+        'title': 'Mağaza Sıfırlama Merkezi',
+        'stores': stores,
+        'locked_store': locked_store,
+        'bucket_meta_json': json.dumps(bucket_meta, ensure_ascii=False),
+    }
+    return render(request, 'management/stores/reset_panel.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def reset_preview_endpoint(request):
+    """
+    AJAX: Seçili bucket'lar için sayım önizlemesi döner.
+    POST: { store_id, buckets: ['A', 'C1', ...] }
+    """
+    store_id = request.POST.get('store_id')
+    buckets_raw = request.POST.get('buckets', '')
+    selected = [b.strip() for b in buckets_raw.split(',') if b.strip()]
+
+    if not store_id:
+        return JsonResponse({'result': False, 'error_msg': 'Mağaza seçilmedi.'})
+    if not selected:
+        return JsonResponse({'result': False, 'error_msg': 'En az bir grup seçilmeli.'})
+
+    try:
+        store = Stores.objects.get(id=store_id, is_deleted=False)
+    except Stores.DoesNotExist:
+        return JsonResponse({'result': False, 'error_msg': 'Mağaza bulunamadı.'})
+
+    try:
+        preview = _reset_service.build_preview(store, selected)
+        return JsonResponse({
+            'result': True,
+            'store': {'id': str(store.id), 'title': store.title or store.store_id},
+            'preview': preview,
+        })
+    except Exception as e:
+        log.exception('reset_preview_endpoint hatası — store_id=%s', store_id)
+        return JsonResponse({'result': False, 'error_msg': str(e)})
+
+
+@login_required(login_url='login')
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def reset_execute_endpoint(request):
+    """
+    AJAX: Asıl silme işlemi. Defansif kontrol: kullanıcı mağaza adını
+    manuel yazmış olmalı (frontend zorlasa da burada da doğrulanır).
+
+    POST: {
+        store_id,
+        buckets: 'A,B,C1',
+        confirm_title: '<mağaza adı tam metni>'
+    }
+    """
+    store_id = request.POST.get('store_id')
+    buckets_raw = request.POST.get('buckets', '')
+    confirm_title = (request.POST.get('confirm_title') or '').strip()
+    selected = [b.strip() for b in buckets_raw.split(',') if b.strip()]
+
+    if not store_id:
+        return JsonResponse({'result': False, 'error_msg': 'Mağaza seçilmedi.'})
+    if not selected:
+        return JsonResponse({'result': False, 'error_msg': 'En az bir grup seçilmeli.'})
+
+    try:
+        store = Stores.objects.get(id=store_id, is_deleted=False)
+    except Stores.DoesNotExist:
+        return JsonResponse({'result': False, 'error_msg': 'Mağaza bulunamadı.'})
+
+    # Defansif onay: mağaza adı tam eşleşmeli
+    expected = (store.title or store.store_id or '').strip()
+    if not expected:
+        return JsonResponse({
+            'result': False,
+            'error_msg': 'Mağaza adı tanımsız — onay yapılamaz.',
+        })
+    if confirm_title != expected:
+        return JsonResponse({
+            'result': False,
+            'error_msg': (
+                f'Onay metni eşleşmedi. Beklenen: "{expected}", '
+                f'gelen: "{confirm_title}"'
+            ),
+        })
+
+    try:
+        result = _reset_service.execute_reset(store, selected)
+
+        write_log(
+            request, 'Mağazalar',
+            f"PARÇALI SIFIRLAMA — Mağaza: {expected} | "
+            f"Gruplar: {', '.join(result['executed'])} | "
+            f"Silinen toplam: {sum(sum(d.values()) for d in result['before'].values())}"
+        )
+
+        return JsonResponse({
+            'result': True,
+            'executed': result['executed'],
+            'before': result['before'],
+            'after': result['after'],
+        })
+
+    except Exception as e:
+        log.exception('reset_execute_endpoint hatası — store_id=%s', store_id)
+        return JsonResponse({'result': False, 'error_msg': str(e)})

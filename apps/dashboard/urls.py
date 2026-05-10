@@ -9,6 +9,8 @@ urlpatterns = [
     path('data/', dashboard_data, name='dashboard_data'),
     path('summary_data/', get_summary_data, name='summary_data'),
     path('assets-summary/', get_assets_summary, name='assets_summary'),
+    # FAZ 26 (2026-05-01): Patron Odaklı Dashboard — TAB 1 (Mağaza Varlıkları)
+    path('assets-v2/', assets_v2_view, name='assets_v2'),
     path('top_customers_by_sales/', get_top_customers_by_sales, name='get_top_customers_by_sales'),
     path('generate-report', generate_report, name='generate-report'),
     path("generate-currency-report", generate_currency_report, name="dashboard_generate_currency_report"),

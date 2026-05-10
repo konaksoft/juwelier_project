@@ -585,7 +585,7 @@
 <div class="kp-report-wrapper">
     <div class="page">
 
-        {# ════════ BAŞLIK ════════ #}
+        <!-- ════════ BAŞLIK ════════ -->
         <div class="hr-thick"></div>
         <div class="header">
             <div class="brand">{{ company_name|upper }}</div>
@@ -596,7 +596,7 @@
         <div class="report-title">{{ report_title }}</div>
         <div class="period">{{ period_text }}</div>
 
-        {# ════════ RAPOR BİLGİLERİ ════════ #}
+        <!-- ════════ RAPOR BİLGİLERİ ════════ -->
         <table class="info">
             <tr>
                 <td>
@@ -614,7 +614,7 @@
             </tr>
         </table>
 
-        {# ════════ MÜŞTERİ BİLGİLERİ ════════ #}
+        <!-- ════════ MÜŞTERİ BİLGİLERİ ════════ -->
         <div class="customer-box">
             <div class="customer-name">{{ customer_info.full_name }}</div>
             <div class="customer-detail-grid">
@@ -629,7 +629,7 @@
             </div>
         </div>
 
-        {# ════════ BAKİYE DURUMU ════════ #}
+        <!-- ════════ BAKİYE DURUMU ════════ -->
         <div class="section-bar">BAKİYE DURUMU (HAS ALTIN)</div>
 
         {% if is_preview %}
@@ -650,7 +650,7 @@
                         {% if balance_info.is_net_negative %}-{% endif %}{{ balance_info.net_balance_hs }} gr
                     </div>
                     <div class="bc-sub">
-                        ≈ {% if balance_info.is_net_negative %}-{% endif %}{{ balance_info.net_balance_tl }} ₺
+                        ≈ {% if balance_info.is_net_negative %}-{% endif %}{{ balance_info.net_balance_eur }} ₺
                     </div>
                 </div>
                 <div class="balance-card bc-status">
@@ -681,7 +681,7 @@
                                 {% if balance_info.is_net_negative %}-{% endif %}{{ balance_info.net_balance_hs }} gr
                             </div>
                             <div class="bc-sub">≈ {% if balance_info.is_net_negative %}
-                                -{% endif %}{{ balance_info.net_balance_tl }} ₺
+                                -{% endif %}{{ balance_info.net_balance_eur }} ₺
                             </div>
                         </td>
                         <td style="border: 1pt solid #000 !important;">
@@ -700,7 +700,7 @@
             Güncel Has Altın Kuru: {{ balance_info.guncel_has_kur }} ₺/gr
         </div>
 
-        {# ════════ DÖNEM İSTATİSTİKLERİ ════════ #}
+        <!-- ════════ DÖNEM İSTATİSTİKLERİ ════════ -->
         <div class="section-bar">DÖNEM İSTATİSTİKLERİ</div>
 
         {% if is_preview %}
@@ -755,7 +755,7 @@
             </div>
         {% endif %}
 
-        {# ════════ İŞLEM ÖZETİ ════════ #}
+        <!-- ════════ İŞLEM ÖZETİ ════════ -->
         <div class="box">
             <div class="box-title">İŞLEM VE ÖDEME ÖZETİ</div>
             <table class="sum-table">
@@ -806,7 +806,7 @@
             </table>
         </div>
 
-        {# ════════ TÜM İŞLEMLER TABLOSU ════════ #}
+        <!-- ════════ TÜM İŞLEMLER TABLOSU ════════ -->
         <div class="section-bar">TÜM İŞLEMLER</div>
 
         <table class="tbl">
@@ -863,7 +863,7 @@
             </tbody>
         </table>
 
-        {# ════════ AÇIK (ÖDENMEMİŞ) İŞLEMLER ════════ #}
+        <!-- ════════ AÇIK (ÖDENMEMİŞ) İŞLEMLER ════════ -->
         {% if unpaid_rows %}
             <div class="section-bar" style="background:#8B0000 !important;">AÇIK İŞLEMLER (ÖDENMEMİŞ / EKSİK ÖDEME)
             </div>
@@ -905,7 +905,7 @@
             </table>
         {% endif %}
 
-        {# ════════ ÖDEME GEÇMİŞİ ════════ #}
+        <!-- ════════ ÖDEME GEÇMİŞİ ════════ -->
         {% if payment_rows %}
             <div class="section-bar">ÖDEME GEÇMİŞİ</div>
 
@@ -932,7 +932,14 @@
                 {% for p in payment_rows %}
                     <tr>
                         <td class="center">{{ p.datetime }}</td>
-                        <td class="center">{{ p.process_no }}</td>
+                        <td class="center">
+                            {% if p.process_no %}
+                                <span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                      data-process-no="{{ p.process_no }}"
+                                      style="cursor:pointer;letter-spacing:.3px;"
+                                      title="İşlem röntgenini aç">{{ p.process_no }}</span>
+                            {% else %}-{% endif %}
+                        </td>
                         <td class="center">{{ p.payment_type }}</td>
                         <td class="center {% if p.is_output %}negative{% else %}positive{% endif %}"
                             style="font-weight:bold;">
@@ -946,7 +953,7 @@
             </table>
         {% endif %}
 
-        {# ════════ NOTLAR VE İMZA ════════ #}
+        <!-- ════════ NOTLAR VE İMZA ════════ -->
         <div class="notes">
             <div class="notes-title">NOTLAR:<br><br><br></div>
         </div>

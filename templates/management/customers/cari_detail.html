@@ -1,0 +1,2098 @@
+{% extends 'management/base.html' %}
+{% load static %}
+
+{% block header %}
+<title>{{ title }}</title>
+<style>
+    .balance-card {
+        border-left: 6px solid #009ef7;
+        padding: 1rem 1.25rem;
+        background: #f9fafb;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+    .balance-card.debt { border-left-color: #f1416c; }
+    .balance-card.credit { border-left-color: #50cd89; }
+    .balance-card.zero { border-left-color: #b5b5c3; }
+    .balance-amount-hs { font-size: 1.6rem; font-weight: 700; }
+    .balance-amount-tl { font-size: 1.05rem; color: #7e8299; }
+    .ledger-row.is-pending { background: #fff8e1; }
+    .ledger-row.is-reversed { color: #b5b5c3; text-decoration: line-through; }
+    .pill {
+        display: inline-block;
+        padding: 0.15rem 0.55rem;
+        border-radius: 1rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+    .pill-debt { background: #fde0e6; color: #f1416c; }
+    .pill-credit { background: #d6f7e6; color: #50cd89; }
+    .pill-collection { background: #d6e5fb; color: #009ef7; }
+    .pill-fx { background: #fff4d6; color: #b88200; }
+    .pill-discount { background: #f3e0ff; color: #7239ea; }
+    .pill-writeoff { background: #f5f5f5; color: #4b5675; }
+    .pill-offset { background: #d6f4f7; color: #00a3b1; }
+    .pill-reversal { background: #ffe2e5; color: #f1416c; }
+    .pill-cashbox { background: #eef5ff; color: #2c5fa7; font-weight: 500; }
+    .pending-banner {
+        background: #fff8e1;
+        border-left: 4px solid #ffc107;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+    /* FAZ 14 UI — C2: İşaretli tutar görseli */
+    .amount-in  { color: #50cd89; font-weight: 600; }   /* yeşil — borç azaltır (tahsilat) */
+    .amount-out { color: #f1416c; font-weight: 600; }   /* kırmızı — borç artırır */
+    .amount-neutral { color: #7e8299; }
+    .amount-cell { white-space: nowrap; }
+    .ledger-row.is-pending td.amount-cell { font-weight: 500; }
+
+    /* FAZ 22 — Emanet sekmesi stilleri */
+    .custody-section { margin-top: 1.5rem; }
+    .custody-fx-warning {
+        background: #fff8e1;
+        border-left: 4px solid #ffc107;
+        padding: .65rem .9rem;
+        border-radius: 6px;
+        margin-top: .5rem;
+        font-size: .92rem;
+    }
+    .custody-fx-warning.gain { border-left-color: #f1416c; background: #fde0e6; }
+    .custody-fx-warning.loss { border-left-color: #50cd89; background: #d6f7e6; }
+    .custody-fx-warning.flat { border-left-color: #b5b5c3; background: #f5f5f5; }
+    .pill-custody-in     { background: #e0f0ff; color: #0078d4; }
+    .pill-custody-out    { background: #fff0cc; color: #b88200; }
+    .pill-custody-offset { background: #d6f4f7; color: #00a3b1; }
+    .pill-custody-rev    { background: #ffe2e5; color: #f1416c; }
+    .custody-row.is-inactive { color: #b5b5c3; text-decoration: line-through; }
+
+    /* FAZ 22 — Yazdırılabilir alan (ekran dışı) */
+    @media print {
+        body * { visibility: hidden; }
+        #custodyPrintArea, #custodyPrintArea * { visibility: visible; }
+        #custodyPrintArea {
+            position: absolute; left: 0; top: 0; width: 100%;
+        }
+    }
+    #custodyPrintArea {
+        position: absolute; left: -9999px; top: 0;
+        width: 800px; padding: 24px;
+        font-family: Arial, sans-serif; color: #000;
+        background: #fff;
+    }
+    #custodyPrintArea h2 { margin: 0 0 4px 0; font-size: 18px; }
+    #custodyPrintArea .head-info { font-size: 12px; color: #444; margin-bottom: 12px; }
+    #custodyPrintArea table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    #custodyPrintArea th, #custodyPrintArea td {
+        border: 1px solid #444; padding: 4px 6px; font-size: 11px;
+        text-align: left;
+    }
+    #custodyPrintArea th { background: #eee; }
+    #custodyPrintArea .footer-sign {
+        margin-top: 28px; display: flex; justify-content: space-between;
+        font-size: 11px;
+    }
+    #custodyPrintArea .footer-sign div { width: 45%; border-top: 1px solid #444; padding-top: 6px; text-align: center; }
+
+    /* ───────── FAZ 22.9 — EMANET MAHSUPLAŞMA MODAL YENİLEMESİ ───────── */
+    #offsetModal .balance-card {
+        padding: .9rem 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        border-left: 6px solid #b5b5c3;
+        height: 100%;
+        transition: border-color .15s ease;
+    }
+    #offsetModal .balance-card.is-debt    { border-left-color: #f1416c; background: linear-gradient(180deg,#fff5f8 0%,#fff 100%); }
+    #offsetModal .balance-card.is-credit  { border-left-color: #50cd89; background: linear-gradient(180deg,#f1fbf6 0%,#fff 100%); }
+    #offsetModal .balance-card.is-zero    { border-left-color: #b5b5c3; background: #f9fafb; }
+    #offsetModal .balance-card.is-custody { border-left-color: #00a3b1; background: linear-gradient(180deg,#f0fbfd 0%,#fff 100%); }
+    #offsetModal .balance-card .bc-label  { font-size: .72rem; font-weight: 700; letter-spacing: .04em; color: #7e8299; }
+    #offsetModal .balance-card .bc-hs     { font-size: 1.55rem; font-weight: 700; line-height: 1.15; }
+    #offsetModal .balance-card .bc-tl     { font-size: 1rem; color: #7e8299; }
+    #offsetModal .balance-card .bc-hint   { font-size: .8rem; color: #7e8299; margin-top: .35rem; }
+    #offsetModal .rate-row {
+        text-align: center;
+        font-size: .85rem;
+        color: #7e8299;
+        margin: .35rem 0 1rem;
+    }
+    #offsetModal .form-required::after {
+        content: ' *';
+        color: #f1416c;
+        font-weight: 700;
+    }
+    #offsetModal .preview-card {
+        background: #f5f8ff;
+        border: 1px dashed #009ef7;
+        border-radius: 8px;
+        padding: .9rem 1rem;
+        margin-top: 1rem;
+        transition: border-color .15s ease, background .15s ease;
+    }
+    #offsetModal .preview-card.is-full   { border-color: #50cd89; background: #f1fbf6; }
+    #offsetModal .preview-card.is-partial{ border-color: #ffc107; background: #fff8e1; }
+    #offsetModal .preview-card.is-error  { border-color: #f1416c; background: #fff5f8; }
+    #offsetModal .preview-card .pv-label { font-size: .72rem; font-weight: 700; color: #7e8299; letter-spacing: .03em; }
+    #offsetModal .preview-card .pv-value { font-size: 1.2rem; font-weight: 700; }
+    #offsetModal .preview-card .pv-hint  { font-size: .85rem; margin-top: .55rem; }
+    #offsetModal .submit-badge {
+        display: inline-block;
+        background: rgba(255,255,255,.25);
+        border-radius: 12px;
+        padding: .05rem .55rem;
+        margin-left: .4rem;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+    #offsetModal .footer-note {
+        font-size: .78rem;
+        color: #7e8299;
+        margin-right: auto;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container-xxl py-5" id="cariApp"
+     data-customer-id="{{ customer.id }}"
+     data-customer-name="{{ customer }}"
+     data-has-rate="{{ has_rate }}">
+
+    <!-- Üst Bilgi -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">{{ customer }} — Cari Hesap</h2>
+            <div class="text-muted small">
+                Müşteri ID: <code>{{ customer.id }}</code> ·
+                Anlık 1 gr Has = <span id="hasRateText">{{ has_rate }}</span> TL
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'customers:detail' customer.id %}"
+               class="btn btn-light-primary btn-sm">
+                <i class="fa-solid fa-user"></i> Müşteri Detayı
+            </a>
+            <button type="button" class="btn btn-light btn-sm" onclick="cariApp.refreshAll()">
+                <i class="fa-solid fa-rotate"></i> Yenile
+            </button>
+        </div>
+    </div>
+
+    <!-- Bakiye Kartları -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div id="ledgerBalanceCard" class="balance-card">
+                <div class="text-muted text-uppercase small fw-bold mb-1">Cari Bakiye</div>
+                <div class="balance-amount-hs"><span id="ledgerHs">—</span> HS</div>
+                <div class="balance-amount-tl">≈ <span id="ledgerTl">—</span> TL</div>
+                <div class="mt-2 small text-muted" id="ledgerHint"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div id="custodyBalanceCard" class="balance-card">
+                <div class="text-muted text-uppercase small fw-bold mb-1">Emanet Bakiye</div>
+                <div class="balance-amount-hs"><span id="custodyHs">—</span> HS</div>
+                <div class="balance-amount-tl">≈ <span id="custodyTl">—</span> TL</div>
+                <div class="mt-2 small text-muted">Mahsuplaşmaya hazır</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onay Bekleyen Banner -->
+    <div id="pendingBanner" class="pending-banner d-none">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        Bu müşteride <strong><span id="pendingCount">0</span></strong>
+        adet onay bekleyen ledger kaydı var. Bu kayıtlar bakiyeye dahil değildir.
+    </div>
+
+    <!-- Aksiyon Butonları -->
+    <div class="d-flex flex-wrap gap-2 my-4">
+        <button type="button" class="btn btn-primary"
+                data-bs-toggle="modal" data-bs-target="#collectModal">
+            <i class="fa-solid fa-money-bill-wave me-1"></i> Tahsilat / Kapatma
+        </button>
+        <button type="button" class="btn btn-info"
+                data-bs-toggle="modal" data-bs-target="#offsetModal">
+            <i class="fa-solid fa-right-left me-1"></i> Emanet Mahsuplaşma
+        </button>
+        <a class="btn btn-light-warning"
+           href="{% url 'customers:cari-pending-approvals-page' %}">
+            <i class="fa-solid fa-stamp me-1"></i> Onay Bekleyenler
+        </a>
+    </div>
+
+    <!-- Ledger Tablosu -->
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">Cari Hareket Defteri</h3>
+            <div class="card-toolbar">
+                <label class="form-check form-switch form-check-sm">
+                    <input class="form-check-input" type="checkbox" id="includeInactiveChk">
+                    <span class="form-check-label small">İptal/Pasif kayıtları göster</span>
+                </label>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-row-dashed mb-0">
+                    <thead>
+                        <tr class="fw-bold text-muted">
+                            <th>Tarih</th>
+                            <th>Tip</th>
+                            <th class="text-end">Has (±)</th>
+                            <th class="text-end">TL (±)</th>
+                            <th>Para</th>
+                            <th>Kasa</th>
+                            <th>Açıklama</th>
+                            <th>Durum</th>
+                            <th>İşlem No</th>
+                            <th class="text-end">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTbody">
+                        <tr><td colspan="10" class="text-center p-4 text-muted">Yükleniyor…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ───────── FAZ 22 — EMANET HAREKETLERİ MİNİ-TABLO ───────── -->
+    <div class="card custody-section">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fa-solid fa-box me-2 text-info"></i>
+                Emanet Defteri (Müşteri)
+            </h3>
+            <div class="card-toolbar d-flex flex-wrap gap-2 align-items-center">
+                <input type="date" id="custodyDateFrom" class="form-control form-control-sm" style="width:auto">
+                <input type="date" id="custodyDateTo"   class="form-control form-control-sm" style="width:auto">
+                <label class="form-check form-switch form-check-sm">
+                    <input class="form-check-input" type="checkbox" id="custodyIncludeInactiveChk">
+                    <span class="form-check-label small">İptal/Pasif</span>
+                </label>
+                <button type="button" class="btn btn-sm btn-light-primary" id="btnCustodyRefresh">
+                    <i class="fa-solid fa-rotate"></i> Yenile
+                </button>
+                <button type="button" class="btn btn-sm btn-light-success" id="btnCustodyPrint">
+                    <i class="fa-solid fa-print"></i> Yazdır
+                </button>
+                <button type="button" class="btn btn-sm btn-light-info" id="btnCustodyPdf">
+                    <i class="fa-solid fa-file-pdf"></i> PDF Ekstre
+                </button>
+                <button type="button" class="btn btn-sm btn-light-warning" id="btnCustodyExcel">
+                    <i class="fa-solid fa-file-excel"></i> Excel
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Özet rozetleri -->
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="bg-light p-2 rounded">
+                        <div class="text-muted small">Toplam Giriş</div>
+                        <div class="fw-bold"><span id="custodySumIn">—</span> HS</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-light p-2 rounded">
+                        <div class="text-muted small">Toplam Çıkış</div>
+                        <div class="fw-bold"><span id="custodySumOut">—</span> HS</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-light p-2 rounded">
+                        <div class="text-muted small">Toplam Mahsup</div>
+                        <div class="fw-bold"><span id="custodySumOffset">—</span> HS</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-light p-2 rounded">
+                        <div class="text-muted small">Net Bakiye</div>
+                        <div class="fw-bold text-info">
+                            <span id="custodyHistoryBalance">—</span> HS
+                            <span class="text-muted small">≈ <span id="custodyHistoryBalanceTl">—</span> TL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-2 mb-0">
+                    <thead>
+                        <tr class="fw-bold text-muted">
+                            <th>Tarih</th>
+                            <th>Tip</th>
+                            <th>Ürün</th>
+                            <th class="text-end">Adet</th>
+                            <th class="text-end">Gram</th>
+                            <th class="text-end">Has</th>
+                            <th class="text-end">Kalan</th>
+                            <th>İşlem No</th>
+                            <th>Açıklama</th>
+                            <th>Durum</th>
+                            <th class="text-end">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="custodyTbody">
+                        <tr><td colspan="11" class="text-center p-4 text-muted">Yükleniyor…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ───────── FAZ 22 — Emanet İPTAL (REVERSAL) MODALI ───────── -->
+    <div class="modal fade" id="custodyReverseModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Emanet Hareketi İptali (REVERSAL)</h4>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="custodyReverseForm" autocomplete="off">
+            <input type="hidden" id="custodyReverseId">
+            <div class="modal-body">
+              <div class="alert alert-warning">
+                APPEND-ONLY: orijinal kayıt silinmez; karşı giriş (REVERSAL) yazılır.
+                Stok havuzu da aynı atomik işlemde geri sarılır.
+              </div>
+              <div class="mb-2 small">
+                Tip: <strong id="custodyRevType"></strong> ·
+                Has: <strong id="custodyRevHs"></strong> ·
+                Gram: <strong id="custodyRevGram"></strong>
+              </div>
+              <label class="form-label required">İptal Nedeni</label>
+              <textarea class="form-control" id="custodyReverseReason" rows="3" required
+                        placeholder="Örn: Müşteri farklı kayıt bıraktığını beyan etti..."></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+              <button type="submit" class="btn btn-danger">
+                <i class="fa-solid fa-undo"></i> İptal Karşı Girişini Yaz
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Yazdırılabilir alan (ekran dışı; print() çağrısı ile gösterilir) -->
+    <div id="custodyPrintArea"></div>
+</div>
+
+<!-- ─────────── TAHSİLAT / KAPATMA MODALI ─────────── -->
+<div class="modal fade" id="collectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Tahsilat / Borç Kapatma</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="collectForm" autocomplete="off">
+        <div class="modal-body">
+
+          <div class="alert alert-light-primary d-flex justify-content-between align-items-center">
+            <div>Açık Borç:
+              <strong><span id="modalOpenHs">—</span> HS</strong>
+              <span class="text-muted">≈ <span id="modalOpenTl">—</span> TL</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span>Anlık kur: <strong id="modalRate">—</strong></span>
+              <button type="button" class="btn btn-sm btn-light-primary"
+                      id="btnFillFromBalance"
+                      title="Açık borcun tamamını kapatma hedefi olarak doldur">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Tüm Borcu Kapat
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label required">Kasa / Banka Hesabı</label>
+              <select class="form-select" id="bankAccountSel" required>
+                <option value="">Seçiniz…</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label required">Para Birimi</label>
+              <select class="form-select" id="currencySel" required>
+                <option value="TRY">TRY (Nakit/Banka)</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="HS">HS (Has Altın Teslim)</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label required">Tahsilat Tutarı</label>
+              <input type="number" step="0.01" class="form-control" id="amountInput" required>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-3">
+            <div class="col-md-4">
+              <label class="form-label">
+                Kapatma Hedefi (HS)
+                <i class="fa-solid fa-circle-info text-muted small ms-1"
+                   title="Tahsilattan büyükse kalan tutar 'fark tipi' ile kapatılır (kur farkı / iskonto / silme). Hassasiyet: 0.001 HS."></i>
+              </label>
+              <div class="input-group">
+                <input type="number" step="0.001" min="0" class="form-control" id="targetCloseInput"
+                       placeholder="Boş = tahsilatın HS karşılığı kadar">
+                <button type="button" class="btn btn-light-primary"
+                        id="btnFillTargetFromBalance"
+                        title="Açık borcun tamamını hedef olarak doldur">
+                  <i class="fa-solid fa-equals"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fark Tipi</label>
+              <select class="form-select" id="adjustmentTypeSel">
+                <option value="">— Fark Yok —</option>
+                <option value="FX_GAIN">Kur Farkı (Mağaza Zararı)</option>
+                <option value="DISCOUNT">İskonto (Müşteri İndirimi)</option>
+                <option value="WRITEOFF">Şüpheli Alacak Silme</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fark Açıklaması</label>
+              <input type="text" class="form-control" id="adjReasonInput"
+                     placeholder="Yönetici onayıyla...">
+            </div>
+          </div>
+
+          <!-- FAZ 30 — Fazla Tahsilatı Kabul Et toggle -->
+          <div class="row g-3 mt-2">
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="allowOverpaymentChk">
+                <label class="form-check-label" for="allowOverpaymentChk">
+                  <strong>Fazla Tahsilatı Kabul Et</strong>
+                  <span class="text-muted small">
+                    — Müşteri borcundan fazla ödüyorsa aşan tutar
+                    "Kasa Fazlası / Diğer Gelir" olarak yazılır.
+                    %10 ve altı farklar personel tarafından, üstü
+                    Mağaza Admin tarafından onaylanır.
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- Önizleme Bloğu -->
+          <div id="previewBox" class="bg-light p-3 rounded">
+            <div class="row text-center">
+              <div class="col-md-3">
+                <div class="text-muted small">Tahsilat HS</div>
+                <div class="fw-bold fs-5"><span id="prvCollHs">—</span></div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-muted small">Tahsilat TL</div>
+                <div class="fw-bold fs-5"><span id="prvCollTl">—</span></div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-muted small">Fark HS</div>
+                <div class="fw-bold fs-5 text-warning"><span id="prvAdjHs">—</span></div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-muted small">Fark TL</div>
+                <div class="fw-bold fs-5 text-warning"><span id="prvAdjTl">—</span></div>
+              </div>
+            </div>
+            <div class="text-muted small mt-2 text-center" id="prvHint"></div>
+
+            <!-- FAZ 30 — Overpayment göstergesi (yalnız tetiklenince görünür) -->
+            <div id="prvOverpaymentBox" class="alert alert-light-success mt-3 mb-0 d-none">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <i class="fa-solid fa-coins me-1"></i>
+                  <strong>Fazla Tahsilat Tespit Edildi</strong>
+                  <div class="small mt-1">
+                    Bu tahsilatla borç tamamen kapanır; aşan kısım
+                    <strong>Kasa Fazlası / Diğer Gelir</strong> olarak yazılacaktır.
+                    "Fazla Tahsilatı Kabul Et" işaretli olmalıdır.
+                  </div>
+                </div>
+                <div class="text-end">
+                  <div class="text-muted small">Fazla Tutar</div>
+                  <div class="fw-bold fs-4 text-success">
+                    +<span id="prvOverpaymentTl">—</span> TL
+                  </div>
+                  <div class="small text-muted">
+                    %<span id="prvOverpaymentPct">—</span> oranında
+                    (<span id="prvOverpaymentBand">—</span>)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+          <button type="button" class="btn btn-light-info" onclick="cariApp.previewCollect()">
+            <i class="fa-solid fa-calculator"></i> Hesapla
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-check"></i> Tahsilatı Kaydet
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── HIZLI ONAY MODALI (FAZ 30) ─────────── -->
+<!--
+  Tahsilat tamamlandıktan sonra arka planda onay bekleyen bir fark/kasa
+  fazlası kaydı oluştuysa, bu modal anında açılır. Backend'in dönen
+  `self_approval` bloğuna göre iki state'e girer:
+    1) actor_can_self_approve == true:
+       - Kullanıcı (veznedar veya admin) "Onayla" butonuna basıp
+         tek tıkla onayı tamamlayabilir.
+    2) actor_can_self_approve == false:
+       - Fark %10'u aşmıştır VE kullanıcı admin değildir.
+       - "Onayla" butonu gizlenir; sadece "Anladım" görünür.
+       - Kayıt onay bekleyenlerde kalır; admin Cari Hesap Merkezi'nden
+         onaylar.
+-->
+<div class="modal fade" id="quickApproveModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="d-flex align-items-center">
+          <span class="me-3 d-inline-flex align-items-center justify-content-center"
+                style="width:42px;height:42px;border-radius:10px;background:#fef3c7;color:#b45309;">
+            <i class="fa-solid fa-circle-check fa-lg"></i>
+          </span>
+          <div>
+            <h4 class="modal-title mb-0" id="qaTitle">Fark Onayı Bekleniyor</h4>
+            <div class="text-muted small" id="qaSubtitle">
+              Tahsilat kaydedildi; oluşan fark için onay gerekiyor.
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" id="qaCloseX" aria-label="Kapat"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Üst özet kart -->
+        <div class="alert alert-light-primary mb-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-6">
+              <div class="text-muted small">Müşteri</div>
+              <div class="fw-bold" id="qaCustomer">—</div>
+            </div>
+            <div class="col-6 text-end">
+              <div class="text-muted small">Kapatılan Borç</div>
+              <div class="fw-bold"><span id="qaClosedTl">—</span> TL</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fark detayı -->
+        <div class="bg-light rounded p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small">Fark Türü</div>
+              <div class="fw-bold" id="qaEntryType">—</div>
+            </div>
+            <div class="text-end">
+              <div class="text-muted small">Fark Tutarı</div>
+              <div class="fw-bold fs-4" id="qaAmountTl">— TL</div>
+              <div class="small text-muted">
+                Borca Oranı: %<span id="qaPct">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- State A: kendi kendine onaylayabilir -->
+        <div id="qaSelfApproveBox" class="alert alert-light-success d-none">
+          <i class="fa-solid fa-shield-check me-1"></i>
+          <strong>Onay Yetkiniz Var</strong>
+          <div class="small mt-1">
+            Bu fark <strong>%10 ve altı</strong> bandında. Kendi kendinize
+            onaylayabilirsiniz. Onayladığınız anda işlem mağaza P&L
+            defterine yansıyacaktır.
+          </div>
+        </div>
+
+        <!-- State B: yetkili onayı gerekiyor -->
+        <div id="qaNeedAdminBox" class="alert alert-light-warning d-none">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          <strong>Yetkili Onayı Gerekiyor</strong>
+          <div class="small mt-1">
+            Bu fark <strong>%10'u aştığı için</strong> Mağaza Admin
+            onayı zorunludur. Kayıt "Onay Bekleyenler" listesine
+            düştü; admin oradan onaylayabilir.
+          </div>
+        </div>
+
+        <!-- Onay notu (yalnız self-approve modunda) -->
+        <div id="qaNoteWrap" class="mt-3 d-none">
+          <label class="form-label text-muted small">
+            Onay Notu (opsiyonel)
+          </label>
+          <input type="text" class="form-control form-control-sm"
+                 id="qaApprovalNote"
+                 placeholder="Örn: Müşteri yuvarlama ile ödedi.">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" id="qaLaterBtn">
+          <i class="fa-solid fa-clock"></i> Şimdi Değil
+        </button>
+        <button type="button" class="btn btn-success d-none" id="qaApproveBtn">
+          <i class="fa-solid fa-check-double"></i> Onayla
+        </button>
+        <button type="button" class="btn btn-primary d-none" id="qaUnderstoodBtn"
+                data-bs-dismiss="modal">
+          <i class="fa-solid fa-circle-info"></i> Anladım
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── MAHSUPLAŞMA MODALI (FAZ 22.9 yenileme) ─────────── -->
+<div class="modal fade" id="offsetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="d-flex align-items-center">
+          <span class="me-3 d-inline-flex align-items-center justify-content-center"
+                style="width:42px;height:42px;border-radius:10px;background:#d6f4f7;color:#00a3b1;">
+            <i class="fa-solid fa-right-left fa-lg"></i>
+          </span>
+          <div>
+            <h4 class="modal-title mb-0">Emanet → Cari Mahsuplaşma</h4>
+            <div class="text-muted small">
+              Müşterinin emanet altını mağaza borcuna karşılık mahsup edilir.
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="offsetForm" autocomplete="off">
+        <div class="modal-body">
+
+          <!-- ── Durum Kartları (2 sütun) ── -->
+          <div class="row g-3 mb-2">
+            <div class="col-md-6">
+              <div id="offsetLedgerCard" class="balance-card is-zero">
+                <div class="bc-label">CARİ BORÇ</div>
+                <div class="bc-hs"><span id="offsetLedgerHs">—</span> <small class="text-muted">HS</small></div>
+                <div class="bc-tl">≈ <span id="offsetLedgerTl">—</span> TL</div>
+                <div class="bc-hint" id="offsetLedgerHint">Yükleniyor…</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div id="offsetCustodyCard" class="balance-card is-custody">
+                <div class="bc-label">EMANET BAKİYE</div>
+                <div class="bc-hs"><span id="offsetCustodyHs">—</span> <small class="text-muted">HS</small></div>
+                <div class="bc-tl">≈ <span id="offsetCustodyTl">—</span> TL</div>
+                <div class="bc-hint" id="offsetCustodyHint">Mahsuplaşmaya hazır</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rate-row">
+            Anlık Has Kuru: <strong>≈ <span id="offsetModalRate">—</span> TL / HS</strong>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- ── Form ── -->
+          <div class="mb-3">
+            <label class="form-label form-required" for="offsetAmountInput">
+              Mahsuplaşılacak Has
+              <i class="fa-solid fa-circle-info text-muted small ms-1"
+                 title="Emanet bakiyesinden alınıp cari borçtan düşülecek HS miktarı. Hassasiyet 0.001 HS."></i>
+            </label>
+            <div class="input-group">
+              <input type="number" step="0.001" min="0" class="form-control form-control-lg"
+                     id="offsetAmountInput" placeholder="0.000" required>
+              <span class="input-group-text">gr HS</span>
+              <button type="button" class="btn btn-light-primary" id="btnOffsetFillMax"
+                      title="min(Emanet Bakiye, Açık Borç) değerini doldurur">
+                <i class="fa-solid fa-equals me-1"></i> Hepsini Mahsuplaş
+              </button>
+            </div>
+            <div class="form-text" id="offsetAmountHelp">
+              Emanet ve borçtan en küçüğüne göre sınırlandırılır.
+            </div>
+          </div>
+
+          <!-- ── Canlı Önizleme Kutusu (her zaman görünür, değer yokken pasif) ── -->
+          <div id="offsetPreviewCard" class="preview-card" aria-live="polite">
+            <div class="row text-center g-2">
+              <div class="col-md-4">
+                <div class="pv-label">MAHSUPLAŞILAN</div>
+                <div class="pv-value text-info"><span id="prvOffsetAmount">0,000</span> <small class="text-muted">HS</small></div>
+              </div>
+              <div class="col-md-4">
+                <div class="pv-label">YENİ CARİ BAKİYE</div>
+                <div class="pv-value"><span id="prvOffsetNewLedger">—</span> <small class="text-muted">HS</small></div>
+              </div>
+              <div class="col-md-4">
+                <div class="pv-label">KALAN EMANET</div>
+                <div class="pv-value text-info"><span id="prvOffsetNewCustody">—</span> <small class="text-muted">HS</small></div>
+              </div>
+            </div>
+            <div class="pv-hint text-center text-muted" id="prvOffsetHint">
+              <i class="fa-solid fa-keyboard me-1"></i>
+              Bir tutar girin veya "Hepsini Mahsuplaş"a tıklayın.
+            </div>
+          </div>
+
+          <!-- FAZ 22 — Kur farkı önizlemesi (mevcut, pozisyon korunuyor) -->
+          <div id="offsetFxPreview" class="custody-fx-warning d-none mt-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-bold">
+                  <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                  Kur Farkı Bilgisi
+                </div>
+                <div class="small mt-1">
+                  Emanet ortalama kuru: <strong id="fxCustodyRate">—</strong> TL/HS
+                  · Bugünkü kur: <strong id="fxCurrentRate">—</strong> TL/HS
+                </div>
+                <div class="small">
+                  TL Karşılığı (emanet kuru): <strong id="fxAtCustody">—</strong>
+                  · TL Karşılığı (bugün): <strong id="fxAtCurrent">—</strong>
+                </div>
+              </div>
+              <div class="text-end">
+                <div class="text-muted small">Fark</div>
+                <div class="fw-bold fs-5"><span id="fxDiffTl">—</span> TL</div>
+                <div class="small text-muted" id="fxDirectionText">—</div>
+              </div>
+            </div>
+            <div class="small mt-2 text-muted">
+              Onay: Mahsuplaşma kaydedildiğinde, kur farkı eşik üstündeyse cari
+              defterine FX_GAIN/FX_LOSS satırı yazılır (gerekiyorsa onay zinciri
+              bekler).
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label" for="offsetDescInput">
+              Açıklama <span class="text-muted small">(opsiyonel)</span>
+            </label>
+            <input type="text" class="form-control" id="offsetDescInput"
+                   placeholder="Örn: Müşteri talebiyle borç mahsubu">
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <span class="footer-note">
+            <i class="fa-solid fa-shield-halved me-1"></i>
+            APPEND-ONLY: Kayıt silinmez, defterlere karşı giriş yazılır.
+          </span>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+          <button type="submit" class="btn btn-info" id="btnOffsetSubmit">
+            <i class="fa-solid fa-right-left me-1"></i> Mahsuplaş
+            <span class="submit-badge d-none" id="offsetSubmitBadge">0,000 HS</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── REVERSAL MODALI ─────────── -->
+<div class="modal fade" id="reverseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Kayıt İptal (REVERSAL)</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="reverseForm" autocomplete="off">
+        <input type="hidden" id="reverseEntryId">
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            APPEND-ONLY: orijinal kayıt silinmeyecek; karşı giriş (REVERSAL) yazılacak.
+          </div>
+          <div class="mb-2 small">
+            Tip: <strong id="revType"></strong> ·
+            Has: <strong id="revHs"></strong> ·
+            TL: <strong id="revTl"></strong>
+          </div>
+          <label class="form-label required">İptal Nedeni</label>
+          <textarea class="form-control" id="reverseReasonInput" rows="3" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa-solid fa-undo"></i> İptal Karşı Girişini Yaz
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% csrf_token %}
+
+<!-- FAZ 22 — html2pdf.js (PDF ekstre üretimi) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- xlsx (Excel ekstre üretimi) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+(function () {
+    'use strict';
+
+    const root = document.getElementById('cariApp');
+    const customerId = root.dataset.customerId;
+    const customerName = root.dataset.customerName;
+
+    // ─── CSRF ──────────────────────────────────────
+    function getCsrf() {
+        const m = document.cookie.match(/csrftoken=([^;]+)/);
+        if (m) return m[1];
+        const inp = document.querySelector('input[name=csrfmiddlewaretoken]');
+        return inp ? inp.value : '';
+    }
+
+    function jpost(url, dataObj) {
+        const fd = new FormData();
+        Object.entries(dataObj || {}).forEach(([k, v]) => {
+            if (v !== null && v !== undefined && v !== '') fd.append(k, v);
+        });
+        return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {'X-CSRFToken': getCsrf()},
+            body: fd,
+        }).then(r => r.json().then(j => ({ok: r.ok, status: r.status, body: j})));
+    }
+
+    function jget(url) {
+        return fetch(url, {credentials: 'same-origin'})
+            .then(r => r.json().then(j => ({ok: r.ok, status: r.status, body: j})));
+    }
+
+    // ─── Format ─────────────────────────────────────
+    function fmtHs(v) {
+        return Number(v || 0).toLocaleString('tr-TR', {
+            minimumFractionDigits: 3, maximumFractionDigits: 3,
+        });
+    }
+    function fmtTl(v) {
+        return Number(v || 0).toLocaleString('tr-TR', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2,
+        });
+    }
+    // FAZ 14 UI — C2: İşaretli tutar formatı (+/-, renk).
+    // signed_direction: 'in' (yeşil, +), 'out' (kırmızı, -), 'neutral' (gri).
+    function fmtSignedHs(value, direction) {
+        const num = Number(value || 0);
+        const abs = Math.abs(num).toLocaleString('tr-TR', {
+            minimumFractionDigits: 3, maximumFractionDigits: 3,
+        });
+        const cls = direction === 'in' ? 'amount-in'
+                  : direction === 'out' ? 'amount-out'
+                  : 'amount-neutral';
+        const sign = direction === 'in' ? '+' : direction === 'out' ? '−' : '';
+        return `<span class="${cls}">${sign} ${abs}</span>`;
+    }
+    function fmtSignedTl(value, direction) {
+        const num = Number(value || 0);
+        const abs = Math.abs(num).toLocaleString('tr-TR', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2,
+        });
+        const cls = direction === 'in' ? 'amount-in'
+                  : direction === 'out' ? 'amount-out'
+                  : 'amount-neutral';
+        const sign = direction === 'in' ? '+' : direction === 'out' ? '−' : '';
+        return `<span class="${cls}">${sign} ${abs}</span>`;
+    }
+    // FAZ 14 UI — C2: Kasa hücresi.
+    // bank_account_name varsa pill içinde gösterilir; yoksa "—".
+    function fmtCashbox(r) {
+        if (!r.bank_account_name) return '<span class="text-muted">—</span>';
+        const typeMap = {
+            'CASH': 'Nakit',
+            'POS': 'POS',
+            'BANK': 'Banka',
+        };
+        const typeLabel = typeMap[r.bank_account_type] || r.bank_account_type || '';
+        const ccy = r.bank_account_currency ? ` · ${r.bank_account_currency}` : '';
+        return `<span class="pill pill-cashbox" title="${escapeHtml(typeLabel)}${escapeHtml(ccy)}">
+            ${escapeHtml(r.bank_account_name)}${ccy}
+        </span>`;
+    }
+    function pillFor(t) {
+        const m = {
+            'DEBT': ['pill-debt', 'Borç'],
+            'CREDIT': ['pill-credit', 'Alacak'],
+            'COLLECTION_TL': ['pill-collection', 'Tahsilat TL'],
+            'COLLECTION_FX': ['pill-collection', 'Tahsilat FX'],
+            'COLLECTION_HS': ['pill-collection', 'Tahsilat HS'],
+            'FX_GAIN': ['pill-fx', 'Kur Farkı'],
+            'FX_LOSS': ['pill-fx', 'Kur Karı'],
+            'DISCOUNT': ['pill-discount', 'İskonto'],
+            'WRITEOFF': ['pill-writeoff', 'Silme'],
+            'CUSTODY_OFFSET': ['pill-offset', 'Emanet Mahsup'],
+            'REVERSAL': ['pill-reversal', 'İPTAL'],
+            'CORRECTION': ['pill-writeoff', 'Düzeltme'],
+        };
+        const [cls, label] = m[t] || ['pill-writeoff', t];
+        return `<span class="pill ${cls}">${label}</span>`;
+    }
+    function statusFor(r) {
+        if (!r.is_active) return '<span class="pill pill-writeoff">Pasif</span>';
+        if (r.requires_approval && !r.is_approved) {
+            return '<span class="pill pill-fx">Onay Bekliyor</span>';
+        }
+        return '<span class="pill pill-credit">Aktif</span>';
+    }
+    function escapeHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // ─── Bakiye + Pending ───────────────────────────
+    // FAZ 22.8 — Has kuru products/get-has-gold-prices fallback'i.
+    // Sayfa-yüklemede /cari/balance has_rate=0 dönerse (backend get_current_has_rate
+    // tüm zincirini denedi ama bulamadı) buradan PriceService'i ayrı bir HTTP
+    // çağrısıyla deneriz. Genelde backend zaten PriceService fallback'ini içerir,
+    // ama Redis fresh + DB stale gibi exotic durumlarda bu blok devreye girer.
+    const PRODUCT_HAS_PRICES_URL = "{% url 'products:get-has-gold-prices' %}";
+    let _liveHasRateCache = 0; // Frontend tarafı cache — gereksiz çağrıyı önler
+
+    // ─── FAZ 22.9 — Mahsuplaşma modalı state ─────────
+    // loadBalance() içinde doldurulur, lokal canlı önizleme bu objeyi okur.
+    const _offsetState = {
+        ledgerHs:  0,
+        custodyHs: 0,
+        ledgerTl:  0,
+        custodyTl: 0,
+        hasRate:   0,
+    };
+
+    async function fetchLiveHasRate() {
+        if (_liveHasRateCache > 0) return _liveHasRateCache;
+        try {
+            const res = await fetch(PRODUCT_HAS_PRICES_URL, {credentials: 'same-origin'});
+            const json = await res.json();
+            const sale = parseFloat(json.sale_hs_tl || 0);
+            const buy  = parseFloat(json.buy_hs_tl  || 0);
+            const rate = sale > 0 ? sale : buy;
+            if (rate > 0) _liveHasRateCache = rate;
+            return rate;
+        } catch (e) { return 0; }
+    }
+
+    function loadBalance() {
+        return jget(`/customers/${customerId}/cari/balance`).then(async ({body}) => {
+            if (!body || !body.result) return;
+            const d = body.data;
+            document.getElementById('ledgerHs').textContent = fmtHs(d.ledger_balance_hs);
+            document.getElementById('custodyHs').textContent = fmtHs(d.custody_balance_hs);
+
+            // FAZ 22.8 — TL alanları için kur fallback zinciri
+            let hasRate = parseFloat(d.has_rate) || 0;
+            let ledgerTlVal = parseFloat(d.ledger_balance_eur) || 0;
+            let custodyTlVal = parseFloat(d.custody_balance_eur) || 0;
+
+            if (hasRate <= 0) {
+                const liveRate = await fetchLiveHasRate();
+                if (liveRate > 0) {
+                    hasRate = liveRate;
+                    ledgerTlVal  = (parseFloat(d.ledger_balance_hs)  || 0) * liveRate;
+                    custodyTlVal = (parseFloat(d.custody_balance_hs) || 0) * liveRate;
+                }
+            }
+
+            document.getElementById('ledgerTl').textContent  = fmtTl(ledgerTlVal);
+            document.getElementById('custodyTl').textContent = fmtTl(custodyTlVal);
+            document.getElementById('hasRateText').textContent = fmtTl(hasRate);
+            // d objesini fallback değerleriyle güncelle ki aşağıdaki modal alanları
+            // (modalRate, modalOpenTl) tutarlı kalsın.
+            d.has_rate = hasRate;
+            d.ledger_balance_eur = ledgerTlVal;
+            d.custody_balance_eur = custodyTlVal;
+
+            const card = document.getElementById('ledgerBalanceCard');
+            card.classList.remove('debt', 'credit', 'zero');
+            const hs = parseFloat(d.ledger_balance_hs);
+            const hint = document.getElementById('ledgerHint');
+            if (hs > 0) {
+                card.classList.add('debt');
+                hint.textContent = 'Müşteri mağazaya borçlu';
+            } else if (hs < 0) {
+                card.classList.add('credit');
+                hint.textContent = 'Mağaza müşteriye borçlu';
+            } else {
+                card.classList.add('zero');
+                hint.textContent = 'Bakiye sıfır';
+            }
+
+            const banner = document.getElementById('pendingBanner');
+            if (d.pending_approvals_count > 0) {
+                banner.classList.remove('d-none');
+                document.getElementById('pendingCount').textContent = d.pending_approvals_count;
+            } else {
+                banner.classList.add('d-none');
+            }
+
+            // Modal alanlarını da güncelle
+            document.getElementById('modalOpenHs').textContent = fmtHs(d.ledger_balance_hs);
+            document.getElementById('modalOpenTl').textContent = fmtTl(d.ledger_balance_eur);
+            document.getElementById('modalRate').textContent = fmtTl(d.has_rate);
+
+            // ─── FAZ 22.9 — Mahsuplaşma modalı state ve UI güncellemeleri ───
+            const ledgerHsNum  = parseFloat(d.ledger_balance_hs)  || 0;
+            const custodyHsNum = parseFloat(d.custody_balance_hs) || 0;
+            const ledgerTlNum  = ledgerTlVal;
+            const custodyTlNum = custodyTlVal;
+            const rateNum      = hasRate;
+
+            _offsetState.ledgerHs  = ledgerHsNum;
+            _offsetState.custodyHs = custodyHsNum;
+            _offsetState.ledgerTl  = ledgerTlNum;
+            _offsetState.custodyTl = custodyTlNum;
+            _offsetState.hasRate   = rateNum;
+
+            // HS / TL değer alanları
+            const setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+            setTxt('offsetCustodyHs', fmtHs(custodyHsNum));
+            setTxt('offsetLedgerHs',  fmtHs(ledgerHsNum));
+            setTxt('offsetCustodyTl', fmtTl(custodyTlNum));
+            setTxt('offsetLedgerTl',  fmtTl(ledgerTlNum));
+            setTxt('offsetModalRate', fmtTl(rateNum));
+
+            // Cari Borç kartı renk + hint
+            const lcard = document.getElementById('offsetLedgerCard');
+            if (lcard) {
+                lcard.classList.remove('is-debt', 'is-credit', 'is-zero');
+                const lhint = document.getElementById('offsetLedgerHint');
+                if (ledgerHsNum > 0) {
+                    lcard.classList.add('is-debt');
+                    if (lhint) lhint.innerHTML = '<i class="fa-solid fa-arrow-down text-danger me-1"></i>Müşteri mağazaya borçlu';
+                } else if (ledgerHsNum < 0) {
+                    lcard.classList.add('is-credit');
+                    if (lhint) lhint.innerHTML = '<i class="fa-solid fa-arrow-up text-success me-1"></i>Mağaza müşteriye borçlu';
+                } else {
+                    lcard.classList.add('is-zero');
+                    if (lhint) lhint.innerHTML = '<i class="fa-solid fa-equals text-muted me-1"></i>Açık borç yok — mahsuplaşma yapılamaz';
+                }
+            }
+
+            // Emanet kartı hint
+            const chint = document.getElementById('offsetCustodyHint');
+            if (chint) {
+                if (custodyHsNum > 0) {
+                    chint.innerHTML = '<i class="fa-solid fa-circle-check text-info me-1"></i>Mahsuplaşmaya hazır';
+                } else {
+                    chint.innerHTML = '<i class="fa-solid fa-ban text-muted me-1"></i>Emanet boş — mahsuplaşma yapılamaz';
+                }
+            }
+
+            // Maks ipucu metni
+            const maxAllowed = Math.max(0, Math.min(custodyHsNum, Math.max(0, ledgerHsNum)));
+            const helpEl = document.getElementById('offsetAmountHelp');
+            if (helpEl) {
+                helpEl.innerHTML = (maxAllowed > 0)
+                    ? `Maksimum: <strong>${fmtHs(maxAllowed)} HS</strong> (Emanet ve borçtan küçüğü).`
+                    : 'Emanet veya borç sıfır — mahsuplaşma yapılamaz.';
+            }
+
+            // Hepsini Mahsuplaş butonu + Submit butonu enable/disable
+            const btnFill   = document.getElementById('btnOffsetFillMax');
+            const btnSubmit = document.getElementById('btnOffsetSubmit');
+            if (btnFill)   btnFill.disabled   = !(maxAllowed > 0);
+            if (btnSubmit) btnSubmit.disabled = !(maxAllowed > 0);
+
+            // Mevcut input değeri varsa önizlemeyi tazele
+            const amountEl = document.getElementById('offsetAmountInput');
+            if (amountEl) {
+                const v = parseFloat((amountEl.value || '0').toString().replace(',', '.')) || 0;
+                renderOffsetPreview(v);
+            } else {
+                renderOffsetPreview(0);
+            }
+        });
+    }
+
+    // ─── Ledger Tablosu ─────────────────────────────
+    // FAZ 14 UI — C2: Sütunlar Tarih · Tip · Has(±) · TL(±) · Para · Kasa
+    //                · Açıklama · Durum · İşlem No · Aksiyon (10 kolon)
+    function loadLedger() {
+        const inc = document.getElementById('includeInactiveChk').checked;
+        return jget(`/customers/${customerId}/cari/ledger?include_inactive=${inc}`)
+            .then(({body}) => {
+                if (!body || !body.result) return;
+                const tbody = document.getElementById('ledgerTbody');
+                if (!body.data.length) {
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4 text-muted">Kayıt yok</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = body.data.map(r => {
+                    const cls = (!r.is_active ? 'is-reversed' : (
+                        r.requires_approval && !r.is_approved ? 'is-pending' : ''
+                    ));
+                    const d = new Date(r.created_on);
+                    const date = d.toLocaleString('tr-TR');
+                    const canRev = r.is_active && r.transaction_type !== 'REVERSAL';
+                    // İşaretli tutar: signed_amount_hs / signed_amount_eur ve
+                    // signed_direction API tarafından gönderilir (FAZ 14 C1).
+                    const dir = r.signed_direction || 'neutral';
+                    const signedHs = (r.signed_amount_hs !== undefined && r.signed_amount_hs !== null)
+                        ? r.signed_amount_hs : r.amount_hs;
+                    const signedTl = (r.signed_amount_eur !== undefined && r.signed_amount_eur !== null)
+                        ? r.signed_amount_eur : r.amount_eur;
+                    return `
+                    <tr class="ledger-row ${cls}">
+                        <td>${date}</td>
+                        <td>${pillFor(r.transaction_type)}</td>
+                        <td class="text-end amount-cell">${fmtSignedHs(signedHs, dir)}</td>
+                        <td class="text-end amount-cell">${fmtSignedTl(signedTl, dir)}</td>
+                        <td>${r.currency}</td>
+                        <td>${fmtCashbox(r)}</td>
+                        <td>${escapeHtml(r.description)}</td>
+                        <td>${statusFor(r)}</td>
+                        <td>${r.process_no
+                            ? `<span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                     data-process-no="${escapeHtml(r.process_no)}"
+                                     style="cursor:pointer;font-family:monospace;letter-spacing:.3px;"
+                                     title="İşlem röntgenini aç">${escapeHtml(r.process_no)}</span>`
+                            : '-'}</td>
+                        <td class="text-end">
+                            ${r.requires_approval && !r.is_approved
+                                ? `<button class="btn btn-sm btn-light-success"
+                                        onclick="cariApp.approve('${r.id}')">Onayla</button>`
+                                : ''}
+                            ${canRev
+                                ? `<button class="btn btn-sm btn-light-danger"
+                                        onclick="cariApp.openReverse('${r.id}','${r.transaction_type}','${r.amount_hs}','${r.amount_eur}')">İptal</button>`
+                                : ''}
+                        </td>
+                    </tr>`;
+                }).join('');
+            });
+    }
+
+    // ─── Banka Hesapları ────────────────────────────
+    // FAZ 22.4 (UX-1) — CASH öncelik + para birimi filtresi.
+    let _bankAccountsCache = [];
+
+    function loadBankAccounts() {
+        return jget('/customers/cari/bank-accounts').then(({body}) => {
+            if (!body || !body.result) return;
+            _bankAccountsCache = body.data || [];
+            renderBankAccountOptions();
+        });
+    }
+
+    function renderBankAccountOptions() {
+        const sel = document.getElementById('bankAccountSel');
+        if (!sel) return;
+        const currencySel = document.getElementById('currencySel');
+        const c = currencySel ? currencySel.value : 'TRY';
+        const ccy = (c === 'HS') ? 'TRY' : c; // HS teslimi TRY kasası gerektirir
+
+        const typeRank = (t) => ({CASH:0, POS:1, BANK:2})[t] ?? 9;
+        const sorted = [..._bankAccountsCache].sort((a, b) => {
+            const dt = typeRank(a.account_type) - typeRank(b.account_type);
+            if (dt !== 0) return dt;
+            const da = (a.currency || 'TRY') === ccy ? 0 : 1;
+            const db = (b.currency || 'TRY') === ccy ? 0 : 1;
+            if (da !== db) return da - db;
+            return (a.name || '').localeCompare(b.name || '', 'tr');
+        });
+
+        let firstMatchHtml = '';
+        let restHtml = '';
+        sorted.forEach(b => {
+            const typeLbl = ({CASH:'💵 Nakit Kasa', POS:'💳 POS', BANK:'🏦 Banka'})[b.account_type] || b.account_type;
+            const isMatch = (b.currency || 'TRY').toUpperCase() === ccy;
+            const dis = isMatch ? '' : ' disabled';
+            const html = `<option value="${b.id}" data-currency="${b.currency}"${dis}>
+                ${typeLbl} · ${escapeHtml(b.name)} (${b.currency})
+            </option>`;
+            if (isMatch && !firstMatchHtml) firstMatchHtml = html.replace('<option ', '<option selected ');
+            else restHtml += html;
+        });
+        sel.innerHTML = '<option value="">Seçiniz…</option>' + firstMatchHtml + restHtml;
+    }
+
+    // FAZ 22.5 (UX-2) — Backend mesajlarını kuyumcu diline çevir.
+    function humanizeError(raw) {
+        if (!raw) return 'Bilinmeyen bir hata oluştu. Sayfayı yenileyip tekrar deneyin.';
+        const s = String(raw);
+        const map = [
+            [/bank[_ ]account.*required|bank_account.*null|kasa.*zorunlu/i, 'Kasa seçimi zorunlu. Lütfen üstteki listeden bir kasa seçin.'],
+            [/cashbox.*compatibility|kasa.*para birim|currency.*mismatch/i, 'Seçtiğiniz kasanın para birimi tahsilat para birimiyle uyuşmuyor.'],
+            [/balance.*mismatch/i, 'Tutar denkliği sağlanamadı. Tutarı kontrol edip tekrar deneyin.'],
+            [/has.*kuru.*yanıt|exchange rate.*not/i, 'Anlık altın kuru alınamadı. Birkaç saniye sonra tekrar deneyin.'],
+            [/fx.*not|kuru bulunamadı/i, 'Döviz kuru servisi yanıt vermedi. Tekrar deneyin.'],
+            [/insufficient|yetersiz/i, 'Kasada yeterli bakiye yok.'],
+            [/permission|forbidden|yetki/i, 'Bu işlem için yetkiniz yok.'],
+            [/csrf|403/i, 'Oturumunuz zaman aşımına uğramış olabilir. Sayfayı yenileyin.'],
+            [/network|fetch failed|failed to fetch/i, 'Bağlantı hatası. İnternet bağlantınızı kontrol edip yeniden deneyin.']
+        ];
+        for (const [re, msg] of map) {
+            if (re.test(s)) return msg;
+        }
+        return s;
+    }
+
+    function showError(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({icon:'error', title:'İşlem yapılamadı', text: humanizeError(msg)});
+        } else {
+            alert(humanizeError(msg));
+        }
+    }
+    function showSuccess(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({icon:'success', title:'Başarılı', text: msg, timer: 1800, timerProgressBar: true});
+        } else {
+            alert(msg);
+        }
+    }
+
+    // ─── Tahsilat Akışı ─────────────────────────────
+    function previewCollect() {
+        const amount = document.getElementById('amountInput').value;
+        const currency = document.getElementById('currencySel').value;
+        const target = document.getElementById('targetCloseInput').value;
+        if (!amount) return;
+        const url = `/customers/${customerId}/cari/preview-close?amount=${amount}&currency=${currency}` +
+            (target ? `&target_close_hs=${target}` : '');
+        jget(url).then(({body, ok}) => {
+            if (!ok || !body.result) {
+                showError(body && body.error_msg || 'Önizleme alınamadı');
+                return;
+            }
+            const d = body.data;
+            document.getElementById('prvCollHs').textContent = fmtHs(d.collection_hs);
+            document.getElementById('prvCollTl').textContent = fmtTl(d.collection_tl);
+            document.getElementById('prvAdjHs').textContent = fmtHs(d.adjustment_hs);
+            document.getElementById('prvAdjTl').textContent = fmtTl(d.adjustment_tl);
+            const hint = document.getElementById('prvHint');
+            const adj = parseFloat(d.adjustment_hs);
+
+            // FAZ 30 — Overpayment göstergesi
+            const overBox = document.getElementById('prvOverpaymentBox');
+            const allowOverEl = document.getElementById('allowOverpaymentChk');
+            if (d.has_overpayment) {
+                document.getElementById('prvOverpaymentTl').textContent = fmtTl(d.overpayment_tl);
+                document.getElementById('prvOverpaymentPct').textContent = d.overpayment_pct_of_debt;
+                const pct = parseFloat(d.overpayment_pct_of_debt) || 0;
+                document.getElementById('prvOverpaymentBand').textContent =
+                    pct <= 10 ? 'personel onayı yeterli' : 'admin onayı gerekir';
+                overBox.classList.remove('d-none');
+            } else {
+                overBox.classList.add('d-none');
+            }
+
+            if (adj > 0) {
+                hint.textContent = `Tahsilat eksik kalıyor — ${fmtHs(d.adjustment_hs)} HS (${fmtTl(d.adjustment_tl)} TL) için fark fişi seçmelisiniz.`;
+            } else if (d.has_overpayment) {
+                if (allowOverEl && allowOverEl.checked) {
+                    hint.textContent = `Borç tam kapanıyor; ${fmtTl(d.overpayment_tl)} TL kasa fazlası yazılacak.`;
+                } else {
+                    hint.textContent = `Tahsilat borçtan büyük — fazla tahsilatı kabul etmek için yukarıdaki anahtarı açın.`;
+                }
+            } else if (adj < 0) {
+                hint.textContent = `Tahsilat fazla — borçtan büyük. "Fazla Tahsilatı Kabul Et" anahtarını açın.`;
+            } else {
+                hint.textContent = `Tam kapama. Ek fiş gerekmez.`;
+            }
+        });
+    }
+
+    function submitCollect(ev) {
+        ev.preventDefault();
+        const allowOverpayment = document.getElementById('allowOverpaymentChk').checked;
+        const data = {
+            bank_account_id: document.getElementById('bankAccountSel').value,
+            amount: document.getElementById('amountInput').value,
+            currency: document.getElementById('currencySel').value,
+            target_close_hs: document.getElementById('targetCloseInput').value,
+            adjustment_type: document.getElementById('adjustmentTypeSel').value,
+            adjustment_reason: document.getElementById('adjReasonInput').value,
+            allow_overpayment: allowOverpayment ? 'true' : 'false',
+        };
+        jpost(`/customers/${customerId}/cari/collect`, data).then(({ok, body}) => {
+            if (!ok || !body.result) {
+                showError(body && body.error_msg || 'Tahsilat başarısız');
+                return;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('collectModal')).hide();
+            document.getElementById('collectForm').reset();
+            document.getElementById('allowOverpaymentChk').checked = false;
+            document.getElementById('prvOverpaymentBox').classList.add('d-none');
+
+            const d = body.data;
+
+            // FAZ 30 — Karar ağacı:
+            //   pending_approval == false   → düz başarı toast
+            //   pending_approval == true    → Hızlı Onay Modalı (state'e göre)
+            if (!d.pending_approval) {
+                showSuccess('Tahsilat başarıyla kaydedildi.');
+                refreshAll();
+                return;
+            }
+
+            // refreshAll'ı paralel başlat — modal açıkken arka planda
+            // tablolar tazelenmiş olur; kullanıcı modal kapatınca son halini görür.
+            refreshAll();
+            openQuickApproveModal(d);
+        });
+    }
+
+    // ─── FAZ 30 — Hızlı Onay Modalı ──────────────────
+    function openQuickApproveModal(d) {
+        const sa = d.self_approval || {};
+        const canSelf = !!sa.actor_can_self_approve;
+        const pct = sa.pct_of_debt != null ? sa.pct_of_debt : '0.00';
+        const overpaymentTl = parseFloat(d.overpayment_tl || '0');
+        const isOverpayment = overpaymentTl > 0;
+
+        // Müşteri adı — root data-customer-name attribute'ından okunur
+        // (cariApp init'inde set ediliyor; modal-open zamanında her zaman dolu).
+        document.getElementById('qaCustomer').textContent = customerName || '—';
+
+        // Kapatılan borç tutarı
+        document.getElementById('qaClosedTl').textContent = fmtTl(d.closed_amount_eur);
+
+        // Fark türü ve tutarı
+        const typeLabel = isOverpayment
+            ? 'Kasa Fazlası (Diğer Gelir)'
+            : (d.pending_entry_type || 'Fark Fişi');
+        document.getElementById('qaEntryType').textContent = typeLabel;
+
+        let amountTl = '0.00';
+        if (isOverpayment) {
+            amountTl = d.overpayment_tl;
+        } else if (d.pending_entry_id) {
+            // adjustment dönüşünde overpayment 0; fark TL'sini önizlemeden
+            // bilmiyoruz — pct'den geri hesap yapamıyoruz çünkü
+            // closed_amount_eur yuvarlamalı. Backend response'undan
+            // adjustment_tl artık dönmüyor; pending_entry_type ile
+            // birlikte sa.pct_of_debt üzerinden gösterim yeterli.
+            amountTl = '—';
+        }
+        document.getElementById('qaAmountTl').textContent =
+            amountTl === '—' ? '—' : `${fmtTl(amountTl)} TL`;
+        document.getElementById('qaPct').textContent = pct;
+
+        // State seçimi
+        const selfBox = document.getElementById('qaSelfApproveBox');
+        const adminBox = document.getElementById('qaNeedAdminBox');
+        const noteWrap = document.getElementById('qaNoteWrap');
+        const approveBtn = document.getElementById('qaApproveBtn');
+        const understoodBtn = document.getElementById('qaUnderstoodBtn');
+        const laterBtn = document.getElementById('qaLaterBtn');
+
+        if (canSelf) {
+            selfBox.classList.remove('d-none');
+            adminBox.classList.add('d-none');
+            noteWrap.classList.remove('d-none');
+            approveBtn.classList.remove('d-none');
+            understoodBtn.classList.add('d-none');
+            laterBtn.classList.remove('d-none');
+        } else {
+            selfBox.classList.add('d-none');
+            adminBox.classList.remove('d-none');
+            noteWrap.classList.add('d-none');
+            approveBtn.classList.add('d-none');
+            understoodBtn.classList.remove('d-none');
+            laterBtn.classList.add('d-none');
+        }
+
+        // Approve butonu için entry_id'yi data attribute'a koy
+        approveBtn.dataset.entryId = d.pending_entry_id || '';
+        document.getElementById('qaApprovalNote').value = '';
+
+        // Modalı aç
+        const modal = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('quickApproveModal')
+        );
+        modal.show();
+    }
+
+    function quickApproveSubmit() {
+        const btn = document.getElementById('qaApproveBtn');
+        const entryId = btn.dataset.entryId;
+        if (!entryId) {
+            showError('Onaylanacak kayıt bulunamadı.');
+            return;
+        }
+        const note = document.getElementById('qaApprovalNote').value || '';
+
+        // Çift tıklamayı engelle
+        btn.disabled = true;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Onaylanıyor...';
+
+        jpost(`/customers/${customerId}/cari/approve`, {
+            entry_id: entryId,
+            note: note,
+        }).then(({ok, body}) => {
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
+            if (!ok || !body.result) {
+                showError(body && body.error_msg || 'Onaylanamadı');
+                return;
+            }
+            bootstrap.Modal.getInstance(
+                document.getElementById('quickApproveModal')
+            ).hide();
+            showSuccess('Fark onaylandı; mağaza defterine yansıdı.');
+            refreshAll();
+        });
+    }
+
+    // ─── Mahsuplaşma ────────────────────────────────
+    function submitOffset(ev) {
+        ev.preventDefault();
+        const amountStr = document.getElementById('offsetAmountInput').value;
+        const amount = parseFloat((amountStr || '0').toString().replace(',', '.')) || 0;
+
+        // Lokal validasyon — backend yine doğrular ama kullanıcı erken uyarılır.
+        const maxAllowed = Math.max(0, Math.min(_offsetState.custodyHs, Math.max(0, _offsetState.ledgerHs)));
+        if (amount <= 0) {
+            showError('Mahsuplaşılacak tutar 0\'dan büyük olmalı.');
+            return;
+        }
+        if (amount > maxAllowed + 0.0005) {
+            showError(`Tutar limiti aşıyor. Maksimum: ${fmtHs(maxAllowed)} HS (Emanet ve borçtan küçüğü).`);
+            return;
+        }
+
+        const data = {
+            amount_hs: amountStr,
+            description: document.getElementById('offsetDescInput').value,
+        };
+        jpost(`/customers/${customerId}/cari/custody-offset`, data).then(({ok, body}) => {
+            if (!ok || !body.result) {
+                showError(body && body.error_msg || 'Mahsuplaşma başarısız');
+                return;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('offsetModal')).hide();
+            document.getElementById('offsetForm').reset();
+            // Önizleme + kur farkı kutularını temizle
+            renderOffsetPreview(0);
+            const fxBox = document.getElementById('offsetFxPreview');
+            if (fxBox) fxBox.classList.add('d-none');
+            showSuccess('Mahsuplaşma başarıyla kaydedildi.');
+            refreshAll();
+        });
+    }
+
+    // ─── FAZ 22.9 — Canlı Önizleme (lokal hesap) ─────
+    function renderOffsetPreview(amount) {
+        const card  = document.getElementById('offsetPreviewCard');
+        const elAmt = document.getElementById('prvOffsetAmount');
+        const elNL  = document.getElementById('prvOffsetNewLedger');
+        const elNC  = document.getElementById('prvOffsetNewCustody');
+        const hint  = document.getElementById('prvOffsetHint');
+        const badge = document.getElementById('offsetSubmitBadge');
+        if (!card || !elAmt || !elNL || !elNC || !hint) return;
+
+        const amt = (typeof amount === 'number' && isFinite(amount)) ? Math.max(0, amount) : 0;
+        const ledger  = _offsetState.ledgerHs  || 0;
+        const custody = _offsetState.custodyHs || 0;
+        const maxAllowed = Math.max(0, Math.min(custody, Math.max(0, ledger)));
+
+        // Sayı kutuları
+        elAmt.textContent = fmtHs(amt);
+        const newLedger  = ledger  - amt;
+        const newCustody = custody - amt;
+        elNL.textContent = fmtHs(newLedger);
+        elNC.textContent = fmtHs(newCustody);
+
+        // Renk kodlaması
+        card.classList.remove('is-full', 'is-partial', 'is-error');
+        elNL.classList.remove('text-success', 'text-warning', 'text-danger');
+        elNC.classList.remove('text-success', 'text-warning', 'text-danger');
+
+        // Submit badge
+        if (badge) {
+            if (amt > 0) {
+                badge.classList.remove('d-none');
+                badge.textContent = fmtHs(amt) + ' HS';
+            } else {
+                badge.classList.add('d-none');
+            }
+        }
+
+        // İpucu / durum
+        if (amt <= 0) {
+            hint.innerHTML = '<i class="fa-solid fa-keyboard me-1"></i>'
+                + 'Bir tutar girin veya "Hepsini Mahsuplaş"a tıklayın.';
+            return;
+        }
+
+        if (amt > maxAllowed + 0.0005) {
+            // Limit aşımı
+            card.classList.add('is-error');
+            elNL.classList.add('text-danger');
+            elNC.classList.add('text-danger');
+            hint.innerHTML = `<i class="fa-solid fa-circle-exclamation text-danger me-1"></i>`
+                + `Tutar limiti aşıyor. Maksimum <strong>${fmtHs(maxAllowed)} HS</strong> mahsuplaşılabilir.`;
+        } else if (Math.abs(newLedger) < 0.0005) {
+            // Tam kapama
+            card.classList.add('is-full');
+            elNL.classList.add('text-success');
+            hint.innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i>'
+                + 'Borç tamamen kapatılıyor. Müşteri bakiyesi sıfırlanacak.';
+        } else if (newLedger > 0) {
+            // Kısmi kapama
+            card.classList.add('is-partial');
+            elNL.classList.add('text-warning');
+            const tlEq = (_offsetState.hasRate > 0) ? (amt * _offsetState.hasRate) : 0;
+            const tlText = (tlEq > 0) ? ` (≈ ${fmtTl(tlEq)} TL)` : '';
+            hint.innerHTML = `<i class="fa-solid fa-circle-half-stroke text-warning me-1"></i>`
+                + `Kısmi mahsup${tlText}. Kalan borç: <strong>${fmtHs(newLedger)} HS</strong>.`;
+        } else {
+            // newLedger < 0 — borçtan büyük girilmiş ama emanet yetiyor; backend yine de
+            // sınırlandırır. Bu mantıksal olarak limit aşımıyla örtüşür ama defansif kalalım.
+            card.classList.add('is-error');
+            elNL.classList.add('text-danger');
+            hint.innerHTML = '<i class="fa-solid fa-circle-exclamation text-danger me-1"></i>'
+                + 'Tutar açık borçtan büyük — mahsuplaşma sadece borç kadar yapılabilir.';
+        }
+    }
+
+    // ─── FAZ 22.9 — Hepsini Mahsuplaş kısayolu ───────
+    function fillOffsetMax() {
+        const ledger  = _offsetState.ledgerHs  || 0;
+        const custody = _offsetState.custodyHs || 0;
+        const maxAllowed = Math.max(0, Math.min(custody, Math.max(0, ledger)));
+        const amountEl = document.getElementById('offsetAmountInput');
+        if (!amountEl || maxAllowed <= 0) return;
+        // 3 ondalıkla normalize et
+        const v = Math.round(maxAllowed * 1000) / 1000;
+        amountEl.value = v.toFixed(3);
+        renderOffsetPreview(v);
+        // Kur farkı önizlemesini de tetikle (mevcut FAZ 22 davranışı)
+        if (typeof previewOffsetFx === 'function') previewOffsetFx();
+    }
+
+    // ─── Reversal ───────────────────────────────────
+    function openReverse(id, type, hs, tl) {
+        document.getElementById('reverseEntryId').value = id;
+        document.getElementById('revType').textContent = type;
+        document.getElementById('revHs').textContent = fmtHs(hs);
+        document.getElementById('revTl').textContent = fmtTl(tl);
+        document.getElementById('reverseReasonInput').value = '';
+        new bootstrap.Modal(document.getElementById('reverseModal')).show();
+    }
+    function submitReverse(ev) {
+        ev.preventDefault();
+        const data = {
+            entry_id: document.getElementById('reverseEntryId').value,
+            reason: document.getElementById('reverseReasonInput').value,
+        };
+        jpost(`/customers/${customerId}/cari/reverse`, data).then(({ok, body}) => {
+            if (!ok || !body.result) {
+                showError(body && body.error_msg || 'İptal yazılamadı');
+                return;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('reverseModal')).hide();
+            const msg = body.data.requires_approval && !body.data.is_approved
+                ? 'İptal yazıldı — onay bekliyor.'
+                : 'İptal başarıyla yazıldı.';
+            showSuccess(msg);
+            refreshAll();
+        });
+    }
+
+    // FAZ 22.10 — Onay artık SweetAlert modal-içi tek tıkla. ADMIN rolü
+    // backend'de otomatik bypass edildiği için patron için sürtünme yok.
+    function approve(entryId) {
+        const doApprove = () => jpost(`/customers/${customerId}/cari/approve`, {entry_id: entryId})
+            .then(({ok, body}) => {
+                if (!ok || !body.result) {
+                    showError(body && body.error_msg || 'Onaylanamadı');
+                    return;
+                }
+                showSuccess('Kayıt onaylandı.');
+                refreshAll();
+            });
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'question',
+                title: 'Bu işlemi onaylıyor musunuz?',
+                text: 'Onaylandıktan sonra defter satırı aktif olur ve mağaza P&L\'ine yansır.',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, onayla',
+                cancelButtonText: 'Vazgeç',
+                confirmButtonColor: '#1f8d3d'
+            }).then(r => { if (r.isConfirmed) doApprove(); });
+        } else if (confirm('Bu kaydı onaylıyor musunuz?')) {
+            doApprove();
+        }
+    }
+
+    function refreshAll() {
+        return Promise.all([loadBalance(), loadLedger(), loadCustodyHistory()]);
+    }
+
+    // ─── FAZ 22 — EMANET DEFTERİ (mini tablo) ──────────
+    let lastCustodyData = null;
+
+    function pillForCustodyType(t) {
+        const m = {
+            'IN':       ['pill-custody-in',     'Emanet Girişi'],
+            'OUT':      ['pill-custody-out',    'Emanet Çıkışı'],
+            'OFFSET':   ['pill-custody-offset', 'Cari Mahsup'],
+            'REVERSAL': ['pill-custody-rev',    'İPTAL'],
+        };
+        const [cls, label] = m[t] || ['pill-writeoff', t];
+        return `<span class="pill ${cls}">${escapeHtml(label)}</span>`;
+    }
+
+    function statusForCustody(r) {
+        if (r.is_deleted) return '<span class="pill pill-writeoff">Silindi</span>';
+        if (!r.is_active) return '<span class="pill pill-writeoff">Pasif</span>';
+        if (r.has_reversal) return '<span class="pill pill-reversal">İptal Edildi</span>';
+        if (r.is_returned) return '<span class="pill pill-credit">Teslim Edildi</span>';
+        if (r.custody_type === 'IN') return '<span class="pill pill-collection">Emanette</span>';
+        return '<span class="pill pill-credit">Tamamlandı</span>';
+    }
+
+    function loadCustodyHistory() {
+        const inc = document.getElementById('custodyIncludeInactiveChk')?.checked ? 'true' : 'false';
+        const df  = document.getElementById('custodyDateFrom')?.value || '';
+        const dt  = document.getElementById('custodyDateTo')?.value   || '';
+
+        let url = `/custody/customer/${customerId}/history?include_inactive=${inc}`;
+        if (df) url += `&date_from=${df}`;
+        if (dt) url += `&date_to=${dt}`;
+
+        return jget(url).then(({body}) => {
+            if (!body || !body.result) return;
+            lastCustodyData = body;
+            const s = body.summary || {};
+            const elIn  = document.getElementById('custodySumIn');
+            const elOut = document.getElementById('custodySumOut');
+            const elOff = document.getElementById('custodySumOffset');
+            const elBal = document.getElementById('custodyHistoryBalance');
+            const elBalTl = document.getElementById('custodyHistoryBalanceTl');
+            if (elIn)  elIn.textContent  = fmtHs(s.in_total_hs);
+            if (elOut) elOut.textContent = fmtHs(s.out_total_hs);
+            if (elOff) elOff.textContent = fmtHs(s.offset_total_hs);
+            if (elBal) elBal.textContent = fmtHs(s.balance_hs);
+            if (elBalTl) elBalTl.textContent = fmtTl(s.current_balance_eur);
+
+            const tbody = document.getElementById('custodyTbody');
+            if (!tbody) return;
+            const rows = body.rows || [];
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center p-4 text-muted">Bu müşteriye ait emanet hareketi yok.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map(r => {
+                const cls = (!r.is_active || r.is_deleted) ? 'is-inactive' : '';
+                const dateStr = r.created_on || '';
+                const remaining = (r.custody_type === 'IN')
+                    ? `${fmtHs(r.remaining_amount_hs)} HS`
+                    : '<span class="text-muted">—</span>';
+                const canReverse = r.is_active && !r.is_deleted && !r.has_reversal
+                                && r.custody_type !== 'REVERSAL';
+                const revBtn = canReverse
+                    ? `<button class="btn btn-sm btn-light-danger"
+                              data-custody-rev="${escapeHtml(r.id)}"
+                              data-rev-type="${escapeHtml(r.custody_type)}"
+                              data-rev-hs="${escapeHtml(r.amount_hs)}"
+                              data-rev-gram="${escapeHtml(r.quantity_gram)}">
+                          <i class="fa-solid fa-undo"></i> İptal
+                       </button>`
+                    : '';
+                return `
+                    <tr class="custody-row ${cls}">
+                        <td>${escapeHtml(dateStr)}</td>
+                        <td>${pillForCustodyType(r.custody_type)}</td>
+                        <td>${escapeHtml(r.product || '-')}</td>
+                        <td class="text-end">${escapeHtml(String(r.quantity_piece || 0))}</td>
+                        <td class="text-end">${fmtHs(r.quantity_gram)}</td>
+                        <td class="text-end fw-bold">${fmtHs(r.amount_hs)}</td>
+                        <td class="text-end">${remaining}</td>
+                        <td>${r.process_no ? `<span class="badge badge-light-primary fw-bold js-open-process-modal" data-process-no="${escapeHtml(r.process_no)}" style="cursor:pointer;font-family:monospace;letter-spacing:.3px;" title="İşlem röntgenini aç">${escapeHtml(r.process_no)}</span>` : '-'}</td>
+                        <td>${escapeHtml(r.description || '')}</td>
+                        <td>${statusForCustody(r)}</td>
+                        <td class="text-end">${revBtn}</td>
+                    </tr>`;
+            }).join('');
+        });
+    }
+
+    // ─── FAZ 22 — Emanet REVERSAL ──────────────────────
+    function openCustodyReverse(id, type, hs, gram) {
+        const elId   = document.getElementById('custodyReverseId');
+        const elType = document.getElementById('custodyRevType');
+        const elHs   = document.getElementById('custodyRevHs');
+        const elGram = document.getElementById('custodyRevGram');
+        const elReason = document.getElementById('custodyReverseReason');
+        if (elId)   elId.value = id;
+        if (elType) elType.textContent = type || '';
+        if (elHs)   elHs.textContent   = `${fmtHs(hs)} HS`;
+        if (elGram) elGram.textContent = `${fmtHs(gram)} gr`;
+        if (elReason) elReason.value = '';
+        const modal = new bootstrap.Modal(document.getElementById('custodyReverseModal'));
+        modal.show();
+    }
+
+    function submitCustodyReverse(ev) {
+        ev.preventDefault();
+        const id = document.getElementById('custodyReverseId').value;
+        const reason = document.getElementById('custodyReverseReason').value.trim();
+        if (!reason) { alert('İptal nedeni zorunludur.'); return; }
+        jpost('/custody/reverse', {id: id, reason: reason}).then(({ok, body}) => {
+            if (!ok || !body.result) {
+                alert(body.error_msg || 'İptal yazılamadı.');
+                return;
+            }
+            const m = bootstrap.Modal.getInstance(document.getElementById('custodyReverseModal'));
+            if (m) m.hide();
+            alert('Emanet iptali (REVERSAL) yazıldı.');
+            refreshAll();
+        });
+    }
+
+    // ─── FAZ 22 — EMANET KUR FARKI ÖNİZLEMESİ ─────────
+    function previewOffsetFx() {
+        const amountEl = document.getElementById('offsetAmountInput');
+        const box = document.getElementById('offsetFxPreview');
+        if (!amountEl || !box) return;
+        const raw = (amountEl.value || '0').toString().replace(',', '.');
+        const v = parseFloat(raw);
+        if (!isFinite(v) || v <= 0) {
+            box.classList.add('d-none');
+            return;
+        }
+        const url = `/custody/customer/${customerId}/offset-preview?amount_hs=${v}`;
+        jget(url).then(({body}) => {
+            if (!body || !body.result) { box.classList.add('d-none'); return; }
+            const d = body.data || {};
+            const dir = d.fx_direction || 'FLAT';
+            box.classList.remove('d-none', 'gain', 'loss', 'flat');
+            if (dir === 'GAIN') box.classList.add('gain');
+            else if (dir === 'LOSS') box.classList.add('loss');
+            else box.classList.add('flat');
+
+            const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+            setEl('fxCustodyRate', fmtTl(d.custody_avg_rate));
+            setEl('fxCurrentRate', fmtTl(d.current_rate));
+            setEl('fxAtCustody',   fmtTl(d.amount_eur_at_custody) + ' TL');
+            setEl('fxAtCurrent',   fmtTl(d.amount_eur_at_current) + ' TL');
+            setEl('fxDiffTl',      fmtTl(d.fx_diff_tl));
+            const map = {
+                GAIN: 'Bugünkü kur emanet kurundan YÜKSEK — mağaza zararı yazılacak (FX_GAIN).',
+                LOSS: 'Bugünkü kur emanet kurundan DÜŞÜK — mağaza karı yazılacak (FX_LOSS).',
+                FLAT: 'Eşik altı fark — kur farkı satırı yazılmayacak.',
+            };
+            setEl('fxDirectionText', map[dir] || '');
+        }).catch(() => box.classList.add('d-none'));
+    }
+
+    // ─── FAZ 22 — YAZDIR / PDF / EXCEL ─────────────────
+    function buildCustodyPrintHtml() {
+        if (!lastCustodyData) return '';
+        const c = (lastCustodyData.customer || {});
+        const s = (lastCustodyData.summary  || {});
+        const rows = (lastCustodyData.rows  || []);
+        const today = new Date().toLocaleString('tr-TR');
+        const dfEl = document.getElementById('custodyDateFrom');
+        const dtEl = document.getElementById('custodyDateTo');
+        const df = dfEl ? dfEl.value : '';
+        const dt = dtEl ? dtEl.value : '';
+        const rangeText = (df || dt)
+            ? `Tarih Aralığı: ${df || '...'} → ${dt || '...'}`
+            : 'Tarih Aralığı: Tüm hareketler';
+
+        const rowsHtml = rows.map(r => `
+            <tr>
+                <td>${escapeHtml(r.created_on || '')}</td>
+                <td>${escapeHtml(r.custody_type_label || r.custody_type || '')}</td>
+                <td>${escapeHtml(r.product || '-')}</td>
+                <td style="text-align:right">${escapeHtml(String(r.quantity_piece || 0))}</td>
+                <td style="text-align:right">${escapeHtml(r.quantity_gram || '0.000')}</td>
+                <td style="text-align:right">${escapeHtml(r.amount_hs || '0.000')}</td>
+                <td style="text-align:right">${escapeHtml(r.exchange_rate_eur || '0')}</td>
+                <td style="text-align:right">${escapeHtml(r.amount_eur || '0.00')}</td>
+                <td>${r.process_no ? `<span class="badge badge-light-primary fw-bold js-open-process-modal" data-process-no="${escapeHtml(r.process_no)}" style="cursor:pointer;font-family:monospace;letter-spacing:.3px;" title="İşlem röntgenini aç">${escapeHtml(r.process_no)}</span>` : '-'}</td>
+                <td>${escapeHtml(r.description || '')}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <h2>EMANET HESAP EKSTRESİ</h2>
+            <div class="head-info">
+                <div><strong>Müşteri:</strong> ${escapeHtml(c.full_name || '-')}</div>
+                <div><strong>Telefon:</strong> ${escapeHtml(c.phone || '-')}</div>
+                <div><strong>Ekstre Tarihi:</strong> ${escapeHtml(today)}</div>
+                <div>${escapeHtml(rangeText)}</div>
+                <div><strong>Net Bakiye:</strong> ${escapeHtml(s.balance_hs || '0')} HS
+                    ≈ ${escapeHtml(s.current_balance_eur || '0')} TL
+                    (1 gr Has = ${escapeHtml(s.current_rate || '0')} TL)</div>
+                <div>Toplam Giriş: ${escapeHtml(s.in_total_hs || '0')} HS ·
+                     Toplam Çıkış: ${escapeHtml(s.out_total_hs || '0')} HS ·
+                     Toplam Mahsup: ${escapeHtml(s.offset_total_hs || '0')} HS ·
+                     İptal Etkisi: ${escapeHtml(s.reversal_effect_hs || '0')} HS</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih</th><th>Tip</th><th>Ürün</th>
+                        <th>Adet</th><th>Gram</th><th>Has</th>
+                        <th>Kur (TL/HS)</th><th>TL</th>
+                        <th>İşlem No</th><th>Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml || '<tr><td colspan="10" style="text-align:center;color:#888">Kayıt yok</td></tr>'}
+                </tbody>
+            </table>
+            <div class="footer-sign">
+                <div>Müşteri Adı / İmza</div>
+                <div>Mağaza Yetkilisi / Kaşe</div>
+            </div>
+            <div class="head-info" style="margin-top:18px; font-size:10px; color:#666">
+                Bu ekstre bilgilendirme amaçlıdır. Mevcut emanet bakiyenizi
+                görüntüler. İtirazlarınız için 7 gün içinde mağaza ile iletişime
+                geçiniz.
+            </div>
+        `;
+    }
+
+    function printCustodyHistory() {
+        if (!lastCustodyData) { alert('Önce ekstreyi yükleyin.'); return; }
+        const area = document.getElementById('custodyPrintArea');
+        if (!area) return;
+        area.innerHTML = buildCustodyPrintHtml();
+        window.print();
+    }
+
+    function pdfCustodyHistory() {
+        if (!lastCustodyData) { alert('Önce ekstreyi yükleyin.'); return; }
+        if (typeof html2pdf === 'undefined') {
+            alert('PDF kütüphanesi yüklenemedi.');
+            return;
+        }
+        const area = document.getElementById('custodyPrintArea');
+        if (!area) return;
+        area.innerHTML = buildCustodyPrintHtml();
+        const c = (lastCustodyData.customer || {});
+        const safeName = (c.full_name || 'Musteri').replace(/[^a-zA-Z0-9_-]+/g, '_');
+        const dateStr = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+        html2pdf().set({
+            margin: [10, 10, 10, 10],
+            filename: `Emanet_Ekstre_${safeName}_${dateStr}.pdf`,
+            image: {type: 'jpeg', quality: 0.95},
+            html2canvas: {scale: 2},
+            jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'},
+        }).from(area).save();
+    }
+
+    function excelCustodyHistory() {
+        if (!lastCustodyData) { alert('Önce ekstreyi yükleyin.'); return; }
+        if (typeof XLSX === 'undefined') {
+            alert('Excel kütüphanesi yüklenemedi.');
+            return;
+        }
+        const c = (lastCustodyData.customer || {});
+        const rows = (lastCustodyData.rows || []);
+        const data = [[
+            'Tarih', 'Tip', 'Ürün', 'Adet', 'Gram', 'Has',
+            'Kur (TL/HS)', 'TL', 'İşlem No', 'Açıklama', 'Durum',
+        ]];
+        rows.forEach(r => {
+            const status = r.is_deleted ? 'Silindi'
+                : (!r.is_active ? 'Pasif'
+                : (r.has_reversal ? 'İptal'
+                : (r.is_returned ? 'Teslim' : 'Aktif')));
+            data.push([
+                r.created_on || '',
+                r.custody_type_label || r.custody_type || '',
+                r.product || '-',
+                r.quantity_piece || 0,
+                r.quantity_gram || '0.000',
+                r.amount_hs || '0.000',
+                r.exchange_rate_eur || '0',
+                r.amount_eur || '0.00',
+                r.process_no || '',
+                r.description || '',
+                status,
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, 'Emanet');
+        const safeName = (c.full_name || 'Musteri').replace(/[^a-zA-Z0-9_-]+/g, '_');
+        const dateStr = new Date().toLocaleDateString('tr-TR').replaceAll('.', '-');
+        XLSX.writeFile(wb, `Emanet_Ekstre_${safeName}_${dateStr}.xlsx`);
+    }
+
+    // FAZ 14 UI — C3: Açık borcun tamamını kapatma hedefine ata.
+    // Kuyumcunun "küsüratı dahil tüm bakiyeyi sıfırla" akışı için tek tık.
+    function fillTargetFromBalance() {
+        const txt = document.getElementById('modalOpenHs').textContent || '';
+        // tr-TR formatından parse: "11,700" → 11.700; "1.234,567" → 1234.567
+        const numeric = txt.replace(/\./g, '').replace(',', '.').trim();
+        const val = parseFloat(numeric);
+        if (!isNaN(val) && val > 0) {
+            document.getElementById('targetCloseInput').value = val.toFixed(3);
+            previewCollect();
+        }
+    }
+
+    // ─── Init ───────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        loadBankAccounts();
+        refreshAll();
+        const collectFormEl = document.getElementById('collectForm');
+        const offsetFormEl  = document.getElementById('offsetForm');
+        const reverseFormEl = document.getElementById('reverseForm');
+        const includeInactiveEl = document.getElementById('includeInactiveChk');
+        if (collectFormEl) collectFormEl.addEventListener('submit', submitCollect);
+        if (offsetFormEl)  offsetFormEl.addEventListener('submit', submitOffset);
+        if (reverseFormEl) reverseFormEl.addEventListener('submit', submitReverse);
+        if (includeInactiveEl) includeInactiveEl.addEventListener('change', loadLedger);
+
+        // FAZ 14 UI — C3: "Tüm borcu kapat" kısayolları
+        const btnFill1 = document.getElementById('btnFillFromBalance');
+        const btnFill2 = document.getElementById('btnFillTargetFromBalance');
+        if (btnFill1) btnFill1.addEventListener('click', fillTargetFromBalance);
+        if (btnFill2) btnFill2.addEventListener('click', fillTargetFromBalance);
+
+        // Otomatik önizleme
+        ['amountInput', 'currencySel', 'targetCloseInput'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', previewCollect);
+        });
+
+        // FAZ 22.4 — Para birimi değişiminde kasa listesi para birimine göre yeniden filtrelenir.
+        const currencySelEl = document.getElementById('currencySel');
+        if (currencySelEl) currencySelEl.addEventListener('change', renderBankAccountOptions);
+
+        // FAZ 22 — Emanet sekmesi binding'leri
+        const custodyRevForm = document.getElementById('custodyReverseForm');
+        if (custodyRevForm) custodyRevForm.addEventListener('submit', submitCustodyReverse);
+
+        const custBtns = [
+            ['btnCustodyRefresh', loadCustodyHistory],
+            ['btnCustodyPrint',   printCustodyHistory],
+            ['btnCustodyPdf',     pdfCustodyHistory],
+            ['btnCustodyExcel',   excelCustodyHistory],
+        ];
+        custBtns.forEach(([id, fn]) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        });
+
+        const custodyIncEl = document.getElementById('custodyIncludeInactiveChk');
+        if (custodyIncEl) custodyIncEl.addEventListener('change', loadCustodyHistory);
+        const dfEl = document.getElementById('custodyDateFrom');
+        const dtEl = document.getElementById('custodyDateTo');
+        if (dfEl) dfEl.addEventListener('change', loadCustodyHistory);
+        if (dtEl) dtEl.addEventListener('change', loadCustodyHistory);
+
+        // KURAL 7 uyumlu: Sadece DİĞER input'ları güncelliyoruz, kullanıcının
+        // yazdığı offsetAmountInput'a yeniden yazmıyoruz. Bu yüzden 'input'
+        // güvenli; debouncing için 350ms (kur farkı), önizleme anında.
+        const offsetAmountEl = document.getElementById('offsetAmountInput');
+        if (offsetAmountEl) {
+            let _t = null;
+            offsetAmountEl.addEventListener('input', function () {
+                // Lokal canlı önizleme — anında, debounce yok
+                const raw = (this.value || '0').toString().replace(',', '.');
+                const v = parseFloat(raw);
+                renderOffsetPreview(isFinite(v) ? v : 0);
+                // Kur farkı önizlemesi — debounced (mevcut davranış korunur)
+                if (_t) clearTimeout(_t);
+                _t = setTimeout(previewOffsetFx, 350);
+            });
+        }
+
+        // FAZ 22.9 — Hepsini Mahsuplaş butonu
+        const btnFillMax = document.getElementById('btnOffsetFillMax');
+        if (btnFillMax) btnFillMax.addEventListener('click', fillOffsetMax);
+
+        // FAZ 22.9 — Modal kapandığında önizleme kutusunu sıfırla
+        const offsetModalEl = document.getElementById('offsetModal');
+        if (offsetModalEl) {
+            offsetModalEl.addEventListener('hidden.bs.modal', function () {
+                const fxBox = document.getElementById('offsetFxPreview');
+                if (fxBox) fxBox.classList.add('d-none');
+                renderOffsetPreview(0);
+            });
+        }
+
+        // FAZ 22 — Tabloda dinamik REVERSAL butonu (event delegation)
+        const custodyTbody = document.getElementById('custodyTbody');
+        if (custodyTbody) {
+            custodyTbody.addEventListener('click', function (ev) {
+                const btn = ev.target.closest('[data-custody-rev]');
+                if (!btn) return;
+                const id   = btn.dataset.custodyRev;
+                const type = btn.dataset.revType || '';
+                const hs   = btn.dataset.revHs   || '0';
+                const gram = btn.dataset.revGram || '0';
+                openCustodyReverse(id, type, hs, gram);
+            });
+        }
+
+        // FAZ 30 — Hızlı Onay Modalı buton bağlamaları
+        const qaApproveBtn = document.getElementById('qaApproveBtn');
+        if (qaApproveBtn) qaApproveBtn.addEventListener('click', quickApproveSubmit);
+        const qaLaterBtn = document.getElementById('qaLaterBtn');
+        if (qaLaterBtn) {
+            qaLaterBtn.addEventListener('click', function () {
+                bootstrap.Modal.getInstance(
+                    document.getElementById('quickApproveModal')
+                ).hide();
+            });
+        }
+        const qaCloseX = document.getElementById('qaCloseX');
+        if (qaCloseX) {
+            qaCloseX.addEventListener('click', function () {
+                bootstrap.Modal.getInstance(
+                    document.getElementById('quickApproveModal')
+                ).hide();
+            });
+        }
+
+        // FAZ 30 — "Fazla Tahsilatı Kabul Et" anahtarı değişince önizleme
+        // ipucu metnini tazele (overpayment göstergesi backend'e bağımlı
+        // değil; sadece hint metnini etkiler).
+        const allowOverEl = document.getElementById('allowOverpaymentChk');
+        if (allowOverEl) allowOverEl.addEventListener('change', previewCollect);
+    });
+
+    window.cariApp = {
+        refreshAll, previewCollect, openReverse, approve,
+        fillTargetFromBalance,
+        // FAZ 22:
+        loadCustodyHistory, openCustodyReverse, previewOffsetFx,
+        printCustodyHistory, pdfCustodyHistory, excelCustodyHistory,
+        // FAZ 22.9 — Mahsuplaşma modalı:
+        renderOffsetPreview, fillOffsetMax,
+        // FAZ 30 — Hızlı Onay Modalı:
+        openQuickApproveModal, quickApproveSubmit,
+    };
+})();
+</script>
+
+{% endblock %}

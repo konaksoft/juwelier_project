@@ -406,3 +406,107 @@ def build_proposal_module_table(proposal):
             })
 
     return module_rows
+
+
+# ─────────────────────────────────────────────────────────
+#  Faz 59: Sözleşme Müşteri Kapsam Tablosu (ABC pattern)
+# ─────────────────────────────────────────────────────────
+
+def build_contract_scope_table(packages=None):
+    """
+    Sözleşme imza ekranı için müşteri-odaklı paket kapsam tablosu.
+
+    Mevcut build_module_scope_table SaaSModule.permissions M2M üzerinden
+    gezdiği için iki ayrı sorun üretir:
+      1. Modüllere atanmış teknik permission'lar (add_custody, banking_index
+         gibi snake_case kodlar) müşteriye gösterilir.
+      2. PackagePermissionMatrix'de var olan ama hiçbir SaaSModule'e
+         atanmamış müşteri-odaklı ABC permission'ları (Raporlar, Faturalar,
+         Bilezikler vb.) tabloya hiç düşmez.
+
+    Bu fonksiyon yapıyı tersine çevirir: doğrudan PackagePermissionMatrix
+    üzerinden ABC pattern'li (^ABC[0-9]+D$) permission'ları sorgular ve
+    Permission.order alanına göre düz liste olarak döndürür. Modül
+    gruplaması yoktur — sözleşmede her özellik ayrı bir satırdır.
+
+    ABC9xxx kodları (Whatsapp/Rol/Paket Yönetimi gibi SaaS-admin yetkileri)
+    pakete satılmadığı için PackagePermissionMatrix'de yer almaz, böylece
+    ek bir filtreye gerek kalmaz; sorguya düşmezler.
+
+    Parametreler:
+        packages: Queryset veya list — sütun başlıkları olarak kullanılacak
+                  paketler. None ise tüm aktif paketler çekilir.
+
+    Returns:
+        tuple: (packages_list, contract_rows)
+            packages_list: list[Packages] — sütun başlıkları
+            contract_rows: [
+                {
+                    'permission': Permission,
+                    'cells': [{'available': bool, 'note': str}, ...]
+                },
+                ...
+            ]  # Düz liste — modül başlığı yok.
+    """
+    if packages is None:
+        packages = list(
+            Packages.objects.filter(is_active=True).order_by('order', 'name')
+        )
+    else:
+        packages = list(packages)
+
+    if not packages:
+        return [], []
+
+    # ABC pattern: ABC + en az 1 rakam + D (ABC1001D, ABC1908D vb.)
+    abc_perm_ids = list(
+        Permission.objects.filter(
+            code__regex=r'^ABC[0-9]+D$',
+            is_system_only=False,
+        ).values_list('id', flat=True)
+    )
+
+    if not abc_perm_ids:
+        return packages, []
+
+    # ABC permission'ların paketlerdeki matrix kayıtları
+    matrix_qs = PackagePermissionMatrix.objects.filter(
+        package__in=packages,
+        permission_id__in=abc_perm_ids,
+    ).select_related('permission', 'package')
+
+    lookup = {}
+    available_perm_ids = set()
+    for entry in matrix_qs:
+        lookup[(entry.permission_id, entry.package_id)] = {
+            'available': entry.available,
+            'note': entry.note or '',
+        }
+        if entry.available:
+            available_perm_ids.add(entry.permission_id)
+
+    # Sadece en az bir aktif paketde available=True olan ABC permission'ları
+    # göster — hiçbir pakete satılmamış (orphan/admin) ABC permission'lar
+    # tabloda yer almaz. Bu ABC9xxx serisini de otomatik dışlar.
+    if not available_perm_ids:
+        return packages, []
+
+    permissions = Permission.objects.filter(
+        id__in=available_perm_ids,
+    ).order_by('order', 'name')
+
+    contract_rows = []
+    for perm in permissions:
+        cells = []
+        for pkg in packages:
+            data = lookup.get(
+                (perm.id, pkg.id),
+                {'available': False, 'note': ''},
+            )
+            cells.append(data)
+        contract_rows.append({
+            'permission': perm,
+            'cells': cells,
+        })
+
+    return packages, contract_rows

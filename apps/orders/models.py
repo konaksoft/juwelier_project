@@ -9,7 +9,6 @@ from apps.accounts.models import Users
 from apps.stores.models import Stores
 from apps.whatsapp.models import WhatsAppCreditRequest
 from apps.crm.packages.models import Packages
-from apps.invoices.models import StoreEInvoiceSettings, EInvoiceCreditRequest
 # Proposal ve Device modellerini lazy reference (string) ile kullanıyoruz
 from apps.crm.proposals.models import Proposals
 from apps.crm.devices.models import Device
@@ -44,7 +43,6 @@ def generate_unique_order_no(prefix: str) -> str:
 class Order(models.Model):
     class Type(models.TextChoices):
         WA_CREDIT = 'WA_CREDIT', 'WhatsApp Kontör'
-        EINVOICE_CREDIT = 'EINVOICE_CREDIT', 'E-Fatura Kontör'
         PACKAGE = 'PACKAGE', 'Paket Satın Alma'
         PROPOSAL = 'PROPOSAL', 'Teklif Onayı'
 
@@ -198,10 +196,6 @@ class OrderItem(models.Model):
 
     wa_credit_request = models.OneToOneField(WhatsAppCreditRequest, null=True, blank=True, on_delete=models.SET_NULL,
                                              related_name='order_item')
-    einv_credit_request = models.OneToOneField(
-        EInvoiceCreditRequest, null=True, blank=True,
-        on_delete=models.SET_NULL, related_name='order_item'
-    )
     quantity = models.PositiveIntegerField(default=1)
     unit_label = models.CharField(max_length=20, default='adet')
     unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
@@ -252,61 +246,6 @@ def create_order_from_wa_credit_request(req: WhatsAppCreditRequest, unit_price: 
             line_type=Order.Type.WA_CREDIT,
             wa_credit_request=req,
             quantity=int(req.requested_amount or 0),
-            unit_label='kontör',
-            unit_price=q2(unit_price),
-            currency=currency
-        )
-        it.recompute(save=True)
-        od.recompute_totals(save=True)
-        return od
-
-
-def create_order_from_einvoice_credit_request(req: EInvoiceCreditRequest, unit_price: Decimal,
-                                              currency: str = MoneyCurrency.TRY, note: str = '') -> Order:
-    with transaction.atomic():
-        number = generate_unique_order_no("EF")  # E-Fatura
-        od = Order.objects.create(
-            order_no=number, sequence_no=0,
-            store=req.store, requester=req.requester,
-            order_type=Order.Type.EINVOICE_CREDIT,
-            status=Order.Status.PENDING,
-            payment_status=Order.PaymentStatus.UNPAID,
-            currency=currency,
-            notes=note or req.note or ''
-        )
-        it = OrderItem.objects.create(
-            order=od,
-            line_type=Order.Type.EINVOICE_CREDIT,
-            einv_credit_request=req,
-            quantity=int(req.requested_amount or 0),
-            unit_label='kontör',
-            unit_price=q2(unit_price),
-            currency=currency
-        )
-        it.recompute(save=True)
-        od.recompute_totals(save=True)
-        return od
-
-
-def create_order_for_einvoice_credit(store: Stores, quantity: int, unit_price: Decimal, requester: Users | None = None,
-                                     currency: str = MoneyCurrency.TRY, note: str = '') -> Order:
-    with transaction.atomic():
-        number = generate_unique_order_no("EF")
-        od = Order.objects.create(
-            order_no=number,
-            sequence_no=0,
-            store=store,
-            requester=requester,
-            order_type=Order.Type.EINVOICE_CREDIT,
-            status=Order.Status.PENDING,
-            payment_status=Order.PaymentStatus.UNPAID,
-            currency=currency,
-            notes=note
-        )
-        it = OrderItem.objects.create(
-            order=od,
-            line_type=Order.Type.EINVOICE_CREDIT,
-            quantity=int(quantity or 0),
             unit_label='kontör',
             unit_price=q2(unit_price),
             currency=currency

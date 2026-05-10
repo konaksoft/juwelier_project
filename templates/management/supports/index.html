@@ -127,7 +127,7 @@
     <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
         <div class="container-fluid">
 
-            {# ── ÜST KART: Çözüm Merkezi Başlığı + Ana Sekmeler ── #}
+            <!-- ── ÜST KART: Çözüm Merkezi Başlığı + Ana Sekmeler ── -->
             <div id="kt_app_toolbar" class="app-toolbar">
                 <div class="card shadow-sm w-100 my-margin">
                     <div class="card-body pb-0">
@@ -154,17 +154,17 @@
             </div>
         </div>
 
-        {# ── ANA TAB İÇERİĞİ ── #}
+        <!-- ── ANA TAB İÇERİĞİ ── -->
         <div id="kt_app_content" class="app-content flex-column-fluid">
             <div id="kt_app_content_container" class="container-fluid">
                 <div class="tab-content" id="mainTabContent">
 
-                    {# ═══════════════════════════════════════════════════ #}
-                    {# SEKME 1: DESTEK TALEPLERİ (mevcut yapı aynen)     #}
-                    {# ═══════════════════════════════════════════════════ #}
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- SEKME 1: DESTEK TALEPLERİ (mevcut yapı aynen)     -->
+                    <!-- ═══════════════════════════════════════════════════ -->
                     <div class="tab-pane fade active show" id="tab-destek" role="tabpanel">
 
-                        {# Arama / Tarih Filtre / Oluştur Butonu + İç Sekmeler #}
+                        <!-- Arama / Tarih Filtre / Oluştur Butonu + İç Sekmeler -->
                         <div class="card shadow-sm mb-5">
                             <div class="card-body">
                                 <div class="d-flex flex-stack flex-wrap gap-2">
@@ -213,7 +213,7 @@
                                     </div>
                                 </div>
 
-                                {# İç Sekmeler: Tümü / Bekleyen / Başlayan / Tamamlanan #}
+                                <!-- İç Sekmeler: Tümü / Bekleyen / Başlayan / Tamamlanan -->
                                 <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mt-3"
                                     id="supportInnerTabs">
                                     <li class="nav-item mt-2"><a
@@ -232,7 +232,7 @@
                             </div>
                         </div>
 
-                        {# DataTable İç Sekme İçerikleri #}
+                        <!-- DataTable İç Sekme İçerikleri -->
                         <div class="tab-content" id="supportTabContent">
                             <div class="tab-pane fade active show" id="all" role="tabpanel">
                                 <div class="card">
@@ -341,12 +341,12 @@
                         </div>
                     </div>
 
-                    {# ═══════════════════════════════════════════════════ #}
-                    {# SEKME 2: EĞİTİM VİDEOLARI                        #}
-                    {# ═══════════════════════════════════════════════════ #}
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- SEKME 2: EĞİTİM VİDEOLARI                        -->
+                    <!-- ═══════════════════════════════════════════════════ -->
                     <div class="tab-pane fade" id="tab-egitim" role="tabpanel">
 
-                        {# Superuser: Video Ekle Butonu #}
+                        <!-- Superuser: Video Ekle Butonu -->
                         {% if request.user.is_superuser %}
                             <div class="d-flex justify-content-end mb-5">
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
@@ -357,7 +357,7 @@
                             </div>
                         {% endif %}
 
-                        {# Video Listesi - Modüle Göre Gruplu #}
+                        <!-- Video Listesi - Modüle Göre Gruplu -->
                         {% regroup training_videos by module_name as video_groups %}
                         {% for group in video_groups %}
                             <div class="mb-10">
@@ -413,7 +413,7 @@
         </div>
     </div>
 
-    {# ── MODAL: Talep Oluştur ── #}
+    <!-- ── MODAL: Talep Oluştur ── -->
     <div class="modal fade" id="addRequestModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -463,7 +463,7 @@
         </div>
     </div>
 
-    {# ── MODAL: Personel Ata ── #}
+    <!-- ── MODAL: Personel Ata ── -->
     <div class="modal fade" id="personelAddModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg mw-500px">
             <div class="modal-content">
@@ -506,7 +506,7 @@
         </div>
     </div>
 
-    {# ── MODAL: Eğitim Videosu Ekle (Sadece Superuser) ── #}
+    <!-- ── MODAL: Eğitim Videosu Ekle (Sadece Superuser) ── -->
     {% if request.user.is_superuser %}
         <div class="modal fade" id="addVideoModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
@@ -720,7 +720,7 @@
 
             tables.all = initTable('#model_table_all', 'all');
 
-            {# Sadece iç sekmeleri (Tümü/Bekleyen/Başlayan/Tamamlanan) dinle #}
+            <!-- Sadece iç sekmeleri (Tümü/Bekleyen/Başlayan/Tamamlanan) dinle -->
             $('#supportInnerTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
                 var target = $(e.target).attr("href").replace('#', '');
                 if (tables[target]) {
@@ -848,7 +848,7 @@
                 });
             });
 
-            {# ── Eğitim Videosu Ekle (AJAX) ── #}
+            <!-- ── Eğitim Videosu Ekle (AJAX) ── -->
             $("#btnSaveVideo").click(function () {
                 let form = $("#addVideoForm")[0];
                 if (!form.checkValidity()) {
@@ -883,7 +883,7 @@
                 });
             });
 
-            {# ── Eğitim Videosu Sil (AJAX) ── #}
+            <!-- ── Eğitim Videosu Sil (AJAX) ── -->
             $(document).on('click', '.btn-delete-video', function () {
                 var videoId = $(this).data('id');
 

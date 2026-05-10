@@ -9,6 +9,8 @@
             margin: 0;
             padding: 20px;
             font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
         }
 
         .barcode-container {
@@ -18,6 +20,7 @@
             display: flex;
             flex-direction: column;
             font-size: 10px;
+            color: #000;
         }
 
         /* ── Yan Yana: etiket-1 solda, etiket-2 sağda ── */
@@ -117,6 +120,23 @@
         @media print {
             body {
                 padding: 0;
+                color: #000 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .barcode-container,
+            .etiket-1,
+            .etiket-2,
+            .barcode-text,
+            .k-ayar,
+            .sale-has,
+            .company-name,
+            .supplier-company,
+            .jewelry-type {
+                color: #000 !important;
+                background: transparent !important;
             }
 
             .barcode-container {
@@ -129,13 +149,13 @@
 <body>
 <div id="barcodes">
     {% for product in products %}
-        {# Her ürün kendi material'ına özel resolved config'i taşır. GOLD geriye dönük varsayılan. #}
+        <!-- Her ürün kendi material'ına özel resolved config'i taşır. GOLD geriye dönük varsayılan. -->
         {% with cfg=product.config|default:config %}
             <div class="barcode-container {% if layout_mode == 'SIDE_BY_SIDE' %}layout-side-by-side{% elif layout_mode == 'REFLECTED' %}layout-reflected{% endif %}"
                  {% if layout_mode == 'SIDE_BY_SIDE' %}style="--label-width:
                          {{ cfg.label_width_percentage|default:50 }}%;"{% endif %}>
 
-                {# ── ETİKET-1: Firma + Barkod + No + Material'a özel kalite alanı ── #}
+                <!-- ── ETİKET-1: Firma + Barkod + No + Material'a özel kalite alanı ── -->
                 <div class="etiket-1">
                     {% if cfg.store_name.visible %}
                         <div class="company-name"
@@ -177,7 +197,7 @@
                                 {% endif %}
                             </div>
                         {% endif %}
-                        {# Montür altını: ayar (örn. "18K") + gram (örn. "4,10 gr") — opsiyonel, default gizli #}
+                        <!-- Montür altını: ayar (örn. "18K") + gram (örn. "4,10 gr") — opsiyonel, default gizli -->
                         {% if cfg.mount_karat and cfg.mount_karat.visible and product.mount_karat %}
                             <div style="font-size:{{ cfg.mount_karat.print_font }}px; transform:translate({{ cfg.mount_karat.print_dx }}px, {{ cfg.mount_karat.print_dy }}px);">
                                 {{ product.mount_karat }}
@@ -186,10 +206,10 @@
                     </div>
                 </div>
 
-                {# ── ETİKET-2: Material'a özel alanlar + Fiyat + Tedarikçi ── #}
+                <!-- ── ETİKET-2: Material'a özel alanlar + Fiyat + Tedarikçi ── -->
                 <div class="etiket-2 {% if layout_mode == 'REFLECTED' %}etiket-mirror{% endif %}">
 
-                    {# ─── DIAMOND: 4C + Sertifika ─── #}
+                    <!-- ─── DIAMOND: 4C + Sertifika ─── -->
                     {% if product.material_type == 'DIAMOND' %}
                         {% if cfg.carat_weight.visible and product.carat_weight %}
                             <div style="font-size:{{ cfg.carat_weight.print_font }}px; transform:translate({{ cfg.carat_weight.print_dx }}px, {{ cfg.carat_weight.print_dy }}px);">
@@ -220,7 +240,7 @@
                             </div>
                         {% endif %}
                         {% if cfg.price.visible %}
-                            {# DIAMOND fiyatı: show_currency=True ise "1.452,26 $", False ise "1.452,26" — backend belirler. #}
+                            <!-- DIAMOND fiyatı: show_currency=True ise "1.452,26 $", False ise "1.452,26" — backend belirler. -->
                             <div class="sale-has"
                                  style="font-size:{{ cfg.price.print_font }}px; transform:translate({{ cfg.price.print_dx }}px, {{ cfg.price.print_dy }}px);">
                                 {{ product.product__sale_price_hs }}
@@ -239,7 +259,7 @@
                             {% endif %}
                         </div>
 
-                        {# ─── WATCH: Marka / Model / Referans / Mekanizma / Durum ─── #}
+                        <!-- ─── WATCH: Marka / Model / Referans / Mekanizma / Durum ─── -->
                     {% elif product.material_type == 'WATCH' %}
                         {% if cfg.brand.visible and product.brand %}
                             <div class="company-name"
@@ -281,7 +301,7 @@
                             </div>
                         {% endif %}
 
-                        {# ─── GOLD (varsayılan): Fiyat + Milyem/Gram + Ürün Tipi + Alyans ─── #}
+                        <!-- ─── GOLD (varsayılan): Fiyat + Milyem/Gram + Ürün Tipi + Alyans ─── -->
                     {% else %}
                         {% if cfg.price.visible %}
                             <div class="sale-has"
@@ -315,7 +335,7 @@
                         {% endif %}
                     {% endif %}
 
-                    {# Tedarikçi tüm material'larda ortak #}
+                    <!-- Tedarikçi tüm material'larda ortak -->
                     {% if cfg.supplier.visible %}
                         <div class="supplier-company"
                              style="font-size:{{ cfg.supplier.print_font }}px; transform:translate({{ cfg.supplier.print_dx }}px, {{ cfg.supplier.print_dy }}px);">

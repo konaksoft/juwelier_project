@@ -1,6 +1,8 @@
 from django.urls import path
 
 from apps.banking.bank_views import *
+# FAZ 61: Hızlı Gider Modülü endpoint'leri (yeni ayrı modül)
+from apps.banking import expense_views
 
 app_name = 'bank-management'
 
@@ -34,6 +36,35 @@ urlpatterns = [
 
     # FAZ 19: Bakiye Düzeltme / Açılış Fişi
     path('adjustment', adjustment_payment, name='adjustment'),
+
+    # FAZ 31 / BUG-3: Manuel Gider Girişi (tek satır, eski endpoint — korunur)
+    path('manual-expense', manual_expense, name='manual_expense'),
+
+    # ────────────────────────────────────────────────────────────────
+    # FAZ 61: Hızlı Gider Modülü
+    # ────────────────────────────────────────────────────────────────
+
+    # Hızlı giriş (toplu satır + klavye navigasyonu)
+    path('expense/quick/', expense_views.expense_quick_index, name='expense_quick'),
+    path('expense/bulk-save', expense_views.expense_bulk_save, name='expense_bulk_save'),
+
+    # Kategori yönetimi
+    path('expense/categories/', expense_views.expense_categories_index, name='expense_categories'),
+    path('expense/categories/list', expense_views.expense_categories_list, name='expense_categories_list'),
+    path('expense/categories/options', expense_views.expense_categories_options, name='expense_categories_options'),
+    path('expense/categories/save', expense_views.expense_categories_save, name='expense_categories_save'),
+    path('expense/categories/toggle', expense_views.expense_categories_toggle, name='expense_categories_toggle'),
+    path('expense/categories/delete', expense_views.expense_categories_delete, name='expense_categories_delete'),
+
+    # Raporlama
+    path('expense/report/', expense_views.expense_report_index, name='expense_report'),
+    path('expense/report/data', expense_views.expense_report_data, name='expense_report_data'),
+
+    # İptal (REVERSAL)
+    path('expense/reverse', expense_views.expense_reverse, name='expense_reverse'),
+
+    # FAZ 65: Hızlı giriş üst KPI (today + month + top_category)
+    path('expense/today-kpi', expense_views.expense_today_kpi, name='expense_today_kpi'),
 
     # Detay sayfasi
     path('<uuid:account_id>/', bank_management_detail, name='detail'),

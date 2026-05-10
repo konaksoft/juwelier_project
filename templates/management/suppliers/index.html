@@ -692,6 +692,67 @@
 
             // --- 7. TOPLU İŞLEMLER ---
 
+            // FAZ TS-3 — Tedarikçi/Çantacı silme: iki aşamalı akış.
+            //   1) Preflight raporu çekilir (mode=preflight) — okuma sorgusu, veri değişmez.
+            //   2) Bloklayıcı varsa kullanıcıya hata gösterilir, akış durur.
+            //   3) Sadece uyarı (bakiye / barkodlu alış kaydı anonimleşmesi)
+            //      varsa kullanıcıya detaylı onay modali gösterilir.
+            //   4) Onay alınırsa confirm=true ile asıl silme POST'u atılır.
+            //   5) Hiçbir bloklayıcı/uyarı yoksa kısa onaydan sonra direkt silinir.
+            //
+            // Sunucu 409 dönerse (örn. UI senkron değil ya da ledger durumu
+            // değiştiyse) errors/warnings yakalanıp aynı modal mantığıyla gösterilir.
+
+            function tsBuildBlockingHtml(errors) {
+                if (!errors || !errors.length) return '';
+                let html = '<div class="text-danger fw-bold mb-2">'
+                         + 'Aşağıdaki sebeplerden silme yapılamaz:</div><ul class="text-start small">';
+                errors.forEach(function (e) {
+                    html += '<li>' + (e.message || e.code) + '</li>';
+                });
+                html += '</ul>';
+                return html;
+            }
+
+            function tsBuildWarningHtml(warnings) {
+                if (!warnings || !warnings.length) return '';
+                let html = '<div class="text-warning fw-bold mb-2">'
+                         + 'Devam etmeden önce kontrol edin:</div><ul class="text-start small">';
+                warnings.forEach(function (w) {
+                    html += '<li>' + (w.message || w.code) + '</li>';
+                });
+                html += '</ul>';
+                return html;
+            }
+
+            function tsExecuteDelete(ids, force) {
+                $.post("{% url 'suppliers:delete' %}", {
+                    'ids[]': ids,
+                    confirm: force ? 'true' : 'false',
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                }).done(function (resp) {
+                    if (resp && resp.result) {
+                        table.ajax.reload(null, false);
+                        Swal.fire('Silindi!', 'Kayıtlar silindi.', 'success');
+                    } else {
+                        Swal.fire('Hata', 'Silme başarısız.', 'error');
+                    }
+                }).fail(function (xhr) {
+                    if (xhr.status === 409 && xhr.responseJSON) {
+                        // Ledger durumu son anda değişti — UI'yı tekrar bilgilendir.
+                        const j = xhr.responseJSON;
+                        Swal.fire({
+                            title: 'Silme engellendi',
+                            html: tsBuildBlockingHtml(j.errors)
+                                + tsBuildWarningHtml(j.warnings),
+                            icon: 'warning'
+                        });
+                    } else {
+                        Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                    }
+                });
+            }
+
             $('#deleteSelected').click(function () {
                 let ids = [];
                 $('#kt_datatable_example_1 .form-check-input:checked').each(function () {
@@ -703,21 +764,62 @@
                     return;
                 }
 
-                Swal.fire({
-                    title: 'Emin misiniz?', text: "Seçili kayıtlar silinecek!",
-                    icon: 'warning', showCancelButton: true,
-                    confirmButtonText: 'Evet, Sil', cancelButtonText: 'İptal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post("{% url 'suppliers:delete' %}", {
-                            ids: ids, csrfmiddlewaretoken: '{{ csrf_token }}'
-                        }, function (resp) {
-                            if (resp.result) {
-                                table.ajax.reload(null, false);
-                                Swal.fire('Silindi!', 'Kayıtlar silindi.', 'success');
-                            }
-                        });
+                // 1) Preflight — sunucudan rapor iste.
+                $.post("{% url 'suppliers:delete' %}", {
+                    'ids[]': ids,
+                    mode: 'preflight',
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                }).done(function (resp) {
+                    if (!resp || !resp.result || !resp.report) {
+                        Swal.fire('Hata', 'Önkontrol başarısız.', 'error');
+                        return;
                     }
+
+                    const report = resp.report;
+                    const blocking = report.blocking || [];
+                    const warnings = report.warnings || [];
+
+                    // 2) Bloklayıcı varsa silme yapılamaz.
+                    if (blocking.length) {
+                        Swal.fire({
+                            title: 'Silme engellendi',
+                            html: tsBuildBlockingHtml(blocking),
+                            icon: 'error'
+                        });
+                        return;
+                    }
+
+                    // 3) Uyarı varsa detaylı onay modali.
+                    if (warnings.length) {
+                        Swal.fire({
+                            title: 'Dikkat — Onay gerekiyor',
+                            html: tsBuildWarningHtml(warnings)
+                                + '<div class="small text-muted mt-2">Devam ederseniz aktif cari kayıtlar pasifleştirilecek '
+                                + 've barkodlu alış kayıtları tedarikçisiz olarak korunacaktır.</div>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yine de Sil',
+                            cancelButtonText: 'İptal',
+                            focusCancel: true
+                        }).then(function (r) {
+                            if (r.isConfirmed) tsExecuteDelete(ids, true);
+                        });
+                        return;
+                    }
+
+                    // 4) Temiz tedarikçi — kısa onay.
+                    Swal.fire({
+                        title: 'Emin misiniz?',
+                        text: 'Seçili kayıtlar silinecek.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Evet, Sil',
+                        cancelButtonText: 'İptal'
+                    }).then(function (r) {
+                        if (r.isConfirmed) tsExecuteDelete(ids, false);
+                    });
+                }).fail(function () {
+                    Swal.fire('Hata', 'Sunucuya ulaşılamadı.', 'error');
                 });
             });
 

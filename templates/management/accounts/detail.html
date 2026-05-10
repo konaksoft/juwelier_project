@@ -307,7 +307,14 @@
                                             <tbody class="text-gray-600 fw-semibold">
                                             {% for pay in payments %}
                                                 <tr>
-                                                    <td>{{ pay.process_no|default:'-' }}</td>
+                                                    <td>
+                                                        {% if pay.process_no %}
+                                                            <span class="badge badge-light-primary fw-bold js-open-process-modal"
+                                                                  data-process-no="{{ pay.process_no }}"
+                                                                  style="cursor:pointer;letter-spacing:.3px;"
+                                                                  title="İşlem röntgenini aç">{{ pay.process_no }}</span>
+                                                        {% else %}-{% endif %}
+                                                    </td>
                                                     <td>{{ pay.get_payment_type_display|default:'-' }}</td>
                                                     <td>{{ pay.amount|floatformat:2 }} TL</td>
                                                     <td>{{ pay.date|date:'d.m.Y H:i' }}</td>
@@ -670,13 +677,3 @@
     </script>
 
 {% endblock footer %}
-
-# Önce kontrol et (DB'ye yazma)
-python manage.py sync_roles_and_permissions --dry-run
-
-# Uygula
-python manage.py sync_roles_and_permissions
-
-# Sadece belirli grubu
-python manage.py sync_roles_and_permissions --group Hesaplar
-python manage.py sync_roles_and_permissions --group Fatura

@@ -18,4 +18,14 @@ urlpatterns = [
     # --- FAZ S5 (PIVOT 2026-04-23): WATCH/DIAMOND için döviz kurları ---
     # GET ?currencies=USD,EUR,GBP,CHF -> {"rates": {...}, "missing": [...]}
     path('get-fx-rates', get_fx_rates, name='get-fx-rates'),
+
+    # --- T2 (2026-04-29): Özel Ürün Sıralaması (drag-drop) ---
+    # POST items=[{product_id, display_order}, ...] -> Products.display_order bulk update
+    path('reorder', product_reorder, name='reorder'),
+
+    # --- UAT V3 P2 (2026-04-29): Güvenli Silme (soft-delete) ---
+    # GET  /<uuid>/deletion-check  -> ledger/stok varlığı kontrolü
+    # POST /<uuid>/delete-single   -> tek ürün soft-delete
+    path('<uuid:product_id>/deletion-check', deletion_check, name='deletion_check'),
+    path('<uuid:product_id>/delete-single', delete_single, name='delete_single'),
 ]

@@ -837,12 +837,514 @@
             </div>
 
             <div class="kp-tabs-nav">
-                <button class="kp-tab-btn active" onclick="switchTab('reports')">Dashboard</button>
+                <!-- FAZ 26 (2026-05-01): Patron Odaklı 3 Sekme Mimarisi -->
+                <button class="kp-tab-btn active" onclick="switchTab('assets')">Mağaza Varlıkları ve Stok</button>
+                <button class="kp-tab-btn" onclick="switchTab('operations')">Satışlar ve İşlemler</button>
                 <button class="kp-tab-btn" onclick="switchTab('charts')">Grafikler</button>
                 <button class="kp-tab-btn" onclick="switchTab('all-reports')">Rapor Merkezi</button>
             </div>
 
-            <div id="tab-reports" class="kp-tab-pane active">
+            <!-- ════════════════════════════════════════════════════════════════ -->
+            <!-- FAZ 26: TAB 1 — MAĞAZA VARLIKLARI VE STOK (Patron Odak Ekranı)   -->
+            <!-- ════════════════════════════════════════════════════════════════ -->
+            <!-- 3 hero kart + kasa şeridi + stok detay tablosu + tedarikçi       -->
+            <!-- borç accordion. Veri: GET /dashboard/assets-v2/ (JS: fetchAssetsV2). -->
+            <!-- ════════════════════════════════════════════════════════════════ -->
+            <div id="tab-assets" class="kp-tab-pane active">
+
+                <!-- ─── A. 3 Hero Kart ─────────────────────────────────────── -->
+                <div class="tab1-hero-grid">
+                    <div class="pixel-card tab1-hero tab1-hero-stok" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content tab1-hero-inner">
+                            <div class="tab1-hero-icon"><i class="bi bi-gem"></i></div>
+                            <div class="tab1-hero-label">Fiziksel Stok HAS</div>
+                            <div class="tab1-hero-value" id="tab1-stok-has">0,00 HS</div>
+                            <div class="tab1-hero-sub">
+                                <span id="tab1-stok-gram">0,00 gr</span> toplam gram
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pixel-card tab1-hero tab1-hero-debt" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content tab1-hero-inner">
+                            <div class="tab1-hero-icon"><i class="bi bi-truck"></i></div>
+                            <div class="tab1-hero-label">Tedarikçi Borcu HAS</div>
+                            <div class="tab1-hero-value" id="tab1-tedarikci-hs">0,00 HS</div>
+                            <div class="tab1-hero-sub">
+                                <button type="button" id="tab1-debt-toggle" class="tab1-debt-toggle">
+                                    <i class="bi bi-list-ul"></i> Detayları Gör
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pixel-card tab1-hero tab1-hero-net" data-variant="gold" id="tab1-net-card">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content tab1-hero-inner">
+                            <div class="tab1-hero-icon"><i class="bi bi-trophy-fill"></i></div>
+                            <div class="tab1-hero-label">NET HAS</div>
+                            <div class="tab1-hero-value tab1-hero-net-value" id="tab1-net-has">0,00 HS</div>
+                            <div class="tab1-hero-sub" id="tab1-net-sub">Stok HAS − Tedarikçi Borcu</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─── A2. FAZ 48.7: Emanet Stoğu Bilgi Şeridi ─────────────── -->
+                <div class="tab1-custody-strip" style="
+                    display:flex; align-items:center; gap:1rem;
+                    padding:0.55rem 1rem; margin-bottom:0.75rem;
+                    background:rgba(255,193,7,0.08); border:1px solid rgba(255,193,7,0.25);
+                    border-radius:8px; font-size:0.84rem; color:var(--text-muted,#aaa);">
+                    <i class="bi bi-safe2" style="color:#ffc107; font-size:1.1rem;"></i>
+                    <span>Müşteri Emanet Stoğu (satışa kapalı):</span>
+                    <b id="tab1-emanet-gram" style="color:#ffc107;">0,000 gr</b>
+                    <span id="tab1-emanet-pieces-wrap" style="display:none;">
+                        / <b id="tab1-emanet-pieces" style="color:#ffc107;">0 adet</b>
+                    </span>
+                    <span style="font-size:0.75rem; opacity:0.6;">— Hızlı İşlem / Perakende / Toptan sayfalarında görünmez</span>
+                </div>
+
+                <!-- ─── B. Mini Kasa / Banka / POS Şeridi ──────────────────── -->
+                <div class="tab1-cash-strip">
+                    <div class="tab1-cash-title">Kasa Durumu</div>
+                    <div class="tab1-cash-chips">
+                        <span class="tab1-cash-chip">
+                            <i class="bi bi-cash-stack"></i> Nakit (TRY): <b id="tab1-kasa-try">₺0,00</b>
+                        </span>
+                        <span class="tab1-cash-chip">
+                            <i class="bi bi-credit-card-2-front-fill"></i> Banka / POS: <b id="tab1-banka-pos">₺0,00</b>
+                        </span>
+                        <span id="tab1-kasa-fx-wrap" style="display:contents;">
+                            <!-- Döviz nakit chip'leri buraya enjekte edilir -->
+                        </span>
+                    </div>
+                </div>
+
+                <!-- ─── C. Stok Detay Tablosu ──────────────────────────────── -->
+                <div class="pixel-card tab1-stock-card" data-variant="gold">
+                    <canvas class="pixel-canvas"></canvas>
+                    <div class="pixel-card-content">
+                        <div class="chart-header">
+                            <div class="chart-title-wrap">
+                                <div class="chart-icon"><i class="bi bi-boxes"></i></div>
+                                <div>
+                                    <div class="chart-title">Stok Detayları</div>
+                                    <div class="chart-subtitle">Kategori bazlı gram, has ve adet kırılımı</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span id="tab1-generated-at" style="font-size:0.75rem; color:var(--text-muted);"></span>
+                                <button type="button" id="tab1-refresh-btn" class="btn btn-sm tab1-refresh-btn">
+                                    <i class="bi bi-arrow-clockwise"></i> Yenile
+                                </button>
+                            </div>
+                        </div>
+                        <div class="tab1-stock-table-wrap">
+                            <table class="tab1-stock-table">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;">Tür</th>
+                                        <th style="text-align:right;">Toplam Gram</th>
+                                        <th style="text-align:right;">Has (HS)</th>
+                                        <th style="text-align:right;">Adet</th>
+                                        <th style="text-align:right;">Ort. WAC (HS/gr)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tab1-stok-tbody">
+                                    <tr><td colspan="5" style="padding:1rem; text-align:center; color:var(--text-muted);">
+                                        Yükleniyor…
+                                    </td></tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr id="tab1-stok-tfoot-row" style="display:none;">
+                                        <td style="text-align:left;"><b>TOPLAM</b></td>
+                                        <td style="text-align:right;"><b id="tab1-stok-tfoot-gram">0,00</b></td>
+                                        <td style="text-align:right;"><b id="tab1-stok-tfoot-has">0,00</b></td>
+                                        <td style="text-align:right;"><b id="tab1-stok-tfoot-pieces">0</b></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─── D. Tedarikçi Borç Accordion (gizli, butonla açılır) ─ -->
+                <div id="tab1-debt-panel" class="tab1-debt-panel" style="display:none;">
+                    <div class="pixel-card" data-variant="gold">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header">
+                                <div class="chart-title-wrap">
+                                    <div class="chart-icon"><i class="bi bi-list-columns-reverse"></i></div>
+                                    <div>
+                                        <div class="chart-title">Tedarikçi Borç Detayı</div>
+                                        <div class="chart-subtitle">Aktif HS ledger satırlarından net hesap</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="tab1-debt-close" onclick="document.getElementById('tab1-debt-panel').style.display='none';">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <div class="tab1-stock-table-wrap">
+                                <table class="tab1-stock-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:left;">Tedarikçi</th>
+                                            <th style="text-align:left;">Tip</th>
+                                            <th style="text-align:right;">Borç (HS)</th>
+                                            <th style="text-align:right;">Alacak (HS)</th>
+                                            <th style="text-align:right;">NET (HS)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tab1-debt-tbody">
+                                        <tr><td colspan="5" style="padding:0.8rem; text-align:center; color:var(--text-muted);">
+                                            Yükleniyor…
+                                        </td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─── E. (Korunan) Detay Stok Bölümü — Çoklu Maden Kartları + Mevcut Kategori Tablosu ─ -->
+                <!-- Multi-material kartları (Gümüş/Pırlanta/Saat) ve mevcut karat       -->
+                <!-- chip'leri assets-summary endpoint'inden besleniyor; multi_material   -->
+                <!-- _cards.js modülü ID'lere bağlı olduğundan markup AYNEN korunur.       -->
+                <div id="store-assets-section" style="margin-top:1rem;">
+                    <div class="pixel-card" data-variant="gold" style="padding:1rem;">
+                        <canvas class="pixel-canvas"></canvas>
+                        <div class="pixel-card-content">
+                            <div class="chart-header" style="margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+                                <div class="chart-title-wrap" style="display:flex; align-items:center; gap:0.75rem;">
+                                    <div class="chart-icon"><i class="bi bi-safe2-fill"></i></div>
+                                    <div>
+                                        <div class="chart-title">Çoklu Maden ve Detay Kırılım</div>
+                                        <div class="chart-subtitle">Gümüş, Pırlanta, Saat ve Kategori detayları</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <span id="assets-generated-at" style="font-size:0.75rem; color:var(--text-muted);"></span>
+                                    <button type="button" id="assets-refresh-btn" class="btn btn-sm"
+                                            style="background:rgba(255,215,0,0.15); color:var(--accent-gold); border:1px solid var(--border-gold); padding:0.25rem 0.6rem; font-size:0.75rem;">
+                                        <i class="bi bi-arrow-clockwise"></i> Yenile
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Kasa / Banka / POS Bakiye Grid (legacy IDs — multi_material_cards.js bağımlılığı) -->
+                            <div class="stats-pixel-grid" style="margin-bottom:1rem;">
+                                <div class="pixel-card stat-pixel-card green" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-cash-stack"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-cash-try" style="font-size:1.1rem;">₺0</div>
+                                            <div class="stat-label">Nakit (TRY)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pixel-card stat-pixel-card blue" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-credit-card-2-front-fill"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-pos-bank-try" style="font-size:1.1rem;">₺0</div>
+                                            <div class="stat-label">Banka / POS (TRY)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pixel-card stat-pixel-card gold" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-gem"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-stock-has" style="font-size:1.1rem;">0 gr</div>
+                                            <div class="stat-label">Stok HAS Değeri</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pixel-card stat-pixel-card purple" data-variant="gold">
+                                    <canvas class="pixel-canvas"></canvas>
+                                    <div class="pixel-card-content">
+                                        <div class="stat-icon-wrap"><i class="bi bi-boxes"></i></div>
+                                        <div>
+                                            <div class="stat-value" id="assets-stock-gram" style="font-size:1.1rem;">0 gr</div>
+                                            <div class="stat-label">Toplam Stok Gram</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Döviz Kasa Detayı -->
+                            <div id="assets-fx-wrap" style="margin-bottom:1rem;">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Döviz Kasa Bakiyeleri
+                                </div>
+                                <div id="assets-fx-chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                    <span style="color:var(--text-muted); font-size:0.8rem;">Döviz hesabı yok</span>
+                                </div>
+                            </div>
+
+                            <!-- Ayar / Tip Kırılımı (legacy chips) -->
+                            <div style="margin-bottom:1rem;">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Ayar / Tip Kırılımı (Altın)
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                    <span class="assets-chip" data-k="k22"><i class="bi bi-coin"></i> 22 Ayar: <b id="assets-k22">0 gr</b></span>
+                                    <span class="assets-chip" data-k="k18"><i class="bi bi-coin"></i> 18 Ayar: <b id="assets-k18">0 gr</b></span>
+                                    <span class="assets-chip" data-k="k14"><i class="bi bi-coin"></i> 14 Ayar: <b id="assets-k14">0 gr</b></span>
+                                    <span class="assets-chip" data-k="bracelet"><i class="bi bi-circle"></i> Bilezik: <b id="assets-bracelet">0 gr</b></span>
+                                    <span class="assets-chip" data-k="scrap"><i class="bi bi-recycle"></i> Hurda: <b id="assets-scrap">0 gr</b></span>
+                                    <span class="assets-chip" id="mm-hg-cash-chip" style="display:none; background:rgba(192,192,192,0.15); border:1px solid rgba(192,192,192,0.4);">
+                                        <i class="bi bi-piggy-bank"></i> HG Kasa: <b id="mm-hg-cash-value">0 HG</b>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+                            <!-- FAZ D: ÇOKLU MADEN/ÜRÜN ÖZET KARTLARI — Gümüş · Pırlanta · Saat        -->
+                            <!-- ═══════════════════════════════════════════════════════════════════════ -->
+                            <div id="multi-material-assets-wrap" style="margin-bottom:1rem;">
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Çoklu Maden / Ürün Stokları
+                                </div>
+                                <div class="stats-pixel-grid" style="margin-top:0.5rem;">
+                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
+                                         style="border:1px solid rgba(192,192,192,0.35);">
+                                        <canvas class="pixel-canvas"></canvas>
+                                        <div class="pixel-card-content">
+                                            <div class="stat-icon-wrap" style="color:#c0c0c0;">
+                                                <i class="bi bi-moon-stars-fill"></i>
+                                            </div>
+                                            <div>
+                                                <div class="stat-value" id="mm-silver-gram" style="font-size:1.05rem;">0 gr</div>
+                                                <div class="stat-label">Gümüş (Gram)</div>
+                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
+                                                    <span id="mm-silver-value-hg">0 HG</span>
+                                                    · <span id="mm-silver-value-tl">₺0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
+                                         style="border:1px solid rgba(173,216,230,0.45);">
+                                        <canvas class="pixel-canvas"></canvas>
+                                        <div class="pixel-card-content">
+                                            <div class="stat-icon-wrap" style="color:#add8e6;">
+                                                <i class="bi bi-gem"></i>
+                                            </div>
+                                            <div>
+                                                <div class="stat-value" id="mm-diamond-pieces" style="font-size:1.05rem;">0 adet</div>
+                                                <div class="stat-label">Pırlanta</div>
+                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
+                                                    <span id="mm-diamond-value-tl">₺0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
+                                         style="border:1px solid rgba(255,165,0,0.35);">
+                                        <canvas class="pixel-canvas"></canvas>
+                                        <div class="pixel-card-content">
+                                            <div class="stat-icon-wrap" style="color:#ffa500;">
+                                                <i class="bi bi-watch"></i>
+                                            </div>
+                                            <div>
+                                                <div class="stat-value" id="mm-watch-pieces" style="font-size:1.05rem;">0 adet</div>
+                                                <div class="stat-label">Saat</div>
+                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
+                                                    <span id="mm-watch-value-tl">₺0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Kategori Gramaj Tablosu (legacy) -->
+                            <div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
+                                    Kategori Bazlı Stok
+                                </div>
+                                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                                    <thead>
+                                        <tr style="border-bottom:1px solid var(--border-gold); color:var(--text-secondary);">
+                                            <th style="text-align:left; padding:0.4rem 0.6rem;">Kategori</th>
+                                            <th style="text-align:right; padding:0.4rem 0.6rem;">Toplam Gram</th>
+                                            <th style="text-align:right; padding:0.4rem 0.6rem;">Adet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assets-category-table">
+                                        <tr><td colspan="3" style="padding:0.6rem; text-align:center; color:var(--text-muted);">Yükleniyor…</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 1 yerel CSS (FAZ 26) -->
+                <style>
+                    .tab1-hero-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr 1.4fr;
+                        gap: 1rem;
+                        margin-bottom: 1.25rem;
+                    }
+                    @media (max-width: 900px) {
+                        .tab1-hero-grid { grid-template-columns: 1fr; }
+                    }
+                    .tab1-hero { padding: 0; min-height: 160px; }
+                    .tab1-hero .pixel-card-content.tab1-hero-inner {
+                        padding: 1.4rem 1.6rem;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.4rem;
+                        height: 100%;
+                    }
+                    .tab1-hero-icon {
+                        width: 44px; height: 44px;
+                        background: rgba(255,215,0,0.12);
+                        border: 1px solid var(--border-gold);
+                        border-radius: 12px;
+                        display: flex; align-items: center; justify-content: center;
+                        color: var(--accent-gold);
+                        font-size: 1.3rem;
+                    }
+                    .tab1-hero-label {
+                        text-transform: uppercase;
+                        letter-spacing: 0.08em;
+                        font-size: 0.72rem;
+                        color: var(--text-secondary);
+                        font-weight: 600;
+                    }
+                    .tab1-hero-value {
+                        font-size: 1.85rem;
+                        font-weight: 800;
+                        color: var(--text-white);
+                        line-height: 1.1;
+                    }
+                    .tab1-hero-net .tab1-hero-icon {
+                        background: rgba(52,211,153,0.12);
+                        border-color: rgba(52,211,153,0.4);
+                        color: var(--accent-emerald);
+                    }
+                    .tab1-hero-net .tab1-hero-value { font-size: 2.4rem; }
+                    .tab1-hero-net.is-negative .tab1-hero-icon {
+                        background: rgba(248,113,113,0.12);
+                        border-color: rgba(248,113,113,0.45);
+                        color: var(--accent-red);
+                    }
+                    .tab1-hero-net.is-negative .tab1-hero-value { color: var(--accent-red); }
+                    .tab1-hero-net.is-positive .tab1-hero-value { color: var(--accent-emerald); }
+                    .tab1-hero-debt .tab1-hero-icon {
+                        background: rgba(251,146,60,0.12);
+                        border-color: rgba(251,146,60,0.4);
+                        color: var(--accent-orange);
+                    }
+                    .tab1-hero-sub {
+                        font-size: 0.78rem;
+                        color: var(--text-muted);
+                    }
+                    .tab1-debt-toggle {
+                        background: rgba(251,146,60,0.1);
+                        color: var(--accent-orange);
+                        border: 1px solid rgba(251,146,60,0.35);
+                        border-radius: 999px;
+                        padding: 0.3rem 0.75rem;
+                        font-size: 0.75rem;
+                        cursor: pointer;
+                    }
+                    .tab1-debt-toggle:hover { background: rgba(251,146,60,0.18); }
+                    .tab1-debt-close {
+                        background: transparent;
+                        border: 1px solid var(--border-gold);
+                        color: var(--text-secondary);
+                        border-radius: 8px;
+                        padding: 0.3rem 0.55rem;
+                        cursor: pointer;
+                    }
+                    .tab1-cash-strip {
+                        background: var(--glass-bg);
+                        border: 1px solid var(--border-gold);
+                        border-radius: 14px;
+                        padding: 0.85rem 1rem;
+                        margin-bottom: 1.25rem;
+                    }
+                    .tab1-cash-title {
+                        font-size: 0.72rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.08em;
+                        color: var(--text-secondary);
+                        font-weight: 600;
+                        margin-bottom: 0.5rem;
+                    }
+                    .tab1-cash-chips {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.5rem;
+                    }
+                    .tab1-cash-chip {
+                        background: rgba(255,215,0,0.06);
+                        border: 1px solid var(--border-gold);
+                        border-radius: 999px;
+                        padding: 0.4rem 0.8rem;
+                        font-size: 0.85rem;
+                        color: var(--text-primary);
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.45rem;
+                    }
+                    .tab1-cash-chip b { color: var(--accent-gold); font-weight: 700; }
+                    .tab1-stock-card { padding: 0; margin-bottom: 1rem; }
+                    .tab1-stock-card .pixel-card-content { padding: 1rem 1.2rem; }
+                    /* Stok tablosu kartı — hover efekti (sarı glow + transform) kaldırıldı */
+                    .pixel-card.tab1-stock-card:hover {
+                        border-color: var(--border-gold);
+                        transform: none;
+                        box-shadow: none;
+                        background: inherit;
+                    }
+                    .tab1-stock-table-wrap { overflow-x: auto; margin-top: 0.6rem; }
+                    .tab1-stock-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 0.88rem;
+                    }
+                    .tab1-stock-table thead tr {
+                        border-bottom: 1px solid var(--border-gold);
+                        color: var(--text-secondary);
+                        text-transform: uppercase;
+                        font-size: 0.72rem;
+                        letter-spacing: 0.06em;
+                    }
+                    .tab1-stock-table th { padding: 0.55rem 0.7rem; }
+                    .tab1-stock-table tbody tr { border-bottom: 1px solid rgba(255,215,0,0.08); }
+                    .tab1-stock-table tbody tr:last-child { border-bottom: none; }
+                    .tab1-stock-table td { padding: 0.55rem 0.7rem; color: var(--text-primary); }
+                    .tab1-stock-table td.num { text-align: right; color: var(--accent-gold); font-weight: 600; }
+                    .tab1-stock-table td.tip-cell { font-weight: 600; color: var(--text-white); }
+                    .tab1-stock-table tfoot tr { border-top: 1px solid var(--border-gold-strong); }
+                    .tab1-stock-table tfoot td { padding: 0.6rem 0.7rem; color: var(--accent-gold); }
+                    .tab1-refresh-btn {
+                        background: rgba(255,215,0,0.15);
+                        color: var(--accent-gold);
+                        border: 1px solid var(--border-gold);
+                        padding: 0.25rem 0.6rem;
+                        font-size: 0.75rem;
+                    }
+                    .tab1-debt-panel { margin-bottom: 1rem; }
+                </style>
+            </div>
+
+            <div id="tab-operations" class="kp-tab-pane">
                 <div class="stats-pixel-grid">
                     <div class="pixel-card stat-pixel-card green" id="stat-card-1" data-variant="gold">
                         <canvas class="pixel-canvas"></canvas>
@@ -906,187 +1408,8 @@
                     </div>
                 </div>
 
-                <!-- ═══ MAĞAZA VARLIKLARI (Anlık Kasa + Stok Özeti) ═══ -->
-                <div id="store-assets-section" style="margin-top:1rem;">
-                    <div class="pixel-card" data-variant="gold" style="padding:1rem;">
-                        <canvas class="pixel-canvas"></canvas>
-                        <div class="pixel-card-content">
-                            <div class="chart-header" style="margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
-                                <div class="chart-title-wrap" style="display:flex; align-items:center; gap:0.75rem;">
-                                    <div class="chart-icon"><i class="bi bi-safe2-fill"></i></div>
-                                    <div>
-                                        <div class="chart-title">Mağaza Varlıkları</div>
-                                        <div class="chart-subtitle">Kasa, Banka/POS ve Stok anlık özeti</div>
-                                    </div>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:0.5rem;">
-                                    <span id="assets-generated-at" style="font-size:0.75rem; color:var(--text-muted);"></span>
-                                    <button type="button" id="assets-refresh-btn" class="btn btn-sm"
-                                            style="background:rgba(255,215,0,0.15); color:var(--accent-gold); border:1px solid var(--border-gold); padding:0.25rem 0.6rem; font-size:0.75rem;">
-                                        <i class="bi bi-arrow-clockwise"></i> Yenile
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Kasa / Banka / POS Bakiye Grid -->
-                            <div class="stats-pixel-grid" style="margin-bottom:1rem;">
-                                <div class="pixel-card stat-pixel-card green" data-variant="gold">
-                                    <canvas class="pixel-canvas"></canvas>
-                                    <div class="pixel-card-content">
-                                        <div class="stat-icon-wrap"><i class="bi bi-cash-stack"></i></div>
-                                        <div>
-                                            <div class="stat-value" id="assets-cash-try" style="font-size:1.1rem;">₺0</div>
-                                            <div class="stat-label">Nakit (TRY)</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pixel-card stat-pixel-card blue" data-variant="gold">
-                                    <canvas class="pixel-canvas"></canvas>
-                                    <div class="pixel-card-content">
-                                        <div class="stat-icon-wrap"><i class="bi bi-credit-card-2-front-fill"></i></div>
-                                        <div>
-                                            <div class="stat-value" id="assets-pos-bank-try" style="font-size:1.1rem;">₺0</div>
-                                            <div class="stat-label">Banka / POS (TRY)</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pixel-card stat-pixel-card gold" data-variant="gold">
-                                    <canvas class="pixel-canvas"></canvas>
-                                    <div class="pixel-card-content">
-                                        <div class="stat-icon-wrap"><i class="bi bi-gem"></i></div>
-                                        <div>
-                                            <div class="stat-value" id="assets-stock-has" style="font-size:1.1rem;">0 gr</div>
-                                            <div class="stat-label">Stok HAS Değeri</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="pixel-card stat-pixel-card purple" data-variant="gold">
-                                    <canvas class="pixel-canvas"></canvas>
-                                    <div class="pixel-card-content">
-                                        <div class="stat-icon-wrap"><i class="bi bi-boxes"></i></div>
-                                        <div>
-                                            <div class="stat-value" id="assets-stock-gram" style="font-size:1.1rem;">0 gr</div>
-                                            <div class="stat-label">Toplam Stok Gram</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Döviz Kasa Detayı -->
-                            <div id="assets-fx-wrap" style="margin-bottom:1rem;">
-                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
-                                    Döviz Kasa Bakiyeleri
-                                </div>
-                                <div id="assets-fx-chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
-                                    <span style="color:var(--text-muted); font-size:0.8rem;">Döviz hesabı yok</span>
-                                </div>
-                            </div>
-
-                            <!-- Ayar / Tip Kırılımı -->
-                            <div style="margin-bottom:1rem;">
-                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
-                                    Ayar / Tip Kırılımı (Altın)
-                                </div>
-                                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
-                                    <span class="assets-chip" data-k="k22"><i class="bi bi-coin"></i> 22 Ayar: <b id="assets-k22">0 gr</b></span>
-                                    <span class="assets-chip" data-k="k18"><i class="bi bi-coin"></i> 18 Ayar: <b id="assets-k18">0 gr</b></span>
-                                    <span class="assets-chip" data-k="k14"><i class="bi bi-coin"></i> 14 Ayar: <b id="assets-k14">0 gr</b></span>
-                                    <span class="assets-chip" data-k="bracelet"><i class="bi bi-circle"></i> Bilezik: <b id="assets-bracelet">0 gr</b></span>
-                                    <span class="assets-chip" data-k="scrap"><i class="bi bi-recycle"></i> Hurda: <b id="assets-scrap">0 gr</b></span>
-                                    <span class="assets-chip" id="mm-hg-cash-chip" style="display:none; background:rgba(192,192,192,0.15); border:1px solid rgba(192,192,192,0.4);">
-                                        <i class="bi bi-piggy-bank"></i> HG Kasa: <b id="mm-hg-cash-value">0 HG</b>
-                                    </span>
-                                </div>
-                            </div>
-
-                            {# ═══════════════════════════════════════════════════════════════════════ #}
-                            {# FAZ D: ÇOKLU MADEN/ÜRÜN ÖZET KARTLARI — Gümüş · Pırlanta · Saat        #}
-                            {# Veri kaynağı: /dashboard/assets-summary/ (FAZ C'de genişletildi).       #}
-                            {# Dolduran modül: static/js/modules/dashboard/multi_material_cards.js    #}
-                            {# ═══════════════════════════════════════════════════════════════════════ #}
-                            <div id="multi-material-assets-wrap" style="margin-bottom:1rem;">
-                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
-                                    Çoklu Maden / Ürün Stokları
-                                </div>
-                                <div class="stats-pixel-grid" style="margin-top:0.5rem;">
-                                    {# — Gümüş — #}
-                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
-                                         style="border:1px solid rgba(192,192,192,0.35);">
-                                        <canvas class="pixel-canvas"></canvas>
-                                        <div class="pixel-card-content">
-                                            <div class="stat-icon-wrap" style="color:#c0c0c0;">
-                                                <i class="bi bi-moon-stars-fill"></i>
-                                            </div>
-                                            <div>
-                                                <div class="stat-value" id="mm-silver-gram" style="font-size:1.05rem;">0 gr</div>
-                                                <div class="stat-label">Gümüş (Gram)</div>
-                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
-                                                    <span id="mm-silver-value-hg">0 HG</span>
-                                                    · <span id="mm-silver-value-tl">₺0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {# — Pırlanta — #}
-                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
-                                         style="border:1px solid rgba(173,216,230,0.45);">
-                                        <canvas class="pixel-canvas"></canvas>
-                                        <div class="pixel-card-content">
-                                            <div class="stat-icon-wrap" style="color:#add8e6;">
-                                                <i class="bi bi-gem"></i>
-                                            </div>
-                                            <div>
-                                                <div class="stat-value" id="mm-diamond-pieces" style="font-size:1.05rem;">0 adet</div>
-                                                <div class="stat-label">Pırlanta</div>
-                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
-                                                    <span id="mm-diamond-value-tl">₺0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {# — Saat — #}
-                                    <div class="pixel-card stat-pixel-card" data-variant="gold"
-                                         style="border:1px solid rgba(255,165,0,0.35);">
-                                        <canvas class="pixel-canvas"></canvas>
-                                        <div class="pixel-card-content">
-                                            <div class="stat-icon-wrap" style="color:#ffa500;">
-                                                <i class="bi bi-watch"></i>
-                                            </div>
-                                            <div>
-                                                <div class="stat-value" id="mm-watch-pieces" style="font-size:1.05rem;">0 adet</div>
-                                                <div class="stat-label">Saat</div>
-                                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">
-                                                    <span id="mm-watch-value-tl">₺0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Kategori Gramaj Tablosu -->
-                            <div>
-                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.08em;">
-                                    Kategori Bazlı Stok
-                                </div>
-                                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-                                    <thead>
-                                        <tr style="border-bottom:1px solid var(--border-gold); color:var(--text-secondary);">
-                                            <th style="text-align:left; padding:0.4rem 0.6rem;">Kategori</th>
-                                            <th style="text-align:right; padding:0.4rem 0.6rem;">Toplam Gram</th>
-                                            <th style="text-align:right; padding:0.4rem 0.6rem;">Adet</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="assets-category-table">
-                                        <tr><td colspan="3" style="padding:0.6rem; text-align:center; color:var(--text-muted);">Yükleniyor…</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- FAZ 26 (2026-05-01): Eski "Mağaza Varlıkları" bloğu TAB 1'e taşındı.
+                     Operasyonel sekme yalnızca satış/işlem kartlarını gösterir. -->
 
                 <!-- ═══ FAZ R-5: KPI ÖZET KARTLARI ═══ -->
                 <div class="stats-pixel-grid" id="kpi-row-profit" style="margin-top:1rem;">
@@ -1489,6 +1812,10 @@
                                         <li class="nav-item"><a
                                                 class="nav-link text-active-primary ms-0 me-10 py-5 chart-title"
                                                 data-type="barkod" data-bs-toggle="tab">Barkodlu Ürünler</a></li>
+                                        <!-- FAZ 31 / BUG-5: Tüm Kategoriler Kâr Raporu -->
+                                        <li class="nav-item"><a
+                                                class="nav-link text-active-primary ms-0 me-10 py-5 chart-title"
+                                                data-type="all" data-bs-toggle="tab">Tüm Kategoriler</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -1513,7 +1840,7 @@
                         </div>
                     </div>
 
-                    {# ════════ MÜŞTERİ DETAY RAPORU KARTI ════════ #}
+                    <!-- ════════ MÜŞTERİ DETAY RAPORU KARTI ════════ -->
                     <div class="pixel-card rapor-card" data-type="customer_detail" data-variant="gold"
                          style="min-height: 100px;">
                         <canvas class="pixel-canvas"></canvas>
@@ -1685,7 +2012,30 @@
                 });
         }
 
-        function pollReportStatus(taskId) {
+        // FAZ 48 (2026-05-03): PDF poll timeout & teşhis mesajı.
+        // ─────────────────────────────────────────────────────────────────
+        // SORUN: Eski poll sonsuz döngüde çalışıyordu. Celery worker yoksa
+        // task PENDING'de takılıyor, kullanıcı saatlerce bekleyebilirdi
+        // (PDF inmiyor, hiçbir hata da gözükmüyor).
+        //
+        // ÇÖZÜM: 30 deneme (3sn × 30 = 90sn) sonrası timeout. Mesaj net şekilde
+        // "Celery worker çalışmıyor olabilir" diyor → ops ekibi anında teşhis
+        // edebilir. Mevcut SUCCESS/FAILED dalları aynen korundu.
+        // ─────────────────────────────────────────────────────────────────
+        function pollReportStatus(taskId, retryCount) {
+            retryCount = retryCount || 0;
+            var MAX_RETRIES = 30; // 30 × 3sn = 90 saniye
+            if (retryCount >= MAX_RETRIES) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Rapor Zaman Aşımı",
+                    html: "Rapor 90 saniye içinde oluşturulamadı.<br><br>" +
+                          "<small>Celery worker veya Beat servisi çalışmıyor olabilir. " +
+                          "Sistem yöneticinize başvurun.</small>",
+                    confirmButtonText: "Tamam"
+                });
+                return;
+            }
             var checkUrl = '/dashboard/check-report-status/' + taskId;
             fetch(checkUrl, {credentials: 'same-origin'})
                 .then(function (r) {
@@ -1708,12 +2058,12 @@
                         return;
                     }
                     setTimeout(function () {
-                        pollReportStatus(taskId);
+                        pollReportStatus(taskId, retryCount + 1);
                     }, 3000);
                 })
                 .catch(function () {
                     setTimeout(function () {
-                        pollReportStatus(taskId);
+                        pollReportStatus(taskId, retryCount + 1);
                     }, 3000);
                 });
         }
@@ -2427,7 +2777,7 @@
                         row.innerHTML =
                             '<td style="padding:0.4rem 0.6rem; color:var(--text-primary);">' + emp.name + '</td>' +
                             '<td style="text-align:right; padding:0.4rem 0.6rem; color:var(--accent-gold);">' + emp.sale_count + '</td>' +
-                            '<td style="text-align:right; padding:0.4rem 0.6rem; color:var(--text-primary);">₺' + formatTL(emp.total_sales_tl) + '</td>' +
+                            '<td style="text-align:right; padding:0.4rem 0.6rem; color:var(--text-primary);">₺' + formatTL(emp.total_sales_eur) + '</td>' +
                             '<td style="text-align:right; padding:0.4rem 0.6rem; color:' + profitColor + ';">₺' + formatTL(emp.total_gross_profit) + '</td>';
                         empTable.appendChild(row);
                     });
@@ -2536,15 +2886,250 @@
             }
         });
 
+        // ════════════════════════════════════════════════════════════════════
+        // FAZ 26 (2026-05-01): Patron Odaklı Dashboard — TAB 1 JS Yükleyici
+        // ════════════════════════════════════════════════════════════════════
+        // Endpoint: GET /dashboard/assets-v2/
+        // Render alanları: tab1-stok-has, tab1-tedarikci-hs, tab1-net-has,
+        //                  tab1-stok-tbody, tab1-debt-tbody, tab1-kasa-*
+        // Defensive DOM (KURAL 6): tüm getElementById çağrıları null-check'li.
+        // ════════════════════════════════════════════════════════════════════
+
+        function _tab1FmtHs(v) {
+            const n = parseFloat(v);
+            if (!isFinite(n)) return '0,00 HS';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' HS';
+        }
+
+        function _tab1FmtGram(v) {
+            const n = parseFloat(v);
+            if (!isFinite(n)) return '0,00 gr';
+            return n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' gr';
+        }
+
+        function _tab1FmtPieces(v) {
+            const n = parseInt(v, 10);
+            if (!isFinite(n)) return '0';
+            return n.toLocaleString('tr-TR');
+        }
+
+        function _tab1SetText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        function fetchAssetsV2(forceRefresh = false) {
+            const refreshBtn = document.getElementById('tab1-refresh-btn');
+            if (refreshBtn) refreshBtn.disabled = true;
+
+            const url = forceRefresh ? '/dashboard/assets-v2/?refresh=1' : '/dashboard/assets-v2/';
+            fetch(url).then(r => r.json()).then(data => {
+                const sum = data.net_summary || {};
+
+                // ─── 3 Hero Kart ─────────────────────────────────────────
+                _tab1SetText('tab1-stok-has',     _tab1FmtHs(sum.stok_has));
+                _tab1SetText('tab1-stok-gram',    _tab1FmtGram(sum.stok_gram));
+                _tab1SetText('tab1-tedarikci-hs', _tab1FmtHs(sum.tedarikci_borcu_hs));
+                _tab1SetText('tab1-net-has',      _tab1FmtHs(sum.net_has));
+
+                const netCard = document.getElementById('tab1-net-card');
+                if (netCard) {
+                    netCard.classList.remove('is-positive', 'is-negative');
+                    if (typeof sum.net_has === 'number') {
+                        netCard.classList.add(sum.net_has_pozitif ? 'is-positive' : 'is-negative');
+                    }
+                }
+                _tab1SetText('tab1-net-sub',
+                    (sum.net_has_pozitif === false)
+                        ? 'Stok HAS, tedarikçi borcunu karşılamıyor'
+                        : 'Stok HAS − Tedarikçi Borcu'
+                );
+
+                // ─── FAZ 48.7: Emanet stoğu şeridi ──────────────────────
+                const emanetGram = parseFloat(sum.emanet_gram) || 0;
+                const emanetPcs  = parseInt(sum.emanet_pieces) || 0;
+                _tab1SetText('tab1-emanet-gram',
+                    emanetGram.toLocaleString('tr-TR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' gr'
+                );
+                const pcsWrap = document.getElementById('tab1-emanet-pieces-wrap');
+                if (pcsWrap) {
+                    if (emanetPcs > 0) {
+                        _tab1SetText('tab1-emanet-pieces', emanetPcs + ' adet');
+                        pcsWrap.style.display = '';
+                    } else {
+                        pcsWrap.style.display = 'none';
+                    }
+                }
+
+                // ─── Kasa şeridi ─────────────────────────────────────────
+                const kasa = data.kasa || {};
+                const tryAmt = parseFloat(kasa.TRY) || 0;
+                _tab1SetText('tab1-kasa-try', '₺' + tryAmt.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                const bankaPos = parseFloat(data.banka_pos_toplam_try) || 0;
+                _tab1SetText('tab1-banka-pos', '₺' + bankaPos.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+
+                // Döviz nakit chip'leri (TRY hariç)
+                const fxWrap = document.getElementById('tab1-kasa-fx-wrap');
+                if (fxWrap) {
+                    const fxEntries = Object.entries(kasa).filter(([k]) => k !== 'TRY');
+                    fxWrap.innerHTML = fxEntries.map(([code, amt]) => {
+                        const symbol = ({USD:'$', EUR:'€', GBP:'£', CHF:'₣', CAD:'C$', AUD:'A$', QAR:'ر.ق', SAR:'ر.س'})[code] || (code + ' ');
+                        const n = parseFloat(amt) || 0;
+                        const fmt = symbol + n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        return '<span class="tab1-cash-chip"><i class="bi bi-currency-exchange"></i> ' + code + ': <b>' + fmt + '</b></span>';
+                    }).join('');
+                }
+
+                // ─── Stok detay tablosu ──────────────────────────────────
+                const tbody = document.getElementById('tab1-stok-tbody');
+                const rows = Array.isArray(data.stok_kirilimlari) ? data.stok_kirilimlari : [];
+                if (tbody) {
+                    if (rows.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="padding:1rem; text-align:center; color:var(--text-muted);">Stok verisi yok</td></tr>';
+                    } else {
+                        const _esc = (s) => String(s == null ? '' : s)
+                            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                        tbody.innerHTML = rows.map((r, idx) => {
+                            const gramCell = (r.gram === null || r.gram === undefined)
+                                ? '<span style="color:var(--text-muted);">—</span>'
+                                : _tab1FmtGram(r.gram);
+                            const wacCell = (r.wac_hs === null || r.wac_hs === undefined)
+                                ? '<span style="color:var(--text-muted);">—</span>'
+                                : (parseFloat(r.wac_hs) || 0).toLocaleString('tr-TR', {minimumFractionDigits: 4, maximumFractionDigits: 4});
+                            const hasDetails = Array.isArray(r.details) && r.details.length > 0;
+                            const wacAnomaly = (typeof r.wac_hs === 'number' && r.wac_hs > 1.05);
+                            const tipBadge = wacAnomaly
+                                ? ' <span style="background:#dc35451a; color:#ff5b6e; padding:1px 6px; border-radius:4px; font-size:0.72rem; margin-left:4px;">⚠ Anomali</span>'
+                                : '';
+                            const expander = hasDetails
+                                ? '<span class="tab1-detail-toggle" data-target="tab1-detail-' + idx + '" style="cursor:pointer; color:var(--accent-gold); font-size:0.85rem; margin-right:6px;">▶</span>'
+                                : '<span style="display:inline-block; width:14px;"></span>';
+                            const mainRow = '<tr>' +
+                                '<td class="tip-cell">' + expander + (_esc(r.tip) || '-') + tipBadge + '</td>' +
+                                '<td class="num">' + gramCell + '</td>' +
+                                '<td class="num">' + _tab1FmtHs(r.has) + '</td>' +
+                                '<td class="num">' + _tab1FmtPieces(r.pieces) + '</td>' +
+                                '<td class="num">' + wacCell + '</td>' +
+                            '</tr>';
+                            let detailRow = '';
+                            if (hasDetails) {
+                                const detailRows = r.details.map(d => {
+                                    const dWac = (parseFloat(d.wac_hs) || 0).toLocaleString('tr-TR', {minimumFractionDigits: 4, maximumFractionDigits: 4});
+                                    const anomalyMark = d.is_anomaly
+                                        ? ' <span title="WAC > 1.0 — veri korup şüphesi" style="color:#ff5b6e;">⚠</span>'
+                                        : '';
+                                    return '<tr style="background:rgba(255,255,255,0.02); font-size:0.85rem;">' +
+                                        '<td style="padding-left:32px; color:var(--text-muted);">↳ ' + _esc(d.product_name) + ' <small style="opacity:.6;">(' + _esc(d.category) + ')</small>' + anomalyMark + '</td>' +
+                                        '<td class="num" style="color:var(--text-muted);">' + _tab1FmtGram(d.gram) + '</td>' +
+                                        '<td class="num" style="color:var(--text-muted);">' + _tab1FmtHs(d.has) + '</td>' +
+                                        '<td class="num" style="color:var(--text-muted);">' + _tab1FmtPieces(d.pieces) + '</td>' +
+                                        '<td class="num" style="color:' + (d.is_anomaly ? '#ff5b6e' : 'var(--text-muted)') + ';">' + dWac + '</td>' +
+                                    '</tr>';
+                                }).join('');
+                                detailRow = '<tr id="tab1-detail-' + idx + '" style="display:none;"><td colspan="5" style="padding:0;"><table style="width:100%; border-collapse:collapse;"><tbody>' + detailRows + '</tbody></table></td></tr>';
+                            }
+                            return mainRow + detailRow;
+                        }).join('');
+
+                        // Expand/collapse toggle handlers
+                        tbody.querySelectorAll('.tab1-detail-toggle').forEach(el => {
+                            el.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const tgt = document.getElementById(el.getAttribute('data-target'));
+                                if (!tgt) return;
+                                const open = tgt.style.display !== 'none';
+                                tgt.style.display = open ? 'none' : '';
+                                el.textContent = open ? '▶' : '▼';
+                            });
+                        });
+                    }
+                }
+
+                // Tablo toplam satırı
+                const tfootRow = document.getElementById('tab1-stok-tfoot-row');
+                if (tfootRow) {
+                    if (rows.length === 0) {
+                        tfootRow.style.display = 'none';
+                    } else {
+                        tfootRow.style.display = '';
+                        let totalGram = 0, totalHas = 0, totalPieces = 0;
+                        rows.forEach(r => {
+                            if (typeof r.gram === 'number') totalGram += r.gram;
+                            if (typeof r.has === 'number') totalHas += r.has;
+                            if (typeof r.pieces === 'number') totalPieces += r.pieces;
+                        });
+                        _tab1SetText('tab1-stok-tfoot-gram',   _tab1FmtGram(totalGram));
+                        _tab1SetText('tab1-stok-tfoot-has',    _tab1FmtHs(totalHas));
+                        _tab1SetText('tab1-stok-tfoot-pieces', _tab1FmtPieces(totalPieces));
+                    }
+                }
+
+                // ─── Tedarikçi borç accordion ────────────────────────────
+                const debtTbody = document.getElementById('tab1-debt-tbody');
+                const debts = Array.isArray(data.tedarikci_borclari) ? data.tedarikci_borclari : [];
+                if (debtTbody) {
+                    if (debts.length === 0) {
+                        debtTbody.innerHTML = '<tr><td colspan="5" style="padding:0.8rem; text-align:center; color:var(--text-muted);">Tedarikçi borcu yok</td></tr>';
+                    } else {
+                        debtTbody.innerHTML = debts.map(d => {
+                            const tipBadge = (d.account_type === 'CANTACI')
+                                ? '<span style="color:var(--accent-orange);">Çantacı</span>'
+                                : '<span style="color:var(--text-secondary);">Tedarikçi</span>';
+                            const netColor = (parseFloat(d.net_hs) || 0) > 0
+                                ? 'color:var(--accent-red);'
+                                : 'color:var(--accent-emerald);';
+                            return '<tr>' +
+                                '<td class="tip-cell">' + (d.company_name || '-') + '</td>' +
+                                '<td>' + tipBadge + '</td>' +
+                                '<td class="num">' + _tab1FmtHs(d.borc_hs) + '</td>' +
+                                '<td class="num">' + _tab1FmtHs(d.alacak_hs) + '</td>' +
+                                '<td class="num" style="' + netColor + '">' + _tab1FmtHs(d.net_hs) + '</td>' +
+                            '</tr>';
+                        }).join('');
+                    }
+                }
+
+                // ─── Timestamp ────────────────────────────────────────────
+                const ts = document.getElementById('tab1-generated-at');
+                if (ts && data.generated_at) {
+                    try {
+                        const d = new Date(data.generated_at);
+                        ts.textContent = 'Son güncelleme: ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
+                    } catch (e) { /* yut */ }
+                }
+            }).catch(err => {
+                console.error('TAB 1 assets-v2 fetch error:', err);
+            }).finally(() => {
+                if (refreshBtn) refreshBtn.disabled = false;
+            });
+        }
+
+        // TAB 1 buton bağlantıları (refresh + debt toggle)
+        document.addEventListener('click', function (e) {
+            if (!e.target || !e.target.closest) return;
+            if (e.target.closest('#tab1-refresh-btn')) {
+                fetchAssetsV2(true);  // Force refresh — cache bypass
+            }
+            if (e.target.closest('#tab1-debt-toggle')) {
+                const panel = document.getElementById('tab1-debt-panel');
+                if (panel) {
+                    panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+                    if (panel.style.display === 'block') panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+                }
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             fetchSummaryData();
             fetchDashboardData(currentPeriod);
             fetchDashboardKPI();
             fetchStoreAssets();
+            fetchAssetsV2();
         });
     </script>
 
-    {# FAZ D: Çoklu Maden/Ürün Dashboard Kartları (Gümüş/Pırlanta/Saat) #}
-    {# fetchStoreAssets() bu modülü bulunca aynı data payload'ıyla çağırır. #}
+    <!-- FAZ D: Çoklu Maden/Ürün Dashboard Kartları (Gümüş/Pırlanta/Saat) -->
+    <!-- fetchStoreAssets() bu modülü bulunca aynı data payload'ıyla çağırır. -->
     <script src="{% static 'js/modules/dashboard/multi_material_cards.js' %}"></script>
 {% endblock footer %}

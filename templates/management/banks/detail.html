@@ -384,6 +384,14 @@
                                         <span class="d-none d-md-inline">Bakiye Düzelt</span>
                                     </button>
 
+                                    <!-- FAZ 31 / BUG-3: Manuel Gider Girişi -->
+                                    <button class="btn btn-sm btn-light-danger fw-bold" id="btnManualExpense"
+                                            data-bs-toggle="modal" data-bs-target="#modalManualExpense"
+                                            title="Manuel gider gir (kira, fatura, maaş vb.)">
+                                        <i class="fa-solid fa-money-bill-trend-up me-md-1"></i>
+                                        <span class="d-none d-md-inline">Gider Ekle</span>
+                                    </button>
+
                                     <button class="btn btn-sm btn-light-warning fw-bold" id="btnDailyClose"
                                             data-bs-toggle="modal" data-bs-target="#modalDailyClose"
                                             title="Gun sonu kasa kapanisi (Z-Raporu)">
@@ -621,8 +629,11 @@
                                 <option value="USD">USD — Amerikan Doları</option>
                                 <option value="EUR">EUR — Euro</option>
                                 <option value="GBP">GBP — İngiliz Sterlini</option>
+                                <option value="CHF">CHF — İsviçre Frangı</option>
                                 <option value="CAD">CAD — Kanada Doları</option>
+                                <option value="AUD">AUD — Avustralya Doları</option>
                                 <option value="QAR">QAR — Katar Riyali</option>
+                                <option value="SAR">SAR — Suudi Arabistan Riyali</option>
                             </select>
                         </div>
                         <div class="mb-3 p-2 rounded bg-light text-center" id="closeFxBalance">
@@ -701,8 +712,11 @@
                                 <option value="USD">USD — Amerikan Doları</option>
                                 <option value="EUR">EUR — Euro</option>
                                 <option value="GBP">GBP — İngiliz Sterlini</option>
+                                <option value="CHF">CHF — İsviçre Frangı</option>
                                 <option value="CAD">CAD — Kanada Doları</option>
+                                <option value="AUD">AUD — Avustralya Doları</option>
                                 <option value="QAR">QAR — Katar Riyali</option>
+                                <option value="SAR">SAR — Suudi Arabistan Riyali</option>
                             </select>
                         </div>
                     {% endif %}
@@ -780,6 +794,89 @@
         </div>
     </div>
 
+    <!-- =============== FAZ 31 / BUG-3: MANUEL GİDER MODALI =============== -->
+    <div class="modal fade" id="modalManualExpense" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-money-bill-trend-up me-2"></i>
+                        Manuel Gider Girişi
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4 p-3 rounded-3"
+                         style="background: rgba(220,53,69,0.05); border: 1px dashed rgba(220,53,69,0.3);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold text-muted">Mevcut Bakiye</span>
+                            <strong class="fs-5 text-danger">
+                                {% if account.currency == 'FX' and summary.fx_breakdown %}
+                                    {% for code, amount in summary.fx_breakdown.items %}
+                                        <span class="me-2">{{ amount }} {{ code }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    {{ summary.balance_net|floatformat:2 }} {{ account.currency }}
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+
+                    {% if account.currency == 'FX' %}
+                        <div class="mb-3">
+                            <label for="expCurrency" class="form-label fw-semibold">Döviz Cinsi</label>
+                            <select class="form-select form-select-solid" id="expCurrency">
+                                <option value="USD">USD — Amerikan Doları</option>
+                                <option value="EUR">EUR — Euro</option>
+                                <option value="GBP">GBP — İngiliz Sterlini</option>
+                                <option value="CHF">CHF — İsviçre Frangı</option>
+                                <option value="CAD">CAD — Kanada Doları</option>
+                                <option value="AUD">AUD — Avustralya Doları</option>
+                                <option value="QAR">QAR — Katar Riyali</option>
+                                <option value="SAR">SAR — Suudi Arabistan Riyali</option>
+                            </select>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="expAmount" class="form-label fw-semibold">
+                            Gider Tutarı (
+                            {% if account.currency == 'FX' %}
+                                <span id="expCurrencyLabel">USD</span>
+                            {% else %}
+                                {{ account.currency }}
+                            {% endif %}
+                            )
+                        </label>
+                        <input type="text" inputmode="decimal" class="form-control form-control-lg"
+                               id="expAmount" placeholder="0.00">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="expDescription" class="form-label fw-semibold">
+                            Gider Açıklaması <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="expDescription" rows="2"
+                                  placeholder="Örn: Kira, Elektrik faturası, Personel maaşı, Su faturası" required></textarea>
+                    </div>
+
+                    <div class="alert alert-light border small mb-0">
+                        <i class="fa-solid fa-circle-info text-danger me-1"></i>
+                        Bu işlem kasa bakiyesini <strong>düşürür</strong> ve Gelir/Gider Defteri'ne
+                        <strong>OTHER_EXPENSE</strong> olarak yazılır. Aylık kâr/zarar raporunda görünür.
+                        Bu işlem bir <strong>satış/alış değildir</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button" class="btn btn-danger" id="btnSaveManualExpense">
+                        <i class="fa-solid fa-check me-1"></i> Gideri Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% csrf_token %}
 {% endblock body %}
 
@@ -815,6 +912,8 @@
             var EXPORT_URL = "{% url 'bank-management:export' account.id %}";
             var ADJUSTMENT_URL = "{% url 'bank-management:adjustment' %}";
             var DAILY_CLOSE_URL = "{% url 'bank-management:daily_close' %}";
+            // FAZ 31 / BUG-3: Manuel Gider endpoint
+            var MANUAL_EXPENSE_URL = "{% url 'bank-management:manual_expense' %}";
             var TRANSFER_DETAIL_URL = "{% url 'bank-management:transfer_detail' '00000000-0000-0000-0000-000000000000' %}";
             // FAZ 20.4: FX kasa döviz kırılımı (view'dan JSON string olarak gelir)
             var FX_BREAKDOWN = null;
@@ -826,26 +925,32 @@
                 }
             {% endif %}
 
-            // FAZ 20.4: JS tarafında döviz kodu tespit helper
+            // FAZ 13.3: JS tarafında döviz kodu tespit helper — SSOT ile senkron.
+            // Whitelist, sentinel map ve kur aralıkları services.py SSOT ile eşleşmeli.
+            var _FX_SUPPORTED = ['USD', 'EUR', 'GBP', 'CHF', 'CAD', 'AUD', 'JPY', 'QAR', 'SAR', 'TRY'];
+            var _FX_SENTINELS = {
+                '0.01': 'USD', '0.02': 'EUR', '0.03': 'GBP', '0.04': 'CHF',
+                '0.05': 'CAD', '0.06': 'AUD', '0.07': 'JPY', '0.08': 'QAR', '0.09': 'SAR'
+            };
             function _guessFxCodeJS(rate, reference) {
-                // 1. Reference'dan [EUR] prefix'i oku
+                // 1. Reference'dan [KOD] prefix'i oku (birincil yol)
                 if (reference && reference.charAt(0) === '[') {
                     var idx = reference.indexOf(']');
                     if (idx > 1) {
                         var code = reference.substring(1, idx).toUpperCase();
-                        if (['USD', 'EUR', 'GBP', 'CAD', 'QAR'].indexOf(code) >= 0) return code;
+                        if (_FX_SUPPORTED.indexOf(code) >= 0) return code;
                     }
                 }
-                // 2. Sentinel rate kontrolü
-                var sentinels = {0.01: 'USD', 0.02: 'EUR', 0.03: 'GBP', 0.04: 'CAD', 0.05: 'QAR'};
-                for (var s in sentinels) {
-                    if (Math.abs(rate - parseFloat(s)) < 0.001) return sentinels[s];
+                // 2. Sentinel rate kontrolü (Bakiye Düzeltme / toptan kayıtları)
+                for (var s in _FX_SENTINELS) {
+                    if (Math.abs(rate - parseFloat(s)) < 0.001) return _FX_SENTINELS[s];
                 }
-                // 3. Kur aralığı tahmini
-                if (rate < 20) return 'QAR';
-                if (rate < 48) return 'USD';
-                if (rate < 65) return 'EUR';
-                if (rate < 85) return 'GBP';
+                // 3. Kur aralığı tahmini — services._guess_fx_code_from_rate ile eşleşir
+                if (rate < 15) return 'QAR';
+                if (rate < 30) return 'CAD';
+                if (rate < 36) return 'USD';
+                if (rate < 41) return 'EUR';
+                if (rate < 50) return 'GBP';
                 return 'Döviz';
             }
 
@@ -887,7 +992,11 @@
                     {
                         data: 'process_no',
                         render: function (data) {
-                            return '<span class="fw-semibold">' + data + '</span>';
+                            if (!data) return '-';
+                            return '<span class="badge badge-light-primary fw-bold js-open-process-modal"'
+                                + ' data-process-no="' + data + '"'
+                                + ' style="cursor:pointer;letter-spacing:.3px;"'
+                                + ' title="İşlem röntgenini aç">' + data + '</span>';
                         }
                     },
                     {
@@ -909,7 +1018,7 @@
                             var displayCur = CURRENCY;
                             if (CURRENCY === 'FX' && row.currency_amount) {
                                 num = parseFloat(row.currency_amount) || 0;
-                                // exchange_rate'den veya amount_tl'den birim tespit
+                                // exchange_rate'den veya amount_eur'den birim tespit
                                 var rate = parseFloat(row.exchange_rate) || 0;
                                 displayCur = _guessFxCodeJS(rate, row.reference || '');
                             }
@@ -1356,6 +1465,109 @@
                         });
                 });
             });
+
+            // =====================================================================
+            // FAZ 31 / BUG-3: MANUEL GİDER GİRİŞİ
+            // =====================================================================
+            // KURAL 6 (Defensive DOM): tüm getElementById çağrıları null-check'li
+            // KURAL 9 (Locale & NaN audit): virgül → nokta dönüşümü, isFinite koruma
+            (function setupManualExpense() {
+                var btnSaveExp = document.getElementById('btnSaveManualExpense');
+                if (!btnSaveExp) return; // Buton yoksa kurulum atla
+
+                // FX kasa için döviz cinsi label senkronizasyonu
+                var expCurEl = document.getElementById('expCurrency');
+                var expCurLabelEl = document.getElementById('expCurrencyLabel');
+                if (expCurEl && expCurLabelEl) {
+                    expCurEl.addEventListener('change', function () {
+                        expCurLabelEl.textContent = expCurEl.value || 'USD';
+                    });
+                }
+
+                btnSaveExp.addEventListener('click', function () {
+                    var amtEl = document.getElementById('expAmount');
+                    var descEl = document.getElementById('expDescription');
+                    if (!amtEl || !descEl) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire('Hata', 'Form elemanları yüklenemedi.', 'error');
+                        }
+                        return;
+                    }
+
+                    // Locale & NaN audit (KURAL 9)
+                    var rawAmt = (amtEl.value || '0').toString().replace(',', '.');
+                    var amount = parseFloat(rawAmt);
+                    if (!isFinite(amount) || amount <= 0) {
+                        Swal.fire('Uyarı', 'Lütfen geçerli bir tutar girin.', 'warning');
+                        return;
+                    }
+
+                    var description = (descEl.value || '').trim();
+                    if (!description) {
+                        Swal.fire('Uyarı', 'Gider açıklaması zorunludur.', 'warning');
+                        return;
+                    }
+
+                    var expCurrency = expCurEl ? (expCurEl.value || 'USD') : CURRENCY;
+                    var displayCurrency = (CURRENCY === 'FX') ? expCurrency : CURRENCY;
+
+                    Swal.fire({
+                        title: 'Gider Onayı',
+                        html: '<div class="text-center">' +
+                            '<div class="fs-5 fw-bold text-danger mb-2">' +
+                            amount.toFixed(2) + ' ' + displayCurrency + ' GİDER' +
+                            '</div>' +
+                            '<div class="text-muted small">' +
+                            description.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+                            '</div>' +
+                            '</div>',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Gideri Kaydet',
+                        cancelButtonText: 'Vazgeç',
+                        confirmButtonColor: '#dc3545',
+                    }).then(function (result) {
+                        if (!result.isConfirmed) return;
+
+                        var body = 'account_id=' + encodeURIComponent(ACCOUNT_ID) +
+                                   '&amount=' + encodeURIComponent(amount) +
+                                   '&description=' + encodeURIComponent(description) +
+                                   '&currency=' + encodeURIComponent(expCurrency);
+
+                        fetch(MANUAL_EXPENSE_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRFToken': CSRF,
+                            },
+                            body: body,
+                        })
+                            .then(function (r) { return r.json(); })
+                            .then(function (data) {
+                                if (data && data.result) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Gider Kaydedildi',
+                                        text: data.msg || '',
+                                        timer: 2000,
+                                        showConfirmButton: false,
+                                    });
+                                    var modalEl = document.getElementById('modalManualExpense');
+                                    if (modalEl) {
+                                        var inst = bootstrap.Modal.getInstance(modalEl);
+                                        if (inst) inst.hide();
+                                    }
+                                    setTimeout(function () { location.reload(); }, 1500);
+                                } else {
+                                    Swal.fire('Hata', (data && data.msg) || 'İşlem kaydedilemedi.', 'error');
+                                }
+                            })
+                            .catch(function () {
+                                Swal.fire('Hata', 'Sunucu hatası.', 'error');
+                            });
+                    });
+                });
+            })();
 
             // =====================================================================
             // TRANSFER DETAY MODALI

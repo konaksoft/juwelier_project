@@ -20,7 +20,7 @@ Redis Cache yapisi:
         "sell_tl": "3265.75",
         "buy_hs": "1.0000",
         "sell_hs": "1.0047",
-        "spread_tl": "15.25",
+        "spread_eur": "15.25",
         "change_rate": "0.85",
         "provider": "harem_altin",
         "quoted_at": "2026-03-25T13:00:00",
@@ -102,8 +102,8 @@ class PriceService:
             provider=provider_instance,
             metal_type='GOLD_24K',
             currency_code='ALTIN',
-            buy_price_tl=Decimal('3250.50'),
-            sell_price_tl=Decimal('3265.75'),
+            buy_price_eur=Decimal('3250.50'),
+            sell_price_eur=Decimal('3265.75'),
             raw_data={...},
         )
     """
@@ -134,7 +134,7 @@ class PriceService:
                 'sell_tl': Decimal,
                 'buy_hs': Decimal,
                 'sell_hs': Decimal,
-                'spread_tl': Decimal,
+                'spread_eur': Decimal,
                 'change_rate': Decimal,
                 'provider': str,
                 'quoted_at': str (ISO format),
@@ -156,7 +156,7 @@ class PriceService:
                     'sell_tl': Decimal(str(data.get('sell_tl', '0'))),
                     'buy_hs': Decimal(str(data.get('buy_hs', '0'))),
                     'sell_hs': Decimal(str(data.get('sell_hs', '0'))),
-                    'spread_tl': Decimal(str(data.get('spread_tl', '0'))),
+                    'spread_eur': Decimal(str(data.get('spread_eur', '0'))),
                     'change_rate': Decimal(str(data.get('change_rate', '0'))),
                     'provider': data.get('provider', ''),
                     'quoted_at': data.get('quoted_at', ''),
@@ -194,11 +194,11 @@ class PriceService:
                     f"provider={quote.provider.name}"
                 )
                 return {
-                    'buy_tl': quote.buy_price_tl,
-                    'sell_tl': quote.sell_price_tl,
+                    'buy_tl': quote.buy_price_eur,
+                    'sell_tl': quote.sell_price_eur,
                     'buy_hs': quote.buy_price_hs,
                     'sell_hs': quote.sell_price_hs,
-                    'spread_tl': quote.spread_tl,
+                    'spread_eur': quote.spread_eur,
                     'change_rate': quote.change_rate,
                     'provider': quote.provider.name,
                     'quoted_at': quote.quoted_at.isoformat() if quote.quoted_at else '',
@@ -219,7 +219,7 @@ class PriceService:
             'sell_tl': Decimal('0'),
             'buy_hs': Decimal('0'),
             'sell_hs': Decimal('0'),
-            'spread_tl': Decimal('0'),
+            'spread_eur': Decimal('0'),
             'change_rate': Decimal('0'),
             'provider': '',
             'quoted_at': '',
@@ -274,8 +274,8 @@ class PriceService:
         provider: PriceProvider,
         metal_type: str,
         currency_code: str,
-        buy_price_tl: Decimal,
-        sell_price_tl: Decimal,
+        buy_price_eur: Decimal,
+        sell_price_eur: Decimal,
         buy_price_hs: Decimal = Decimal('0.000000'),
         sell_price_hs: Decimal = Decimal('0.000000'),
         change_rate: Decimal = Decimal('0.0000'),
@@ -292,8 +292,8 @@ class PriceService:
             provider: PriceProvider instance
             metal_type: Standart metal tipi (orn: 'GOLD_24K')
             currency_code: API'den gelen orijinal kod (orn: 'ALTIN')
-            buy_price_tl: Alis fiyati TL
-            sell_price_tl: Satis fiyati TL
+            buy_price_eur: Alis fiyati TL
+            sell_price_eur: Satis fiyati TL
             buy_price_hs: Alis fiyati Has (hesaplanmis)
             sell_price_hs: Satis fiyati Has (hesaplanmis)
             change_rate: Yuzde degisim
@@ -313,8 +313,8 @@ class PriceService:
             metal_type=metal_type,
             currency_code=currency_code,
             quote_type=quote_type,
-            buy_price_tl=buy_price_tl,
-            sell_price_tl=sell_price_tl,
+            buy_price_eur=buy_price_eur,
+            sell_price_eur=sell_price_eur,
             buy_price_hs=buy_price_hs,
             sell_price_hs=sell_price_hs,
             change_rate=change_rate,
@@ -324,11 +324,11 @@ class PriceService:
 
         # 2. Redis cache'e yaz
         cache_data = {
-            'buy_tl': str(buy_price_tl),
-            'sell_tl': str(sell_price_tl),
+            'buy_tl': str(buy_price_eur),
+            'sell_tl': str(sell_price_eur),
             'buy_hs': str(buy_price_hs),
             'sell_hs': str(sell_price_hs),
-            'spread_tl': str(sell_price_tl - buy_price_tl),
+            'spread_eur': str(sell_price_eur - buy_price_eur),
             'change_rate': str(change_rate),
             'provider': provider.name,
             'quoted_at': quoted_at.isoformat(),
@@ -395,7 +395,7 @@ class PriceService:
         cls,
         provider: PriceProvider,
         response_data: dict,
-        base_has_buy_tl: Optional[Decimal] = None,
+        base_has_buy_eur: Optional[Decimal] = None,
         base_has_sell_tl: Optional[Decimal] = None,
     ) -> int:
         """
@@ -407,7 +407,7 @@ class PriceService:
         Args:
             provider: PriceProvider instance
             response_data: API'den gelen JSON cevap (list of dicts)
-            base_has_buy_tl: Has Altin alis TL kuru (Has bazli hesaplama icin)
+            base_has_buy_eur: Has Altin alis TL kuru (Has bazli hesaplama icin)
             base_has_sell_tl: Has Altin satis TL kuru
 
         Returns:
@@ -463,8 +463,8 @@ class PriceService:
             # Has bazli fiyat hesapla
             buy_hs = Decimal('0')
             sell_hs = Decimal('0')
-            if base_has_buy_tl and base_has_buy_tl > 0:
-                buy_hs = (buy_tl / base_has_buy_tl).quantize(
+            if base_has_buy_eur and base_has_buy_eur > 0:
+                buy_hs = (buy_tl / base_has_buy_eur).quantize(
                     Decimal('0.000001'), rounding=ROUND_HALF_UP
                 )
             if base_has_sell_tl and base_has_sell_tl > 0:
@@ -479,8 +479,8 @@ class PriceService:
                 provider=provider,
                 metal_type=mapping.target_metal_type,
                 currency_code=source_code,
-                buy_price_tl=buy_tl,
-                sell_price_tl=sell_tl,
+                buy_price_eur=buy_tl,
+                sell_price_eur=sell_tl,
                 buy_price_hs=buy_hs,
                 sell_price_hs=sell_hs,
                 change_rate=change_rate,
@@ -550,11 +550,11 @@ class PriceService:
 
                 if quote:
                     cache_data = {
-                        'buy_tl': str(quote.buy_price_tl),
-                        'sell_tl': str(quote.sell_price_tl),
+                        'buy_tl': str(quote.buy_price_eur),
+                        'sell_tl': str(quote.sell_price_eur),
                         'buy_hs': str(quote.buy_price_hs),
                         'sell_hs': str(quote.sell_price_hs),
-                        'spread_tl': str(quote.spread_tl),
+                        'spread_eur': str(quote.spread_eur),
                         'change_rate': str(quote.change_rate),
                         'provider': provider.name,
                         'quoted_at': quote.quoted_at.isoformat(),
@@ -576,11 +576,11 @@ class PriceService:
 
             if best_quote:
                 best_data = {
-                    'buy_tl': str(best_quote.buy_price_tl),
-                    'sell_tl': str(best_quote.sell_price_tl),
+                    'buy_tl': str(best_quote.buy_price_eur),
+                    'sell_tl': str(best_quote.sell_price_eur),
                     'buy_hs': str(best_quote.buy_price_hs),
                     'sell_hs': str(best_quote.sell_price_hs),
-                    'spread_tl': str(best_quote.spread_tl),
+                    'spread_eur': str(best_quote.spread_eur),
                     'change_rate': str(best_quote.change_rate),
                     'provider': best_quote.provider.name,
                     'quoted_at': best_quote.quoted_at.isoformat(),

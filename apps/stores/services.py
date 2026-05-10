@@ -20,12 +20,12 @@ def compute_store_has_tl(store, use_cache: bool = True):
     sale_margin, buy_margin = get_store_margins(store)
     if use_cache and (sale_margin != 0 or buy_margin != 0):
         cache = getattr(store, 'price_cache', None)
-        if cache and cache.has_buy_tl and cache.has_sale_tl:
-            return Decimal(cache.has_buy_tl), Decimal(cache.has_sale_tl)
+        if cache and cache.has_buy_eur and cache.has_sale_eur:
+            return Decimal(cache.has_buy_eur), Decimal(cache.has_sale_eur)
     try:
         has_prod = Products.objects.get(name__iexact='Has Altın 24 Ayar')
-        base_buy = Decimal(has_prod.buy_price_tl or 0)
-        base_sale = Decimal(has_prod.sale_price_tl or 0)
+        base_buy = Decimal(has_prod.buy_price_eur or 0)
+        base_sale = Decimal(has_prod.sale_price_eur or 0)
     except Products.DoesNotExist:
         return Decimal('0'), Decimal('0')
     store_has_buy = round2(base_buy * (Decimal('1') + buy_margin / Decimal('100')))
@@ -38,7 +38,7 @@ def update_store_has_cache_for_all_stores():
         buy, sale = compute_store_has_tl(s, use_cache=False)
         StorePriceCache.objects.update_or_create(
             store=s,
-            defaults={'has_buy_tl': buy, 'has_sale_tl': sale}
+            defaults={'has_buy_eur': buy, 'has_sale_eur': sale}
         )
 
 
