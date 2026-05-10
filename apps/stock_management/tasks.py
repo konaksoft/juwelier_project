@@ -376,65 +376,18 @@ def _sync_api_prices_to_products():
     basarili fiyat cekimi sonrasinda cagirilir.
 
     Kurallar:
-        - Sadece use_manual_has_calculation=False olan magazalarin
-          urunlerini etkiler. (Simdilik Products global oldugundan
-          en az bir magaza API modunda ise guncellenir.)
         - Products.objects.filter(...).update() kullanilir (save() degil).
         - Sadece buy_price_eur ve sale_price_eur alanlari guncellenir.
         - 0 veya negatif deger gelirse o urun atlanir (koruma).
         - Hata durumunda son basarili deger Products'ta kalir (sessiz failover).
-
-    T3 (2026-04-29) — Manuel Kur Bypass:
-        - Doviz urunleri (USD/EUR/GBP karsiligi `USDTRY/EURTRY/GBPTRY`) icin
-          tum magazalar `use_manual_currency_rate=True` ise API guncellemesi
-          atlanir. Bu sayede manuel kur degerleri Celery task tarafindan
-          ezilmez. En az bir magaza API modunda kalmissa global Products
-          fiyatlari guncellenmeye devam eder; manuel modda olan magazalar
-          icin override mantigi view katmaninda (get_product_details / get_all)
-          `manual_currency_rates` JSONField'indan okuyarak fallback yapar.
     """
     from apps.stock_management.services.price_service import PriceService
     from apps.products.models import Products
-    from apps.settings.models import StoreConfiguration
     from django.core.cache import cache
-
-    # En az bir magaza API modunda mi kontrol et
-    manual_only = StoreConfiguration.objects.filter(
-        use_manual_has_calculation=True
-    ).exists()
-
-    all_stores_manual = False
-    if manual_only:
-        total_stores = StoreConfiguration.objects.count()
-        manual_stores = StoreConfiguration.objects.filter(
-            use_manual_has_calculation=True
-        ).count()
-        if total_stores > 0 and manual_stores >= total_stores:
-            all_stores_manual = True
-
-    if all_stores_manual:
-        logger.info("Tum magazalar manuel modda — Products senkronizasyonu atlanıyor.")
-        return
-
-    # T3: Tum magazalar manuel kur modunda mi? (Doviz urunleri icin)
-    total_stores = StoreConfiguration.objects.count()
-    manual_currency_stores = StoreConfiguration.objects.filter(
-        use_manual_currency_rate=True
-    ).count()
-    all_currency_manual = (
-        total_stores > 0 and manual_currency_stores >= total_stores
-    )
-
-    # Doviz metal type listesi (manuel kur bypass kontrolu icin)
-    _CURRENCY_METAL_TYPES = {'USD', 'EUR', 'GBP'}
 
     updated = 0
 
     for metal_type, product_name in _METAL_TO_PRODUCT_MAP.items():
-        # T3: Doviz urunleri icin tum magazalar manuel kur modundaysa atla
-        if metal_type in _CURRENCY_METAL_TYPES and all_currency_manual:
-            continue
-
         try:
             price = PriceService.get_price(metal_type)
 

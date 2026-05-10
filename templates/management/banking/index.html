@@ -210,13 +210,6 @@
                                         <span class="d-none d-md-inline">Otomatik Tani</span>
                                     </button>
 
-                                    <!-- Toplu Fatura (Varsayılan Ayarlarla) — 2026-04 -->
-                                    <button id="btnBulkInvoiceDefaults"
-                                            class="btn btn-sm btn-light-warning fw-bold mobile-square-btn"
-                                            title="Seçili gelen hareketlerden varsayılan ayarlarla e-fatura oluşturur (OZELMATRAH)">
-                                        <i class="fa-solid fa-file-invoice-dollar me-md-1"></i>
-                                        <span class="d-none d-md-inline">Toplu Fatura Oluştur</span>
-                                    </button>
                                 </div>
                             </div>
 
@@ -691,7 +684,6 @@
             bankAccounts: "{% url 'banking:bank_accounts' %}",
             commissionCalculate: "{% url 'banking:commission_calculate' %}",
             commissionReport: "{% url 'banking:commission_report' %}",
-            bulkInvoiceDefaults: "{% url 'banking:bulk_invoice_with_defaults' %}",
             bankingSettings: "{% url 'banking:settings' %}",
         };
 
@@ -749,8 +741,8 @@
             return map[status] || '';
         }
 
-        // Serbest Fatura URL'si
-        var CREATE_FREE_URL = "{% url 'invoices:create-free' %}";
+        // Serbest Fatura URL'si — invoices app yok, no-op
+        var CREATE_FREE_URL = "#";
 
         function actionButtons(row, showInvoice) {
             var html = '<div class="d-flex justify-content-center gap-1">';
@@ -1198,164 +1190,6 @@
         });
 
         // =====================================================================
-        // TOPLU FATURA OLUŞTURMA (Varsayılan Ayarlarla — 2026-04)
-        // Açık Bankacılık → Mağaza Varsayılanları → OZELMATRAH Fatura
-        // =====================================================================
-
-        $('#btnBulkInvoiceDefaults').on('click', function () {
-            var ids = getSelectedIds();
-            if (!ids.length) {
-                Swal.fire(
-                    'Uyarı',
-                    'Lütfen faturalandırılacak banka hareketlerini seçin. ' +
-                    'Sadece "Gelen" yönlü ve daha önce faturalandırılmamış hareketler işlenir.',
-                    'warning'
-                );
-                return;
-            }
-
-            // Onay dialog'u — "otomatik GİB'e gönder" checkbox'ı varsayılan işaretli
-            Swal.fire({
-                title: 'Toplu Fatura Oluştur',
-                html:
-                    '<div class="text-start">' +
-                    '<p class="mb-2"><b>' + ids.length + '</b> banka hareketi için ' +
-                    'mağaza ayarlarındaki <b>varsayılan değerler</b> ' +
-                    '(Ürün Adı, Ayar, İşçilik) ile e-fatura oluşturulacak.</p>' +
-                    '<p class="text-muted fs-7 mb-4">' +
-                    '<i class="fa-solid fa-circle-info me-1"></i> ' +
-                    'Havale tutarı otomatik olarak <b>Metal (KDV %0)</b> ve ' +
-                    '<b>İşçilik (KDV %20, Özel Matrah)</b> kalemlerine ayrıştırılır. ' +
-                    'Gram hesabı anlık has satış kuruna göre yapılır.</p>' +
-                    '<div class="form-check form-switch mb-1">' +
-                    '  <input class="form-check-input" type="checkbox" ' +
-                    '         id="swAutoSendGib" checked>' +
-                    '  <label class="form-check-label fw-bold" for="swAutoSendGib">' +
-                    '    Onaylandıktan sonra faturaları otomatik olarak GİB\'e gönder' +
-                    '  </label>' +
-                    '</div>' +
-                    '<p class="text-muted fs-8 mt-2 mb-0">' +
-                    'Tiki kaldırırsanız yalnızca <b>Taslak</b> oluşturulur, ' +
-                    'sonradan elle GİB\'e gönderebilirsiniz.</p>' +
-                    '</div>',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Onayla ve Oluştur',
-                cancelButtonText: 'Vazgeç',
-                customClass: {
-                    confirmButton: 'btn btn-warning fw-bold',
-                    cancelButton: 'btn btn-light'
-                },
-                preConfirm: function () {
-                    return {
-                        sendToGib: $('#swAutoSendGib').is(':checked')
-                    };
-                }
-            }).then(function (r) {
-                if (!r.isConfirmed) return;
-
-                var sendToGib = r.value && r.value.sendToGib;
-
-                // İşlem uyarı penceresi
-                Swal.fire({
-                    title: 'İşleniyor...',
-                    html: 'Banka hareketleri faturalandırılıyor, lütfen bekleyin.',
-                    allowOutsideClick: false,
-                    didOpen: function () { Swal.showLoading(); }
-                });
-
-                $.ajax({
-                    url: URLS.bulkInvoiceDefaults,
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                        transaction_ids: ids,
-                        send_to_gib: !!sendToGib
-                    }),
-                    headers: { 'X-CSRFToken': CSRF },
-                    success: function (res) {
-                        Swal.close();
-
-                        if (res.result) {
-                            var detailsHtml = '';
-                            if (res.created && res.created.length) {
-                                detailsHtml += '<div class="text-start mt-3">';
-                                detailsHtml += '<div class="fw-bold text-success mb-2">' +
-                                    '<i class="fa-solid fa-check-circle me-1"></i> ' +
-                                    'Oluşturulan Faturalar (' + res.created.length + '):</div>';
-                                detailsHtml += '<ul class="fs-7 ps-3 mb-0" ' +
-                                    'style="max-height:200px;overflow-y:auto;">';
-                                res.created.slice(0, 20).forEach(function (c) {
-                                    detailsHtml += '<li>' +
-                                        '<b>' + (c.invoice_no || '-') + '</b> — ' +
-                                        (c.customer_name || '-') + ' — ' +
-                                        (c.amount || '0') + ' TL' +
-                                    '</li>';
-                                });
-                                detailsHtml += '</ul></div>';
-                            }
-
-                            if (res.skipped && res.skipped.length) {
-                                detailsHtml += '<div class="text-start mt-3">';
-                                detailsHtml += '<div class="fw-bold text-warning mb-2">' +
-                                    '<i class="fa-solid fa-forward me-1"></i> ' +
-                                    'Atlanan Hareketler (' + res.skipped.length + '):</div>';
-                                detailsHtml += '<ul class="fs-8 ps-3 mb-0 text-muted" ' +
-                                    'style="max-height:120px;overflow-y:auto;">';
-                                res.skipped.slice(0, 10).forEach(function (s) {
-                                    detailsHtml += '<li>' + (s.reason || '-') + '</li>';
-                                });
-                                detailsHtml += '</ul></div>';
-                            }
-
-                            if (res.failed && res.failed.length) {
-                                detailsHtml += '<div class="text-start mt-3">';
-                                detailsHtml += '<div class="fw-bold text-danger mb-2">' +
-                                    '<i class="fa-solid fa-triangle-exclamation me-1"></i> ' +
-                                    'Hata Alan (' + res.failed.length + '):</div>';
-                                detailsHtml += '<ul class="fs-8 ps-3 mb-0 text-danger" ' +
-                                    'style="max-height:120px;overflow-y:auto;">';
-                                res.failed.slice(0, 10).forEach(function (f) {
-                                    detailsHtml += '<li>' + (f.error || '-') + '</li>';
-                                });
-                                detailsHtml += '</ul></div>';
-                            }
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'İşlem Tamamlandı',
-                                html: '<div>' + (res.msg || 'Tamamlandı.') + '</div>' + detailsHtml,
-                                confirmButtonText: 'Tamam',
-                                width: 600
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Hata',
-                                html: (res.msg || 'İşlem başarısız.') +
-                                      (res.msg && res.msg.indexOf('ayar') !== -1 ?
-                                          '<hr><a href="' + URLS.bankingSettings + '" ' +
-                                          'class="btn btn-sm btn-light-primary">' +
-                                          '<i class="fa-solid fa-cog me-1"></i> Ayarlara Git</a>' : '')
-                            });
-                        }
-
-                        reloadAllTables();
-                    },
-                    error: function (xhr) {
-                        Swal.close();
-                        var msg = 'Sunucu hatası (HTTP ' + xhr.status + ')';
-                        try {
-                            var j = JSON.parse(xhr.responseText || '{}');
-                            if (j.msg) msg = j.msg;
-                        } catch (e) {}
-                        Swal.fire('Hata', msg, 'error');
-                    }
-                });
-            });
-        });
-
-        // =====================================================================
         // MANUEL EŞLEŞTİRME MODAL
         // =====================================================================
 
@@ -1431,7 +1265,7 @@
             var custText = $(this).find('option:selected').text().split('(')[0].trim();
 
             $.ajax({
-                url: "{% url 'invoices:get-all' %}",
+                url: "#",  // invoices:get-all kaldırıldı — invoices app yok
                 type: 'GET',
                 data: {
                     draw: 1, start: 0, length: 50,

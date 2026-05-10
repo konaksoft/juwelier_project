@@ -809,21 +809,14 @@ class SmartRestoreService:
                     sc, _ = StoreConfiguration.objects.get_or_create(store=self.store)
                     for field in [
                         'language_code', 'base_spot_currency', 'base_spot_unit',
-                        'price_margin_percent', 'use_average_labor',
-                        'use_manual_has_calculation', 'use_manual_currency_rate',
-                        'manual_currency_rates',
-                        'enforce_cash_limit', 'is_safe_approval_required',
-                        'enforce_invoice_customer', 'enforce_masak_identity',
+                        'is_safe_approval_required',
                         'enforce_customer_always', 'require_customer_phone',
-                        'require_customer_tckn', 'debt_currency_mode',
+                        'debt_currency_mode',
                         'allow_overpayment_default',
                     ]:
                         if field in config_data and hasattr(sc, field):
                             try:
-                                val = config_data[field]
-                                if field == 'price_margin_percent':
-                                    val = _to_decimal(val) or Decimal('0')
-                                setattr(sc, field, val)
+                                setattr(sc, field, config_data[field])
                             except Exception:
                                 pass
                     sc.save()

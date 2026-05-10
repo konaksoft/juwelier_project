@@ -78,9 +78,10 @@ def check_legal_limits(config, total_amount, is_output, payment_type, is_pos_flo
     INVOICE_LIMIT = Decimal('36000.00')
     MASAK_LIMIT = Decimal('185000.00')
 
-    enforce_cash = config.enforce_cash_limit if config else True
-    enforce_invoice = config.enforce_invoice_customer if config else True
-    enforce_masak = config.enforce_masak_identity if config else True
+    # Türkiye yasal limitleri kaldırıldı (Almanya akışı)
+    enforce_cash = False
+    enforce_invoice = False
+    enforce_masak = False
 
     # 1. Nakit Limiti (Sadece Tahsilat yani Giriş işlemlerinde kritiktir)
     if enforce_cash and total_amount > CASH_LIMIT:

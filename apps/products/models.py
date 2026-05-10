@@ -181,13 +181,11 @@ class Products(models.Model):
 
     def sale_price_hs_for(self, store) -> Decimal:
         base = self.sale_price_hs or Decimal('0')
-        m = Decimal(getattr(store, 'price_margin_percent', 0) or 0) / Decimal('100')
-        return (base * (Decimal('1') + m)).quantize(Decimal('0.001'))
+        return base.quantize(Decimal('0.001'))
 
     def sale_price_eur_for(self, store) -> Decimal:
         base = self.sale_price_eur or Decimal('0')
-        m = Decimal(getattr(store, 'price_margin_percent', 0) or 0) / Decimal('100')
-        return (base * (Decimal('1') + m)).quantize(Decimal('0.01'))
+        return base.quantize(Decimal('0.01'))
 
     # ========================================================================
     # FAZ B2 / ONARIM FAZI 1 - Veri Butunlugu ve Frontend Spoofing Koruma

@@ -650,13 +650,7 @@
                 <div class="app-navbar flex-grow-1 justify-content-end" id="kt_app_header_navbar">
                     <div class="app-navbar-item d-flex align-items-stretch flex-lg-grow-1">
                     </div>
-                    <!--                    <div class="app-navbar-item d-none d-lg-flex me-2">-->
-                    <!--                        <a href="{% url 'invoices:dashboard' %}" target="_blank" rel="noopener"-->
-                    <!--                           class="btn btn-light-primary btn-sm d-flex align-items-center gap-2">-->
-                    <!--                            <i class="fa-solid fa-file-invoice"></i>-->
-                    <!--                            <span class="d-none d-md-inline">Fatura Portalı</span>-->
-                    <!--                        </a>-->
-                    <!--                    </div>-->
+                    <!-- Fatura Portalı linki kaldırıldı — invoices app Juwelier Plus'ta yok -->
                     <div class="app-navbar-item d-flex me-2 kp-live-btn-mobile">
                         <a href="{% url 'live_board:index' %}" target="_blank"
                            class="btn btn-light-warning btn-sm d-flex align-items-center gap-2">
@@ -741,11 +735,7 @@
                                     Profilim
                                 </a>
                             </div>
-                            <div class="menu-item px-5">
-                                <a href="{% url 'masak:index' %}" class="menu-link px-5">
-                                    Masak
-                                </a>
-                            </div>
+                            <!-- Masak menü öğesi kaldırıldı — masak app Juwelier Plus'ta yok -->
                             <div class="separator my-2"></div>
                             <div class="menu-item px-5" data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
                                  data-kt-menu-placement="left-start" data-kt-menu-offset="-15px, 0">
@@ -965,16 +955,7 @@
                                     </div>
                                 {% endif %}
 
-                                <!-- Order 12 -->
-                                {% if request.user|menu_allowed:'ABC1706D' %}
-                                    <div class="menu-item">
-                                        <a href="{% url 'invoices:index' %}" class="menu-link">
-                                            <span class="menu-icon"><i
-                                                    class="fas fa-file-invoice-dollar fs-2"></i></span>
-                                            <span class="menu-title">Faturalar</span>
-                                        </a>
-                                    </div>
-                                {% endif %}
+                                <!-- Order 12 — Faturalar menüsü kaldırıldı — invoices app Juwelier Plus'ta yok -->
 
                                 <!-- Order 12a — Kasa Yönetimi (İç Kasa) -->
                                 {% if request.user|menu_allowed:'ABC1017D' %}
@@ -1088,14 +1069,7 @@
                                         </a>
                                     </div>
                                 {% endif %}
-                                {% if request.user.is_superuser %}
-                                    <div class="menu-item">
-                                        <a href="{% url 'masak:upload_page' %}" class="menu-link">
-                                            <span class="menu-icon"><i class="fa-solid fa-file-contract"></i></span>
-                                            <span class="menu-title">Masak  Listesi</span>
-                                        </a>
-                                    </div>
-                                {% endif %}
+                                <!-- Masak Listesi menüsü kaldırıldı — masak app Juwelier Plus'ta yok -->
 
 
                                 <!-- 2. Rol Yönetimi (ABC9002D) -->
@@ -1168,7 +1142,7 @@
                                 {% endif %}
 
                                 <!-- 8. Siparişler (ABC9008D) -->
-                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9008D' %}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9007D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'orders:index' %}" class="menu-link">
                                             <span class="menu-icon"><i
@@ -1178,7 +1152,7 @@
                                     </div>
                                 {% endif %}
                                 <!-- 8. Siparişler (ABC9008D) -->
-                                {% if request.user|menu_allowed:'ABCD005D' %}
+                                {% if request.user.is_superuser or request.user|menu_allowed:'ABC9007D' %}
                                     <div class="menu-item">
                                         <a href="{% url 'supports:index' %}" class="menu-link">
                                             <span class="menu-icon"><i
@@ -2343,9 +2317,7 @@
                 {% if request.user|menu_allowed:'ABC1010D' %}
                     {icon: 'fa-list-check', text: 'Özetler', url: "{% url 'process:index' %}"},
                 {% endif %}
-                {% if request.user|menu_allowed:'ABC1706D' %}
-                    {icon: 'fa-file-invoice-dollar', text: 'Faturalar', url: "{% url 'invoices:index' %}"},
-                {% endif %}
+                {# Faturalar hızlı arama öğesi kaldırıldı — invoices app yok #}
                 {% if request.user|menu_allowed:'ABC1706D' %}
                     {icon: 'fa-vault', text: 'Kasa Yönetimi', url: "{% url 'bank-management:index' %}"},
                 {% endif %}
@@ -2383,9 +2355,7 @@
                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9001D' %}
                     {icon: 'fa-comment-dots', text: 'Whatsapp', url: "{% url 'whatsapp:dashboard' %}"},
                 {% endif %}
-                {% if request.user.is_superuser %}
-                    {icon: 'fa-file-contract', text: 'Masak', url: "{% url 'masak:upload_page' %}"},
-                {% endif %}
+                {# Masak hızlı arama öğesi kaldırıldı — masak app yok #}
                 {% if request.user.is_superuser or request.user|menu_allowed:'ABC9002D' %}
                     {icon: 'fa-user-lock', text: 'Roller', url: "{% url 'roles:index' %}"},
                 {% endif %}

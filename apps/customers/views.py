@@ -280,12 +280,6 @@ def add_customer(request):
                 'error_msg': 'Bu mağazada telefon numarası zorunludur.'
             })
 
-        if store_config.require_customer_tckn and not identification_number:
-            return JsonResponse({
-                'error': True,
-                'error_msg': 'Bu mağazada T.C. / Vergi Kimlik Numarası zorunludur.'
-            })
-
         # Kimlik numarası girildiyse algoritma + format kontrolü:
         # 11 hane → TCKN matematiksel doğrulama
         # 10 hane → VKN format kontrolü (kurumsal müşteri)

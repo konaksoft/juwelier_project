@@ -126,8 +126,7 @@
                 <form id="add-form" method="post" autocomplete="off" enctype="multipart/form-data" role="form">
                     {% csrf_token %}
                     <input type="hidden" name="record_id" id="record_id">
-                    <input type="hidden" name="tax_office_code" id="tax_office_code" value="">
-                    <input type="hidden" name="country" id="country" value="Türkiye">
+
 
                     <div class="row">
                         <div class="col-md-6">
@@ -135,15 +134,6 @@
                                 <input type="text" class="form-control" id="title" name="title"
                                        placeholder="Ticari Unvan / Ad Soyad" required>
                                 <label for="title">Ticari Unvan / Ad Soyad</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <select class="form-select" id="e_invoice_type" name="e_invoice_type" required>
-                                    <option value="TEMEL" selected>TEMEL</option>
-                                    <option value="TICARI">TICARI</option>
-                                </select>
-                                <label for="e_invoice_type">E-Fatura Senaryo</label>
                             </div>
                         </div>
                     </div>
@@ -163,94 +153,12 @@
                         </div>
                     </div>
 
-                    <div class="row align-items-end mb-3">
-                        <div class="col-md-3">
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="tax_number" name="tax_number" required>
-                                <label for="tax_number">VKN / TCKN</label>
-                            </div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-light-warning w-100" id="btnPosTurmobFetch"
-                                    title="Cihazın yerel servisine bağlanır" style="height: calc(3.5rem + 2px);">
-                                <i class="fa-solid fa-mobile-screen-button"></i> POS'tan Sorgula
-                            </button>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fs-7 fw-semibold text-gray-600 mb-1"
-                                   style="padding-left: 0.75rem;">Bağlı Olduğu Dernek / Oda</label>
-                            <select class="form-select form-select-solid" id="chambers" name="chambers"
-                                    data-control="select2" data-placeholder="Dernek Seçiniz..." data-allow-clear="true"
-                                    multiple>
-                                {% for chamber in available_chambers %}
-                                    <option value="{{ chamber.id }}">{{ chamber.name }}
-                                        - {{ chamber.city.name|default:"" }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
 
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <select class="form-select geo-select" id="city" name="city" data-placeholder="İl seçin"
-                                        required></select>
-                                <label for="city">İl</label>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <select class="form-select geo-select" id="tax_office_select" name="tax_office"
-                                        data-placeholder="Vergi Dairesi seçin" disabled required></select>
-                                <label for="tax_office_select">Vergi Dairesi</label>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <select class="form-select geo-select" id="district" name="district"
-                                        data-placeholder="İlçe seçin" disabled required></select>
-                                <label for="district">İlçe</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="postal_code" name="postal_code" required>
-                                <label for="postal_code">Posta Kodu</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="mersis_no" name="mersis_no"
-                                       inputmode="numeric">
-                                <label for="mersis_no">MERSİS No</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="trade_registry_no" name="trade_registry_no">
-                                <label for="trade_registry_no">Ticaret Sicil No</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="iban" name="iban" placeholder="TR..">
-                                <label for="iban">IBAN</label>
-                            </div>
-                        </div>
                         <div class="col-md-12">
                             <div class="form-floating mb-3">
                                 <textarea class="form-control" id="address" name="address" style="height:100px"
-                                          required></textarea>
+                                          ></textarea>
                                 <label for="address">Adres</label>
                             </div>
                         </div>
@@ -293,171 +201,9 @@
     <script>
         $(document).ready(function () {
 
-            // --- YARDIMCI FONKSİYONLAR ---
-
-            // Şehirleri Yükle (Promise döner)
-            function loadCities(targetSelector) {
-                return $.ajax({
-                    url: "{% url 'locations:get-cities' %}",
-                    type: "GET",
-                    dataType: "json",
-                    success: function (resp) {
-                        let opts = '<option value=""></option>';
-                        let dataList = resp.data ? resp.data : resp;
-                        if (Array.isArray(dataList)) {
-                            dataList.forEach(c => {
-                                // BACKEND'DEN GELEN PLAKA KODUNU DATA ATTRIBUTE OLARAK EKLİYORUZ
-                                // Bu sayede JS tarafında map tutmaya gerek kalmıyor.
-                                let plate = c.plate_code || '';
-                                opts += `<option value="${c.id}" data-plate="${plate}">${c.name}</option>`;
-                            });
-                        }
-                        $(targetSelector).html(opts);
-                    }
-                });
-            }
-
-            // İlçeleri Yükle (Promise döner)
-            function loadDistricts(cityId, targetSelector) {
-                if (!cityId) {
-                    $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change');
-                    return Promise.resolve();
-                }
-
-                return $.ajax({
-                    url: "{% url 'locations:get-districts' %}",
-                    type: "GET",
-                    data: {city_id: cityId},
-                    dataType: "json",
-                    success: function (resp) {
-                        let opts = '<option value=""></option>';
-                        let dataList = resp.data ? resp.data : resp;
-                        if (Array.isArray(dataList)) {
-                            dataList.forEach(d => {
-                                opts += `<option value="${d.id}">${d.name}</option>`;
-                            });
-                        }
-                        $(targetSelector).html(opts).prop('disabled', false).trigger('change.select2');
-                    }
-                });
-            }
-
-            // Vergi Dairelerini Yükle (Promise döner)
-            function loadTaxOffices(cityId, targetSelector) {
-                if (!cityId) {
-                    $(targetSelector).html('<option value=""></option>').prop('disabled', true).trigger('change');
-                    return Promise.resolve();
-                }
-
-                return $.ajax({
-                    url: "{% url 'locations:get-tax_offices' %}",
-                    type: "GET",
-                    data: {city_id: cityId},
-                    dataType: "json",
-                    success: function (resp) {
-                        let opts = '<option value=""></option>';
-                        let dataList = resp.data ? resp.data : resp;
-                        if (Array.isArray(dataList)) {
-                            dataList.forEach(t => {
-                                opts += `<option value="${t.id}" data-code="${t.code}">${t.name} (${t.code})</option>`;
-                            });
-                        }
-                        $(targetSelector).html(opts).prop('disabled', false).trigger('change.select2');
-                    }
-                });
-            }
-
-            // POS Cihazından Gelen Vergi Kodu ile Otomatik Seçim
-            async function applyGeoFromTaxOfficeCode(code) {
-                if (!code) return;
-
-                // Vergi Dairesi Kodunun ilk 2 hanesi plakadır (Örn: 34201 -> 34)
-                // String'e çevirip garantiye alıyoruz
-                let codeStr = code.toString().trim();
-                let plateCode = codeStr.substring(0, 2);
-
-                // Tek haneli gelirse başına 0 ekle (Örn: 6001 -> 06)
-                if (codeStr.length === 4) {
-                    plateCode = "0" + codeStr.substring(0, 1);
-                }
-
-                // 1. Şehri Bul (data-plate attribute üzerinden)
-                let $citySelect = $('#city');
-                let $targetCityOption = $citySelect.find(`option[data-plate='${plateCode}']`);
-
-                if ($targetCityOption.length > 0) {
-                    let cityId = $targetCityOption.val();
-
-                    // Şehri Seç
-                    $citySelect.val(cityId).trigger('change.select2');
-
-                    // 2. Şehre Bağlı Verileri Yükle (Await ile bitmesini bekle)
-                    // Normalde change eventi tetikler ama async kontrol için manuel çağırıp bekliyoruz
-                    await Promise.all([
-                        loadDistricts(cityId, '#district'),
-                        loadTaxOffices(cityId, '#tax_office_select')
-                    ]);
-
-                    // 3. Vergi Dairesini Bul (data-code attribute üzerinden)
-                    let $vdSelect = $('#tax_office_select');
-                    let $targetVdOption = $vdSelect.find(`option[data-code='${codeStr}']`);
-
-                    if ($targetVdOption.length > 0) {
-                        $vdSelect.val($targetVdOption.val()).trigger('change.select2');
-                    } else {
-                        console.warn("Şehir bulundu ama Vergi Dairesi kodu listede yok:", codeStr);
-                    }
-                } else {
-                    console.warn("Plaka koduna uygun şehir bulunamadı:", plateCode);
-                }
-            }
-
 
             // --- EVENT HANDLERS ---
 
-            // Modal Açılış
-            $('#addModal').on('shown.bs.modal', function () {
-                $('#city, #district, #tax_office_select').select2({
-                    dropdownParent: $('#addModal'),
-                    width: '100%',
-                    allowClear: true,
-                    language: "tr"
-                });
-
-                if ($('#city').children('option').length <= 1) {
-                    loadCities('#city');
-                }
-            });
-
-            // Şehir Değişimi
-            $('#city').on('change', function (e) {
-                // Eğer kod tarafından tetiklendiyse (POS işlemi), manuel load yapıyoruz, burayı es geçebiliriz
-                // Ama kullanıcı elle seçerse çalışmalı.
-                let val = $(this).val();
-
-                // Temizle
-                $('#district').val(null).empty().trigger('change').prop('disabled', true);
-                $('#tax_office_select').val(null).empty().trigger('change').prop('disabled', true);
-
-                if (val) {
-                    // Kullanıcı elle değiştirdiyse async beklemeye gerek yok, fire and forget
-                    loadDistricts(val, '#district');
-                    loadTaxOffices(val, '#tax_office_select');
-                }
-            });
-
-            // Modal Kapanış
-            $('#addModal').on('hidden.bs.modal', function () {
-                $('#add-form')[0].reset();
-                $('#record_id').val('');
-                $('#city').val(null).trigger('change');
-                $('#district').html('').trigger('change');
-                $('#tax_office_select').html('').trigger('change');
-                $('#btnSave').prop('disabled', false);
-                // Faz 12.3: Ek modül checkbox'larını sıfırla
-                $('.extra-module-check:not(:disabled)').prop('checked', false);
-                $('.module-card-index').not(':has(.extra-module-check:disabled)').removeClass('bg-light-primary').addClass('bg-light');
-            });
 
             // Kaydet Butonu
             $('#btnSave').click(function () {
@@ -473,17 +219,7 @@
                     return;
                 }
 
-                // Zorunlu alan kontrolü
-                if (!$('#city').val() || !$('#district').val() || !$('#tax_office_select').val()) {
-                    Swal.fire('Eksik Bilgi', 'Lütfen İl, İlçe ve Vergi Dairesi seçiniz.', 'warning');
-                    return;
-                }
-
                 var formData = new FormData(this);
-                // Seçilen vergi dairesi kodunu hidden input'a atalım
-                var selectedOption = $('#tax_office_select').find(':selected');
-                var taxCode = selectedOption.data('code');
-                $('#tax_office_code').val(taxCode || '');
 
                 $('#btnSave').prop('disabled', true);
 
@@ -511,106 +247,6 @@
                     Swal.fire('Hata', 'Sunucu hatası', 'error');
                     $('#btnSave').prop('disabled', false);
                 });
-            });
-
-            // POS SORGULA BUTONU
-            $('#btnPosTurmobFetch').click(async function () {
-                var $btn = $(this);
-                var taxNumber = ($('#tax_number').val() || '').toString().replace(/\D/g, '');
-
-                if (!taxNumber || taxNumber.length < 10) {
-                    Swal.fire({icon: 'warning', title: 'Eksik Bilgi', text: 'Lütfen VKN / TCKN girin.'});
-                    return;
-                }
-
-                $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Sorgulanıyor...');
-
-                // Pavo veya Local Proxy
-                var serial = "WEBVIEW-POS";
-                if (typeof window.PavoAndroid !== 'undefined' && window.PavoAndroid.getSerialNumber) {
-                    try {
-                        serial = window.PavoAndroid.getSerialNumber();
-                    } catch (e) {
-                    }
-                }
-
-                var payload = {
-                    "TransactionHandle": {
-                        "SerialNumber": serial,
-                        "TransactionDate": new Date().toISOString(),
-                        "TransactionSequence": Math.floor(Math.random() * 9999),
-                        "Fingerprint": "webview-client"
-                    },
-                    "TurmobInput": {
-                        "Tckn": taxNumber
-                    }
-                };
-
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-                    const response = await fetch("https://127.0.0.1:4567/GetTurmobInfo", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify(payload),
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-
-                    if (!response.ok) throw new Error("Cihaz yanıt vermedi (HTTP " + response.status + ")");
-
-                    const resJson = await response.json();
-
-                    if (resJson.HasError) {
-                        Swal.fire('Cihaz Hatası', resJson.Message || 'Bilinmeyen hata', 'error');
-                    } else if (resJson.Data && resJson.Data.TurmobInfo) {
-                        var info = resJson.Data.TurmobInfo;
-
-                        // Unvan
-                        var unvan = info.unvan || info.kimlikUnvani || '';
-                        if (!unvan) unvan = ((info.ad || '') + ' ' + (info.soyad || '')).trim();
-                        $('#title').val(unvan);
-
-                        // VKN
-                        var realId = info.vkn || info.tckn || taxNumber;
-                        $('#tax_number').val(realId);
-
-                        // Adres
-                        if (info.adres) $('#address').val(info.adres);
-
-                        // Vergi Dairesi ve Şehir Eşleştirme
-                        var vdCode = (info.vergiDairesiKodu || '').toString().trim();
-
-                        if (vdCode) {
-                            // Smart Match Fonksiyonunu Çağır
-                            await applyGeoFromTaxOfficeCode(vdCode);
-
-                            Swal.fire({
-                                icon: 'success', title: 'Bilgiler Alındı',
-                                text: 'Firma bilgileri başarıyla dolduruldu.',
-                                timer: 1500, showConfirmButton: false
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'success', title: 'Bilgiler Alındı',
-                                text: 'Unvan ve VKN alındı ancak Vergi Dairesi bilgisi dönmedi.',
-                                timer: 1500, showConfirmButton: false
-                            });
-                        }
-
-                    } else {
-                        Swal.fire('Sonuç', 'TÜRMOB kaydı bulunamadı.', 'info');
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    var m = err.message;
-                    if (m.includes('Failed to fetch')) m = "POS cihazının yerel servisine (4567) erişilemedi.";
-                    Swal.fire('Bağlantı Hatası', m, 'error');
-                } finally {
-                    $btn.prop('disabled', false).html('<i class="fa-solid fa-mobile-screen-button"></i> POS\'tan Sorgula');
-                }
             });
 
             // DATATABLE BAŞLATMA

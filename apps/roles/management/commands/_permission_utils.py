@@ -33,10 +33,10 @@ APP_PATH = 'apps'
 EXCLUDED_APPS = {
     'kuyumplus',
     'contact_forms',
-    'pavo',
+    # 'pavo' kaldırıldı — app yok
     'testimonials',
     'brands',
-    'masak',
+    # 'masak' kaldırıldı — app yok
     'currencies',
     'process',
     'categories',
@@ -66,7 +66,7 @@ DASHBOARD_APPS = {
     'orders',
     'bracelets',
     'transactions_board',
-    'invoices',
+    # 'invoices' kaldırıldı — app yok
     'inventories',
     'stock_management',
     'live_board',

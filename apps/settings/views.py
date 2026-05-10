@@ -28,25 +28,14 @@ def update_configuration(request):
         'base_spot_currency',
         'base_spot_unit',
 
-        'price_margin_percent',
-        'use_average_labor',
-        'use_manual_has_calculation',
-        'use_manual_currency_rate',  # T3 (2026-04-29): Manuel Kur switch
-        'active_pricing_chamber_id',
-
-        'enforce_cash_limit',
-        'enforce_invoice_customer',
-        'enforce_masak_identity',
-
         'is_safe_approval_required',  # FAZ 18: Onaylı Kasa
 
         # --- Müşteri Validasyon Senkronizasyon Fazı ---
         'enforce_customer_always',
         'require_customer_phone',
-        'require_customer_tckn',
 
         # --- FAZ 38: Cari borç birim modu + fazla tahsilat varsayılanı ---
-        'debt_currency_mode',          # 'HS' | 'TL' (choice field)
+        'debt_currency_mode',          # 'HS' | 'EUR' (choice field)
         'allow_overpayment_default',   # boolean
 
         'notify_email_2fa',
@@ -98,21 +87,6 @@ def update_configuration(request):
                 return JsonResponse({'success': False, 'error': f'Geçersiz spot birimi: {_v}'})
             config.base_spot_unit = _v
 
-        elif key == 'price_margin_percent':
-            try:
-                clean_val = str(value).replace(',', '.')
-                if not clean_val.strip():
-                    clean_val = '0.00'
-                setattr(config, key, Decimal(clean_val))
-            except Exception:
-                return JsonResponse({'success': False, 'error': 'Geçersiz sayı formatı.'})
-
-        elif key == 'active_pricing_chamber_id':
-            if value and value.strip():
-                setattr(config, key, value)
-            else:
-                setattr(config, key, None)
-
         elif key == 'debt_currency_mode':
             # FAZ 38 — Borç birim modu choice field. Yalnızca 'HS' veya 'TL'.
             valid = {c[0] for c in StoreConfiguration.DEBT_MODE_CHOICES}
@@ -125,96 +99,12 @@ def update_configuration(request):
 
         else:
             new_bool = (str(value).lower() == 'true')
-
-            # --- MİNİMUM VERİ GÜVENLİK KURALI ---
-            # require_customer_phone ve require_customer_tckn ikisi birden
-            # kapatılamaz. Kullanıcı birini kapatmaya çalışıyor ve diğeri zaten
-            # kapalıysa işlem reddedilir; frontend toggle'ı eski haline döner.
-            if key in ('require_customer_phone', 'require_customer_tckn') and not new_bool:
-                other_key = 'require_customer_tckn' if key == 'require_customer_phone' else 'require_customer_phone'
-                other_val = getattr(config, other_key, False)
-                if not other_val:
-                    return JsonResponse({
-                        'success': False,
-                        'error': (
-                            'Telefon ve T.C./Vergi Kimlik zorunluluklarının ikisini birden '
-                            'kapatamazsınız. En az birinin açık kalması gerekir.'
-                        ),
-                    })
-
             setattr(config, key, new_bool)
 
         config.save()
 
         write_log(request, "Ayarlar", f"Ayar güncellendi: {key} -> {value}")
         return JsonResponse({'success': True})
-
-    except Stores.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Mağaza bulunamadı.'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-# ============================================================================
-# T3 (2026-04-29): Manuel Kur (Döviz) Değerlerini Toplu Güncelleme
-# ============================================================================
-# Frontend, "Manuel Kur Ayarı" switch'i açıkken döviz ürünleri için alış/satış
-# TL inputlarını gösterir. Kullanıcı "Kaydet" deyince burası çağrılır.
-#
-# POST data:
-#   store_id: <uuid>
-#   rates:    JSON string -> { "<product_uuid>": {"buy_tl": "45.20", "sell_tl": "46.50"} }
-#
-# Backend StoreConfiguration.manual_currency_rates JSONField'ına yazar.
-# is_currency=True ürünlerinde StockSnapshot ölü veri olduğu için bu yapıya yazma
-# StockLedger / WAC / FXBalance hiçbir hesabı etkilemez — sadece view'da
-# fiyat üretimi için override sağlar.
-# ============================================================================
-
-@login_required
-@require_POST
-def update_manual_currency_rates(request):
-    store_id = request.POST.get('store_id')
-    raw = request.POST.get('rates') or '{}'
-
-    try:
-        rates = json.loads(raw)
-        if not isinstance(rates, dict):
-            raise ValueError('rates dict olmalı')
-    except (ValueError, json.JSONDecodeError) as e:
-        return JsonResponse({'success': False, 'error': f'Geçersiz JSON: {e}'})
-
-    try:
-        if request.user.is_superuser:
-            store = Stores.objects.get(id=store_id)
-        else:
-            store = request.user.store
-            if not store or str(store.id) != str(store_id):
-                return JsonResponse({'success': False, 'error': 'Yetkisiz işlem.'})
-
-        # Veri sanitize: pozitif Decimal değerleri string olarak sakla
-        clean = {}
-        for pid, entry in rates.items():
-            if not isinstance(entry, dict):
-                continue
-            try:
-                buy = Decimal(str(entry.get('buy_tl') or '0').replace(',', '.'))
-                sell = Decimal(str(entry.get('sell_tl') or '0').replace(',', '.'))
-            except Exception:
-                continue
-            if buy < 0 or sell < 0:
-                continue
-            clean[str(pid)] = {
-                'buy_tl': f'{buy:.4f}',
-                'sell_tl': f'{sell:.4f}',
-            }
-
-        config, _ = StoreConfiguration.objects.get_or_create(store=store)
-        config.manual_currency_rates = clean
-        config.save(update_fields=['manual_currency_rates', 'updated_at'])
-
-        write_log(request, "Ayarlar", f"Manuel kur override güncellendi ({len(clean)} ürün)")
-        return JsonResponse({'success': True, 'count': len(clean)})
 
     except Stores.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Mağaza bulunamadı.'})

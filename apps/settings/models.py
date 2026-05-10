@@ -1,6 +1,4 @@
-from decimal import Decimal
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.stores.models import Stores
 
 
@@ -53,52 +51,47 @@ class StoreConfiguration(models.Model):
         help_text='Canlı spot fiyat okurken kullanılacak ağırlık birimi.',
     )
 
-    # --- 1. FİNANSAL AYARLAR ---
-    price_margin_percent = models.DecimalField(
-        max_digits=5, decimal_places=2, default=Decimal('0.00'),
-        validators=[MinValueValidator(Decimal('-50.00')), MaxValueValidator(Decimal('50.00'))],
-        verbose_name="Fiyat Marjı (%)"
-    )
-    use_average_labor = models.BooleanField(default=False, verbose_name="Ortalama İşçilik Kullan")
-    use_manual_has_calculation = models.BooleanField(
-        default=False,
-        verbose_name="Manuel Has Hesabı Kullan"
-    )
-
-    # --- T3 (2026-04-29): Manuel Kur Ayarı (Döviz İçin) ---
-    # Açıkken `get_product_details` view'ı is_currency=True ürünler için
-    # API tabanlı global Products.buy_price_eur / sale_price_eur yerine
-    # `manual_currency_rates` JSONField'ından mağazaya özel TL kurunu okur.
-    # Yapı: { "<product_uuid>": {"buy_tl": "45.20", "sell_tl": "46.50"} }
-    # Kapatıldığında API kuru otomatik geri devreye girer (fallback).
-    # Per-store izolasyon: aynı sistemdeki iki mağaza farklı kur kullanabilir.
-    use_manual_currency_rate = models.BooleanField(
-        default=False,
-        verbose_name="Manuel Kur Ayarı (Döviz)",
+    # --- 0b. MAĞAZA BİRİNCİL PARA BİRİMİ (juwelier_project Almanya pazarı) ---
+    # Tüm parasal işlemler bu birim üzerinden yapılır:
+    # - Otomatik nakit kasası bu birimde oluşturulur
+    # - UI'da fiyat sembolleri bu birime göre gösterilir
+    # - Yasal limitler bu birim cinsinden değerlendirilir
+    PRIMARY_CURRENCY_CHOICES = [
+        ('EUR', 'Euro (€)'),
+        ('TRY', 'Türk Lirası (₺)'),
+        ('USD', 'ABD Doları ($)'),
+        ('GBP', 'Sterlin (£)'),
+        ('CHF', 'İsviçre Frangı (CHF)'),
+        ('CAD', 'Kanada Doları (C$)'),
+        ('AUD', 'Avustralya Doları (A$)'),
+        ('JPY', 'Japon Yeni (¥)'),
+    ]
+    PRIMARY_CURRENCY_SYMBOLS = {
+        'EUR': '€',
+        'TRY': '₺',
+        'USD': '$',
+        'GBP': '£',
+        'CHF': 'CHF',
+        'CAD': 'C$',
+        'AUD': 'A$',
+        'JPY': '¥',
+    }
+    primary_currency = models.CharField(
+        max_length=3,
+        choices=PRIMARY_CURRENCY_CHOICES,
+        default='EUR',
+        verbose_name='Mağaza Birincil Para Birimi',
         help_text=(
-            "Açıkken döviz ürünleri (USDTRY, EURTRY vb.) için API kurları "
-            "yerine manuel girilen TL kurları kullanılır. Kapatınca API kuru "
-            "otomatik devreye girer."
+            'Tüm satış/alış/kasa işlemlerinin temel para birimi. '
+            'Otomatik nakit kasası bu birimde oluşturulur, fiyat etiketleri '
+            've raporlar bu birim sembolüyle gösterilir.'
         ),
     )
-    manual_currency_rates = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Manuel Kur Override'ları",
-        help_text=(
-            "Döviz ürünleri için per-store TL kur override'ları. "
-            "Format: {\"<product_uuid>\": {\"buy_tl\": \"45.20\", \"sell_tl\": \"46.50\"}}"
-        ),
-    )
 
-    active_pricing_chamber = models.ForeignKey(
-        'chambers.Chambers',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='stores_using_pricing',
-        verbose_name="Referans Fiyat Derneği"
-    )
+    @property
+    def primary_currency_symbol(self):
+        """Birincil para biriminin gösterim sembolü (€, $, ₺, £ ...)."""
+        return self.PRIMARY_CURRENCY_SYMBOLS.get(self.primary_currency, self.primary_currency)
 
     # --- 2. ONAYLI KASA (Safe Approval) ---
     # Açıldığında tüm Hızlı İşlem / Perakende Payment kayıtları is_approved=False
@@ -135,12 +128,6 @@ class StoreConfiguration(models.Model):
         help_text="Yeni müşteri kaydında ve güncellemede telefon zorunlu olsun.",
     )
 
-    # Müşteri kayıt formunda TC/VKN zorunluluğu.
-    require_customer_tckn = models.BooleanField(
-        default=False,
-        verbose_name="Müşteri Kayıt: T.C. / Vergi Kimlik Zorunlu",
-        help_text="Yeni müşteri kaydında ve güncellemede kimlik numarası zorunlu olsun.",
-    )
     # --- 3. E-POSTA BİLDİRİM AYARLARI ---
 
     # A) GÜVENLİK VE DOĞRULAMA

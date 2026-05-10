@@ -158,9 +158,10 @@ def _build_profit_report_context(store, user, start_date, end_date, period_days,
     from apps.products.models import Products
     from django.utils import timezone
 
+    # Manuel has + chamber pricing kaldırıldı; eski mantıkla uyum için False/None
     config = StoreConfiguration.objects.filter(store=store).first()
-    use_manual_has = config.use_manual_has_calculation if config else False
-    active_chamber_id = config.active_pricing_chamber_id if config else None
+    use_manual_has = False
+    active_chamber_id = None
 
     def fmt_tr(val, d=2):
         try:

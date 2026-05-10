@@ -2227,7 +2227,7 @@
                             <div class="summary-grid">
                                 <p class="summary-line summary-line--purchase summary-line--tl fs-5">
                                     <strong>Alış :</strong>
-                                    <span id="netPurchaseTl" class="text-danger">0.00 ₺</span>
+                                    <span id="netPurchaseTl" class="text-danger">0,00 {{ store_currency_symbol|default:'€' }}</span>
                                 </p>
 
                                 <p class="summary-line summary-line--purchase summary-line--hs fs-5">
@@ -2237,7 +2237,7 @@
 
                                 <p class="summary-line summary-line--sales summary-line--tl fs-5">
                                     <strong>Satış:</strong>
-                                    <span id="netSalesTl" class="text-success">0.00 ₺</span>
+                                    <span id="netSalesTl" class="text-success">0,00 {{ store_currency_symbol|default:'€' }}</span>
                                 </p>
 
                                 <p class="summary-line summary-line--sales summary-line--hs fs-5">
@@ -2247,7 +2247,7 @@
 
                                 <p class="summary-line summary-line--diff summary-line--tl fs-5">
                                     <strong>Fark:</strong>
-                                    <span id="netTotalTl" class="total_amount2 text-danger">0.00 ₺</span>
+                                    <span id="netTotalTl" class="total_amount2 text-danger">0,00 {{ store_currency_symbol|default:'€' }}</span>
                                 </p>
 
                                 <p class="summary-line summary-line--diff summary-line--hs fs-5">
@@ -2588,7 +2588,7 @@
                          style="background: rgba(255, 215, 0, 0.1); border: 1px dashed rgba(255, 215, 0, 0.3);">
                         <span class="fs-6 fw-semibold text-muted">Toplam Tutar</span>
                         <span class="fs-4 fw-bold" id="modalTotalAmount"
-                              style="color: var(--accent-gold);">0,00 ₺</span>
+                              style="color: var(--accent-gold);">0,00 {{ store_currency_symbol|default:'€' }}</span>
                     </div>
 
                     <div class="mb-3" id="payRowCash">
@@ -2695,7 +2695,7 @@
                     <div class="d-flex justify-content-between align-items-center mt-4 pt-3"
                          style="border-top: 1px solid rgba(255,255,255,0.1);">
                         <span class="fs-6 text-muted">Kalan:</span>
-                        <strong id="modalRemainingAmount" class="fs-5 text-danger">0,00 ₺</strong>
+                        <strong id="modalRemainingAmount" class="fs-5 text-danger">0,00 {{ store_currency_symbol|default:'€' }}</strong>
                     </div>
                 </div>
 
@@ -2743,14 +2743,21 @@
         const CONF_ENFORCE_CASH = "{{ store_config.enforce_cash_limit|yesno:'true,false' }}" === "true";
         const CONF_ENFORCE_INVOICE = "{{ store_config.enforce_invoice_customer|yesno:'true,false' }}" === "true";
         const CONF_ENFORCE_MASAK = "{{ store_config.enforce_masak_identity|yesno:'true,false' }}" === "true";
+        // Mağaza birincil para birimi — UI'da fiyat sembolü olarak kullanılır
+        const STORE_CURRENCY_CODE = "{{ store_primary_currency|default:'EUR' }}";
+        const STORE_CURRENCY_SYMBOL = "{{ store_currency_symbol|default:'€' }}";
+        window.STORE_CURRENCY_CODE = STORE_CURRENCY_CODE;
+        window.STORE_CURRENCY_SYMBOL = STORE_CURRENCY_SYMBOL;
         const PRICE_MARGIN_PERCENT = parseFloat("{{ store_config.price_margin_percent|stringformat:'.2f'|default:'0.00' }}".replace(',', '.')) || 0;
         const STORE_USE_AVG_LABOR = "{{ store_config.use_average_labor|yesno:'true,false' }}" === "true";
         const STORE_USE_MANUEL_HAS = "{{ store_config.use_manual_has_calculation|yesno:'true,false' }}" === "true";
         const STORE_HAS_PRICING_CHAMBER = "{{ store_config.active_pricing_chamber_id|default:'' }}" !== "None" && "{{ store_config.active_pricing_chamber_id|default:'' }}" !== "";
-        // --- SABIT LİMİTLER ---
-        const MASAK_LIMIT = 185000;      // Kimlik Fotokopisi Zorunluluğu
-        const INVOICE_LIMIT = 36000;     // Fatura Kesme Sınırı (Müşteri Seçimi Zorunlu)
-        const CASH_LIMIT = 30000;        // Nakit Ödeme Sınırı (Banka Zorunluluğu)
+        // --- YASAL LİMİTLER (StoreConfiguration → fallback Almanya AML default'u) ---
+        // EUR varsayılanları Geldwäschegesetz baz alınarak seçildi (10.000 EUR AML eşiği).
+        // TRY/diğer pazarlar için StoreConfiguration alanlarından override edilir.
+        const MASAK_LIMIT = parseFloat("{{ store_config.masak_limit_tl|default:'10000' }}".replace(',', '.')) || 10000;
+        const INVOICE_LIMIT = parseFloat("{{ store_config.invoice_limit_tl|default:'0' }}".replace(',', '.')) || 0;
+        const CASH_LIMIT = parseFloat("{{ store_config.cash_limit_tl|default:'10000' }}".replace(',', '.')) || 10000;
         // const CUSTOMER_REQUIRED_LIMIT = 29700; // Eski limit, yeni INVOICE_LIMIT kullanıldı.
 
         // FAZ 30 — Pavo timeout ve success status SSOT settings'ten geliyor.
@@ -2974,7 +2981,8 @@
         function parseMoneyText(text) {
             var s = (text || '').toString().trim();
             s = s.replace(/\s/g, '');
-            s = s.replace('₺', '');
+            // Mağaza birincil sembolünü ve eski yaygın sembolleri temizle
+            s = s.replace(STORE_CURRENCY_SYMBOL, '').replace('₺', '').replace('€', '').replace('$', '').replace('£', '');
             if (s.indexOf(',') !== -1) {
                 s = s.replace(/\./g, '');
                 s = s.replace(/,/g, '.');
@@ -2987,8 +2995,8 @@
         function formatCurrencyForSummary(amount) {
             var n = parseFloat(amount);
             if (isNaN(n)) n = 0;
-            // Gelişmiş format: 1.250,00 ₺ (Binlik ayraçlı - Daha şık)
-            return n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' ₺';
+            // Gelişmiş format: 1.250,00 <sembol> (Binlik ayraçlı, dinamik sembol)
+            return n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' ' + STORE_CURRENCY_SYMBOL;
         }
 
         function splitCustomerNameForPavo(fullName) {
@@ -3566,7 +3574,7 @@
 
             // Seçilen ürünün kategorisine göre Has kilitlenme durumu kontrolü
             let catName = $('#product_id').data('category') || '';
-            let isRestrictedCat = (catName === "Altın" || catName === "Ziynet");
+            let isRestrictedCat = (catName === "Altın");  // Juwelier Plus: Ziynet kaldırıldı
             let isRestrictedMode = (typeof STORE_USE_MANUEL_HAS !== 'undefined' && STORE_USE_MANUEL_HAS) ||
                 (typeof STORE_HAS_PRICING_CHAMBER !== 'undefined' && STORE_HAS_PRICING_CHAMBER);
             let enforceCustom = isRestrictedMode && isRestrictedCat;
@@ -3688,7 +3696,7 @@
                     const _gram      = r.gram != null && r.gram !== '' ? KPMoney.fmtMoney(r.gram, 3) : '-';
                     const _unitPrice = r.unit_price != null && r.unit_price !== '' ? KPMoney.fmtMoney(r.unit_price) : '-';
                     const _priceHs   = KPMoney.fmtMoney(+r.price_hs || 0, 3);
-                    const _amount    = KPMoney.fmtMoney(+r.amount || 0) + ' ₺';
+                    const _amount    = KPMoney.fmtMoney(+r.amount || 0) + ' ' + STORE_CURRENCY_SYMBOL;
                     const rowArr = [
                         r.product__name || '-', _gram, r.piece || '-', _unitPrice,
                         _priceHs, _amount,
@@ -3757,12 +3765,12 @@
                 }
 
                 // 5. Ekrana Yazdırma (TR formatı)
-                $('#netSalesTl').text(KPMoney.fmtMoney(totSaleTl) + ' ₺');
+                $('#netSalesTl').text(KPMoney.fmtMoney(totSaleTl) + ' ' + STORE_CURRENCY_SYMBOL);
                 $('#netSalesHs').text(KPMoney.fmtMoney(totSaleHs, 3) + ' has');
-                $('#netPurchaseTl').text(KPMoney.fmtMoney(totPurTl) + ' ₺');
+                $('#netPurchaseTl').text(KPMoney.fmtMoney(totPurTl) + ' ' + STORE_CURRENCY_SYMBOL);
                 $('#netPurchaseHs').text(KPMoney.fmtMoney(totPurHs, 3) + ' has');
 
-                $('#netTotalTl').text(KPMoney.fmtMoney(processTotalTl) + ' ₺')
+                $('#netTotalTl').text(KPMoney.fmtMoney(processTotalTl) + ' ' + STORE_CURRENCY_SYMBOL)
                     .toggleClass(' text-success', netTl < 0).toggleClass('text-danger', netTl >= 0);
                 $('#netTotalHs').text(KPMoney.fmtMoney(processTotalHs, 3) + ' has')
                     .toggleClass(' text-success', netTl < 0).toggleClass('text-danger', netTl >= 0);
@@ -4102,14 +4110,22 @@
                     return false;
                 }
 
-                // 1. Fatura Limiti (36k)
+                // 1. Fatura Limiti
                 if (CONF_ENFORCE_INVOICE && gross >= INVOICE_LIMIT && !custId) {
-                    Swal.fire('Yasal Uyarı', '36.000 TL üzeri işlemlerde fatura zorunluluğu nedeniyle müşteri seçimi zorunludur.', 'warning');
+                    Swal.fire(
+                        'Yasal Uyarı',
+                        INVOICE_LIMIT.toLocaleString('de-DE') + ' ' + STORE_CURRENCY_SYMBOL + ' üzeri işlemlerde fatura zorunluluğu nedeniyle müşteri seçimi zorunludur.',
+                        'warning'
+                    );
                     return false;
                 }
-                // 2. MASAK Limiti (185k)
+                // 2. Kimlik Tespiti Limiti (AML / MASAK)
                 if (CONF_ENFORCE_MASAK && gross >= MASAK_LIMIT && !custId) {
-                    Swal.fire('MASAK Uyarısı', '185.000 TL üzeri işlemlerde kimlik tespiti zorunludur.', 'warning');
+                    Swal.fire(
+                        'Kimlik Tespiti Uyarısı',
+                        MASAK_LIMIT.toLocaleString('de-DE') + ' ' + STORE_CURRENCY_SYMBOL + ' üzeri işlemlerde kimlik tespiti zorunludur.',
+                        'warning'
+                    );
                     return false;
                 }
 
@@ -4343,7 +4359,7 @@
             const isRestrictedMode = (typeof STORE_USE_MANUEL_HAS !== 'undefined' && STORE_USE_MANUEL_HAS) ||
                 (typeof STORE_HAS_PRICING_CHAMBER !== 'undefined' && STORE_HAS_PRICING_CHAMBER);
             // 2. Kategori Kontrolü
-            const isRestrictedCategory = (category_name === "Altın" || category_name === "Ziynet");
+            const isRestrictedCategory = (category_name === "Altın");  // Juwelier Plus: Ziynet kaldırıldı
             // 3. Özel Fiyat Zorunluluğu Kararı
             const enforceCustomPrice = isRestrictedMode && isRestrictedCategory;
 
@@ -5600,48 +5616,35 @@
 
         let GLOBAL_HAS_BUY_TL = 0;
 
-        // FAZ 48 (2026-05-03): #sale_hs_tl ANLIK KUR POPULATE
         // ─────────────────────────────────────────────────────────────────
-        // SORUN: <input type="hidden" id="sale_hs_tl" value="0"/> hiçbir JS
-        // tarafından doldurulmuyordu. applyPriceForCurrentOperation rate olarak
-        // bu değeri kullandığından, barkodlu ALIŞ tab'ında HS×kur=0 sonucu
-        // veriyor → fallback satış fiyatına düşüyor → "Alış fiyatı = Satış
-        // fiyatı" bug'ı.
-        //
-        // ÇÖZÜM: /products/get-has-gold-prices endpoint'inden anlık satış
-        // kurunu çekip #sale_hs_tl alanına yaz. 30 saniyede bir tazele.
-        // Mimari KORUNDU: Manuel Has Modu KAPALI durumda Products.salePriceTl
-        // direkt kullanıldığından, rate yalnızca buy/sale TL=0 fallback'inde
-        // (barkodlu ALIŞ vb.) devreye girer.
+        // Kitco Spot Bağlantısı (juwelier_plus port — Almanya EUR/gram)
         // ─────────────────────────────────────────────────────────────────
+        // base.html içindeki fetchKitcoBarPrices() #sale_hs_tl alanını
+        // 60 sn'de bir günceller ve `kitco:update` custom event'i yayar.
+        // Burada o event'i dinleyip applyPriceForCurrentOperation'ı çağırarak
+        // açık popup'taki barkodlu ürün fiyatını anlık tazeliyoruz.
+        // Eski TL bazlı /products/get-has-gold-prices polling'i kaldırıldı
+        // (Almanya akışında EUR/gram zorunlu, TL endpoint anlamsız).
+        // GLOBAL_HAS_BUY_TL hurda modal akışı için Kitco bid'inden beslenir.
         $(document).ready(function () {
-            function loadGoldRates() {
-                $.getJSON('/products/get-has-gold-prices', function (data) {
-                    if (!data) return;
-
-                    // Eski davranışı KORU: GLOBAL_HAS_BUY_TL hurda modal hesabı için
-                    if (data.buy_hs_tl) {
-                        GLOBAL_HAS_BUY_TL = parseFloat(data.buy_hs_tl) || 0;
+            window.addEventListener('kitco:update', function (ev) {
+                try {
+                    var detail = ev && ev.detail ? ev.detail : window.__kitcoGramPrice;
+                    if (detail && detail.bid > 0) {
+                        GLOBAL_HAS_BUY_TL = Number(detail.bid) || 0;
                     }
-
-                    // YENİ: #sale_hs_tl anlık satış kuru ile doldur
-                    // (barkodlu ALIŞ ve manuel-has hesaplarında rate olarak okunur)
-                    if (data.sale_hs_tl) {
-                        var rate = parseFloat(data.sale_hs_tl) || 0;
-                        if (rate > 0) {
-                            $('#sale_hs_tl').val(rate);
-                            // Açık popup varsa fiyatı yeniden hesapla
-                            // (rate güncellemesi ALIŞ tab fiyatını yenilemeli)
-                            if (typeof applyPriceForCurrentOperation === 'function') {
-                                try { applyPriceForCurrentOperation(); } catch (e) {}
-                            }
-                        }
+                    if (typeof applyPriceForCurrentOperation === 'function') {
+                        applyPriceForCurrentOperation();
                     }
-                });
+                } catch (e) {
+                    // sessiz fail — base.html zaten loglar
+                }
+            });
+
+            // İlk yükleme: base.html polling henüz dönmediyse globali oku
+            if (window.__kitcoGramPrice && window.__kitcoGramPrice.bid > 0) {
+                GLOBAL_HAS_BUY_TL = Number(window.__kitcoGramPrice.bid) || 0;
             }
-            loadGoldRates();
-            // Periyodik tazeleme (30 sn) — kur kaymasında ALIŞ yenilensin
-            setInterval(loadGoldRates, 30000);
         });
 
         // Mevcut Hurda Giriş butonuna tıklanınca Modalı aç
@@ -6401,8 +6404,8 @@
                         _currentCardCommission = comm;  // JS değişkenine yaz
 
                         document.getElementById('commRateDisplay').textContent = '%' + rate.toFixed(2);
-                        document.getElementById('commAmountDisplay').textContent = comm.toFixed(2) + ' ₺';
-                        document.getElementById('commNetDisplay').textContent = net.toFixed(2) + ' ₺';
+                        document.getElementById('commAmountDisplay').textContent = comm.toFixed(2) + ' ' + STORE_CURRENCY_SYMBOL;
+                        document.getElementById('commNetDisplay').textContent = net.toFixed(2) + ' ' + STORE_CURRENCY_SYMBOL;
                         document.getElementById('commMaturityDisplay').textContent = data.maturity_date || '-';
                         panel.style.display = 'block';
 
@@ -6421,10 +6424,10 @@
                             if (isManualMode) {
                                 var originalTotal = parseMoneyText($('#payment_grand_total_tl').text()) || 0;
                                 modalTotalEl.innerHTML = formatCurrencyForSummary(originalTotal) +
-                                    ' <small class="text-warning">(Kart komisyonu: +' + comm.toFixed(2) + ' ₺)</small>';
+                                    ' <small class="text-warning">(Kart komisyonu: +' + comm.toFixed(2) + ' ' + STORE_CURRENCY_SYMBOL + ')</small>';
                             } else {
                                 modalTotalEl.innerHTML = formatCurrencyForSummary(surchargedAmount) +
-                                    ' <small class="text-warning">(+' + comm.toFixed(2) + ' ₺ komisyon)</small>';
+                                    ' <small class="text-warning">(+' + comm.toFixed(2) + ' ' + STORE_CURRENCY_SYMBOL + ' komisyon)</small>';
                             }
                         }
                     } else {
@@ -6510,7 +6513,7 @@
             // "Tamamlandı" / success göstergesini sıfırla (Hata 3A fix)
             var remEl = document.getElementById('modalRemainingAmount');
             remEl.className = 'fs-5 text-danger';
-            remEl.innerHTML = '0,00 ₺';
+            remEl.innerHTML = '0,00 {{ store_currency_symbol|default:'€' }}';
 
             // Tüm satırları görünür yap (önceki direct moddan kalan gizlemeyi resetle)
             document.getElementById('payRowCash').style.display = '';

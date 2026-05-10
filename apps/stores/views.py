@@ -832,18 +832,19 @@ def hard_data_delete(request):
                 StockSnapshot.objects.filter(product_id__in=store_product_ids).delete()
 
             # ── 5. Fatura Zinciri ───────────────────────────────────────────
-            #    InvoiceSyncLog, InvoicePaymentAllocation, InvoiceItem
-            #    hepsi Invoice'dan CASCADE. Güvenlik için açık sil.
-            from apps.invoices.models import (
-                Invoice, InvoiceSequence, InvoiceSyncLog,
-                InvoicePaymentAllocation, StoreEInvoiceSettings,
-                EInvoiceCreditRequest,
-            )
-            InvoiceSyncLog.objects.filter(store=store).delete()
-            store_invoices = Invoice.objects.filter(store=store)
-            InvoicePaymentAllocation.objects.filter(invoice__in=store_invoices).delete()
-            store_invoices.delete()
-            InvoiceSequence.objects.filter(store=store).delete()
+            #    invoices app Juwelier'de yüklü değil — try/except ile sarmalı
+            try:
+                from apps.invoices.models import (
+                    Invoice, InvoiceSequence, InvoiceSyncLog,
+                    InvoicePaymentAllocation,
+                )
+                InvoiceSyncLog.objects.filter(store=store).delete()
+                store_invoices = Invoice.objects.filter(store=store)
+                InvoicePaymentAllocation.objects.filter(invoice__in=store_invoices).delete()
+                store_invoices.delete()
+                InvoiceSequence.objects.filter(store=store).delete()
+            except ImportError:
+                pass
 
             # ── 6. İşlem Zinciri (Payment → Process → ProcessGroup) ────────
             #    Payment.store alanı YOK — 3 yoldan filtre uyguluyoruz:
@@ -1345,11 +1346,6 @@ def store_detail_view(request, store_id):
     except Exception:
         pass
 
-    term = (PavoTerminal.objects
-            .filter(store=store, is_active=True)
-            .order_by("-updated_at")
-            .first())
-
     # ── Faz 12.3: Modül & Yetki bilgileri ──
     # Paketten gelen modüller
     from apps.crm.packages.models import PackageModule
@@ -1387,63 +1383,19 @@ def store_detail_view(request, store_id):
     except Exception:
         store_isolated_role_count = 0
 
-    # ── Açık Bankacılık Fatura Ayarları (2026-04) ──
-    # StoreEInvoiceSettings kaydı yoksa varsayılan değerlerle oluştur
-    # (Mağaza detay sayfasındaki "Açık Bankacılık Fatura Ayarları" kartı için)
-    try:
-        from apps.invoices.models import StoreEInvoiceSettings
-        einvoice_settings, _ = StoreEInvoiceSettings.objects.get_or_create(store=store)
-        karat_choices = StoreEInvoiceSettings.Karat.choices
-        labor_type_choices = StoreEInvoiceSettings.LaborType.choices
-    except Exception:
-        einvoice_settings = None
-        karat_choices = []
-        labor_type_choices = []
-
-    # ── T3 (2026-04-29): Manuel Kur Ayarı için döviz ürünleri ──
-    # is_currency=True ürünleri Manuel Kur paneline beslemek için listele.
-    # TRY baz para birimi olduğu için "TRY - Türk Lirası" hariç tutulur.
+    # Manuel kur ayarı kaldırıldı (Almanya akışı Kitco spot fiyatı kullanıyor)
     currency_products = []
-    try:
-        from apps.products.models import Products
-        existing_rates = {}
-        try:
-            existing_rates = (store.config.manual_currency_rates or {}) if hasattr(store, 'config') else {}
-        except Exception:
-            existing_rates = {}
-        for p in (
-            Products.objects
-            .filter(store=store, is_currency=True, is_active=True, is_deleted=False)
-            .exclude(name__icontains='TRY - Türk Lirası')
-            .order_by('name')
-        ):
-            entry = existing_rates.get(str(p.id)) or {}
-            currency_products.append({
-                'id': str(p.id),
-                'name': p.name,
-                'manual_buy_tl': entry.get('buy_tl', ''),
-                'manual_sell_tl': entry.get('sell_tl', ''),
-                'api_buy_tl': float(p.buy_price_eur or 0),
-                'api_sale_tl': float(p.sale_price_eur or 0),
-            })
-    except Exception:
-        currency_products = []
 
     ctx = {
         "record": store,
         "personnel_count": personnel_count,
         "roles": roles,
-        "term": term,
         # Faz 12.3: Modül bilgileri
         "all_modules": all_modules,
         "package_module_ids": package_module_ids | core_module_ids,
         "core_module_ids": core_module_ids,
         "extra_module_ids": extra_module_ids,
         "effective_perm_count": effective_perm_count,
-        # Açık Bankacılık Fatura Ayarları
-        "einvoice_settings": einvoice_settings,
-        "karat_choices": karat_choices,
-        "labor_type_choices": labor_type_choices,
         # Faz 12.4: Rol izolasyon bilgileri
         "store_isolated_role_count": store_isolated_role_count,
         # Paket/Modül güncelleme için
@@ -1490,59 +1442,10 @@ def _user_store(request: HttpRequest) -> Stores:
         raise ValueError("Kullanıcıya bağlı mağaza bulunamadı.")
 
 
-@login_required(login_url="login")
-@require_http_methods(["GET", "POST"])
-@role_required('STORES_STORE_PAVO_SETTINGS_VIEW')
-def store_pavo_settings_view(request: HttpRequest) -> HttpResponse:
-    store = _user_store(request)
-    term = (PavoTerminal.objects
-            .filter(store=store, is_active=True)
-            .order_by("-updated_at")
-            .first())
-
-    if request.method == "POST":
-        title = (request.POST.get("title") or "Terminal").strip()
-        ip = (request.POST.get("ip") or "").strip()
-        secure = bool(request.POST.get("secure"))
-        port_raw = (request.POST.get("port") or "").strip()
-        port = int(port_raw) if port_raw else None
-        serial_number = (request.POST.get("serial_number") or "").strip()
-        fingerprint = (request.POST.get("fingerprint") or "").strip()
-
-        if not ip or not serial_number or not fingerprint:
-            messages.error(request, "IP, Seri No ve Fingerprint zorunlu alanlardır.")
-        else:
-            if term is None:
-                term = PavoTerminal(store=store)
-            term.title = title or term.title
-            term.ip = ip
-            term.secure = secure
-            term.port = port
-            term.serial_number = serial_number
-            term.fingerprint = fingerprint
-            term.is_active = True
-            term.save()
-            messages.success(request, "Pavo terminal ayarları kaydedildi.")
-            return redirect("stores:store-detail", store_id=store.id)
-
-    return redirect("stores:store-detail", store_id=store.id)
+# store_pavo_settings_view kaldırıldı — pavo app Juwelier Plus'ta yok
 
 
 # apps/stores/views.py
-
-def update_labor_setting(request):
-    if request.method == 'POST':
-        store_id = request.POST.get('store_id')
-        use_avg = request.POST.get('use_average_labor') == 'true'
-
-        try:
-            store = Stores.objects.get(id=store_id)
-            store.use_average_labor = use_avg
-            store.save()
-            return JsonResponse({'success': True})
-        except Stores.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Mağaza bulunamadı'})
-    return JsonResponse({'success': False})
 
 
 @login_required
@@ -1610,40 +1513,11 @@ def update_store_package_modules(request, store_id):
 def update_store_setting(request):
     """
     Mağazaya ait boolean ayarları günceller.
-    Beklenen POST verisi: 'store_id', 'key', 'value' (true/false)
+    Şu an ALLOWED_SETTINGS boş; settings/views.py:update_configuration
+    StoreConfiguration üzerindeki tüm ayarları kapsıyor. Bu endpoint
+    URL ile birlikte geriye dönük uyumluluk için durur ama 410 döner.
     """
-    store_id = request.POST.get('store_id')
-    key = request.POST.get('key')
-    value = request.POST.get('value') == 'true'
-
-    # Güvenlik: Sadece belirli alanların değiştirilmesine izin ver
-    ALLOWED_SETTINGS = ['use_average_labor', 'apply_masak_rules']
-
-    if key not in ALLOWED_SETTINGS:
-        return JsonResponse({'success': False, 'error': 'Geçersiz ayar anahtarı.'})
-
-    try:
-        # Yetki kontrolü (Personel kendi mağazasını veya Admin herhangi bir mağazayı)
-        if request.user.is_superuser:
-            store = Stores.objects.get(id=store_id)
-        else:
-            store = getattr(request.user, 'store', None)
-            if not store or str(store.id) != str(store_id):
-                return JsonResponse({'success': False, 'error': 'Yetkisiz işlem.'})
-
-        # Dinamik olarak alanı güncelle
-        setattr(store, key, value)
-        store.save(update_fields=[key])
-
-        # Loglama
-        write_log(request, "Mağazalar", f"Ayar Güncellendi: {key} -> {value} (Mağaza ID: {store.id})")
-
-        return JsonResponse({'success': True})
-
-    except Stores.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Mağaza bulunamadı'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Bu endpoint kullanım dışı.'}, status=410)
 
 
 # ──────────────────────────────────────────────────────
@@ -1836,7 +1710,7 @@ GROUP_LABELS = {
     'transactions_board_retail': 'Perakende İşlem',
     'transactions_board_wholesale': 'Toptan İşlem',
     'transactions_board_process': 'İşlemler',
-    'invoices': 'Fatura Yönetimi',
+    # 'invoices' kaldırıldı — invoices app Juwelier Plus'ta yok
     'settings': 'Mağaza Ayarları',
     'requests': 'Talepler',
 }
@@ -1860,7 +1734,7 @@ GROUP_ICONS = {
     'transactions_board_retail': 'ki-element-11',
     'transactions_board_wholesale': 'ki-element-11',
     'transactions_board_process': 'ki-element-11',
-    'invoices': 'ki-file-sheet',
+    # 'invoices' kaldırıldı — invoices app yok
     'settings': 'ki-setting-2',
     'requests': 'ki-message-text',
 }
@@ -1885,7 +1759,7 @@ GROUP_MENU_CODES = {
     'repairs': ['ABC1006D'],
     'counts': ['ABC1009D'],
     'dashboard': ['ABC1002D'],
-    'invoices': ['ABC1706D', 'ABC1010D'],
+    # 'invoices' kaldırıldı — invoices app yok
     'banking': ['ABC1706D'],
     'cash_management': ['ABC1017D'],
     'suppliers': ['ABC1011D'],

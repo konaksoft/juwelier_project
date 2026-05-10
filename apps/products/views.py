@@ -124,22 +124,9 @@ def product_index(request):
     # NOT: 14 Ayar / Has Altın / Nakit özet pill'leri Dashboard'a taşındı
     # (/dashboard/assets-summary endpoint'i). Bu sayfada artık ağır
     # all_stock_gold() çağrısı yapılmıyor — sayfa hızı iyileşir.
-    #
-    # UAT V3 P4 (2026-04-29): Döviz tablosu manuel kur düzenleme moduna
-    # geçebilmesi için StoreConfiguration'ın use_manual_currency_rate flag'i
-    # template context'e geçirilir. Manuel mod açıkken Döviz buy/sale_price_eur
-    # sütunları editable input olarak render olur ve "Manuel Kurları Kaydet"
-    # butonu /settings/update-manual-currency-rates endpoint'ine yazar.
-    config = None
-    if getattr(request.user, 'store', None):
-        config = StoreConfiguration.objects.filter(store=request.user.store).first()
-
     context = {
         'title': 'Ürünler',
         'categories': Categories.objects.filter(is_deleted=False, is_active=True),
-        'use_manual_currency_rate': bool(
-            config and getattr(config, 'use_manual_currency_rate', False)
-        ),
     }
     return render(request, 'management/products/index.html', context)
 
@@ -361,10 +348,10 @@ def get_all(request):
     store_buy_tl = store_buy_tl if store_buy_tl > 0 else Decimal('1')
     store_sale_tl = store_sale_tl if store_sale_tl > 0 else Decimal('1')
 
-    # 1. Mağaza ayarlarını çek (Manuel Has Modu ve Dernek Referansı)
+    # Mağaza config'i (geriye uyumluluk için tutuluyor; chamber/manual-has kaldırıldı)
     config = StoreConfiguration.objects.filter(store=user_store).first()
-    is_manual_active = config.use_manual_has_calculation if config else False
-    active_chamber_id = config.active_pricing_chamber_id if config else None
+    is_manual_active = False
+    active_chamber_id = None
 
     # FAZ 19.1: Döviz ürünleri (USDTRY, EURTRY vb.) listede GÖRÜNMELİDİR.
     # Fiyatları güncellenmeli ve patronlar kurları görebilmelidir.
@@ -477,37 +464,12 @@ def get_all(request):
 
         # -----------------------------------------------------------------
 
-        # FAZ 21 FIX: Döviz ürünleri (is_currency=True) için buy_price_eur
-        # zaten API'den gelen gerçek TL kurudur. has×kur çarpımı yapılmaz;
-        # çünkü buy_price_hs = USDTRY/ALTINTRY şeklinde hesaplandığından
-        # altın fiyatı değiştikçe yanlış sonuç üretir.
-        #
-        # T3 (2026-04-29): Manuel Kur Override
-        # ─────────────────────────────────────
-        # `config.use_manual_currency_rate=True` ise ve ürünün UUID'si
-        # `config.manual_currency_rates` JSON'unda var ve değerler 0'dan
-        # büyükse, API kuru yerine kullanıcının girdiği manuel TL kuru
-        # kullanılır. Aksi halde API kuru fallback olarak kalır.
-        # get_product_details (Hızlı İşlem) ile birebir simetri.
+        # Döviz ürünleri (is_currency=True) için buy_price_eur API kurudur.
+        # has×kur çarpımı yapılmaz; çünkü buy_price_hs = USDTRY/ALTINTRY şeklinde
+        # hesaplandığından altın fiyatı değiştikçe yanlış sonuç üretir.
         if row.get('is_currency'):
-            manual_used = False
-            if config and getattr(config, 'use_manual_currency_rate', False):
-                manual_map = getattr(config, 'manual_currency_rates', None) or {}
-                entry = manual_map.get(str(row['id']))
-                if entry:
-                    try:
-                        mb = Decimal(str(entry.get('buy_tl') or 0))
-                        ms = Decimal(str(entry.get('sell_tl') or 0))
-                    except (InvalidOperation, TypeError, ValueError):
-                        mb = Decimal('0')
-                        ms = Decimal('0')
-                    if mb > 0 and ms > 0:
-                        final_buy_tl = mb
-                        final_sale_tl = ms
-                        manual_used = True
-            if not manual_used:
-                final_buy_tl = Decimal(str(row.get('buy_price_eur') or 0))
-                final_sale_tl = Decimal(str(row.get('sale_price_eur') or 0))
+            final_buy_tl = Decimal(str(row.get('buy_price_eur') or 0))
+            final_sale_tl = Decimal(str(row.get('sale_price_eur') or 0))
         else:
             final_buy_tl = (Decimal(effective_buy_hs) * store_buy_tl)
             final_sale_tl = (Decimal(effective_sale_hs) * store_sale_tl) + Decimal(effective_labor)
@@ -1176,16 +1138,14 @@ def get_product_details(request):
     # 1. Mağazanın Canlı Has Kurlarını Al
     store_has_buy_eur, store_has_sale_eur = compute_store_has_tl(user_store)
 
-    # 2. Mağaza Konfigürasyonunu Al (Marj, Manuel Has, Seçili Dernek)
+    # Mağaza config'i (margin/chamber/manual-has kaldırıldı; geriye uyumluluk için)
     try:
         config = user_store.config
-        store_margin_percent = config.price_margin_percent
-        use_manual_has = config.use_manual_has_calculation
-        active_chamber = config.active_pricing_chamber
     except ObjectDoesNotExist:
-        store_margin_percent = Decimal('0.00')
-        use_manual_has = False
-        active_chamber = None
+        config = None
+    store_margin_percent = Decimal('0.00')
+    use_manual_has = False
+    active_chamber = None
 
     # FAZ 3: Inventories yerine StockSnapshot'tan oku
     snapshots_map = {snap.product_id: snap for snap in StockSnapshot.objects.filter(store=user_store)}
@@ -1290,42 +1250,18 @@ def get_product_details(request):
 
             # ------------------------------------
 
-            # FAZ 21 FIX: Döviz ürünleri (is_currency=True) için buy_price_eur
-            # zaten API'den gelen gerçek TL kurudur. has×kur çarpımı yapılmaz;
-            # altın fiyatı değiştikçe stale buy_price_hs ile yanlış sonuç üretir.
+            # Döviz ürünleri (is_currency=True) için buy_price_eur API kurudur.
+            # has×kur çarpımı yapılmaz; altın fiyatı değiştikçe stale buy_price_hs
+            # ile yanlış sonuç üretir.
             if getattr(p, 'is_currency', False):
-                # ─── T3 (2026-04-29): Manuel Kur Override (per-store) ───
-                # use_manual_currency_rate açık ve bu ürün için manuel değer
-                # girilmişse API yerine manuel TL kuru kullanılır.
-                # Eksik / 0 değer fallback olarak global API kuruna düşer.
-                manual_used = False
-                if config and getattr(config, 'use_manual_currency_rate', False):
-                    manual_map = getattr(config, 'manual_currency_rates', None) or {}
-                    entry = manual_map.get(str(p.id))
-                    if entry:
-                        try:
-                            mb = Decimal(str(entry.get('buy_tl') or 0))
-                            ms = Decimal(str(entry.get('sell_tl') or 0))
-                        except Exception:
-                            mb = ms = Decimal('0')
-                        if mb > 0 and ms > 0:
-                            raw_buy_tl = mb
-                            raw_sale_tl = ms
-                            manual_used = True
-
-                if not manual_used:
-                    raw_buy_tl = Decimal(str(p.buy_price_eur or 0))
-                    raw_sale_tl = Decimal(str(p.sale_price_eur or 0))
+                raw_buy_tl = Decimal(str(p.buy_price_eur or 0))
+                raw_sale_tl = Decimal(str(p.sale_price_eur or 0))
             else:
-                # TL Fiyatlarını Hesapla (Kur * Has + İşçilik)
+                # EUR Fiyatlarını Hesapla (Kur * Has + İşçilik)
                 raw_buy_tl = (effective_buy_hs * store_has_buy_eur)
                 raw_sale_tl = (effective_sale_hs * store_has_sale_eur) + effective_labor
 
-            # MARJ UYGULAMA (Sadece Satış Fiyatına)
             final_sale_tl = raw_sale_tl
-            if store_margin_percent != 0:
-                margin_multiplier = Decimal('1') + (store_margin_percent / Decimal('100'))
-                final_sale_tl = raw_sale_tl * margin_multiplier
 
             # ─── YOL 2 (SSOT Refactor): Döviz ürün stoğu = FX kasa Payment bakiyesi ───
             # is_currency=True ürünler için stock_pieces / stock_gram artık SSOT değildir.

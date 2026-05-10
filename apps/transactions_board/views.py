@@ -37,9 +37,21 @@ def _get_common_context(request):
 
     customers = Customers.objects.filter(store=store, is_deleted=False)
 
+    # Mağazanın birincil para birimi (UI sembolleri, kasa, fiyat etiketleri için)
+    primary_currency = store_config.primary_currency or 'EUR'
+    primary_currency_symbol = store_config.PRIMARY_CURRENCY_SYMBOLS.get(
+        primary_currency, primary_currency
+    )
+
     return {
         'store': store,
         'store_config': store_config,  # Şablona direkt bu objeyi gönderiyoruz
+        # juwelier_plus port: Kitco JS polling icin spot currency/unit
+        'store_base_spot_currency': store_config.base_spot_currency or 'EUR',
+        'store_base_spot_unit': store_config.base_spot_unit or 'OZ',
+        # Mağaza birincil para birimi — UI sembolleri ve hesaplamalar için SSOT
+        'store_primary_currency': primary_currency,
+        'store_currency_symbol': primary_currency_symbol,
         'customers': customers,
         'process_no': process_no,
         'buy_hs_tl': buy_hs_tl,

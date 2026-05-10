@@ -44,6 +44,20 @@ log = logging.getLogger(__name__)
 
 # --- YARDIMCI VE DÖNÜŞÜM FONKSİYONLARI ---
 
+def _get_store_primary_currency(store, default='EUR'):
+    """
+    Mağazanın birincil para birimini StoreConfiguration'dan okur.
+    Yapılandırma yoksa default döner. Almanya pazarı için 'EUR' varsayılan.
+    """
+    try:
+        cfg = StoreConfiguration.objects.filter(store=store).only('primary_currency').first()
+        if cfg and cfg.primary_currency:
+            return cfg.primary_currency
+    except Exception:
+        pass
+    return default
+
+
 def _dec(x, q='0.01'):
     """Güvenli Decimal dönüşümü."""
     try:
@@ -140,36 +154,41 @@ def _build_currency_extra(bank_account, amount_eur):
 
 # --- FAZ 18: AKILLI KASA YÖNLENDİRME + ÇİFT TARAFLI DÖVİZ + ONAY ---
 
-def _resolve_or_create_cash_account(store, currency='TRY'):
+def _resolve_or_create_cash_account(store, currency=None):
     """
     FAZ 20 — Akıllı Kasa Yönlendirmesi (Merkez Döviz Kasası Mimarisi).
 
-    TRY için:
-        0 hesap  → Otomatik "Merkez TRY Nakit Kasası" oluştur
+    Birincil para birimi (StoreConfiguration.primary_currency, default 'EUR'):
+        0 hesap  → Otomatik "Merkez <BİRİM> Nakit Kasası" oluştur
         1 hesap  → Doğrudan döndür
         2+ hesap → None döndür (caller'ın seçim sorması gerek)
 
-    Döviz (USD, EUR, GBP vb.) için:
-        Tüm dövizler TEK bir "Merkez Döviz Kasası"na yönlendirilir.
+    Yabancı dövizler (birincil olmayan):
+        Tüm yabancı dövizler TEK bir "Merkez Döviz Kasası"na yönlendirilir.
         Bu kasa currency='FX' ile işaretlenir.
         Payment.currency_amount ve Payment.exchange_rate alanları
         her kaydın gerçek para birimini takip eder.
 
     Args:
         store: Stores instance
-        currency: 'TRY', 'USD', 'EUR' vb.
+        currency: 'EUR', 'TRY', 'USD', 'GBP' vb. None ise mağazanın birincil
+                  para birimi otomatik olarak okunur.
 
     Returns:
         (BankAccount | None, int)  → (hesap, toplam_hesap_sayısı)
     """
     from apps.banking.models import BankAccount
 
-    if currency == 'TRY':
-        # TRY için standart kasa araması
+    primary_cur = _get_store_primary_currency(store)
+    if currency is None:
+        currency = primary_cur
+
+    if currency == primary_cur:
+        # Birincil para birimi için standart kasa araması
         qs = BankAccount.objects.filter(
             store=store,
             account_type='CASH',
-            currency='TRY',
+            currency=primary_cur,
             is_active=True,
             is_deleted=False,
         )
@@ -178,14 +197,14 @@ def _resolve_or_create_cash_account(store, currency='TRY'):
         if count == 0:
             new_account = BankAccount.objects.create(
                 store=store,
-                name='Merkez TRY Nakit Kasası',
+                name=f'Merkez {primary_cur} Nakit Kasası',
                 account_type='CASH',
-                currency='TRY',
+                currency=primary_cur,
                 is_active=True,
             )
             log.info(
-                "FAZ20: TRY kasa oluşturuldu — store=%s account_id=%s",
-                store, new_account.id,
+                "FAZ20: %s kasa oluşturuldu — store=%s account_id=%s",
+                primary_cur, store, new_account.id,
             )
             return new_account, 1
 
@@ -193,8 +212,8 @@ def _resolve_or_create_cash_account(store, currency='TRY'):
             return qs.first(), 1
         return None, count
 
-    # Döviz (TRY harici): Merkez Döviz Kasası
-    # Tüm döviz türleri tek bir kasada toplanır (currency='FX')
+    # Yabancı döviz (birincil olmayan): Merkez Döviz Kasası
+    # Tüm yabancı döviz türleri tek bir kasada toplanır (currency='FX')
     fx_qs = BankAccount.objects.filter(
         store=store,
         account_type='CASH',
@@ -309,19 +328,20 @@ def _process_currency_exchange(
                 "Lütfen kasa seçimi yapınız."
             )
 
-    # ─── TRY kasası: önce kullanıcı seçimi, sonra 0-1-N fallback ───
+    # ─── Birincil kasa: önce kullanıcı seçimi, sonra 0-1-N fallback ───
+    _primary_cur = _get_store_primary_currency(store)
     try_account = None
     if try_bank_account_id:
         try_account = BankAccount.objects.filter(
             id=try_bank_account_id, store=store,
-            account_type='CASH', currency='TRY',
+            account_type='CASH', currency=_primary_cur,
             is_active=True, is_deleted=False,
         ).first()
     if not try_account:
-        try_account, try_count = _resolve_or_create_cash_account(store, 'TRY')
+        try_account, try_count = _resolve_or_create_cash_account(store, _primary_cur)
         if not try_account:
             raise ValidationError(
-                f"TRY para biriminde birden fazla nakit kasa bulundu ({try_count} adet). "
+                f"{_primary_cur} para biriminde birden fazla nakit kasa bulundu ({try_count} adet). "
                 "Lütfen kasa seçimi yapınız."
             )
 
@@ -521,9 +541,10 @@ def _check_legal_limits(config, total_amount, payment_type, is_pos_flow, pos_mod
         except Exception as exc:
             log.warning(f"Fast TL normalizasyon hatasi: {exc}")
 
-    enforce_cash = config.enforce_cash_limit if config else True
-    enforce_invoice = config.enforce_invoice_customer if config else True
-    enforce_masak = config.enforce_masak_identity if config else True
+    # Türkiye MASAK/30k TL/36k TL yasal limitleri kaldırıldı (Almanya akışı)
+    enforce_cash = False
+    enforce_invoice = False
+    enforce_masak = False
     enforce_customer_always = getattr(config, 'enforce_customer_always', False) if config else False
 
     # 0. Tutar Bağımsız Müşteri Zorunluluğu (Mağaza Ayarı)
@@ -772,12 +793,13 @@ def _process_payments_and_balances(
             )
         else:
             # FAZ 18: Akıllı yönlendirme — otomatik kasa bul/oluştur
-            _auto_cash, _cash_count = _resolve_or_create_cash_account(store, 'TRY')
+            _primary_cur = _get_store_primary_currency(store)
+            _auto_cash, _cash_count = _resolve_or_create_cash_account(store, _primary_cur)
             if _auto_cash:
                 ba_cash = _auto_cash
             elif _cash_count >= 2:
                 raise ValidationError(
-                    "Birden fazla TRY nakit kasası bulundu. Lütfen kasa seçimi yapınız."
+                    f"Birden fazla {_primary_cur} nakit kasası bulundu. Lütfen kasa seçimi yapınız."
                 )
 
     if card_amt > 0 and store:
@@ -960,8 +982,9 @@ def check_fast_stock(request):
 
     # Config
     config = _get_store_config(request.user)
-    enforce_masak = config.enforce_masak_identity if config else True
-    enforce_invoice = config.enforce_invoice_customer if config else True
+    # Türkiye yasal limitleri kaldırıldı (Almanya akışı)
+    enforce_masak = False
+    enforce_invoice = False
     MASAK_LIMIT = Decimal('185000.00')
     INVOICE_LIMIT = Decimal('36000.00')
 
@@ -1429,10 +1452,9 @@ def add_fast_process(request):
             except:
                 pass
 
-            # Link ve Update
+            # Link ve Update — invoices:detail kaldırıldı, sadece pavo link kullanılır
             pavo_link = (pavo_inquiry_data or {}).get('SaleInquieryLink') or ''
-            invoice_url = pavo_link if pavo_link else request.build_absolute_uri(
-                reverse('invoices:detail', kwargs={'record_id': inv.id}))
+            invoice_url = pavo_link if pavo_link else ''
 
             try:
                 upd = []

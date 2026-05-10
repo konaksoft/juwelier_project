@@ -29,7 +29,6 @@ urlpatterns = [
     path('store-hard-delete', store_hard_delete, name='store_hard_delete'),
 
     # Diğer İşlemler
-    path('update-labor-setting', update_labor_setting, name='update-labor-setting'),
     path('delete', delete, name='delete'),  # Firma silme (Soft)
     path('hard-delete', hard_delete, name='hard-delete'),  # Firma silme (Hard)
     path('store-delete', store_delete, name='store-delete'),  # Mağaza silme (Soft)
@@ -40,12 +39,12 @@ urlpatterns = [
     path('<uuid:store_id>/verify/send', send_store_verification, name='store_verify_send'),
     path('<uuid:store_id>/verify/confirm', confirm_store_verification, name='store_verify_confirm'),
 
-    # WhatsApp & Pavo
+    # WhatsApp
     path("wa-usage-me", wa_usage_me, name="wa_usage_me"),
     path("wa-templates-me", wa_templates_me, name="wa_templates_me"),
     path("wa-save-templates-me", wa_save_templates_me, name="wa-save-templates-me"),
     path("wa-chat-me", wa_chat_me, name="wa_chat_me"),
-    path("pavo-settings/", store_pavo_settings_view, name="pavo_settings"),
+    # pavo-settings/ kaldırıldı — pavo app Juwelier Plus'ta yok
 
     # e-Süreç Entegrasyon Yönetimi (Automated Provisioning)
     path("esurec-provision", esurec_provision_store, name="esurec_provision"),

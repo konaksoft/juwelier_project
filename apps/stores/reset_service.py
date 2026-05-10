@@ -182,23 +182,7 @@ def count_bucket_a(store):
     except Exception:
         pass
 
-    try:
-        from apps.invoices.models import (
-            Invoice, InvoiceItem, InvoiceSyncLog, InvoicePaymentAllocation,
-        )
-        store_invoices = Invoice.objects.filter(store=store)
-        counts['Invoice'] = _safe_count(store_invoices)
-        counts['InvoiceItem'] = _safe_count(
-            InvoiceItem.objects.filter(invoice__in=store_invoices)
-        )
-        counts['InvoicePaymentAllocation'] = _safe_count(
-            InvoicePaymentAllocation.objects.filter(invoice__in=store_invoices)
-        )
-        counts['InvoiceSyncLog'] = _safe_count(
-            InvoiceSyncLog.objects.filter(store=store)
-        )
-    except Exception:
-        pass
+    # invoices app Juwelier Plus'ta yok — sayım bloğu kaldırıldı
 
     try:
         from apps.banking.models import BankTransaction, DailyCashClose
@@ -399,19 +383,7 @@ def count_bucket_d(store):
     except Exception:
         pass
 
-    try:
-        from apps.invoices.models import (
-            InvoiceSequence, StoreEInvoiceSettings, EInvoiceCreditRequest,
-        )
-        counts['InvoiceSequence'] = _safe_count(InvoiceSequence.objects.filter(store=store))
-        counts['StoreEInvoiceSettings'] = _safe_count(
-            StoreEInvoiceSettings.objects.filter(store=store)
-        )
-        counts['EInvoiceCreditRequest'] = _safe_count(
-            EInvoiceCreditRequest.objects.filter(store=store)
-        )
-    except Exception:
-        pass
+    # invoices app Juwelier Plus'ta yok — sayım bloğu kaldırıldı
 
     try:
         from apps.workshops.models import Workshops
@@ -509,19 +481,7 @@ def delete_bucket_a(store):
     except Exception:
         pass
 
-    # 3. Fatura zinciri (CASCADE'lar açık silinerek netleştiriliyor)
-    try:
-        from apps.invoices.models import (
-            Invoice, InvoiceSyncLog, InvoiceActivityLog,
-            InvoicePaymentAllocation,
-        )
-        store_invoices = Invoice.objects.filter(store=store)
-        InvoiceSyncLog.objects.filter(store=store).delete()
-        InvoiceActivityLog.objects.filter(store=store).delete()
-        InvoicePaymentAllocation.objects.filter(invoice__in=store_invoices).delete()
-        store_invoices.delete()
-    except Exception:
-        pass
+    # 3. Fatura zinciri — invoices app Juwelier Plus'ta yok, adım atlandı
 
     # 4. İşlem zinciri (Payment → Process)  ProcessGroup Grup D'de silinir
     try:
@@ -726,15 +686,7 @@ def delete_bucket_d(store):
     except Exception:
         pass
 
-    try:
-        from apps.invoices.models import (
-            InvoiceSequence, StoreEInvoiceSettings, EInvoiceCreditRequest,
-        )
-        InvoiceSequence.objects.filter(store=store).delete()
-        StoreEInvoiceSettings.objects.filter(store=store).delete()
-        EInvoiceCreditRequest.objects.filter(store=store).delete()
-    except Exception:
-        pass
+    # invoices app Juwelier Plus'ta yok — silme bloğu kaldırıldı
 
     try:
         from apps.workshops.models import Workshops

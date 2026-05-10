@@ -52,10 +52,4 @@ urlpatterns = [
     path('reconcile/manual-match', reconcile_manual_match, name='reconcile_manual_match'),
     path('reconcile/summary', reconcile_summary, name='reconcile_summary'),
     path('reconcile/payments', reconcile_payments_list, name='reconcile_payments_list'),
-
-    # SY-01: Banka → 24 Ayar Altın Faturası (Toplu)
-    path('bulk-gold-invoice', bulk_invoice_from_bank_transactions, name='bulk_gold_invoice'),
-
-    # Açık Bankacılık → Toplu Fatura (Varsayılan Ayarlarla, OZELMATRAH, 2026-04)
-    path('bulk-invoice-with-defaults', bulk_invoice_with_defaults, name='bulk_invoice_with_defaults'),
 ]

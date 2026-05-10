@@ -9,7 +9,10 @@ app = Celery('juwelier_project')
 
 app.conf.broker_url = 'redis://127.0.0.1:6379/0'
 app.conf.result_backend = 'redis://127.0.0.1:6379/0'
-app.conf.beat_schedule_filename = '/var/run/celery/celerybeat-schedule'
+app.conf.beat_schedule_filename = os.environ.get(
+    'CELERY_BEAT_SCHEDULE_FILE',
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'celerybeat-schedule'),
+)
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # --- DB Baglanti Havuzu Korumasi (HATA 6 Fix) ---
@@ -30,7 +33,7 @@ app.conf.worker_max_tasks_per_child = 100
 # Ayni anda sadece 1 task on-bellege alinir; ani yuk altinda birikmesi engellenir.
 app.conf.worker_prefetch_multiplier = 1
 
-app.autodiscover_tasks(['apps.invoices', 'apps.products', 'apps.dashboard', 'apps.banking', 'apps.stock_management', 'apps.gold_purchases', 'apps.backups'])
+app.autodiscover_tasks(['apps.invoices', 'apps.products', 'apps.dashboard', 'apps.banking', 'apps.stock_management', 'apps.gold_purchases', 'apps.backups', 'apps.live_board', 'apps.definitions.rates'])
 
 
 # ── Celery Beat Schedule ───────────────────────────────────────────────────
@@ -71,6 +74,22 @@ app.conf.beat_schedule = {
     'backups-cleanup-chunked-uploads-daily': {
         'task': 'backups.cleanup_chunked_uploads',
         'schedule': crontab(hour=2, minute=30),  # Her gece 02:30
+        'options': {'queue': 'default'},
+    },
+    # ── Kitco Uluslararası Spot Fiyat Fetch (juwelier_plus port) ──
+    # KitcoPriceCache tablosuna YAZAR, başka tabloya dokunmaz.
+    'live-board-fetch-kitco-every-60s': {
+        'task': 'live_board.fetch_kitco_live_rates',
+        'schedule': 60,  # Her 60 saniyede bir
+        'options': {'queue': 'default'},
+    },
+    # ── ECB FX Kur Senkronizasyonu (juwelier_plus FAZ 13.7 port) ──
+    # Avrupa Merkez Bankası günlük XML feed'inden USD bazlı kurları
+    # Rates tablosuna yazar. Kitco task'ı EUR/GBP/CHF/CAD/AUD/JPY
+    # türetimi için bu kayıtları okur.
+    'rates-sync-fx-from-ecb-hourly': {
+        'task': 'definitions.rates.sync_fx_rates_from_ecb',
+        'schedule': crontab(minute=10),  # her saatin 10'unda
         'options': {'queue': 'default'},
     },
 }

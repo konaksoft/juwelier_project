@@ -1086,7 +1086,7 @@
                         const urlDetail = '/process/process-detail/' + pn;
                         const urlReceipt80 = '/process/receipt/' + pn + '/?paper=80&print=1';
 
-                        const urlInvoiceCreate = "{% url 'invoices:create-from-process-group' %}?process_no=" + pn;
+                        const urlInvoiceCreate = "#";  // invoices app kaldırıldı
 
                         let actionHtml = '<div class="d-flex justify-content-center gap-2">';
 
@@ -1106,14 +1106,8 @@
 
                             let targetUrl = row.invoice_url;
 
-                            if (isPurchase && targetUrl.indexOf('pavo') === -1) {
-                                if (row.invoice_id) {
-                                    targetUrl = "{% url 'invoices:expense-note-detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.invoice_id);
-                                    title = 'Gider Pusulası Görüntüle';
-                                    btnClass = 'btn-light-warning';
-                                    iconClass = 'fa-file-contract';
-                                }
-                            }
+                            // invoices:expense-note-detail kaldırıldı — invoices app yok
+                            // Pavo kontrolü/gider pusulası özel davranışı devre dışı
 
                             actionHtml += '<a href="' + targetUrl + '" class="btn btn-sm ' + btnClass + '" target="_blank" title="' + title + '"><i class="fa-solid ' + iconClass + '"></i></a>';
 

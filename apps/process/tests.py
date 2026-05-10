@@ -53,9 +53,6 @@ class POSCommissionBalanceTest(TestCase):
         # Mağaza konfigürasyonu
         self.config = StoreConfiguration.objects.create(
             store=self.store,
-            enforce_cash_limit=False,
-            enforce_invoice_customer=False,
-            enforce_masak_identity=False,
             is_safe_approval_required=False,
         )
 

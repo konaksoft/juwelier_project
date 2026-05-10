@@ -248,7 +248,7 @@ def get_categories_with_products(request):
                     filter=models.Q(stock_snapshots__store=store)),
                 Decimal('0.000')
             ),
-            avg_cost_tl=Coalesce(
+            avg_cost_eur=Coalesce(
                 Max('stock_snapshots__weighted_avg_cost_eur',
                     filter=models.Q(stock_snapshots__store=store)),
                 Decimal('0.00')
@@ -279,7 +279,7 @@ def get_categories_with_products(request):
     categories = (
         Categories.objects
         .filter(is_active=True, is_deleted=False)
-        .exclude(name='Altın')  # <-- BU SATIRI EKLEYİN
+        .exclude(name__in=['Altın', 'Ziynet'])  # Juwelier Plus: Ziynet & Altın gizlenir
         .order_by('order')
         .prefetch_related(
             Prefetch('products', queryset=products_qs, to_attr='pref_products')
@@ -316,7 +316,6 @@ def get_categories_with_products(request):
                 "profit": p.profit,
                 "order": p.order,
                 "display_order": p.display_order,  # T2 (2026-04-29): yeni IntegerField
-                "gold_dry": p.gold_dry,
                 "is_scrap": p.is_scrap,
                 "is_gram_bullion": p.is_gram_bullion,
                 "workmanship_type": p.workmanship_type,
@@ -345,8 +344,8 @@ def get_categories_with_products(request):
                 "use_custom_pricing": p.use_cost_pri,
                 "custom_fixed_labor": str(p.custom_fixed_labor),
                 # ─── FAZ S1 (PIVOT): Çoklu Maden Genişletmesi ───
-                # WATCH/DIAMOND için kâr/maliyet hesabı TL bazlıdır (HS=0 olduğu için).
-                "weighted_buy_price_eur": float(p.avg_cost_tl),
+                # WATCH/DIAMOND için kâr/maliyet hesabı EUR bazlıdır (HS=0 olduğu için).
+                "weighted_buy_price_eur": float(p.avg_cost_eur),
                 # ─── YOL 2 (SSOT): Döviz SSOT alanları ───
                 "is_currency": _is_currency,
                 "fx_currency": _fx_currency or "",
@@ -365,10 +364,11 @@ def get_categories_with_products(request):
 
 def get_categories_with_products_wholesale(request):
     store = request.user.store
+    # Juwelier Plus: Ziynet kaldırıldı; Pırlanta + Saat + Barkodlu Ürünler eklendi.
     categories = Categories.objects.filter(
         is_active=True,
         is_deleted=False,
-        name__in=[ 'Ziynet', 'Döviz', 'Hurda','Bilezik']
+        name__in=['Döviz', 'Hurda', 'Bilezik', 'Barkodlu Ürünler', 'Pırlanta', 'Saat']
     ).order_by('order').prefetch_related(
         Prefetch(
             'products',
@@ -396,7 +396,7 @@ def get_categories_with_products_wholesale(request):
                         filter=models.Q(stock_snapshots__store=store)),
                     Decimal('0.000')
                 ),
-                avg_cost_tl=Coalesce(
+                avg_cost_eur=Coalesce(
                     Max('stock_snapshots__weighted_avg_cost_eur',
                         filter=models.Q(stock_snapshots__store=store)),
                     Decimal('0.00')
@@ -457,7 +457,6 @@ def get_categories_with_products_wholesale(request):
                 "profit": product.profit,
                 "order": product.order,
                 "display_order": product.display_order,  # T2 (2026-04-29): yeni IntegerField
-                "gold_dry": product.gold_dry,
                 "is_scrap": product.is_scrap,
                 "is_gram_bullion": product.is_gram_bullion,
                 "workmanship_type": product.workmanship_type,
@@ -485,7 +484,7 @@ def get_categories_with_products_wholesale(request):
 
                 "custom_fixed_labor": str(product.custom_fixed_labor),
                 # ─── FAZ S1 (PIVOT): Çoklu Maden Genişletmesi ───
-                "weighted_buy_price_eur": float(product.avg_cost_tl),
+                "weighted_buy_price_eur": float(product.avg_cost_eur),
                 **_get_material_extras(product),
             }
             for product in category.products.all()

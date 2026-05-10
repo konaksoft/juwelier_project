@@ -100,6 +100,42 @@ def _dec(x, q='0.01'):
         return Decimal('0.00')
 
 
+# Troy Ons → Gram dönüşüm sabiti (Kitco fallback için)
+_TROY_OZ_TO_GRAM = Decimal('31.1034768')
+
+
+def _get_kitco_eur_per_gram():
+    """
+    KitcoPriceCache'ten EUR/GOLD/OZ değerlerini okur, gram cinsine çevirir.
+
+    Almanya pazarı (juwelier_project) için Has Altın fiyat fallback'i:
+    PriceService (PriceProvider/PriceQuote — Türkiye altyapısı) ve
+    Products('Has Altın') (Türkiye fixture) boş kaldığında devreye girer.
+
+    Returns:
+        tuple (buy_eur_per_gram, sale_eur_per_gram) — bid/ask gram'a bölünmüş.
+        Veri yoksa veya hata olursa (Decimal('0'), Decimal('0')).
+    """
+    try:
+        from apps.live_board.models import KitcoPriceCache
+        row = KitcoPriceCache.objects.filter(
+            currency=KitcoPriceCache.Currency.EUR,
+            metal_type=KitcoPriceCache.MetalType.GOLD,
+            unit=KitcoPriceCache.Unit.OZ,
+        ).first()
+        if not row:
+            return Decimal('0'), Decimal('0')
+        bid_oz = Decimal(str(row.bid_price or 0))
+        ask_oz = Decimal(str(row.ask_price or 0))
+        if bid_oz <= 0 and ask_oz <= 0:
+            return Decimal('0'), Decimal('0')
+        buy_per_gram = (bid_oz / _TROY_OZ_TO_GRAM).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if bid_oz > 0 else Decimal('0')
+        sale_per_gram = (ask_oz / _TROY_OZ_TO_GRAM).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if ask_oz > 0 else Decimal('0')
+        return buy_per_gram, sale_per_gram
+    except Exception:
+        return Decimal('0'), Decimal('0')
+
+
 def _get_store_config(user):
     """Mağaza konfigürasyonunu getirir."""
     store = getattr(user, 'store', None)
@@ -219,10 +255,13 @@ def _get_masak_limits(config):
         except Exception:
             return default
 
+    # Default'lar Almanya AML (Geldwäschegesetz) baz alındı:
+    # 10.000 EUR nakit kimlik tespiti eşiği. StoreConfiguration alanları
+    # tanımlanırsa (örn. Türkiye pazarı için 30k/36k/185k TL) override olur.
     return {
-        'CASH_LIMIT': _cfg('cash_limit_tl', Decimal('30000.00')),
-        'INVOICE_LIMIT': _cfg('invoice_limit_tl', Decimal('36000.00')),
-        'MASAK_LIMIT': _cfg('masak_limit_tl', Decimal('185000.00')),
+        'CASH_LIMIT': _cfg('cash_limit_tl', Decimal('10000.00')),
+        'INVOICE_LIMIT': _cfg('invoice_limit_tl', Decimal('0.00')),
+        'MASAK_LIMIT': _cfg('masak_limit_tl', Decimal('10000.00')),
     }
 
 
@@ -258,9 +297,10 @@ def _check_legal_limits_retail(config, net_total_abs, is_output, payment_type, i
                 f"Orijinal net_total_abs kullaniliyor."
             )
 
-    enforce_cash = config.enforce_cash_limit if config else True
-    enforce_invoice = config.enforce_invoice_customer if config else True
-    enforce_masak = config.enforce_masak_identity if config else True
+    # Türkiye yasal limitleri kaldırıldı (Almanya akışı)
+    enforce_cash = False
+    enforce_invoice = False
+    enforce_masak = False
     enforce_customer_always = getattr(config, 'enforce_customer_always', False) if config else False
 
     # 0. Tutar Bağımsız Müşteri Zorunluluğu (Mağaza Ayarı)
@@ -443,6 +483,11 @@ def add_scrap_to_process(request):
         hs_product = Products.objects.filter(name__icontains='Has Altın').only('buy_price_eur', 'sale_price_eur').first()
         if hs_product:
             hs_buy_price_eur = _dec(getattr(hs_product, 'buy_price_eur', 0))
+        # Almanya/juwelier_project fallback: Kitco EUR/gram (bid)
+        if hs_buy_price_eur <= 0:
+            kitco_buy, _kitco_sale = _get_kitco_eur_per_gram()
+            if kitco_buy > 0:
+                hs_buy_price_eur = kitco_buy
         # Has kuru hâlâ 0 ise ve kullanıcı manuel fiyat girmemişse reddet
         if hs_buy_price_eur <= 0 and manual_unit_price <= 0:
             return JsonResponse(
@@ -1020,14 +1065,27 @@ def add_process(request):
         hs_sale = Decimal('0')
         hs_buy = Decimal('0')
 
-    # Fallback: PriceService boş dönerse Products tablosundan oku
+    # Fallback 1: PriceService boş dönerse Products tablosundan oku (Türkiye legacy)
     if hs_sale <= 0:
         hs_product = Products.objects.filter(name__icontains='Has Altın').only('buy_price_eur', 'sale_price_eur').first()
-        if not hs_product or not _dec(getattr(hs_product, 'sale_price_eur', 0)):
-            return JsonResponse({'error': True, 'error_msg': 'Has Altın ürünü ya da satış fiyatı tanımlı değil.'},
-                                status=500)
-        hs_sale = _dec(hs_product.sale_price_eur)
-        hs_buy = _dec(getattr(hs_product, 'buy_price_eur', None) or hs_sale)
+        if hs_product and _dec(getattr(hs_product, 'sale_price_eur', 0)) > 0:
+            hs_sale = _dec(hs_product.sale_price_eur)
+            hs_buy = _dec(getattr(hs_product, 'buy_price_eur', None) or hs_sale)
+
+    # Fallback 2 (Almanya/juwelier_project): KitcoPriceCache'ten EUR/gram türet
+    if hs_sale <= 0:
+        kitco_buy, kitco_sale = _get_kitco_eur_per_gram()
+        if kitco_sale > 0:
+            hs_sale = kitco_sale
+            hs_buy = kitco_buy if kitco_buy > 0 else kitco_sale
+
+    # Hâlâ 0 ise hiçbir kaynak yok demektir — kullanıcıyı yönlendir
+    if hs_sale <= 0:
+        return JsonResponse(
+            {'error': True,
+             'error_msg': 'Has Altın satış kuru tanımlı değil. PriceService/Products/Kitco kaynaklarının tümü boş.'},
+            status=500
+        )
 
     prod_karat = None
     try:
@@ -1887,6 +1945,12 @@ def complete_process(request):
                         if _hs_prod:
                             sale_rate = _dec(getattr(_hs_prod, 'sale_price_eur', 0), '0.01')
 
+                    # Almanya/juwelier_project fallback: Kitco EUR/gram (ask)
+                    if sale_rate <= 0:
+                        _kitco_buy, _kitco_sale = _get_kitco_eur_per_gram()
+                        if _kitco_sale > 0:
+                            sale_rate = _kitco_sale
+
                     if sale_rate <= 0:
                         # Kur okunamadı; netleştirme kaydı atlanır
                         # (eski FAZ 33 davranışıyla aynı fail-safe).
@@ -1991,21 +2055,10 @@ def complete_process(request):
                     payment_total=paid_total  # Kasaya giren toplam para (Nakit + Kart + Havale)
                 )
 
-                # Redirect URL oluştur ve Processlere işle
-                # Eğer fatura oluştuysa detay sayfasına, yoksa Pavo linkine yönlendir.
+                # invoices:detail kaldırıldı — invoices app Juwelier Plus'ta yok
+                # generated_invoice her zaman None döner (stub), URL kaydı atlanır
                 if generated_invoice:
-                    # Django'da URL reverse kullanımı
-                    inv_url = request.build_absolute_uri(
-                        reverse('invoices:detail', kwargs={'record_id': generated_invoice.id})
-                    )
-
-                    # Eğer POS'tan E-Arşiv linki geldiyse (bazen fiş linki gelir) onu da kaydedebiliriz
-                    if is_pos_flow and pavo_inquiry_data.get('SaleInquieryLink'):
-                        # Ancak kendi sistemimizdeki fatura linki daha kalıcıdır.
-                        pass
-
-                        # İşlem kayıtlarına faturanın linkini ekle (Takip kolaylığı için)
-                    procs.update(invoice_url=inv_url)
+                    pass
             # 11. BİTİR VE BİLDİRİM
             procs.update(is_status='COMPLETED', date=timezone.now())
 

@@ -572,9 +572,10 @@ def get_all(request):
                 if inq:
                     invoice_url = inq
                 else:
-                    invoice_url = reverse("invoices:detail", args=[str(inv_row.get("id"))])
+                    # invoices:detail kaldırıldı — invoices app Juwelier Plus'ta yok
+                    invoice_url = ""
             except Exception:
-                invoice_url = f"/invoices/detail/{inv_row.get('id')}/"
+                invoice_url = ""
 
         data.append({
             "process_no": pno,

@@ -12,25 +12,18 @@ from decimal import Decimal, ROUND_HALF_UP
 def round3(v: Decimal) -> Decimal:
     return (v or Decimal('0')).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
 
-def get_store_margins(store):
-    m = Decimal(getattr(store, 'price_margin_percent', 0) or 0)
-    return m, m
-
 def compute_store_has_tl(store, use_cache: bool = True):
-    sale_margin, buy_margin = get_store_margins(store)
-    if use_cache and (sale_margin != 0 or buy_margin != 0):
-        cache = getattr(store, 'price_cache', None)
-        if cache and cache.has_buy_eur and cache.has_sale_eur:
-            return Decimal(cache.has_buy_eur), Decimal(cache.has_sale_eur)
+    """
+    Has Altın 24 Ayar ürününün global EUR alış/satış fiyatlarını döndürür.
+    Margin kaldırıldı (Almanya akışı Kitco spot fiyatını doğrudan kullanır).
+    """
     try:
         has_prod = Products.objects.get(name__iexact='Has Altın 24 Ayar')
         base_buy = Decimal(has_prod.buy_price_eur or 0)
         base_sale = Decimal(has_prod.sale_price_eur or 0)
     except Products.DoesNotExist:
         return Decimal('0'), Decimal('0')
-    store_has_buy = round2(base_buy * (Decimal('1') + buy_margin / Decimal('100')))
-    store_has_sale = round2(base_sale * (Decimal('1') + sale_margin / Decimal('100')))
-    return store_has_buy, store_has_sale
+    return round2(base_buy), round2(base_sale)
 
 def update_store_has_cache_for_all_stores():
     stores = Stores.objects.filter(is_deleted=False)

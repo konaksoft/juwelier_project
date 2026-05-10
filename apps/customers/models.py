@@ -12,7 +12,8 @@ class Customers(models.Model):
     store = models.ManyToManyField(Stores, related_name='customers', blank=True)
     first_name = models.CharField(max_length=100, blank=False, null=False)
     last_name = models.CharField(max_length=100, blank=False, null=False)
-    identification_number = models.CharField(max_length=11, null=True, blank=True)
+    # max_length=30 → TC Kimlik (11) + uluslararası pasaport/ID (Personalausweis vb.) için yeterli
+    identification_number = models.CharField(max_length=30, null=True, blank=True)
     customer_number = models.CharField(max_length=25, null=True, blank=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     gender = models.CharField(max_length=15, blank=True, null=True)

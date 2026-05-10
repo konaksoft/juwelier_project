@@ -18,11 +18,29 @@ log = logging.getLogger(__name__)
 # --- YARDIMCI FONKSİYONLAR ---
 
 def fmt_tl(x):
-    """Sayıyı TR para formatına çevirir: 1.234,56"""
+    """
+    Sayıyı TR/DE/CH ortak para formatına çevirir: 1.234,56
+    (Almanya ve Türkiye'de aynı binlik ayraç+ondalık virgül kuralı geçerli.)
+
+    Geriye uyumluluk için isim 'fmt_tl' kaldı; gerçekte para birimi bağımsız
+    numerik formatlayıcıdır. Sembol eklemek için fmt_money() kullanın.
+    """
     try:
         return f"{Decimal(x):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except Exception:
         return "0,00"
+
+
+def fmt_money(x, symbol=''):
+    """
+    Sayıyı para formatına çevirir ve istenirse sembol ekler.
+    Örn: fmt_money(1234.5, '€') → '1.234,50 €'
+         fmt_money(1234.5)       → '1.234,50'
+    """
+    base = fmt_tl(x)
+    if not symbol:
+        return base
+    return f"{base} {symbol}"
 
 
 def get_safe_local_now_str(fmt="%d.%m.%Y %H:%M"):

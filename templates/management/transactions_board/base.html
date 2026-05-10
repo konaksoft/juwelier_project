@@ -1524,18 +1524,12 @@
                             <input type="text" class="form-control form-control-sm" id="last_name" name="last_name"
                                    required>
                         </div>
-                        <div class="col-md-4 col-8">
+                        <div class="col-md-6 col-12">
                             <label for="identification_number" class="form-label small mb-1">Kimlik No
                                 (Opsiyonel)</label>
                             <input type="text" class="form-control form-control-sm" id="identification_number"
-                                   name="identification_number" pattern="\d{11}" maxlength="11"
-                                   placeholder="11 Haneli TCKN">
-                        </div>
-                        <div class="col-md-2 col-4">
-                            <button type="button" class="btn btn-sm w-100 p-0" id="btnPosTurmobFetch"
-                                    style="background: linear-gradient(135deg, #1A253A, #2E3C54); color: #FFCD02; border: 1px solid rgba(255, 205, 2, 0.4); height: 31px; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                <i class="fa-solid fa-id-card fs-7"></i> <span style="font-size: 0.8rem;">Sorgula</span>
-                            </button>
+                                   name="identification_number" maxlength="30"
+                                   placeholder="Kimlik/Pasaport No">
                         </div>
                     </div>
 
@@ -1684,20 +1678,39 @@
         iconEl.classList.add(ico);
     }
 
-    function fetchHasGoldPrices() {
-        fetch('/products/get-has-gold-prices')
+    // ─────────────────────────────────────────────────
+    // Kitco Spot Bar (juwelier_plus port — Almanya EUR/gram)
+    // ─────────────────────────────────────────────────
+    // Mağazanın `base_spot_currency` değerine göre Kitco GOLD spot
+    // bid/ask fiyatlarını 60 saniyede bir çeker. KitcoPriceCache OZ
+    // tutar; API tarafı GRAM dönüşümünü yapar. #sale_hs_tl alanını
+    // bu fonksiyon doldurur, böylece barkodlu ürün seçimlerinde
+    // unit_price = sale_price_hs × Kitco gram fiyatı hesaplanır.
+    const BAR_SPOT_CURRENCY = "{{ store_base_spot_currency|default:'EUR' }}";
+
+    function fetchKitcoBarPrices() {
+        const url = "{% url 'live_board:api_kitco_data' %}"
+            + "?currency=" + encodeURIComponent(BAR_SPOT_CURRENCY)
+            + "&unit=GRAM&metal=GOLD";
+
+        fetch(url)
             .then(response => response.json())
             .then(data => {
-                const newBuy = parseFloat(data.buy_hs_tl);
-                const newSale = parseFloat(data.sale_hs_tl);
+                let gold = null;
+                if (data && Array.isArray(data.data)) {
+                    gold = data.data.find(function (row) {
+                        return (row.metal_type || row.metal || '').toUpperCase() === 'GOLD';
+                    });
+                }
 
-                // değerleri yaz
-                document.getElementById('buy_hs_tl').value = newBuy;
-                document.getElementById('sale_hs_tl').value = newSale;
-                document.getElementById('buy_hs').innerText  = isNaN(newBuy)  ? '-' : KPMoney.fmtMoney(newBuy);
-                document.getElementById('sale_hs').innerText = isNaN(newSale) ? '-' : KPMoney.fmtMoney(newSale);
+                const newBuy = gold ? parseFloat(gold.bid_price || gold.bid || 0) : NaN;
+                const newSale = gold ? parseFloat(gold.ask_price || gold.ask || 0) : NaN;
 
-                // trend uygula
+                const buyEl = document.getElementById('buy_hs');
+                const saleEl = document.getElementById('sale_hs');
+                if (buyEl) buyEl.innerText = isNaN(newBuy) ? '-' : (newBuy.toFixed(2) + ' ' + BAR_SPOT_CURRENCY);
+                if (saleEl) saleEl.innerText = isNaN(newSale) ? '-' : (newSale.toFixed(2) + ' ' + BAR_SPOT_CURRENCY);
+
                 applyTrend(
                     document.getElementById('buy_chip'),
                     document.getElementById('buy_trend'),
@@ -1709,16 +1722,54 @@
                     prevSale, newSale
                 );
 
-                // bir sonraki tur için sakla
                 prevBuy = newBuy;
                 prevSale = newSale;
+
+                // API zaten GRAM döndüğü için ek dönüşüm yok; OZ gelirse fallback
+                const TROY_OZ_TO_GRAM = 31.1034768;
+                const apiUnit = (gold && (gold.unit || '')).toString().toUpperCase();
+                let askGram = newSale;
+                let bidGram = newBuy;
+                if (apiUnit === 'OZ') {
+                    askGram = isFinite(newSale) ? (newSale / TROY_OZ_TO_GRAM) : NaN;
+                    bidGram = isFinite(newBuy) ? (newBuy / TROY_OZ_TO_GRAM) : NaN;
+                }
+                window.__kitcoGramPrice = {
+                    bid: isFinite(bidGram) ? bidGram : 0,
+                    ask: isFinite(askGram) ? askGram : 0,
+                    currency: BAR_SPOT_CURRENCY,
+                    ts: Date.now()
+                };
+
+                // Hidden input'lar (barkodlu ürün hesabı için)
+                const buyHsTl = document.getElementById('buy_hs_tl');
+                if (buyHsTl && isFinite(bidGram) && bidGram > 0) {
+                    buyHsTl.value = bidGram.toFixed(4);
+                }
+                const saleHsTl = document.getElementById('sale_hs_tl');
+                if (saleHsTl && isFinite(askGram) && askGram > 0) {
+                    saleHsTl.value = askGram.toFixed(4);
+                    try {
+                        saleHsTl.dispatchEvent(new Event('input', { bubbles: true }));
+                        saleHsTl.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch (e) {
+                        // modern tarayıcı varsayımı
+                    }
+                }
+
+                // Diğer modüller (hurda modalı vb.) dinleyebilsin
+                try {
+                    window.dispatchEvent(new CustomEvent('kitco:update', {
+                        detail: window.__kitcoGramPrice
+                    }));
+                } catch (e) {}
             })
-            .catch(error => console.error('Has Altın fiyatları çekilirken hata oluştu:', error));
+            .catch(error => console.error('Kitco bar prices fetch error:', error));
     }
 
-    // ilk yükleme + periyodik
-    $(document).ready(fetchHasGoldPrices);
-    setInterval(fetchHasGoldPrices, 45000);
+    // ilk yükleme + periyodik (60 saniye)
+    $(document).ready(fetchKitcoBarPrices);
+    setInterval(fetchKitcoBarPrices, 60000);
 
 </script>
 <script>
@@ -2077,9 +2128,7 @@
                 {% if request.user|menu_allowed:'ABC1010D' %}
                     {icon: 'fa-list-check', text: 'Özetler', url: "{% url 'process:index' %}"},
                 {% endif %}
-                {% if request.user|menu_allowed:'ABC1706D' %}
-                    {icon: 'fa-file-invoice-dollar', text: 'Faturalar', url: "{% url 'invoices:index' %}"},
-                {% endif %}
+                {# Faturalar hızlı arama öğesi kaldırıldı — invoices app yok #}
                 {% if request.user|menu_allowed:'ABC1706D' %}
                     {icon: 'fa-vault', text: 'Kasa Yönetimi', url: "{% url 'bank-management:index' %}"},
                 {% endif %}
@@ -2573,138 +2622,7 @@
         });
     });
 </script>
-<script>
-    $(document).ready(function () {
-        // Müşteri seçimi değiştiğinde (Select2 select eventi)
-        $('#customer_id').on('select2:select', function (e) {
-            // Sadece seçim yapıldığında çalışsın
-            triggerRiskCheck($(this).val());
-        });
-
-        // Eğer select2 kullanılmıyorsa standart change eventi için fallback
-        $('#customer_id').on('change', function () {
-            // Select2:select tetiklenmediyse ve değer varsa
-            if ($(this).val() && !$(this).data('checking')) {
-                triggerRiskCheck($(this).val());
-            }
-        });
-
-        function triggerRiskCheck(customerId) {
-            // 1. Temel Kontroller
-            if (!customerId) return;
-
-            // Elementi işaretle (döngüyü önlemek için)
-            var $select = $('#customer_id');
-            $select.data('checking', true);
-
-            var csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
-
-            // 2. Kullanıcıyı Beklet (Loading)
-            // Ciddi bir güvenlik kontrolü olduğu için ekranı kilitliyoruz
-            Swal.fire({
-                title: 'Güvenlik Kontrolü',
-                text: 'Müşteri bilgileri MASAK ve Kara Liste veritabanında sorgulanıyor...',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            // 3. Backend Sorgusu
-            $.ajax({
-                url: "{% url 'masak:check_risk' %}", // urls.py'daki name='check_risk'
-                type: "POST",
-                data: {
-                    'customer_id': customerId,
-                    'csrfmiddlewaretoken': csrfToken
-                },
-                success: function (response) {
-                    Swal.close(); // Loading'i kapat
-                    $select.data('checking', false);
-
-                    if (response.status === 'suspicious') {
-                        // --- KIRMIZI ALARM: ŞÜPHELİ MÜŞTERİ ---
-
-                        // Opsiyonel: Sesli Uyarı
-                        // var audio = new Audio('/static/sounds/alert.mp3'); audio.play();
-
-                        Swal.fire({
-                            icon: 'error',
-                            title: response.title, // "RİSKLİ MÜŞTERİ TESPİTİ"
-                            html: `
-                                <div class="d-flex flex-column align-items-center">
-                                    <div class="alert alert-danger w-100 mt-2 d-flex align-items-start text-start p-4">
-                                        <i class="fa-solid fa-triangle-exclamation fs-2hx me-4 text-danger mt-1"></i>
-                                        <div>
-                                            <h4 class="fw-bold text-danger mb-2">İŞLEM DURDURULDU</h4>
-                                            <div class="fs-6 text-gray-800">
-                                                <strong>Tespit:</strong> ${response.message}<br>
-                                                <strong>Kaynak:</strong> <span class="badge badge-light-danger fs-7">${response.source}</span><br>
-                                                <div class="mt-2 p-2 bg-white rounded border border-danger border-dashed">
-                                                    <strong>Sebep:</strong> ${response.reason}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p class="text-muted small mt-3 mb-0">
-                                        Bu sorgulama 5549 sayılı kanun gereği kayıt altına alınmıştır.
-                                    </p>
-                                </div>
-                            `,
-                            confirmButtonText: 'Müşteriyi İptal Et',
-                            confirmButtonColor: '#d33',
-                            showCancelButton: true,
-                            cancelButtonText: 'Riski Al ve Devam Et',
-                            cancelButtonColor: '#6c757d',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            customClass: {
-                                confirmButton: "btn btn-danger fw-bold",
-                                cancelButton: "btn btn-active-light-primary"
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Seçimi güvenli bir şekilde temizle
-                                $select.val(null).trigger('change');
-                            } else {
-                                console.warn("Kullanıcı riskli müşteriyle devam etti: " + customerId);
-                                // İsteğe bağlı: Backend'e "Risk Onaylandı" logu atılabilir.
-                            }
-                        });
-
-                    } else if (response.status === 'clean') {
-                        // --- TEMİZ ---
-                        // Rahatsız etmemek için sadece sağ üstte ufak bir toast
-                        Swal.fire({
-                            toast: true,
-                            position: 'top-end',
-                            icon: 'success',
-                            title: 'Güvenlik Kontrolü: Temiz',
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-                    }
-                },
-                error: function (xhr, errmsg, err) {
-                    Swal.close();
-                    $select.data('checking', false);
-                    console.error("Risk kontrol servisi hatası:", xhr.status);
-
-                    // Servis hatası durumunda kullanıcıyı durdurmak yerine uyaralım
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'warning',
-                        title: 'Risk kontrolü yapılamadı (Sunucu Hatası)',
-                        showConfirmButton: false,
-                        timer: 3000
-                    });
-                }
-            });
-        }
-    });
-</script>
+<!-- MASAK risk kontrolü script bloğu kaldırıldı — masak app Juwelier Plus'ta yok -->
 {% block footer %}
 {% endblock footer %}
 {% if request.user.is_authenticated %}

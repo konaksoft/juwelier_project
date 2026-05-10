@@ -570,8 +570,8 @@
                         const urlDetail = '/process/detail/' + pn + '/';
                         const urlReceipt80 = '/process/receipt/' + pn + '/?paper=80&print=1';
 
-                        // Fatura Oluşturma Linki (Proforma Ekranı)
-                        const urlInvoiceCreate = "{% url 'invoices:create-from-process-group' %}?process_no=" + pn;
+                        // Fatura Oluşturma Linki kaldırıldı — invoices app yok
+                        const urlInvoiceCreate = "#";
 
                         let actionHtml = '<div class="d-flex justify-content-center gap-2">';
 
@@ -604,18 +604,7 @@
                             // Eğer row.invoice_url Pavo linki DEĞİLSE ve bizim sistem içindeyse müdahale edelim:
                             let targetUrl = row.invoice_url;
 
-                            // Eğer Pavo linki değilse ve Alış ise, URL'i değiştir:
-                            if (isPurchase && targetUrl.indexOf('pavo') === -1) {
-                                // Burada invoice ID'ye ihtiyacımız var. row objesinde invoice_id varsa kullanın.
-                                // Yoksa backend'den invoice_id dönmesini sağlayın.
-                                if (row.invoice_id) {
-                                    // Django URL reverse JS içinde zor olduğu için replace yöntemi:
-                                    targetUrl = "{% url 'invoices:expense-note-detail' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', row.invoice_id);
-                                    title = 'Gider Pusulası Görüntüle';
-                                    btnClass = 'btn-light-warning'; // Farklı renk
-                                    iconClass = 'fa-file-contract'; // Farklı ikon
-                                }
-                            }
+                            // invoices:expense-note-detail kaldırıldı — invoices app yok
 
                             actionHtml += '<a href="' + targetUrl + '" class="btn btn-sm ' + btnClass + '" target="_blank" title="' + title + '"><i class="fa-solid ' + iconClass + '"></i></a>';
 
