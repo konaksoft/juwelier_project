@@ -2548,7 +2548,7 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <div class="mb-3">
-                                        <label for="scrap_unit_price" class="form-label">Birim Fiyat (TL/gr)</label>
+                                        <label for="scrap_unit_price" class="form-label">Birim Fiyat ({{ store_currency_symbol|default:'€' }}/gr)</label>
                                         <input type="text" inputmode="decimal" class="form-control js-money" id="scrap_unit_price"
                                                name="unit_price" required autocomplete="off">
                                         <small class="text-muted" style="font-size: 0.7rem;">*Gram başı fiyat. Sistem otomatik gelir, kâr için değiştirebilirsiniz.</small>
@@ -2556,7 +2556,7 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="mb-3">
-                                        <label for="scrap_total_price" class="form-label">Toplam Tutar (TL) <small class="text-info" style="font-size:0.65rem;">↕ çift yönlü</small></label>
+                                        <label for="scrap_total_price" class="form-label">Toplam Tutar ({{ store_currency_symbol|default:'€' }}) <small class="text-info" style="font-size:0.65rem;">↕ çift yönlü</small></label>
                                         <input type="text" inputmode="decimal" class="form-control js-money" id="scrap_total_price"
                                                name="total_amount" autocomplete="off">
                                     </div>
@@ -5617,7 +5617,9 @@
     <script>
         // --- HURDA MODAL İŞLEMLERİ ---
 
-        let GLOBAL_HAS_BUY_TL = 0;
+        // FAZ 20.x: Eski adı GLOBAL_HAS_BUY_TL. Almanya pazarına geçişte
+        // Kitco EUR/gram (bid) tutuyor. Adı semantiğine uyacak şekilde yenilendi.
+        let GLOBAL_HAS_BUY_EUR = 0;
 
         // ─────────────────────────────────────────────────────────────────
         // Kitco Spot Bağlantısı (juwelier_plus port — Almanya EUR/gram)
@@ -5626,15 +5628,13 @@
         // 60 sn'de bir günceller ve `kitco:update` custom event'i yayar.
         // Burada o event'i dinleyip applyPriceForCurrentOperation'ı çağırarak
         // açık popup'taki barkodlu ürün fiyatını anlık tazeliyoruz.
-        // Eski TL bazlı /products/get-has-gold-prices polling'i kaldırıldı
-        // (Almanya akışında EUR/gram zorunlu, TL endpoint anlamsız).
-        // GLOBAL_HAS_BUY_TL hurda modal akışı için Kitco bid'inden beslenir.
+        // GLOBAL_HAS_BUY_EUR hurda modal akışı için Kitco bid'inden beslenir.
         $(document).ready(function () {
             window.addEventListener('kitco:update', function (ev) {
                 try {
                     var detail = ev && ev.detail ? ev.detail : window.__kitcoGramPrice;
                     if (detail && detail.bid > 0) {
-                        GLOBAL_HAS_BUY_TL = Number(detail.bid) || 0;
+                        GLOBAL_HAS_BUY_EUR = Number(detail.bid) || 0;
                     }
                     if (typeof applyPriceForCurrentOperation === 'function') {
                         applyPriceForCurrentOperation();
@@ -5646,23 +5646,22 @@
 
             // İlk yükleme: base.html polling henüz dönmediyse globali oku
             if (window.__kitcoGramPrice && window.__kitcoGramPrice.bid > 0) {
-                GLOBAL_HAS_BUY_TL = Number(window.__kitcoGramPrice.bid) || 0;
+                GLOBAL_HAS_BUY_EUR = Number(window.__kitcoGramPrice.bid) || 0;
             }
         });
 
-        // Mevcut Hurda Giriş butonuna tıklanınca Modalı aç
+        // Mevcut Hurda Giriş butonuna tıklanınca Modalı aç.
+        // Almanya akışı: Kitco EUR/gram polling base.html içinden besler.
+        // Eski TL fallback endpoint (/products/get-has-gold-prices → buy_hs_tl)
+        // KALDIRILDI; Kitco gecikmeli geldiğinde TL fiyatı EUR yerine yazılıyordu.
         $('label[for="scrapCheckbox"]').on('click', function (e) {
             e.preventDefault();
-            if (GLOBAL_HAS_BUY_TL === 0) {
-                $.getJSON('/products/get-has-gold-prices', function (data) {
-                    GLOBAL_HAS_BUY_TL = parseFloat(data.buy_hs_tl) || 0;
-                    $('#scrapModal').modal('show');
-                    setTimeout(() => calculateScrapTotal(true), 200);
-                });
-            } else {
-                $('#scrapModal').modal('show');
-                setTimeout(() => calculateScrapTotal(true), 200);
+            // Kitco henüz açılmadıysa __kitcoGramPrice globalini son bir kez oku
+            if (GLOBAL_HAS_BUY_EUR === 0 && window.__kitcoGramPrice && window.__kitcoGramPrice.bid > 0) {
+                GLOBAL_HAS_BUY_EUR = Number(window.__kitcoGramPrice.bid) || 0;
             }
+            $('#scrapModal').modal('show');
+            setTimeout(() => calculateScrapTotal(true), 200);
         });
 
         // 1. Ayar Seçimi (Dropdown değiştiğinde)
@@ -5693,7 +5692,7 @@
             calculateScrapTotal(false);
         });
 
-        // 4. Birim Fiyat (TL/HS) değişince → Toplam Tutarı güncelle (anlık, ileri yön)
+        // 4. Birim Fiyat (EUR/gr) değişince → Toplam Tutarı güncelle (anlık, ileri yön)
         $('#scrapForm #scrap_unit_price').on('input', function () {
             calculateScrapTotal(false);
         });
@@ -5704,8 +5703,8 @@
         });
 
         /**
-         * İLERİ HESAPLAMA: gram / milyem / birim fiyat (TL/gr) → toplam has + toplam tutar
-         * Birim Fiyat artık TL/gram (tabloyla aynı birim). Backend de TL/gram bekliyor.
+         * İLERİ HESAPLAMA: gram / milyem / birim fiyat (EUR/gr) → toplam has + toplam tutar (EUR)
+         * Birim Fiyat EUR/gram (tabloyla aynı birim). Backend de EUR/gram bekliyor.
          * @param {boolean} resetUnitPrice  true ise birim fiyatı sistem kuruna sıfırla
          */
         function calculateScrapTotal(resetUnitPrice) {
@@ -5716,34 +5715,34 @@
             const totalHs = KPMoney.safeRound(mileage * gram / 1000, 3);
             $('#scrapForm #buy_price_hs').val(totalHs.toFixed(3));
 
-            const $unitPrice = $('#scrapForm #scrap_unit_price');   // TL/gram
-            const $totalAmt  = $('#scrapForm #scrap_total_price');  // TL
+            const $unitPrice = $('#scrapForm #scrap_unit_price');   // EUR/gram
+            const $totalAmt  = $('#scrapForm #scrap_total_price');  // EUR
 
             if (resetUnitPrice) {
-                // Sistem fiyatı (TL/gram) = Has kuru(TL/HS) * milyem/1000
-                if (GLOBAL_HAS_BUY_TL > 0 && mileage > 0) {
-                    const sysGramPrice = KPMoney.safeRound(GLOBAL_HAS_BUY_TL * mileage / 1000, 2);
+                // Sistem fiyatı (EUR/gram) = Has kuru(EUR/HS) * milyem/1000
+                if (GLOBAL_HAS_BUY_EUR > 0 && mileage > 0) {
+                    const sysGramPrice = KPMoney.safeRound(GLOBAL_HAS_BUY_EUR * mileage / 1000, 2);
                     $unitPrice.val(KPMoney.fmtMoney(sysGramPrice));
-                    const totalTl = KPMoney.safeRound(gram * sysGramPrice, 2);
-                    $totalAmt.val(KPMoney.fmtMoney(totalTl));
+                    const totalEur = KPMoney.safeRound(gram * sysGramPrice, 2);
+                    $totalAmt.val(KPMoney.fmtMoney(totalEur));
                 }
             } else {
                 // Kullanıcı gramı veya birim fiyatı değiştirdi → toplamı güncelle
-                const unitPrice = KPMoney.parseMoney($unitPrice.val());   // TL/gram
-                const totalTl   = KPMoney.safeRound(gram * unitPrice, 2); // TL
-                $totalAmt.val(KPMoney.fmtMoney(totalTl));
+                const unitPrice = KPMoney.parseMoney($unitPrice.val());     // EUR/gram
+                const totalEur  = KPMoney.safeRound(gram * unitPrice, 2);   // EUR
+                $totalAmt.val(KPMoney.fmtMoney(totalEur));
             }
         }
 
         /**
-         * TERS HESAPLAMA: kullanıcı Toplam Tutar girdi → Birim Fiyat (TL/gr) geri hesapla
+         * TERS HESAPLAMA: kullanıcı Toplam Tutar girdi → Birim Fiyat (EUR/gr) geri hesapla
          * Formül: birim_fiyat = toplam_tutar / gram
          */
         function reverseCalculateUnitPrice() {
-            const totalTl = KPMoney.parseMoney($('#scrapForm #scrap_total_price').val());
-            const gram    = parseFloat($('#scrapForm #gram').val()) || 0;
-            if (gram > 0 && totalTl > 0) {
-                const unitPrice = KPMoney.safeRound(totalTl / gram, 2); // TL/gram
+            const totalEur = KPMoney.parseMoney($('#scrapForm #scrap_total_price').val());
+            const gram     = parseFloat($('#scrapForm #gram').val()) || 0;
+            if (gram > 0 && totalEur > 0) {
+                const unitPrice = KPMoney.safeRound(totalEur / gram, 2); // EUR/gram
                 $('#scrapForm #scrap_unit_price').val(KPMoney.fmtMoney(unitPrice));
             }
         }
@@ -5763,13 +5762,13 @@
             // .js-money inputlarındaki Türkçe formatı (6.875,05) temizleyerek FormData al
             let formData = KPMoney.unmaskedFormData($form[0]);
 
-            // unit_price = toplam_tutar / gram  (TL/gram → backend beklentisi)
-            const totalTl = KPMoney.parseMoney($('#scrapForm #scrap_total_price').val());
-            const gram    = parseFloat($('#scrapForm #gram').val()) || 0;
-            if (gram > 0 && totalTl > 0) {
-                const trueGramPrice = KPMoney.safeRound(totalTl / gram, 2);
+            // unit_price = toplam_tutar / gram  (EUR/gram → backend beklentisi)
+            const totalEur = KPMoney.parseMoney($('#scrapForm #scrap_total_price').val());
+            const gram     = parseFloat($('#scrapForm #gram').val()) || 0;
+            if (gram > 0 && totalEur > 0) {
+                const trueGramPrice = KPMoney.safeRound(totalEur / gram, 2);
                 formData.set('unit_price', trueGramPrice.toFixed(2));
-            } else if (totalTl <= 0) {
+            } else if (totalEur <= 0) {
                 Swal.fire('Uyarı', 'Toplam Tutar 0 olamaz. Birim Fiyat veya Toplam Tutarı girin.', 'warning');
                 $btn.prop("disabled", false);
                 return;

@@ -491,7 +491,7 @@ def add_scrap_to_process(request):
         # Has kuru hâlâ 0 ise ve kullanıcı manuel fiyat girmemişse reddet
         if hs_buy_price_eur <= 0 and manual_unit_price <= 0:
             return JsonResponse(
-                {'error': True, 'error_msg': 'Has Altın alış fiyatı 0 olamaz. Lütfen Birim Fiyat (TL) alanını manuel girin.'},
+                {'error': True, 'error_msg': 'Has Altın alış fiyatı 0 olamaz. Lütfen Birim Fiyat (EUR/gr) alanını manuel girin.'},
                 status=400
             )
 
@@ -677,8 +677,8 @@ def add_scrap_to_process(request):
         gram=gram,
         process_mileage=str(product_mileage),
         price_hs=calculated_hs,
-        amount=calculated_amount_eur,  # Kuyumcunun belirlediği toplam TL
-        unit_price=unit_buy_price_eur,  # Kuyumcunun belirlediği birim TL
+        amount=calculated_amount_eur,  # Kuyumcunun belirlediği toplam EUR
+        unit_price=unit_buy_price_eur,  # Kuyumcunun belirlediği birim EUR
         is_status='IN_PROGRESS',
         waiting_stock=False,
     )
