@@ -166,7 +166,7 @@ def expense_bulk_save(request):
 
     Kural: bir satır geçersizse HİÇBİR satır yazılmaz (atomic rollback).
     Yan etkiler her satır için (FAZ 31 patterni):
-      • Payment(is_output=True, payment_type='ADJUSTMENT')
+      • Payment(is_output=True, payment_type='EXPENSE')
       • CashboxLedger.EXPENSE
       • IncomeExpenseLedger.OTHER_EXPENSE (+ expense_category FK)
     """
@@ -316,7 +316,7 @@ def expense_bulk_save(request):
         # 1) Payment
         payment = Payment.objects.create(
             process_no=None,
-            payment_type='ADJUSTMENT',
+            payment_type='EXPENSE',
             amount=amount,
             is_output=True,
             bank_account=account,

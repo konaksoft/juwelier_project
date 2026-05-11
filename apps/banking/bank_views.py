@@ -1556,7 +1556,7 @@ def adjustment_payment(request):
 #     girişi için ekran/endpoint hiç yazılmamıştı
 #
 # Bu endpoint:
-#   1. Payment (is_output=True, payment_type='ADJUSTMENT') yazar →
+#   1. Payment (is_output=True, payment_type='EXPENSE') yazar →
 #      kasa bakiyesi anında düşer (get_bank_balance_qs Payment'a dayanır)
 #   2. CashboxLedger.EXPENSE yazar → audit trail
 #   3. IncomeExpenseLedger.OTHER_EXPENSE yazar → P&L raporlamasına dahil
@@ -1581,7 +1581,7 @@ def manual_expense(request):
                                alanına yazılır; yoksa NULL kalır (geriye uyum).
 
     Yan etkiler:
-      • Payment(is_output=True, payment_type='ADJUSTMENT') — kasa bakiyesi düşer
+      • Payment(is_output=True, payment_type='EXPENSE') — kasa bakiyesi düşer
       • CashboxLedger.EXPENSE                              — audit/iz
       • IncomeExpenseLedger.OTHER_EXPENSE                  — gelir/gider defteri
                                                              (+ expense_category FK opsiyonel)
@@ -1651,7 +1651,7 @@ def manual_expense(request):
 
     payment = Payment.objects.create(
         process_no=None,
-        payment_type='ADJUSTMENT',
+        payment_type='EXPENSE',
         amount=amount,
         is_output=True,                                  # kasadan ÇIKIŞ
         bank_account=account,

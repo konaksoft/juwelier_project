@@ -245,6 +245,7 @@ class Payment(models.Model):
         ('TRANSFER', 'Havale / EFT'),
         ('COMMISSION', 'Komisyon'),
         ('ADJUSTMENT', 'Bakiye Düzeltme / Açılış'),  # FAZ 19
+        ('EXPENSE', 'Manuel Gider'),                  # Hızlı/Manuel gider girişleri
     ]
 
     class ReconciliationStatus(models.TextChoices):
@@ -487,6 +488,7 @@ class Payment(models.Model):
     #   TRANSFER     ↔ account_type=BANK
     #   COMMISSION   → bank_account opsiyonel (POS bağlamında yazılabilir)
     #   ADJUSTMENT   → bank_account opsiyonel (açılış bakiyesi)
+    #   EXPENSE      → bank_account opsiyonel (manuel gider — herhangi bir kasa)
 
     PAYMENT_TYPE_TO_ACCOUNT_TYPE = {
         'CASH':        'CASH',
@@ -502,8 +504,9 @@ class Payment(models.Model):
           2. payment_type ile bank_account.account_type uyumlu olmalı.
           3. bank_account.is_active=False ise yazım reddedilir.
 
-        COMMISSION ve ADJUSTMENT tiplerinde bank_account opsiyonel kalır
-        (geriye uyumluluk: bakiye açılışları, manuel düzeltmeler).
+        COMMISSION, ADJUSTMENT ve EXPENSE tiplerinde bank_account opsiyonel
+        kalır (geriye uyumluluk: bakiye açılışları, manuel düzeltmeler ve
+        hızlı/manuel gider kayıtları).
         """
         from django.core.exceptions import ValidationError
 

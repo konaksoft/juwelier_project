@@ -437,6 +437,7 @@
                                         <option value="TRANSFER">Havale/EFT</option>
                                         <option value="CASH">Nakit</option>
                                         <option value="COMMISSION">Komisyon</option>
+                                        <option value="EXPENSE">Manuel Gider</option>
                                         <option value="ADJUSTMENT">Bakiye Düzeltme / Açılış</option>
                                     </select>
                                 </div>
@@ -863,7 +864,7 @@
                     <div class="alert alert-light border small mb-0">
                         <i class="fa-solid fa-circle-info text-danger me-1"></i>
                         Bu işlem kasa bakiyesini <strong>düşürür</strong> ve Gelir/Gider Defteri'ne
-                        <strong>OTHER_EXPENSE</strong> olarak yazılır. Aylık kâr/zarar raporunda görünür.
+                        <strong>Diğer Gider</strong> olarak yazılır. Aylık kâr/zarar raporunda görünür.
                         Bu işlem bir <strong>satış/alış değildir</strong>.
                     </div>
                 </div>
@@ -1003,10 +1004,12 @@
                         data: 'payment_type_display',
                         render: function (data, type, row) {
                             var icon = 'fa-money-bill';
+                            var cls = 'text-muted';
                             if (row.payment_type === 'CREDIT_CARD') icon = 'fa-credit-card';
                             else if (row.payment_type === 'TRANSFER') icon = 'fa-right-left';
                             else if (row.payment_type === 'ADJUSTMENT') icon = 'fa-sliders';
-                            return '<i class="fa-solid ' + icon + ' me-1 text-muted"></i> ' + data;
+                            else if (row.payment_type === 'EXPENSE') { icon = 'fa-money-bill-trend-up'; cls = 'text-danger'; }
+                            return '<i class="fa-solid ' + icon + ' me-1 ' + cls + '"></i> ' + data;
                         }
                     },
                     {
