@@ -2,10 +2,10 @@
 import os
 import io
 import math
-import datetime
 from typing import Tuple, Optional
 from PIL import Image, ImageOps
 from django.core.files.base import ContentFile
+from django.utils import timezone  # FAZ 1 (TZ): Berlin saatine göre dosya adı
 
 
 def process_image(
@@ -175,5 +175,7 @@ def process_image(
 
 
 def _make_filename(ext: str) -> str:
-    now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # FAZ 1 (TZ): Django TIME_ZONE'a (Berlin) göre aware datetime → dosya adı
+    # tutarlılığı (yaz saati geçişlerinde dahi) garantilenir.
+    now_str = timezone.localtime(timezone.now()).strftime("%Y%m%d_%H%M%S")
     return f"{now_str}{ext}"

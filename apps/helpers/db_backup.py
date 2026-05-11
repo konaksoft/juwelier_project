@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 
 import subprocess
-import datetime
 import os
 import argparse
 import logging
+from datetime import datetime
+# FAZ 1 (TZ): Standalone CLI script — Django settings yüklenmediği için
+# zoneinfo ile explicit Europe/Berlin saat dilimi kullanılır. Yedek dosya
+# adındaki timestamp Berlin saatine göre yazılır (sistem clock'undan bağımsız).
+try:
+    from zoneinfo import ZoneInfo  # Python 3.9+
+    _LOCAL_TZ = ZoneInfo("Europe/Berlin")
+except ImportError:  # pragma: no cover — eski Python fallback
+    _LOCAL_TZ = None
 
 
 def postgresql_yedekle(kullanici_adi, parola, veritabani_adi, host, port):
@@ -15,7 +23,11 @@ def postgresql_yedekle(kullanici_adi, parola, veritabani_adi, host, port):
     yedek_dizini = os.path.join(ana_dizin, "backups")
     os.makedirs(yedek_dizini, exist_ok=True)
 
-    zaman_damgasi = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # FAZ 1 (TZ): Berlin saati — DST geçişlerinde bile tutarlı isimlendirme.
+    if _LOCAL_TZ is not None:
+        zaman_damgasi = datetime.now(_LOCAL_TZ).strftime("%Y-%m-%d_%H-%M-%S")
+    else:
+        zaman_damgasi = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     yedek_dosya_adi = f"{veritabani_adi}_yedek_{zaman_damgasi}.sql"
     yedek_dosya_yolu = os.path.join(yedek_dizini, yedek_dosya_adi)
 

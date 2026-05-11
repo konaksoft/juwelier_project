@@ -71,7 +71,9 @@ def parse_decimal_locale(val, default="0"):
 
 def generate_rfid_hex():
     """ZPL için 24 karakterlik Hex kodu üretir (Tarih + Random)."""
-    now = datetime.now()
+    # FAZ 1 (TZ): Berlin saatine göre RFID timestamp prefix'i — sistem
+    # clock'undan bağımsız, Almanya operasyonuyla tutarlı barkod üretimi.
+    now = timezone.localtime(timezone.now())
     time_part = now.strftime('%d%m%Y%H%M%S')  # 14 karakter
     random_part = str(random.randint(1, 9999999999)).zfill(10)  # 10 karakter
     return f"{time_part}{random_part}"

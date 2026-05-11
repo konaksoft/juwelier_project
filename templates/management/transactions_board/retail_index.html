@@ -4021,15 +4021,17 @@
                 // FAZ 22 FIX (Bug 1a — Retail): Cache key'i modal loadBankAccountsRetail'in
                 // kullandığı 'CASH_TRY' ile eşleştir; aksi halde shown.bs.modal'da ikinci AJAX
                 // atılır ve race condition oluşur (kullanıcı pill render'ı beklemeden Onayla'ya basabilir).
-                if (_bankAccountCacheRetail['CASH_TRY']) {
-                    _handleCashAccountsRetail(_bankAccountCacheRetail['CASH_TRY'], gross);
+                var _cashCacheKey = 'CASH_' + (window.STORE_CURRENCY_CODE || 'EUR');
+                if (_bankAccountCacheRetail[_cashCacheKey]) {
+                    _handleCashAccountsRetail(_bankAccountCacheRetail[_cashCacheKey], gross);
                 } else {
                     Swal.fire({
                         title: 'Kasalar yükleniyor...', allowOutsideClick: false, didOpen: function () {
                             Swal.showLoading();
                         }
                     });
-                    fetch('/banking/bank-accounts?account_type=CASH&active_only=1&currency=TRY')
+                    var _curForFetch = (window.STORE_CURRENCY_CODE || 'EUR');
+                    fetch('/banking/bank-accounts?account_type=CASH&active_only=1&currency=' + encodeURIComponent(_curForFetch))
                         .then(function (r) {
                             if (!r.ok) throw new Error('API hatası');
                             return r.json();
@@ -4038,8 +4040,8 @@
                             Swal.close();
                             var accounts = data.data || [];
                             // Backend currency filtresi desteklemiyorsa fallback (loadBankAccountsRetail ile aynı mantık)
-                            accounts = accounts.filter(function (a) { return (a.currency || 'TRY') === 'TRY'; });
-                            _bankAccountCacheRetail['CASH_TRY'] = accounts;
+                            accounts = accounts.filter(function (a) { return (a.currency || _curForFetch) === _curForFetch; });
+                            _bankAccountCacheRetail[_cashCacheKey] = accounts;
                             _handleCashAccountsRetail(accounts, gross);
                         })
                         .catch(function (err) {
@@ -4064,10 +4066,11 @@
             function _handleCashAccountsRetail(accounts, total) {
                 if (accounts.length === 0) {
                     // FAZ 18.2: Hata yerine Quick Create popup
-                    // FAZ 22 FIX (Bug 1a — Retail): Cache key 'CASH_TRY' olarak güncellendi.
-                    _quickCreateAndContinueRetail('CASH', 'TRY', 'Nakit Kasa Adı Girin', 'Örn: Merkez TL Kasası', function (newAccount) {
-                        if (!_bankAccountCacheRetail['CASH_TRY']) _bankAccountCacheRetail['CASH_TRY'] = [];
-                        _bankAccountCacheRetail['CASH_TRY'].push(newAccount);
+                    var _qcCur = (window.STORE_CURRENCY_CODE || 'EUR');
+                    var _qcKey = 'CASH_' + _qcCur;
+                    _quickCreateAndContinueRetail('CASH', _qcCur, 'Nakit Kasa Adı Girin', 'Örn: Merkez ' + _qcCur + ' Kasası', function (newAccount) {
+                        if (!_bankAccountCacheRetail[_qcKey]) _bankAccountCacheRetail[_qcKey] = [];
+                        _bankAccountCacheRetail[_qcKey].push(newAccount);
                         var form = document.getElementById('payment-form');
                         ensureHiddenInput(form, 'bank_account_cash', 'bank_account_cash').value = newAccount.id;
                         $('#payment-form').submit();
@@ -6286,7 +6289,7 @@
             var container = document.getElementById('bankAccountCashContainer');
             if (val > 0) {
                 container.style.display = 'block';
-                loadBankAccountsRetail('CASH', 'bankAccountCashPills', 'bankAccountCashSelect', 'TRY');
+                loadBankAccountsRetail('CASH', 'bankAccountCashPills', 'bankAccountCashSelect', (window.STORE_CURRENCY_CODE || 'EUR'));
             } else {
                 container.style.display = 'none';
                 document.getElementById('bankAccountCashSelect').value = '';
@@ -6302,7 +6305,7 @@
             const container = document.getElementById('bankAccountCardContainer');
             if (val > 0) {
                 container.style.display = 'block';
-                loadBankAccountsRetail('POS', 'bankAccountCardPills', 'bankAccountCardSelect', 'TRY');
+                loadBankAccountsRetail('POS', 'bankAccountCardPills', 'bankAccountCardSelect', (window.STORE_CURRENCY_CODE || 'EUR'));
             } else {
                 container.style.display = 'none';
                 document.getElementById('bankAccountCardSelect').value = '';
@@ -6478,7 +6481,7 @@
             var container = document.getElementById('bankAccountTransferContainer');
             if (val > 0) {
                 container.style.display = 'block';
-                loadBankAccountsRetail('BANK', 'bankAccountTransferPills', 'bankAccountTransferSelect', 'TRY');
+                loadBankAccountsRetail('BANK', 'bankAccountTransferPills', 'bankAccountTransferSelect', (window.STORE_CURRENCY_CODE || 'EUR'));
             } else {
                 container.style.display = 'none';
                 document.getElementById('bankAccountTransferSelect').value = '';
@@ -6525,22 +6528,23 @@
         document.getElementById('manualPaymentModal').addEventListener('shown.bs.modal', function () {
             var mode = window._paymentModalMode || 'manual';
 
-            // FAZ 20: Ödeme kasaları HER ZAMAN TRY — döviz kasası backend'in işi
+            // FAZ 20.x: Ödeme kasaları mağazanın primary_currency'si — döviz kasası backend'in işi
+            var _modeCur = (window.STORE_CURRENCY_CODE || 'EUR');
             if (mode === 'direct_cash') {
                 document.getElementById('payRowCard').style.display = 'none';
                 document.getElementById('payRowTransfer').style.display = 'none';
                 document.getElementById('bankAccountCashContainer').style.display = 'block';
-                loadBankAccountsRetail('CASH', 'bankAccountCashPills', 'bankAccountCashSelect', 'TRY');
+                loadBankAccountsRetail('CASH', 'bankAccountCashPills', 'bankAccountCashSelect', _modeCur);
             } else if (mode === 'direct_card') {
                 document.getElementById('payRowCash').style.display = 'none';
                 document.getElementById('payRowTransfer').style.display = 'none';
                 document.getElementById('bankAccountCardContainer').style.display = 'block';
-                loadBankAccountsRetail('POS', 'bankAccountCardPills', 'bankAccountCardSelect', 'TRY');
+                loadBankAccountsRetail('POS', 'bankAccountCardPills', 'bankAccountCardSelect', _modeCur);
             } else if (mode === 'direct_transfer') {
                 document.getElementById('payRowCash').style.display = 'none';
                 document.getElementById('payRowCard').style.display = 'none';
                 document.getElementById('bankAccountTransferContainer').style.display = 'block';
-                loadBankAccountsRetail('BANK', 'bankAccountTransferPills', 'bankAccountTransferSelect', 'TRY');
+                loadBankAccountsRetail('BANK', 'bankAccountTransferPills', 'bankAccountTransferSelect', _modeCur);
             }
         });
 
@@ -6566,10 +6570,11 @@
                 var cardSelect = document.getElementById('bankAccountCardSelect');
                 var transferSelect = document.getElementById('bankAccountTransferSelect');
 
+                var _btnCur = (window.STORE_CURRENCY_CODE || 'EUR');
                 if (cash > 0 && !cashSelect.value) {
                     e.stopImmediatePropagation();
                     _quickCreateLockRetail = true;
-                    _quickCreateAndContinueRetail('CASH', 'TRY', 'Nakit Kasa Adı Girin', 'Örn: Merkez TL Kasası', function (newAcc) {
+                    _quickCreateAndContinueRetail('CASH', _btnCur, 'Nakit Kasa Adı Girin', 'Örn: Merkez ' + _btnCur + ' Kasası', function (newAcc) {
                         _quickCreateLockRetail = false;
                         cashSelect.value = newAcc.id;
                         submitManualPaymentRetail(cash, card, transfer);
@@ -6579,7 +6584,7 @@
                 if (card > 0 && !cardSelect.value) {
                     e.stopImmediatePropagation();
                     _quickCreateLockRetail = true;
-                    _quickCreateAndContinueRetail('POS', 'TRY', 'POS / Banka Adı Girin', 'Örn: Ziraat POS', function (newAcc) {
+                    _quickCreateAndContinueRetail('POS', _btnCur, 'POS / Banka Adı Girin', 'Örn: Sparkasse POS', function (newAcc) {
                         _quickCreateLockRetail = false;
                         cardSelect.value = newAcc.id;
                         submitManualPaymentRetail(cash, card, transfer);
@@ -6589,7 +6594,7 @@
                 if (transfer > 0 && !transferSelect.value) {
                     e.stopImmediatePropagation();
                     _quickCreateLockRetail = true;
-                    _quickCreateAndContinueRetail('BANK', 'TRY', 'Banka Hesabı Adı Girin', 'Örn: Garanti Bankası', function (newAcc) {
+                    _quickCreateAndContinueRetail('BANK', _btnCur, 'Banka Hesabı Adı Girin', 'Örn: Deutsche Bank', function (newAcc) {
                         _quickCreateLockRetail = false;
                         transferSelect.value = newAcc.id;
                         submitManualPaymentRetail(cash, card, transfer);
@@ -6703,14 +6708,15 @@
             var btn = $(this);
             var accType = btn.data('acc-type') || 'CASH';
             var accLabel = btn.data('acc-label') || 'Hesap';
+            var _pillCur = (window.STORE_CURRENCY_CODE || 'EUR');
             var placeholders = {
-                'CASH': 'Örn: Merkez TL Kasası',
-                'POS': 'Örn: Ziraat POS',
-                'BANK': 'Örn: Garanti Bankası'
+                'CASH': 'Örn: Merkez ' + _pillCur + ' Kasası',
+                'POS': 'Örn: Sparkasse POS',
+                'BANK': 'Örn: Deutsche Bank'
             };
 
-            _quickCreateAndContinueRetail(accType, 'TRY', accLabel + ' Adı Girin', placeholders[accType] || '', function (newAcc) {
-                var cacheKey = accType + '_TRY';
+            _quickCreateAndContinueRetail(accType, _pillCur, accLabel + ' Adı Girin', placeholders[accType] || '', function (newAcc) {
+                var cacheKey = accType + '_' + _pillCur;
                 if (!_bankAccountCacheRetail[cacheKey]) _bankAccountCacheRetail[cacheKey] = [];
                 _bankAccountCacheRetail[cacheKey].push(newAcc);
                 var mapping = {

@@ -776,3 +776,114 @@ R-Faz 1-3, 5, 6 kod-yolu refactoring; şema değişikliği yok. `update_product_
 - `apps/bracelets/views.py` (3 yer: COMPLETED filtresi)
 
 **Migration gerekmez** (sadece kod yolu refactoring; şema değişikliği yok).
+
+
+---
+
+## FAZ 1 — YEREL SAAT & YERELLEŞTİRME (Almanya/Avrupa Pazarı Hazırlığı) — 2026-05-11
+
+### Bağlam
+
+Proje önceden Türkiye merkezli "Kuyum Plus"tan port edildiği için tüm saat dilimi
+ve yerelleştirme ayarları İstanbul'a (UTC+3) hardcode edilmişti. Almanya pazarına
+deploy öncesi kapsamlı audit yapıldı; **13 sınıf bulgu** tespit edildi (3 KRİTİK,
+3 YÜKSEK, 4 ORTA, 3 DÜŞÜK). Bu fazda KRİTİK + YÜKSEK öncelikli maddeler işlendi.
+
+### Mimari Kararlar
+
+- **TIME_ZONE='Europe/Berlin' + USE_TZ=True kombinasyonu (SSOT):**
+  - DB'de tüm yeni timestamp'ler UTC olarak saklanır (Django ORM convention)
+  - Görüntülenirken `timezone.localtime()` ile Berlin saatine çevrilir
+  - DST geçişlerinde (Mart/Ekim) otomatik kayma yapılır → manuel müdahale yok
+- **Per-store timezone esnekliği:** `StoreConfiguration.timezone_code` alanı eklendi
+  (default `Europe/Berlin`); şimdilik UI'da read-only, ileride per-request middleware
+  ile aktif edilebilir. Çoklu lokasyon (Berlin + Wien + Zürich gibi) senaryosuna hazır.
+- **CELERY_ENABLE_UTC=True + CELERY_TIMEZONE='Europe/Berlin':** Broker UTC ile
+  konuşur, ama beat schedule'lar Berlin saatine göre tetiklenir; DST otomatik.
+- **Standalone CLI scriptlerinde zoneinfo fallback:** `apps/helpers/db_backup.py`
+  Django context dışında çalışabildiği için `from zoneinfo import ZoneInfo` ile
+  explicit `Europe/Berlin` saati kullanır.
+
+### Uygulanan Düzeltmeler (10 dosya, 1 migration)
+
+**Settings katmanı (3 dosya):**
+- `juwelier_project/settings.py`:
+  - `TIME_ZONE`: `'Europe/Istanbul'` → `'Europe/Berlin'`
+  - `USE_TZ`: `False` → `True`
+  - `LANGUAGE_CODE`: `'tr'` → `'de'` (LANGUAGES sırası de/en/tr olarak yeniden düzenlendi)
+  - Yeni: `DATE_FORMAT='d.m.Y'`, `DATETIME_FORMAT='d.m.Y H:i'`, `TIME_FORMAT='H:i'`,
+    `SHORT_DATE_FORMAT`, `SHORT_DATETIME_FORMAT`
+  - Yeni: `FIRST_DAY_OF_WEEK=1` (AB standardı, Pazartesi)
+  - Yeni: `CELERY_TIMEZONE='Europe/Berlin'`, `CELERY_ENABLE_UTC=True`
+  - Yeni: `LOCALE_PATHS=[BASE_DIR/locale]`
+- `juwelier_project/settings_test.py`: aynı production simetrisi (USE_TZ=True dahil)
+- `juwelier_project/celery.py`:
+  - `app.conf.timezone='Europe/Berlin'` + `enable_utc=True` defansif satırlar
+  - 4 beat schedule saati Berlin'e göre yeniden tanımlandı:
+    - `stock-integrity-check-daily`: 00:05 → **02:00 Berlin**
+    - `dashboard-nightly-rollup`: 02:05 → **02:30 Berlin**
+    - `backups-cleanup-chunked-uploads-daily`: 02:30 → **03:30 Berlin**
+    - `stock-cleanup-old-quotes-weekly`: 03:00 Pazar → **03:00 Pazar Berlin** (saat aynı kaldı, semantiği netleşti)
+
+**`datetime.now()` → `timezone.now()` (5 dosya):**
+- `apps/banking/bank_views.py` (4 nokta): rapor başlığı, transfer process_no, transfer
+  timestamp, kasa kapanış tarihi (`timezone.localdate()` kullanıldı)
+- `apps/stock_management/management/commands/audit_custody_stock_split.py` (3 nokta +
+  import): log dosyası adı, log başlık ve bitiş timestamp
+- `apps/helpers/db_backup.py`: standalone CLI script — `zoneinfo.ZoneInfo("Europe/Berlin")`
+  ile explicit local time
+- `apps/helpers/image_resize.py`: `_make_filename` Berlin saatine göre
+- `apps/gold_purchases/views.py::generate_rfid_hex`: RFID timestamp prefix Berlin
+
+**Model katmanı (1 dosya + 1 migration):**
+- `apps/settings/models.py::StoreConfiguration`: `timezone_code` CharField eklendi
+  (max_length=64, choices=8 Avrupa şehri, default='Europe/Berlin')
+- `apps/settings/migrations/0004_storeconfiguration_timezone_code.py` (manuel yazıldı)
+
+### Geriye Dönük Uyumluluk
+
+- **Mevcut DB kayıtları:** USE_TZ=False'tan True'ya geçişte Django var olan naive
+  timestamp'leri **otomatik olarak `TIME_ZONE` (Berlin)** kabul eder. Veri migrasyonu
+  GEREKMEZ; PostgreSQL kolonları zaten `timestamp without time zone` olarak kalır.
+- **Eski kayıtların yorumu:** İstanbul saatine göre yazılmış eski timestamp'ler artık
+  Berlin saati gibi görünür → yaklaşık 2 saat erken görünür. Bu kabul edilebilir
+  bir migrasyon maliyetidir (geçmiş analitik raporları için minor kayma).
+- **API yanıtları:** USE_TZ=True ile DRF/JSON serializer'lar artık ISO 8601 + offset
+  (`+01:00`/`+02:00`) döndürür. Frontend tüketiciler bu formatı zaten parse edebilir.
+
+### Kalan Backlog (Sonraki Fazlar)
+
+1. **FAZ 2 — Çeviri Dosyaları:** `locale/de/LC_MESSAGES/django.po` oluştur, model
+   `verbose_name` ve template `{% trans %}` etiketlerini Almanca'ya çevir
+2. **FAZ 3 — Aware/Naive Karışıklık Temizliği:** `apps/crm/leads/views.py`,
+   `apps/suppliers/views.py`, `apps/repairs/views.py`, `apps/gold_purchases/views.py`
+   içindeki defansif `timezone.is_naive()` kontrolleri artık gereksiz; sadeleştir
+3. **FAZ 4 — Hardcoded Format Stringler:** 100+ şablonda `{{ x|date:"d.m.Y" }}` →
+   `{{ x|date:"SHORT_DATE_FORMAT" }}` veya `{{ x }}` (settings'ten otomatik gelir)
+4. **FAZ 5 — Per-Store TZ Aktivasyonu:** `StoreLanguageMiddleware`'e timezone
+   aktivasyonu ekle (`timezone.activate(store.config.timezone_code)`)
+
+### Geliştirici Notu (Ayrıca)
+
+- Migration uygulanmadan önce `python manage.py check` çalıştırılmalı (geliştirici
+  sorumluluğu — kural 1).
+- USE_TZ=True'a geçtikten sonra **yeni** `auto_now`/`auto_now_add` kayıtları aware
+  olur; mevcut servislerde `timezone.now()` kullanımı zaten doğru patternde.
+- `pytz` artık aktif kullanılır hale geldi (önceden requirements'ta "ölü" idi).
+
+### Etkilenen Dosyalar Özeti
+
+| Dosya | Değişiklik |
+|---|---|
+| `juwelier_project/settings.py` | TIME_ZONE/USE_TZ/LANG/format/celery |
+| `juwelier_project/settings_test.py` | Aynı blok production simetrisi |
+| `juwelier_project/celery.py` | TZ explicit + 3 cron saati Berlin'e |
+| `apps/banking/bank_views.py` | 4 yer `dt_datetime.now()` → `timezone.now()` |
+| `apps/stock_management/.../audit_custody_stock_split.py` | 3 yer + import temizliği |
+| `apps/helpers/db_backup.py` | zoneinfo standalone fix |
+| `apps/helpers/image_resize.py` | timezone.now() |
+| `apps/gold_purchases/views.py` | generate_rfid_hex Berlin TZ |
+| `apps/settings/models.py` | StoreConfiguration.timezone_code (yeni alan) |
+| `apps/settings/migrations/0004_storeconfiguration_timezone_code.py` | YENİ |
+
+**Migration GEREKİR** (yeni alan `timezone_code` için): geliştirici manuel uygular.

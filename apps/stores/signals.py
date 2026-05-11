@@ -164,15 +164,26 @@ def create_default_bank_accounts(sender, instance, created, **kwargs):
     if BankAccount.objects.filter(store=instance).exists():
         return
 
+    # FAZ 20.x: StoreConfiguration.primary_currency'i oku.
+    # post_save sırası: önce create_store_config (yukarıda) → sonra bu sinyal.
+    # Yine de güvenli okumak için try/except ile sarmalanır.
+    primary_cur = 'EUR'
+    try:
+        cfg = StoreConfiguration.objects.filter(store=instance).first()
+        if cfg and getattr(cfg, 'primary_currency', None):
+            primary_cur = (cfg.primary_currency or 'EUR').upper()
+    except Exception:
+        primary_cur = 'EUR'
+
     try:
         with transaction.atomic():
             # 1) Merkez Nakit Kasa
             BankAccount.objects.create(
                 store=instance,
-                name='Merkez Nakit Kasa',
+                name=f'Merkez {primary_cur} Nakit Kasası',
                 bank_name=None,
                 iban=None,
-                currency='TRY',
+                currency=primary_cur,
                 account_type=BankAccount.AccountType.CASH,
                 reconciliation_tolerance=Decimal('0.50'),
                 is_active=True,
@@ -181,10 +192,10 @@ def create_default_bank_accounts(sender, instance, created, **kwargs):
             # 2) Merkez Havale/EFT Hesabı
             BankAccount.objects.create(
                 store=instance,
-                name='Merkez Havale/EFT Hesabı',
+                name=f'Merkez {primary_cur} Havale/EFT Hesabı',
                 bank_name=None,
                 iban=None,
-                currency='TRY',
+                currency=primary_cur,
                 account_type=BankAccount.AccountType.BANK,
                 reconciliation_tolerance=Decimal('0.50'),
                 is_active=True,
@@ -193,10 +204,10 @@ def create_default_bank_accounts(sender, instance, created, **kwargs):
             # 3) Merkez POS Kasası + varsayılan POSCommissionRate
             pos_account = BankAccount.objects.create(
                 store=instance,
-                name='Merkez POS Kasası',
+                name=f'Merkez {primary_cur} POS Kasası',
                 bank_name=None,
                 iban=None,
-                currency='TRY',
+                currency=primary_cur,
                 account_type=BankAccount.AccountType.POS,
                 reconciliation_tolerance=Decimal('0.50'),
                 is_active=True,

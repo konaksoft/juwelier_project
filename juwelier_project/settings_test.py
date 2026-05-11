@@ -157,11 +157,27 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "tr"
-TIME_ZONE = "Europe/Istanbul"
+# ─────────────────────────────────────────────────────────────────────────────
+# Test ortamı da Almanya/Berlin saat dilimine sabitlendi → CI'da timezone
+# bağımlı bug'lar (DST, naive/aware karışımı, format) production ile aynı
+# koşullarda yakalanır. USE_TZ=True production ile simetrik.
+# ─────────────────────────────────────────────────────────────────────────────
+LANGUAGE_CODE = "de"
+TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 USE_L10N = True
-USE_TZ = False
+USE_TZ = True
+
+# Production ile aynı format ayarları → şablon testleri tutarlı sonuç verir.
+DATE_FORMAT = 'd.m.Y'
+DATETIME_FORMAT = 'd.m.Y H:i'
+TIME_FORMAT = 'H:i'
+SHORT_DATE_FORMAT = 'd.m.Y'
+SHORT_DATETIME_FORMAT = 'd.m.Y H:i'
+FIRST_DAY_OF_WEEK = 1
+
+CELERY_TIMEZONE = 'Europe/Berlin'
+CELERY_ENABLE_UTC = True
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = (str(BASE_DIR / "static"),)

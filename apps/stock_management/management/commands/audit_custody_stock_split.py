@@ -92,11 +92,11 @@ GÜVENLİK:
 
 import csv
 import sys
-from datetime import datetime
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils import timezone  # FAZ 1 (TZ): naive datetime.now() yerine
 from django.db.models import Sum
 
 from apps.stock_management.models import StockSnapshot, StockLedger
@@ -496,13 +496,14 @@ class Command(BaseCommand):
         if log_file_arg:
             log_file_path = log_file_arg
         else:
-            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            # FAZ 1 (TZ): Berlin saatine göre log dosyası adı; sistem clock'una bağlı değil.
+            ts = timezone.localtime(timezone.now()).strftime('%Y%m%d_%H%M%S')
             log_file_path = f'/tmp/faz48_apply_{ts}.log'
 
         log_lines = []
         log_lines.append('=' * 78)
         log_lines.append(
-            f'FAZ 48.3 — Backfill Apply Log | Başlangıç: {datetime.now().isoformat()}'
+            f'FAZ 48.3 — Backfill Apply Log | Başlangıç: {timezone.localtime(timezone.now()).isoformat()}'
         )
         log_lines.append('=' * 78)
         log_lines.append('')
@@ -784,7 +785,7 @@ class Command(BaseCommand):
         log_lines.append('=' * 78)
         log_lines.append(f'Uygulanan satır : {applied_count}')
         log_lines.append(f'Atlanan satır   : {len(to_skip)}')
-        log_lines.append(f'Bitiş           : {datetime.now().isoformat()}')
+        log_lines.append(f'Bitiş           : {timezone.localtime(timezone.now()).isoformat()}')
 
         self._write_log_file(log_file_path, log_lines)
 

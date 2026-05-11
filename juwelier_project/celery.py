@@ -15,6 +15,17 @@ app.conf.beat_schedule_filename = os.environ.get(
 )
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+# ─────────────────────────────────────────────────────────────────────────────
+# YEREL SAAT (FAZ 1 — Almanya/Avrupa Pazarı Hazırlığı)
+# ─────────────────────────────────────────────────────────────────────────────
+# settings.CELERY_TIMEZONE='Europe/Berlin' burada da garanti altına alınır
+# (config_from_object'in kapsam dışı kaldığı durumlar için defansif). Tüm
+# crontab() schedule'ları Berlin saatine göre tetiklenir; broker'da timestamp
+# UTC olarak saklanır → DST geçişlerinde otomatik kayma yapılır.
+# ─────────────────────────────────────────────────────────────────────────────
+app.conf.timezone = 'Europe/Berlin'
+app.conf.enable_utc = True
+
 # --- DB Baglanti Havuzu Korumasi (HATA 6 Fix) ---
 # CONN_MAX_AGE=60 ile Celery worker'lari eski baglantilar biriktirir.
 # Her task oncesi/sonrasi kapat → "too many clients" hatasini engeller.
@@ -51,29 +62,29 @@ app.conf.beat_schedule = {
     },
     'stock-integrity-check-daily': {
         'task': 'stock_management.daily_stock_integrity_check',
-        'schedule': crontab(hour=0, minute=5),  # Her gun 00:05
+        'schedule': crontab(hour=2, minute=0),  # Her gün 02:00 Berlin saati
         'options': {'queue': 'default'},
     },
     'stock-cleanup-old-quotes-weekly': {
         'task': 'stock_management.cleanup_old_price_quotes',
-        'schedule': crontab(hour=3, minute=0, day_of_week=0),  # Pazar 03:00
+        'schedule': crontab(hour=3, minute=0, day_of_week=0),  # Pazar 03:00 Berlin
         'options': {'queue': 'default'},
     },
     # ── FAZ R-3: Dashboard Rollup Task'ları ──
     'dashboard-nightly-rollup': {
         'task': 'dashboard.compute_daily_rollups',
-        'schedule': crontab(hour=2, minute=5),  # Her gece 02:05
+        'schedule': crontab(hour=2, minute=30),  # Her gece 02:30 Berlin
         'options': {'queue': 'default'},
     },
     'dashboard-today-rollup-15min': {
         'task': 'dashboard.compute_today_rollup',
-        'schedule': 15 * 60,  # Her 15 dakikada bir (saniye cinsinden)
+        'schedule': 15 * 60,  # Her 15 dakikada bir (saniye cinsinden — TZ bağımsız)
         'options': {'queue': 'default'},
     },
     # ── FAZ 60.2: Yarım kalan parçalı yüklemeleri günlük temizle ──
     'backups-cleanup-chunked-uploads-daily': {
         'task': 'backups.cleanup_chunked_uploads',
-        'schedule': crontab(hour=2, minute=30),  # Her gece 02:30
+        'schedule': crontab(hour=3, minute=30),  # Her gece 03:30 Berlin
         'options': {'queue': 'default'},
     },
     # ── Kitco Uluslararası Spot Fiyat Fetch (juwelier_plus port) ──

@@ -239,16 +239,54 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LANGUAGE_CODE = 'tr'
+# ─────────────────────────────────────────────────────────────────────────────
+# YEREL SAAT & YERELLEŞTİRME (FAZ 1 — Almanya/Avrupa Pazarı Hazırlığı)
+# ─────────────────────────────────────────────────────────────────────────────
+# Almanya (DE) merkezli kuyumculuk operasyonu için saat dilimi ve dil
+# ayarları juwelier_plus'tan port edilmiştir. TIME_ZONE artık 'Europe/Berlin'
+# (UTC+1 / yaz UTC+2). USE_TZ=True ile Django timezone-aware datetime moduna
+# geçirildi → tüm yeni kayıtlar UTC olarak DB'ye yazılır, görüntülenirken
+# Berlin saatine çevrilir. Bu sayede yaz saati (DST) geçişlerinde veri
+# kaybı / kayma yaşanmaz.
+#
+# DATE_FORMAT / DATETIME_FORMAT / TIME_FORMAT ayarları Alman locale stiline
+# (d.m.Y H:i) sabitlenmiştir. Şablonlardaki hardcoded format string'ler ile
+# uyumlu. FIRST_DAY_OF_WEEK=1 → AB standartı (Pazartesi).
+# ─────────────────────────────────────────────────────────────────────────────
+LANGUAGE_CODE = 'de'
 LANGUAGES = [
-    ('tr', 'Türkçe'),
     ('de', 'Deutsch'),
     ('en', 'English'),
+    ('tr', 'Türkçe'),
 ]
-TIME_ZONE = 'Europe/Istanbul'
+TIME_ZONE = 'Europe/Berlin'
 USE_I18N = True
 USE_L10N = True
-USE_TZ = False
+USE_TZ = True
+
+# Alman tarih/saat formatı — Django'nun varsayılan locale formatlarını
+# override eder. Şablonlardaki {{ x|date:"d.m.Y" }} kullanımları korunur.
+DATE_FORMAT = 'd.m.Y'
+DATETIME_FORMAT = 'd.m.Y H:i'
+TIME_FORMAT = 'H:i'
+SHORT_DATE_FORMAT = 'd.m.Y'
+SHORT_DATETIME_FORMAT = 'd.m.Y H:i'
+
+# AB standardı: hafta Pazartesi başlar (0=Pazar, 1=Pazartesi)
+FIRST_DAY_OF_WEEK = 1
+
+# Celery beat schedule'ları Berlin saatine göre tetiklensin. CELERY_ENABLE_UTC
+# True kalır (broker UTC kullanır), beat sadece görüntülenirken Berlin saatine
+# çevirir → DST geçişleri otomatik yönetilir.
+CELERY_TIMEZONE = 'Europe/Berlin'
+CELERY_ENABLE_UTC = True
+
+# LOCALE_PATHS — proje-spesifik Almanca/İngilizce/Türkçe çevirileri.
+# Bu dizinler henüz oluşturulmadıysa Django sessizce atlar; ileride
+# `django-admin makemessages -l de` ile doldurulacaktır.
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static/'),)

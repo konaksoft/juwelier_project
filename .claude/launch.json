@@ -1,11 +1,22 @@
 {
-  "version": "0.0.1",
-  "configurations": [
-    {
-      "name": "django-dev",
-      "runtimeExecutable": "/Users/yunuskonak/Desktop/projects/jewelery_project/.venv/bin/python",
-      "runtimeArgs": ["manage.py", "runserver", "0.0.0.0:8000"],
-      "port": 8000
-    }
-  ]
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "LS",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(python manage.py check)",
+      "Bash(python manage.py makemigrations:*)"
+    ],
+    "deny": [
+      "Bash(rm:*)",
+      "Bash(sudo:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)"
+    ]
+  }
 }

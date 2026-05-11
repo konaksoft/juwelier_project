@@ -53,6 +53,25 @@ def _get_store(request):
     return getattr(request.user, 'store', None)
 
 
+def _get_store_primary_currency(store, default='EUR'):
+    """
+    FAZ 20.x — StoreConfiguration.primary_currency okur.
+
+    StoreConfig yoksa veya alan boşsa `default` döner. Asla istisna fırlatmaz;
+    rapor/özet akışları her durumda çalışmaya devam etmelidir.
+    """
+    if not store:
+        return default
+    try:
+        from apps.settings.models import StoreConfiguration  # lazy import
+        cfg = StoreConfiguration.objects.filter(store=store).first()
+        if cfg and getattr(cfg, 'primary_currency', None):
+            return (cfg.primary_currency or default).upper()
+    except Exception:
+        pass
+    return default
+
+
 def _require_store(request):
     store = _get_store(request)
     if not store:
@@ -173,22 +192,24 @@ def _effective_amount_expr():
     return Coalesce(F('payments__net_amount'), F('payments__amount'))
 
 
-def _multicurrency_amount_expr():
+def _multicurrency_amount_expr(primary_cur='TRY'):
     """
     FAZ 20: Çoklu para birimi desteği (Merkez Döviz Kasası dahil).
 
     Kasanın currency alanına göre doğru tutarı seçer:
-      - TRY kasaları → net_amount → amount
-      - FX kasaları (Merkez Döviz) → currency_amount → amount (TL bakiyeyi gösterir)
+      - Birincil para birimi kasaları → net_amount → amount
+      - FX kasaları (Merkez Döviz)    → currency_amount → amount (TL bakiyeyi gösterir)
       - Eski döviz kasaları (USD, EUR vb.) → currency_amount → amount
 
     get_bank_balance_qs() annotation'ları içinde kullanılır.
     FX kasası için bakiye TL olarak gösterilir (döviz bazlı gruplama detail'de yapılır).
+
+    FAZ 20.x: Birincil para birimi artık parametre (önceki sabit 'TRY' geriye uyumlu default).
     """
     return Case(
-        # TRY kasaları: mevcut mantık (net_amount → amount)
+        # Birincil para birimi kasaları: mevcut mantık (net_amount → amount)
         When(
-            currency='TRY',
+            currency=primary_cur,
             then=Coalesce(
                 F('payments__net_amount'),
                 F('payments__amount'),
@@ -222,8 +243,10 @@ def get_bank_balance_qs(store):
             balance = (acc.total_in or 0) - (acc.total_out or 0)
     """
     # FAZ 17: _multicurrency_amount_expr() kasanın currency alanına göre
-    # doğru tutarı seçer (TRY → net_amount/amount, döviz → currency_amount/amount)
-    _amt = _multicurrency_amount_expr()
+    # doğru tutarı seçer (birincil para → net_amount/amount, döviz → currency_amount/amount)
+    # FAZ 20.x: Birincil para birimi StoreConfiguration'dan okunur.
+    _primary_cur = _get_store_primary_currency(store, default='TRY')
+    _amt = _multicurrency_amount_expr(primary_cur=_primary_cur)
 
     return BankAccount.objects.filter(
         store=store, is_deleted=False,
@@ -405,8 +428,11 @@ def bank_consolidated_report(request):
         store=store, is_deleted=False, is_active=True,
     )
 
-    # 1. SADECE TRY KASALARINI TL TOPLAMINA DAHİL ET
-    try_qs = qs.filter(currency='TRY')
+    # FAZ 20.x: Birincil para birimi StoreConfiguration'dan okunur.
+    _primary_cur = _get_store_primary_currency(store, default='TRY')
+
+    # 1. SADECE BİRİNCİL PARA BİRİMİ KASALARINI ANA TOPLAMA DAHİL ET
+    try_qs = qs.filter(currency=_primary_cur)
 
     # Tip bazli aggregate
     type_summary = {}
@@ -477,8 +503,8 @@ def bank_consolidated_report(request):
     # 2. DÖVİZ KASALARINI (Giriş, Çıkış ve Net Bakiyeler) AYRI TOPLA
     fx_summary = {}
 
-    # 2A. Spesifik Döviz Kasaları (USD, EUR vb. TRY ve FX olmayanlar)
-    explicit_fx_accounts = qs.exclude(currency__in=['TRY', 'FX'])
+    # 2A. Spesifik Döviz Kasaları (USD, EUR vb. — birincil ve FX olmayanlar)
+    explicit_fx_accounts = qs.exclude(currency__in=[_primary_cur, 'FX'])
     for acc in explicit_fx_accounts:
         code = acc.currency
         if code not in fx_summary:
@@ -940,7 +966,9 @@ def bank_management_export(request, account_id):
             'currency': _row_currency,  # FAZ 20.4: Gerçek birim
         })
 
-    now_str = dt_datetime.now().strftime('%d/%m/%Y %H:%M')
+    # FAZ 1 (TZ): timezone.localtime → Berlin saatine çevrilmiş aware datetime;
+    # raporun başlık tarihi sistem clock'una değil Django TIME_ZONE'una bağlı.
+    now_str = timezone.localtime(timezone.now()).strftime('%d.%m.%Y %H:%M')
 
     # FAZ 20.4: FX kasa döviz kırılımı
     fx_breakdown = _get_fx_breakdown(account) if account.currency == 'FX' else None
@@ -1177,7 +1205,9 @@ def bank_transfer_view(request):
 
     # process_no veritabanında max_length=15 karakter.
     # V-YYMMDDHHMMSS formatı = 14 karakter (güvenli).
-    short_timestamp = dt_datetime.now().strftime("%y%m%d%H%M%S")
+    # FAZ 1 (TZ): timezone.localtime → Berlin saatine göre referans üretilir;
+    # transfer_ref'in saat dilimi tutarlılığı raporlarla uyumlu kalır.
+    short_timestamp = timezone.localtime(timezone.now()).strftime("%y%m%d%H%M%S")
     transfer_ref = f'V-{short_timestamp}'
     transfer_label = note or f'{from_acc.name} -> {to_acc.name}'
 
@@ -1187,7 +1217,9 @@ def bank_transfer_view(request):
         _extra_fields['currency_amount'] = amount
         _extra_fields['exchange_rate'] = Decimal('1')
 
-    now = dt_datetime.now()
+    # FAZ 1 (TZ): Aware datetime — USE_TZ=True moduyla uyumlu, ORM'e doğrudan
+    # yazılabilir, naive/aware karışıklığı oluşmaz.
+    now = timezone.now()
 
     with transaction.atomic():
         # Cikis kaydi (gonderen kasadan para cikiyor)
@@ -1330,7 +1362,8 @@ def daily_close_view(request):
         except ValueError:
             return JsonResponse({'result': False, 'msg': 'Gecersiz tarih formati (YYYY-MM-DD).'})
     else:
-        close_date = dt_datetime.now().date()
+        # FAZ 1 (TZ): Berlin saatine göre tarih (UTC midnight kayması engellenir).
+        close_date = timezone.localdate()
 
     # Fiziksel sayim
     try:

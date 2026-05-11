@@ -641,13 +641,21 @@ def get_store_assets_summary(store):
         else:
             pos_bank_accounts.append(entry)
 
+    # FAZ 20.x: Birincil para birimi StoreConfiguration'dan dinamik okunur.
+    try:
+        from apps.settings.models import StoreConfiguration  # lazy
+        _cfg_summary = StoreConfiguration.objects.filter(store=store).first()
+        _summary_primary_cur = (getattr(_cfg_summary, 'primary_currency', None) or 'TRY').upper()
+    except Exception:
+        _summary_primary_cur = 'TRY'
+
     for row in account_rows:
         _push({
             'id': str(row['bank_account__id']),
             'name': row['bank_account__name'],
             'bank_name': row['bank_account__bank_name'] or '',
             'account_type': row['bank_account__account_type'],
-            'currency': row['bank_account__currency'] or 'TRY',
+            'currency': row['bank_account__currency'] or _summary_primary_cur,
             'balance': float(row['balance'] or 0),
         })
 
@@ -659,7 +667,7 @@ def get_store_assets_summary(store):
             'name': acc['name'],
             'bank_name': acc['bank_name'] or '',
             'account_type': acc['account_type'],
-            'currency': acc['currency'] or 'TRY',
+            'currency': acc['currency'] or _summary_primary_cur,
             'balance': 0.0,
         })
 
@@ -1218,21 +1226,29 @@ def get_tab1_assets_data(store):
         store=store, is_deleted=False, is_active=True,
     ).values('id', 'account_type', 'currency')
 
+    # FAZ 20.x: Birincil para birimi StoreConfiguration'dan dinamik okunur.
+    try:
+        from apps.settings.models import StoreConfiguration  # lazy
+        _cfg = StoreConfiguration.objects.filter(store=store).first()
+        _primary_cur = (getattr(_cfg, 'primary_currency', None) or 'TRY').upper()
+    except Exception:
+        _primary_cur = 'TRY'
+
     kasa = {}
     banka_pos_toplam_try = 0.0
     for r in account_rows:
-        cur = (r['bank_account__currency'] or 'TRY').upper()
+        cur = (r['bank_account__currency'] or _primary_cur).upper()
         bal = float(r['balance'] or 0)
         if r['bank_account__account_type'] == 'CASH':
             kasa[cur] = kasa.get(cur, 0.0) + bal
         else:
-            # Banka/POS: yalnızca TRY toplanır (mevcut UI tek alan)
-            if cur == 'TRY':
+            # Banka/POS: yalnızca birincil para toplanır (mevcut UI tek alan)
+            if cur == _primary_cur:
                 banka_pos_toplam_try += bal
     for acc in all_accounts:
         if acc['id'] in existing_ids:
             continue
-        cur = (acc['currency'] or 'TRY').upper()
+        cur = (acc['currency'] or _primary_cur).upper()
         if acc['account_type'] == 'CASH':
             kasa.setdefault(cur, 0.0)
 
