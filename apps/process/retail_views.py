@@ -1303,6 +1303,11 @@ def complete_process(request):
 
             is_manual = _to_bool(request.POST.get('is_manual_payment'))
             payment_type = (request.POST.get('paymentType') or 'CASH').upper()
+            if payment_type == 'POS':
+                return JsonResponse(
+                    {'error': True, 'error_msg': 'POS ödemesi Almanya versiyonunda desteklenmiyor.'},
+                    status=400
+                )
             is_pos_flow = (payment_type == 'POS')
             pos_mode = (request.POST.get('pos_mode') or '').upper().strip()
 
@@ -1863,19 +1868,6 @@ def complete_process(request):
                     is_approved=_is_approved,
                     **_transfer_fx,
                 )
-
-            # 8. PAVO LOG
-            if is_pos_flow and pavo_inquiry_data:
-                try:
-                    terminal = PavoTerminal.objects.filter(store=store,
-                                                           serial_number=pavo_terminal_serial).first() if pavo_terminal_serial else None
-                    PavoLocalSale.objects.create(
-                        terminal=terminal, invoice=None,  # Fatura aşağıda oluşacak
-                        request_payload={}, response_payload=pavo_inquiry_data,
-                        status='SUCCESS', amount=paid_total, currency='TRY'
-                    )
-                except:
-                    pass
 
             # 9. NETLEŞTİRME (Bakiye)
             # FAZ 18.6: POS komisyonu müşterinin cari bakiyesini ETKİLEMEMELİDİR.

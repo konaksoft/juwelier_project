@@ -1504,14 +1504,12 @@
                 margin-right: 0.2rem;
             }
 
-            #btnSavePayment,
-            #btnPosPayment {
+            #btnSavePayment {
                 padding: 0.25rem 0.4rem !important;
                 font-size: 1rem !important;
             }
 
-            #btnSavePayment i,
-            #btnPosPayment i {
+            #btnSavePayment i {
                 font-size: 1rem !important;
                 margin-right: 0.15rem;
             }
@@ -1773,14 +1771,12 @@
         }
 
         @media (min-width: 992px) {
-            #btnSavePayment,
-            #btnPosPayment {
+            #btnSavePayment {
                 padding: 0.65rem 0.80rem !important;
                 font-size: 1rem !important;
             }
 
-            #btnSavePayment i,
-            #btnPosPayment i {
+            #btnSavePayment i {
                 font-size: 1rem !important;
                 margin-right: 0.35rem;
             }
@@ -2100,14 +2096,7 @@
                                                    value="0"/>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 col-md-4 col-4" id="retailLaborCol">
-                                        <div class="mb-3">
-                                            <label for="labor_price" class="form-label">İşçilik Tutarı:</label>
-                                            <input type="number" class="form-control" id="labor_price"
-                                                   name="labor_price"
-                                                   value="0"/>
-                                        </div>
-                                    </div>
+                                    <input type="hidden" id="labor_price" name="labor_price" value="0"/>
                                 </div>
 
                                 <!-- ─────────────────────────────────────────────────────────── -->
@@ -2363,18 +2352,6 @@
                                                       class="total_amount2 d-inline-block">0.00</span>
                                             </div>
 
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <span class="payment-label">İşçilik Toplamı</span>
-                                                <span id="payment_labor_tl"
-                                                      class="total_amount2 d-inline-block">0.00</span>
-                                            </div>
-
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <span class="payment-label">KDV Toplamı</span>
-                                                <span id="payment_vat_tl"
-                                                      class="total_amount2 d-inline-block">0.00</span>
-                                            </div>
-
                                             <hr class="my-2" style="border-color: rgba(255, 215, 0, .3);">
 
                                             <div class="d-flex align-items-center justify-content-between">
@@ -2405,11 +2382,6 @@
                                                     class="btn-footer payment-action-btn"
                                                     style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); color: #e2e8f0;">
                                                 <i class="bi bi-bank"></i> <span>Havale</span>
-                                            </button>
-
-                                            <button id="btnPosPayment" type="button"
-                                                    class="btn-footer payment-action-btn">
-                                                <i class="bi bi-credit-card-2-front"></i> <span>POS</span>
                                             </button>
                                         </div>
                                         <!-- YENİ ÖDEME BUTONLARI BİTİŞİ -->
@@ -2759,223 +2731,6 @@
         const CASH_LIMIT = parseFloat("{{ store_config.cash_limit_tl|default:'10000' }}".replace(',', '.')) || 10000;
         // const CUSTOMER_REQUIRED_LIMIT = 29700; // Eski limit, yeni INVOICE_LIMIT kullanıldı.
 
-        // FAZ 30 — Pavo timeout ve success status SSOT settings'ten geliyor.
-        // Hızlı İşlem ile aynı değer kullanılıyor (asimetri giderildi).
-        const POS_TIMEOUT_SECONDS = parseInt("{{ PAVO_FRONTEND_TIMEOUT_SECONDS|default:'120' }}", 10) || 120;
-        const PAVO_SUCCESS_STATUS_IDS = (function () {
-            try {
-                const raw = "{{ PAVO_SUCCESS_STATUS_IDS|default:'4,5,6,22' }}";
-                return raw.replace(/[\[\]\s]/g, '').split(',').map(function (s) {
-                    return parseInt(s, 10);
-                }).filter(function (n) {
-                    return !isNaN(n);
-                });
-            } catch (e) {
-                return [4, 5, 6, 22];
-            }
-        })();
-
-        // FAZ 30 — CustomerParty cache (fast_index ile aynı pattern).
-        let _pavoCustomerPartyCache = null;
-        let _pavoCustomerPartyCustomerId = null;
-
-        function pavoFetchCustomerParty(customerId) {
-            const id = String(customerId || '').trim();
-            if (_pavoCustomerPartyCustomerId === id && _pavoCustomerPartyCache) {
-                return Promise.resolve(_pavoCustomerPartyCache);
-            }
-            const url = '/v1/pavo-local/customer-party/' + (id ? ('?customer_id=' + encodeURIComponent(id)) : '');
-            return fetch(url, {
-                method: 'GET',
-                credentials: 'same-origin',
-                headers: {'Accept': 'application/json'}
-            }).then(function (r) {
-                if (!r.ok && r.status !== 404) throw new Error('http ' + r.status);
-                return r.json();
-            }).then(function (j) {
-                const cp = (j && j.customer_party) ? j.customer_party : pavoAnonymousCustomerParty();
-                _pavoCustomerPartyCache = cp;
-                _pavoCustomerPartyCustomerId = id;
-                return cp;
-            }).catch(function () {
-                return pavoAnonymousCustomerParty();
-            });
-        }
-
-        function pavoAnonymousCustomerParty() {
-            return {
-                CustomerType: 2,
-                FirstName: '', MiddleName: '', FamilyName: '',
-                CompanyName: '', TaxOfficeCode: '', TaxNumber: '',
-                Phone: '', EMail: '',
-                Country: 'Türkiye', City: '', District: '',
-                Neighborhood: '', Address: ''
-            };
-        }
-
-        // FAZ 30 — Müşteri değiştiğinde cache invalidate (DOMContentLoaded sonrası).
-        document.addEventListener('DOMContentLoaded', function () {
-            var cs = document.getElementById('customer_id');
-            if (cs) {
-                cs.addEventListener('change', function () {
-                    _pavoCustomerPartyCache = null;
-                    _pavoCustomerPartyCustomerId = null;
-                });
-            }
-        });
-
-        let retailPosTimerId = null;
-        let retailPosRemaining = 0;
-
-        // --- POS BRIDGE KONTROLLERİ ---
-        function hasAndroidBridge() {
-            return typeof window.PavoAndroid !== 'undefined' && window.PavoAndroid !== null;
-        }
-
-        function hasIosBridge() {
-            try {
-                return !!(
-                    typeof window.webkit !== 'undefined' &&
-                    window.webkit &&
-                    window.webkit.messageHandlers &&
-                    window.webkit.messageHandlers.PavoIOS
-                );
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function tryConfigureAndroidFromStorage() {
-            try {
-                const raw = localStorage.getItem('pavo_term_cfg');
-                if (!raw) return;
-
-                const cfg = JSON.parse(raw || '{}');
-                if (!cfg.ip || !cfg.serialNumber || !cfg.fingerprint) return;
-
-                const secure = !!cfg.secure;
-                let port = parseInt(cfg.port || (secure ? 4567 : 4568), 10);
-                if (isNaN(port) || port <= 0 || port > 65535) port = secure ? 4567 : 4568;
-
-                if (hasAndroidBridge() && window.PavoAndroid.configure) {
-                    try {
-                        window.PavoAndroid.configure(cfg.ip, port, secure, cfg.serialNumber, cfg.fingerprint);
-                    } catch (e) {
-                    }
-                }
-
-                if (hasIosBridge()) {
-                    try {
-                        window.webkit.messageHandlers.PavoIOS.postMessage({
-                            action: 'configure',
-                            payload: {
-                                ip: cfg.ip,
-                                port: port,
-                                secure: secure,
-                                serialNumber: cfg.serialNumber,
-                                fingerprint: cfg.fingerprint
-                            },
-                            callbackName: ''
-                        });
-                    } catch (e) {
-                    }
-                }
-            } catch (e) {
-            }
-        }
-
-        // --- POS UI ---
-        // FAZ 30 — Timeout sonrası AbortCurrentPayment + LastProcessedSale ile
-        // güvenli recovery. Form otomatik submit edilmez — yanlış kayıt riski yok.
-        function showPosWaitingRetail() {
-            retailPosRemaining = POS_TIMEOUT_SECONDS;
-
-            Swal.fire({
-                title: 'POS ödemesi bekleniyor',
-                html:
-                    '<div style="font-size:1.1rem">Lütfen POS cihazından ödemeyi tamamlayın.</div>' +
-                    '<div style="margin-top:0.75rem;font-size:0.9rem">Kalan süre: <span id="posCountdownRetail">' + retailPosRemaining + '</span> sn</div>',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                didOpen: function () {
-                    const el = document.getElementById('posCountdownRetail');
-                    retailPosTimerId = setInterval(function () {
-                        retailPosRemaining -= 1;
-                        if (el) el.textContent = String(retailPosRemaining);
-                        if (retailPosRemaining <= 0) {
-                            clearInterval(retailPosTimerId);
-                            retailPosTimerId = null;
-                            _pavoRetailTimeoutRecover();
-                        }
-                    }, 1000);
-                }
-            });
-        }
-
-        function _pavoCsrfRetail() {
-            try {
-                var m = document.cookie.match(/csrftoken=([^;]+)/);
-                if (m) return m[1];
-            } catch (e) {
-            }
-            var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
-            return el ? el.value : '';
-        }
-
-        function _pavoRetailTimeoutRecover() {
-            try {
-                Swal.close();
-            } catch (e) {
-            }
-            var btn = document.getElementById('btnPosPayment');
-            if (btn) btn.disabled = false;
-
-            var hdrs = {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': _pavoCsrfRetail()
-            };
-
-            fetch('/v1/pavo-local/abort-current-payment/', {
-                method: 'POST', credentials: 'same-origin', headers: hdrs, body: '{}'
-            }).catch(function () { /* sessizce yut */ });
-
-            fetch('/v1/pavo-local/last-processed-sale/', {
-                method: 'POST', credentials: 'same-origin', headers: hdrs, body: '{}'
-            }).then(function (r) {
-                return r.ok ? r.json() : null;
-            }).then(function (j) {
-                var msg = 'POS yanıtı zaman aşımına uğradı.<br>';
-                if (j && j.Data) {
-                    var data = j.Data || {};
-                    var sid = data.StatusId || data.SaleStatusId || (data.Sale && data.Sale.StatusId) || '-';
-                    msg += '<div class="text-start small"><b>Son işlem:</b> ' +
-                           'StatusId: ' + sid + '<br>' +
-                           'SaleNumber: ' + (data.SaleNumber || '-') + '</div>';
-                }
-                msg += '<br><b>Kayıt oluşturulmadı.</b> Cihazdaki sliplerle kontrol edip ' +
-                       'gerekirse işlemi tekrar başlatın.';
-                Swal.fire({icon: 'warning', title: 'POS Zaman Aşımı', html: msg});
-            }).catch(function () {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'POS Zaman Aşımı',
-                    html: 'POS yanıtı alınamadı. <b>Kayıt oluşturulmadı.</b> Cihazdaki sliplerle kontrol edin.'
-                });
-            });
-        }
-
-        function hidePosWaitingRetail() {
-            if (retailPosTimerId) {
-                clearInterval(retailPosTimerId);
-                retailPosTimerId = null;
-            }
-            try {
-                Swal.close();
-            } catch (e) {
-            }
-        }
-
         // --- YARDIMCI FONKSİYONLAR ---
         function parseMoneyText(text) {
             var s = (text || '').toString().trim();
@@ -2996,160 +2751,6 @@
             if (isNaN(n)) n = 0;
             // Gelişmiş format: 1.250,00 <sembol> (Binlik ayraçlı, dinamik sembol)
             return n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' ' + STORE_CURRENCY_SYMBOL;
-        }
-
-        function splitCustomerNameForPavo(fullName) {
-            const raw = (fullName || '').trim();
-            if (!raw) return {firstName: 'Nakit', middleName: '', familyName: 'Müşteri', companyName: ''};
-            const parts = raw.split(/\s+/);
-            if (parts.length === 1) return {firstName: parts[0], middleName: '', familyName: '-', companyName: ''};
-            return {firstName: parts[0], middleName: '', familyName: parts.slice(1).join(' '), companyName: ''};
-        }
-
-        function getRetailPosContext() {
-            var totalEl = document.getElementById('payment_grand_total_tl');
-            var gross = totalEl ? parseMoneyText(totalEl.textContent) : 0;
-
-            var sel = document.getElementById('customer_id');
-            var customerId = sel && sel.value ? String(sel.value) : '';
-            var customerName = '';
-
-            if (sel && sel.value && sel.selectedIndex >= 0) {
-                customerName = (sel.options[sel.selectedIndex].text || '').trim();
-            }
-            if (!customerName) customerName = 'Nakit Müşteri';
-
-            var nameParts = splitCustomerNameForPavo(customerName);
-
-            return {
-                gross: +(gross || 0).toFixed(2),
-                currency: 'TRY',
-                reference: 'RP' + Date.now(),
-                customerId: customerId,
-                customerName: customerName,
-                customerFirstName: nameParts.firstName,
-                customerMiddleName: nameParts.middleName,
-                customerFamilyName: nameParts.familyName,
-                customerCompanyName: nameParts.companyName
-            };
-        }
-
-        // FAZ 30 — Async: gerçek müşteri verisi backend'den çekiliyor.
-        function buildCompleteSalePayloadFromRetail(mediatorId) {
-            var ctx = getRetailPosContext();
-            if (!ctx || !ctx.gross || ctx.gross <= 0) return Promise.resolve(null);
-
-            var items = [{
-                Name: 'Perakende Satış',
-                IsGeneric: true,
-                UnitCode: 'C62',
-                TaxGroupCode: 'KDV0',
-                ItemQuantity: 1,
-                UnitPriceAmount: ctx.gross,
-                GrossPriceAmount: ctx.gross,
-                TotalPriceAmount: ctx.gross,
-                ReservedText: 'RETAIL_PROCESS'
-            }];
-
-            return pavoFetchCustomerParty(ctx.customerId).then(function (party) {
-                var customerParty = Object.assign({}, party);
-                if (!customerParty.FirstName && !customerParty.FamilyName) {
-                    customerParty.FirstName = ctx.customerFirstName || '';
-                    customerParty.MiddleName = ctx.customerMiddleName || '';
-                    customerParty.FamilyName = ctx.customerFamilyName || '';
-                    customerParty.CompanyName = ctx.customerCompanyName || '';
-                }
-                return {
-                    Sale: {
-                        RefererApp: 'KuyumPlus',
-                        RefererAppVersion: '1.0.0',
-                        OrderNo: String(ctx.reference),
-                        MainDocumentType: 1,
-                        GrossPrice: ctx.gross,
-                        TotalPrice: ctx.gross,
-                        CurrencyCode: ctx.currency,
-                        ExchangeRate: 1,
-                        SendPhoneNotification: false,
-                        SendEMailNotification: false,
-                        NotificationPhone: customerParty.Phone || '',
-                        NotificationEMail: customerParty.EMail || '',
-                        DocumentNote: '',
-                        ShowCreditCardMenu: false,
-                        SelectedSlots: ['rf', 'icc', 'manual'],
-                        EnableAllTerminalsOnRetry: false,
-                        AllowDismissCardRead: false,
-                        CardReadTimeout: POS_TIMEOUT_SECONDS,
-                        SkipAmountCash: false,
-                        CancelPaymentLater: true,
-                        AskCustomer: false,
-                        SendResponseBeforePrint: false,
-                        TryAgainOnPaymentFailure: false,
-                        ReferOtherMediatorsToRetryPayment: true,
-                        AbandonOptions: {IsVoid: true, EnableRefundMediatorsOnVoidFailure: true},
-                        ContinuePaymentWithCardInserted: true,
-                        HeadUnmaskedCardNumber: 4,
-                        TailUnmaskedCardNumber: 4,
-                        AddedSaleItems: items,
-                        PaymentInformations: [{
-                            Mediator: mediatorId,
-                            Amount: ctx.gross,
-                            CurrencyCode: ctx.currency,
-                            ExchangeRate: 1,
-                            ExternalReferenceText: String(ctx.reference)
-                        }],
-                        AllowedPaymentMediators: [{Mediator: 2}, {Mediator: 1}],
-                        ReceiptInformation: {
-                            ReceiptImageEnabled: true,
-                            ReceiptJsonEnabled: false,
-                            ReceiptTextEnabled: false,
-                            ReceiptWidth: '58mm',
-                            PrintCustomerReceipt: true,
-                            PrintCustomerReceiptCopy: true,
-                            PrintMerchantReceipt: true,
-                            EnableExchangeRateField: true
-                        },
-                        CustomerParty: customerParty,
-                        AdditionalInfo: [],
-                        TopPrintableItems: [],
-                        BottomPrintableItems: []
-                    }
-                };
-            });
-        }
-
-        function resolveSaleNumberFromResult(out, fallbackRef) {
-            if (!out || typeof out !== 'object') return fallbackRef;
-            var data = out.Data || out.CompleteSale || out.Sale || {};
-            if (data.SaleNumber) return data.SaleNumber;
-            if (data.OrderNo) return data.OrderNo;
-            if (data.Sale && typeof data.Sale === 'object') {
-                if (data.Sale.SaleNumber) return data.Sale.SaleNumber;
-                if (data.Sale.OrderNo) return data.Sale.OrderNo;
-            }
-            return fallbackRef;
-        }
-
-        function isPavoSaleSuccessful(out) {
-            if (!out || typeof out !== 'object') return false;
-            if (out.HasError === true) return false;
-
-            const data = out.Data || out.CompleteSale || out.Sale || {};
-            let statusId = null;
-
-            if (data.StatusId != null) statusId = data.StatusId;
-            else if (data.SaleStatusId != null) statusId = data.SaleStatusId;
-
-            if (data.Sale && typeof data.Sale === 'object') {
-                if (statusId == null && data.Sale.StatusId != null) statusId = data.Sale.StatusId;
-                if (statusId == null && data.Sale.SaleStatusId != null) statusId = data.Sale.SaleStatusId;
-            }
-            if (statusId == null || statusId === '') return false;
-            const sid = Number(statusId);
-            if (isNaN(sid)) return false;
-            // FAZ 30 — Backend ile aynı SSOT (settings.PAVO_SUCCESS_STATUS_IDS).
-            // Eski "1..6 arası" gevşek kontrol kaldırıldı (backend reddi nedeniyle
-            // sessiz failure'a yol açıyordu).
-            return PAVO_SUCCESS_STATUS_IDS.indexOf(sid) !== -1;
         }
 
         function ensureHiddenInput(formEl, name, id) {
@@ -3191,157 +2792,6 @@
                 });
             });
         }
-
-        // --- POS İŞLEM BAŞLATMA (GÜNCELLENMİŞ AKIŞ) ---
-        function openRetailPosPaymentChoice() {
-            var ctx = getRetailPosContext();
-
-            // 1. Temel Tutar Kontrolü
-            if (!ctx || !ctx.gross || ctx.gross <= 0) {
-                Swal.fire('Uyarı', 'Tutar 0 olamaz. Önce işlemi hesaplayın.', 'warning');
-                return;
-            }
-
-            var processNo = $('#process_no').val();
-
-            // 2. MASAK ve Limit Kontrolünü Modal Açılmadan ÖNCE Yap (Backend tarafı daha garantidir ama frontend kontrolü de iyidir)
-            verifyRetailCompliance(processNo, ctx.customerId).then((isCompliant) => {
-                // Eğer uyumlu değilse (hata varsa), fonksiyon burada durur.
-                if (!isCompliant) return;
-
-                // 3. Eğer uyumluysa, Modal'ı aç
-                Swal.fire({
-                    title: 'Ödeme Tipi Seçin',
-                    html:
-                        '<div class="d-flex flex-column gap-2">' +
-                        '<button type="button" id="retailPayCash" class="swal2-confirm swal2-styled">Nakit (POS)</button>' +
-                        '<button type="button" id="retailPayCard" class="swal2-confirm swal2-styled" style="background:#2563eb">Kart (POS)</button>' +
-                        '<button type="button" id="retailPayTransfer" class="swal2-confirm swal2-styled" style="background:#10b981">Havale / EFT (POS)</button>' +
-                        '</div>',
-                    showConfirmButton: false,
-                    allowOutsideClick: true,
-                    didOpen: function () {
-                        var bCash = document.getElementById('retailPayCash');
-                        if (bCash) bCash.addEventListener('click', function () {
-                            Swal.close();
-                            executePosTransaction('CASH');
-                        });
-
-                        var bCard = document.getElementById('retailPayCard');
-                        if (bCard) bCard.addEventListener('click', function () {
-                            Swal.close();
-                            executePosTransaction('CARD');
-                        });
-
-                        var bTr = document.getElementById('retailPayTransfer');
-                        if (bTr) bTr.addEventListener('click', function () {
-                            Swal.close();
-                            executePosTransaction('TRANSFER');
-                        });
-                    }
-                });
-            });
-        }
-
-        // Bu fonksiyon artık kontrol yapmaz, sadece emri uygular.
-        function executePosTransaction(mode) {
-            var ctx = getRetailPosContext();
-
-            var modeUpper = (mode || 'CARD').toUpperCase();
-            var mediatorId = 2; // Kredi Kartı
-            if (modeUpper === 'CASH') mediatorId = 1;
-            if (modeUpper === 'TRANSFER') mediatorId = 14;
-
-            var btn = document.getElementById('btnPosPayment');
-            if (btn) btn.disabled = true;
-
-            // FAZ 30 — payload artık async (gerçek müşteri verisi backend'den).
-            buildCompleteSalePayloadFromRetail(mediatorId).then(function (payload) {
-                if (!payload) {
-                    if (btn) btn.disabled = false;
-                    Swal.fire('Hata', 'POS payload oluşturulamadı.', 'error');
-                    return;
-                }
-
-                var completeStr = '';
-                try {
-                    completeStr = JSON.stringify(payload);
-                } catch (e) {
-                    if (btn) btn.disabled = false;
-                    Swal.fire('Hata', 'POS payload JSON formatına dönüştürülemedi.', 'error');
-                    return;
-                }
-                _retailPosPaymentSubmit(modeUpper, completeStr, btn);
-            }).catch(function (err) {
-                if (btn) btn.disabled = false;
-                Swal.fire('Hata', 'Müşteri bilgileri hazırlanamadı: ' + (err && err.message ? err.message : ''), 'error');
-            });
-        }
-
-        function _retailPosPaymentSubmit(modeUpper, completeStr, btn) {
-            showPosWaitingRetail();
-
-            window.pavoRetailCallback = function (resultJson) {
-                hidePosWaitingRetail();
-                if (btn) btn.disabled = false;
-
-                var out = null;
-                try {
-                    out = JSON.parse(resultJson);
-                } catch (e) {
-                    Swal.fire('Hata', 'POS yanıtı hatalı.', 'error');
-                    return;
-                }
-
-                if (!out || typeof out !== 'object' || !isPavoSaleSuccessful(out)) {
-                    Swal.fire('Bilgi', 'POS işlemi başarısız veya iptal edildi.', 'info');
-                    return;
-                }
-
-                var ctxInner = getRetailPosContext();
-                var saleNo = resolveSaleNumberFromResult(out, ctxInner ? ctxInner.reference : '');
-
-                var form = document.getElementById('payment-form');
-                if (form) {
-                    ensureHiddenInput(form, 'paymentType', 'retail_paymentType').value = 'POS';
-                    ensureHiddenInput(form, 'pos_reference', 'retail_pos_reference').value = String(saleNo || (ctxInner ? ctxInner.reference : ''));
-                    ensureHiddenInput(form, 'pavo_result_json', 'retail_pavo_result_json').value = String(resultJson || '');
-                    ensureHiddenInput(form, 'pos_amount', 'retail_pos_amount').value = String(ctxInner && ctxInner.gross ? ctxInner.gross.toFixed(2) : '0.00');
-                    ensureHiddenInput(form, 'pos_mode', 'retail_pos_mode').value = String(modeUpper);
-
-                    var btnSave = document.getElementById('btnSavePayment');
-                    if (btnSave) {
-                        btnSave.click();
-                    } else {
-                        form.submit();
-                    }
-                }
-            };
-
-            if (hasIosBridge()) {
-                window.webkit.messageHandlers.PavoIOS.postMessage({
-                    action: 'completeSale',
-                    completeSaleJson: completeStr,
-                    callbackName: 'pavoRetailCallback'
-                });
-            } else if (hasAndroidBridge() && window.PavoAndroid.completeSale) {
-                window.PavoAndroid.completeSale(completeStr, 'pavoRetailCallback');
-            } else {
-                hidePosWaitingRetail();
-                if (btn) btn.disabled = false;
-                Swal.fire('Hata', 'POS arayüzü bulunamadı.', 'error');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            tryConfigureAndroidFromStorage();
-            var btn = document.getElementById('btnPosPayment');
-            if (btn) {
-                btn.addEventListener('click', function () {
-                    openRetailPosPaymentChoice();
-                });
-            }
-        });
 
         // --- OTHER SCRIPTS INTEGRATION (Verify Phone/Email, DataTable, Forms) ---
 
@@ -3562,15 +3012,6 @@
 
             let quantity = piece > 0 ? piece : gram;
 
-            // Sabit İşçilik
-            if (typeof STORE_USE_AVG_LABOR !== 'undefined' && STORE_USE_AVG_LABOR && sourceField !== 'labor_price') {
-                const fixedLabor = Number($('#product_id').data('fixed-labor')) || 0;
-                if (fixedLabor >= 0) {
-                    const totalLabor = fixedLabor * quantity;
-                    document.getElementById('labor_price').value = totalLabor.toFixed(2);
-                }
-            }
-
             // Seçilen ürünün kategorisine göre Has kilitlenme durumu kontrolü
             let catName = $('#product_id').data('category') || '';
             let isRestrictedCat = (catName === "Altın");  // Juwelier Plus: Ziynet kaldırıldı
@@ -3680,7 +3121,7 @@
             dtOut.clear();
 
             $.getJSON('/process/get-sales', data => {
-                let totSaleTl = 0, totPurTl = 0, totSaleHs = 0, totPurHs = 0, totLabor = 0;
+                let totSaleTl = 0, totPurTl = 0, totSaleHs = 0, totPurHs = 0;
                 let hasOrderIn = false, hasCustodyIn = false;
 
                 // FIX 2 (Double-Add Guard): Sepetteki SALE ürünlerinin product_id
@@ -3702,7 +3143,6 @@
                         `<a href="#" class="btn-icon" onclick="deleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></a>`
                     ];
 
-                    totLabor += Number(r.labor_price || 0);
                     if (!!(r.is_custody || r.custody)) hasCustodyIn = true;
 
                     if (r.transaction_type === 'SALE' || r.transaction_type === 'ORDER_IN') {
@@ -3731,9 +3171,8 @@
                 processTotalTl = Math.abs(parseFloat(netTl.toFixed(2)));
                 processTotalHs = Math.abs(parseFloat(netHs.toFixed(3)));
 
-                const vatFromLabor = parseFloat((totLabor * 0.20).toFixed(2));
-                const grandTotalTl = processTotalTl; // Amount zaten KDV'li
-                let goodsAmountOnly = grandTotalTl - totLabor - vatFromLabor;
+                const grandTotalTl = processTotalTl;
+                let goodsAmountOnly = grandTotalTl;
                 if (goodsAmountOnly < 0) goodsAmountOnly = 0;
 
                 // 4. PROBLEMİ ÇÖZEN KISIM: Nakit Butonlarını Yönetme
@@ -3779,8 +3218,6 @@
                 $('#payment_amount_hs').removeClass('text-danger text-success').addClass(netColor);
 
                 $('#payment_amount_eur').text(KPMoney.fmtMoney(goodsAmountOnly));
-                $('#payment_labor_tl').text(KPMoney.fmtMoney(totLabor));
-                $('#payment_vat_tl').text(KPMoney.fmtMoney(vatFromLabor));
                 $('#payment_grand_total_tl').text(KPMoney.fmtMoney(grandTotalTl));
             })
                 .fail(() => console.error('Veri hatası'));
@@ -4609,19 +4046,7 @@
 
             $('#unit_price').val((Number(unitPrice) || 0).toFixed(2));
 
-            const laborInput = $('#labor_price');
-            const fixedLabor = Number(fixedLaborAmount) || 0;
-            const sTlNum = Number(salePriceTl) || 0;
-            const bTlNum = Number(buyPriceTl) || 0;
-
-            laborInput.val('0.00');
-            if (typeof STORE_USE_AVG_LABOR !== 'undefined' && STORE_USE_AVG_LABOR && fixedLabor > 0) {
-                laborInput.val(fixedLabor.toFixed(2));
-            } else if ((productName || '').toLowerCase().includes('gram altın')) {
-                laborInput.val('0.00');
-            } else if (sTlNum && bTlNum && sTlNum > bTlNum) {
-                laborInput.val((sTlNum - bTlNum).toFixed(2));
-            }
+            $('#labor_price').val('0.00');
 
             if (typeof applyPriceForCurrentOperation === 'function') applyPriceForCurrentOperation();
             if (typeof recalcAll === 'function') recalcAll('unit_price', false);
