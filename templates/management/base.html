@@ -809,15 +809,6 @@
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">İşlem Ekranları</span>
                                 </div>
 
-                                <!-- Order 0 -->
-                                {% if request.user|menu_allowed:'ABC1001D' %}
-                                    <div class="menu-item">
-                                        <a href="{% url 'transactions-board:fast-index' %}" class="menu-link">
-                                            <span class="menu-icon"><i class="fa-solid fa-bolt fs-2"></i></span>
-                                            <span class="menu-title">Hızlı İşlem Ekranı</span>
-                                        </a>
-                                    </div>
-                                {% endif %}
 
                                 <!-- Order 1 -->
                                 {% if request.user|menu_allowed:'ABC1310D' %}
@@ -889,14 +880,14 @@
                                 {% endif %}
 
                                 <!-- Order 6b — ONARIM FAZI 4 / ADIM 4: Gümüş izole sayfa -->
-{#                                {% if request.user|menu_allowed:'ABC1008D' %}#}
-{#                                    <div class="menu-item">#}
-{#                                        <a href="{% url 'scraps:silver_index' %}" class="menu-link">#}
-{#                                            <span class="menu-icon"><i class="fa-solid fa-coins fs-2"></i></span>#}
-{#                                            <span class="menu-title">Gümüş Yönetimi</span>#}
-{#                                        </a>#}
-{#                                    </div>#}
-{#                                {% endif %}#}
+                                {#                                {% if request.user|menu_allowed:'ABC1008D' %}#}
+                                {#                                    <div class="menu-item">#}
+                                {#                                        <a href="{% url 'scraps:silver_index' %}" class="menu-link">#}
+                                {#                                            <span class="menu-icon"><i class="fa-solid fa-coins fs-2"></i></span>#}
+                                {#                                            <span class="menu-title">Gümüş Yönetimi</span>#}
+                                {#                                        </a>#}
+                                {#                                    </div>#}
+                                {#                                {% endif %}#}
 
                                 <!-- Order 7 -->
                                 {% if request.user|menu_allowed:'ABC1908D' %}
@@ -1006,15 +997,15 @@
                                     </div>
                                 {% endif %}
 
-{#                                <!-- Order 14.5 — FAZ 46: Şubeler Arası Transfer -->#}
-{#                                {% if request.user|menu_allowed:'ABC1545D' %}#}
-{#                                    <div class="menu-item">#}
-{#                                        <a href="{% url 'store_transfers:index' %}" class="menu-link">#}
-{#                                            <span class="menu-icon"><i class="fa-solid fa-arrows-left-right fs-2"></i></span>#}
-{#                                            <span class="menu-title">Şubeler Arası Transfer</span>#}
-{#                                        </a>#}
-{#                                    </div>#}
-{#                                {% endif %}#}
+                                {#                                <!-- Order 14.5 — FAZ 46: Şubeler Arası Transfer -->#}
+                                {#                                {% if request.user|menu_allowed:'ABC1545D' %}#}
+                                {#                                    <div class="menu-item">#}
+                                {#                                        <a href="{% url 'store_transfers:index' %}" class="menu-link">#}
+                                {#                                            <span class="menu-icon"><i class="fa-solid fa-arrows-left-right fs-2"></i></span>#}
+                                {#                                            <span class="menu-title">Şubeler Arası Transfer</span>#}
+                                {#                                        </a>#}
+                                {#                                    </div>#}
+                                {#                                {% endif %}#}
 
                                 <!-- Order 15 -->
                                 {% if request.user|menu_allowed:'ABC1012D' %}
@@ -1040,6 +1031,7 @@
                                 {% if request.user|menu_allowed:'ABC1016D' %}
                                     <div class="menu-item">
                                         <a href="
+
 
                                                 {% if request.user.store_id %}{% url 'stores:store-detail' request.user.store_id %}{% else %}{% url 'stores:index' %}{% endif %}"
                                            class="menu-link">
@@ -1386,7 +1378,8 @@
         if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
             try {
                 window.jQuery.fn.select2.defaults.set('theme', 'bootstrap5');
-            } catch (e) { /* select2 yoksa sessiz geç */ }
+            } catch (e) { /* select2 yoksa sessiz geç */
+            }
         }
     })();
 </script>

@@ -1996,28 +1996,16 @@
             function enableRFIDInput(enable) {
                 rfidInput.disabled = !enable;
                 if (enable) {
-                    // Scanner modunda readonly ile sanal klavyeyi daha da kesinkes engelle
-                    // (inputmode="none" yeterli olsa da cift guvenlik katmani olusturur)
-                    if (!manualEntryActive) {
-                        rfidInput.setAttribute('readonly', 'readonly');
-                    }
+                    // Sanal klavye engelleme: inputmode="none" tek basina yeterli.
+                    // readonly EKLENMEZ — Android IME (Chainway "Scan content on cursor")
+                    // readonly input'a baglanamaz; bu yuzden readonly kaldirilmistir.
                     rfidInput.focus();
                     rfidInput.classList.add('bg-white');
                 } else {
                     rfidInput.value = "";
-                    rfidInput.removeAttribute('readonly');
                     rfidInput.classList.remove('bg-white');
                 }
             }
-
-            // Readonly durumunda HID scanner input event'leri tetiklemeyebilir -
-            // bu yuzden readonly'yi yalnizca dogrudan klavye focus'unu engellemek icin kullaniyoruz.
-            // Scanner okudugunda readonly'yi anlik olarak kaldirip geri alacak wrapper:
-            rfidInput.addEventListener('focus', function () {
-                if (currentSessionId && !manualEntryActive) {
-                    rfidInput.removeAttribute('readonly');
-                }
-            });
 
             // ═══════════════════════════════════════════════════════
             // RAPOR ONIZLEME RENDER YARDIMLARI

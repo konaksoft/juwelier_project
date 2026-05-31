@@ -23,6 +23,43 @@ from apps.stores.models import Stores
 
 
 # ═══════════════════════════════════════════════════════════════════
+# SAYIM "SATILDI" SSOT (FAZ 9.8 ile birebir uyumlu)
+# ═══════════════════════════════════════════════════════════════════
+# gold_purchases/views.py:906 ile aynı tanım:
+#   sold_q = Q(is_status=False) | Q(product__is_completed=True)
+# Satılmış barkodlu ürünler sayım hedefinden, bulunanlardan ve
+# raporlardan çıkarılmalıdır. Bu helper SSOT olarak kullanılır.
+def _sold_q_for_gold_purchases():
+    """GoldPurchases queryset'i için 'satıldı' Q ifadesi (FAZ 9.8)."""
+    return Q(is_status=False) | Q(product__is_completed=True)
+
+
+def _is_product_sold(product):
+    """Bir Products instance'ı satılmış mı? (scan guard'larında kullanılır.)
+
+    GoldPurchases.is_status=False da satışı temsil eder; bu nedenle
+    ilgili kayıt da kontrol edilir. Kayıt yoksa yalnızca is_completed bakılır.
+    """
+    if product is None:
+        return False
+    if getattr(product, 'is_completed', False) is True:
+        return True
+    try:
+        gp_active_exists = GoldPurchases.objects.filter(
+            product=product, is_deleted=False, is_status=True
+        ).exists()
+        gp_any_exists = GoldPurchases.objects.filter(
+            product=product, is_deleted=False
+        ).exists()
+        # GoldPurchases satırı var ama hiçbiri 'tezgahta' (is_status=True) değilse satılmış kabul et.
+        if gp_any_exists and not gp_active_exists:
+            return True
+    except Exception:
+        pass
+    return False
+
+
+# ═══════════════════════════════════════════════════════════════════
 # FAZ 2: KAPSAM (SCOPE) YARDIMCI FONKSIYONLARI
 # ═══════════════════════════════════════════════════════════════════
 # Kapsam tipine göre Products veya GoldPurchases queryset'i üzerinde
@@ -321,7 +358,7 @@ def get_stock_count_data(request):
         is_deleted=False,
         product__is_deleted=False,
         product__is_active=True,
-    ).filter(scope_q).select_related('product', 'product__category')
+    ).exclude(_sold_q_for_gold_purchases()).filter(scope_q).select_related('product', 'product__category')
 
     counted_qs = base.filter(count_is_status=1)
     error_qs = base.filter(count_is_status=2)
@@ -376,6 +413,16 @@ def scan_barcode_for_count(request):
 
     if not product:
         return JsonResponse({'error': True, 'error_msg': f'"{code}" kodlu ürün (Barkod veya RFID) bulunamadı.'})
+
+    # Satılmış ürün guard'ı — sayım kapsamına alınmamalı, count_is_status güncellenmemeli.
+    if _is_product_sold(product):
+        return JsonResponse({
+            'error': True,
+            'sold': True,
+            'error_msg': 'Bu ürün satılmış olduğu için sayıma dahil edilemez.',
+            'product_id': str(product.id),
+            'barcode': product.barcode or code,
+        })
 
     # Kapsam kontrolü
     if not _product_in_scope(product, session.scope_type, session.scope_filter):
@@ -482,16 +529,46 @@ def bulk_scan_for_count(request):
         if p.rfid_code:
             rfid_to_product[p.rfid_code.lower()] = p
 
-    # ─── 3. KODLARI AYIR: KAPSAM-İÇİ BULUNAN / KAPSAM-DIŞI / HATA ───
+    # ─── 3. KODLARI AYIR: SATILMIŞ / KAPSAM-İÇİ BULUNAN / KAPSAM-DIŞI / HATA ───
     found_products = {}        # kapsam içi — sayıma dahil olacak
     out_of_scope_products = {} # sistemdeki ama kapsam dışı
+    sold_products = {}         # satılmış ürünler — sayıma alınmaz
     error_codes = []           # hiç bulunamayan
+
+    # Satılmış ürünleri tek sorguda tespit et (her bir tarama için DB sorgusu yapmamak için)
+    _candidate_ids = [p.id for p in products]
+    _sold_via_completed = set()
+    _sold_via_gp_status = set()
+    if _candidate_ids:
+        _sold_via_completed = set(
+            Products.objects.filter(
+                id__in=_candidate_ids, is_completed=True
+            ).values_list('id', flat=True)
+        )
+        # GoldPurchases kaydı olup hiçbiri is_status=True olmayan ürünler de satılmış sayılır
+        _gp_has_any = set(
+            GoldPurchases.objects.filter(
+                product_id__in=_candidate_ids, is_deleted=False
+            ).values_list('product_id', flat=True)
+        )
+        _gp_has_active = set(
+            GoldPurchases.objects.filter(
+                product_id__in=_candidate_ids, is_deleted=False, is_status=True
+            ).values_list('product_id', flat=True)
+        )
+        _sold_via_gp_status = _gp_has_any - _gp_has_active
+
+    _sold_ids = _sold_via_completed | _sold_via_gp_status
 
     for code in clean_codes:
         code_lower = code.lower()
         product = barcode_to_product.get(code_lower) or rfid_to_product.get(code_lower)
         if not product:
             error_codes.append(code)
+            continue
+
+        if product.id in _sold_ids:
+            sold_products[str(product.id)] = product
             continue
 
         if _product_in_scope(product, scope_type, scope_filter):
@@ -501,6 +578,7 @@ def bulk_scan_for_count(request):
 
     found_product_list = list(found_products.values())
     out_of_scope_list = list(out_of_scope_products.values())
+    sold_list = list(sold_products.values())
 
     # ─── 4. MEVCUT SAYIM KAYITLARINI KONTROL ET ───
     existing_item_product_ids = set(
@@ -545,7 +623,13 @@ def bulk_scan_for_count(request):
 
     found_rows = [product_row(p) for p in new_products]
     already_rows = [product_row(p) for p in already_counted_products]
+    # Satılmış ürünler hatalı/yabancı listesine "Satılmış ürün sayıma dahil edilemez." mesajıyla düşer.
     error_rows = [{'barcode': code, 'message': 'Tanımsız / Yabancı Kod'} for code in error_codes]
+    for p in sold_list:
+        error_rows.append({
+            'barcode': p.barcode or (p.rfid_code or ''),
+            'message': 'Satılmış ürün sayıma dahil edilemez.',
+        })
     out_of_scope_rows = [{
         **product_row(p),
         'message': 'Kapsam Dışı',
@@ -558,7 +642,7 @@ def bulk_scan_for_count(request):
         is_deleted=False,
         product__is_deleted=False,
         product__is_active=True,
-    ).filter(scope_q)
+    ).exclude(_sold_q_for_gold_purchases()).filter(scope_q)
 
     totals = base_qs.aggregate(
         found=Count('id', filter=Q(count_is_status=1)),
@@ -582,6 +666,7 @@ def bulk_scan_for_count(request):
             'new_found': len(new_products),
             'already_counted': len(already_counted_products),
             'out_of_scope': len(out_of_scope_list),
+            'sold': len(sold_list),
             'not_found': len(error_codes),
         }
     })
@@ -764,7 +849,7 @@ def preview_report(request, session_id):
         is_deleted=False,
         product__is_deleted=False,
         product__is_active=True,
-    ).filter(scope_q).select_related("product", "product__category")
+    ).exclude(_sold_q_for_gold_purchases()).filter(scope_q).select_related("product", "product__category")
 
     DEC_FIELD = DecimalField(max_digits=18, decimal_places=3)
     ZERO = Value(Decimal("0.000"), output_field=DEC_FIELD)
@@ -837,7 +922,7 @@ def download_inventory_pdf(request, session_id):
         is_deleted=False,
         product__is_deleted=False,
         product__is_active=True,
-    ).filter(scope_q).select_related("product", "product__category")
+    ).exclude(_sold_q_for_gold_purchases()).filter(scope_q).select_related("product", "product__category")
 
     DEC_FIELD = DecimalField(max_digits=18, decimal_places=3)
     ZERO = Value(Decimal("0.000"), output_field=DEC_FIELD)
@@ -936,7 +1021,7 @@ def reset_session(request):
         is_deleted=False,
         product__is_deleted=False,
         product__is_active=True,
-    ).filter(scope_q).update(count_is_status=0)
+    ).exclude(_sold_q_for_gold_purchases()).filter(scope_q).update(count_is_status=0)
 
     return JsonResponse({
         'result': True,

@@ -2084,9 +2084,7 @@
         // Menü verileri
         const menuData = {
             pages: [
-                {% if request.user|menu_allowed:'ABC1001D' %}
-                    {icon: 'fa-bolt', text: 'Hızlı İşlem', url: "{% url 'transactions-board:fast-index' %}"},
-                {% endif %}
+
                 {% if request.user|menu_allowed:'ABC1310D' %}
                     {icon: 'fa-store', text: 'Perakende', url: "{% url 'transactions-board:retail-index' %}"},
                 {% endif %}

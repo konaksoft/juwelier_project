@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from datetime import timedelta
 from celery.schedules import crontab  # FAZ E — yedekleme zamanlaması için
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
@@ -163,10 +162,37 @@ SESSION_SAVE_EVERY_REQUEST = True
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# CELERY — Tek Kaynak (Single Source of Truth)
+# ─────────────────────────────────────────────────────────────────────────────
+# Beat schedule SADECE burada tanımlanır. celery.py içinde override YOKTUR.
+# Broker/result backend .env REDIS_URL'den okunur; varsayılan db1 (esurec db0
+# ile karışmaması için). Tüm Juwelier task'ları 'juwelier_default' kuyruğunda.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Redis broker/result — esurec (db0) ile ayrı tutmak için Juwelier db1 kullanır.
+CELERY_BROKER_URL = env_str('REDIS_URL', 'redis://127.0.0.1:6379/1')
+CELERY_RESULT_BACKEND = env_str('REDIS_URL', 'redis://127.0.0.1:6379/1')
+
+# Kuyruk ayrımı — worker '-Q juwelier_default' ile çalıştırılmalı.
+CELERY_TASK_DEFAULT_QUEUE = 'juwelier_default'
+
 CELERY_BEAT_SCHEDULE = {
-    'update_products_from_api': {
-        'task': 'products.update_products_from_api',
-        'schedule': timedelta(seconds=15),
+    # ==== Kitco Uluslararası Spot Fiyat Fetch ====
+    # KitcoPriceCache tablosuna YAZAR; Rates tablosunu OKUR. Başka tabloya dokunmaz.
+    'live-board-fetch-kitco-every-60s': {
+        'task': 'live_board.fetch_kitco_live_rates',
+        'schedule': 60,  # Her 60 saniyede bir
+        'options': {'queue': 'juwelier_default'},
+    },
+
+    # ==== ECB FX Kur Senkronizasyonu ====
+    # Avrupa Merkez Bankası günlük XML feed'inden USD bazlı kurları Rates'e yazar.
+    # Kitco task'ı EUR/GBP/CHF/CAD/AUD/JPY türetimi için bu kayıtları okur.
+    'rates-sync-fx-from-ecb-hourly': {
+        'task': 'definitions.rates.sync_fx_rates_from_ecb',
+        'schedule': crontab(minute=10),  # Her saatin 10'unda
+        'options': {'queue': 'juwelier_default'},
     },
 
     # ==== FAZ E — Yedekleme Otomasyonu ====
@@ -176,16 +202,19 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'backups.cleanup_old_backups',
         # Her gün 02:00 — yedek alma öncesi temizlik
         'schedule': crontab(hour=2, minute=0),
+        'options': {'queue': 'juwelier_default'},
     },
     'backups_daily_db': {
         'task': 'backups.daily_db_backup_all_companies',
         # Her gün 03:00 — DB-only ZIP
         'schedule': crontab(hour=3, minute=0),
+        'options': {'queue': 'juwelier_default'},
     },
     'backups_weekly_full': {
         'task': 'backups.weekly_full_backup_all_companies',
         # Her Pazar 04:00 — DB + media full ZIP
         'schedule': crontab(hour=4, minute=0, day_of_week=0),
+        'options': {'queue': 'juwelier_default'},
     },
 }
 
