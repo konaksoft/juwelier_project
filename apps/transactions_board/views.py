@@ -4,7 +4,6 @@ from django.http import HttpResponseForbidden
 from apps.process.models import Process
 from apps.products.models import Products
 from apps.customers.models import Customers
-from apps.products.tasks import update_products_from_api
 from apps.settings.models import StoreConfiguration  # Bu importu eklediğinizden emin olun
 from apps.roles.decorators import role_required
 
@@ -25,8 +24,8 @@ def _get_common_context(request):
     store_config, created = StoreConfiguration.objects.get_or_create(store=store)
 
     # Has Altın Fiyatlarını Getir
-    # NOT: Celery task (update_products_from_api) fiyatlari 'Has Altın 24 Ayar'
-    # adli kayda yaziyor. Stale 'Has Altın' kaydini degil, taze kaydi okumaliyiz.
+    # NOT: Fiyatlar 'Has Altın 24 Ayar' adli kayda yazilir. Stale 'Has Altın'
+    # kaydini degil, taze kaydi okumaliyiz.
     has_product = Products.objects.filter(name='Has Altın 24 Ayar').first()
     buy_hs_tl = has_product.buy_price_eur if has_product else 0
     sale_hs_tl = has_product.sale_price_eur if has_product else 0
@@ -62,9 +61,6 @@ def _get_common_context(request):
 @login_required
 @role_required('TRANSACTIONS_BOARD_FAST_INDEX_VIEW')
 def fast_index_view(request):
-    # Fiyat guncellemeyi asenkron (Celery) olarak tetikle.
-    # Senkron cagri, API gecikmesi kadar Django worker'i blokliyordu.
-    update_products_from_api.delay()
     context, error = _get_common_context(request)
     if error: return HttpResponseForbidden(error)
 

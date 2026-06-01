@@ -818,7 +818,7 @@ def bank_management_payments(request, account_id):
 
         data.append({
             'id': str(p.id),
-            'date': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '-',
+            'date': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M') if p.date else '-',
             'date_raw': p.date.isoformat() if p.date else '',
             'process_no': p.process_no or '-',
             'payment_type': p.payment_type,
@@ -955,7 +955,7 @@ def bank_management_export(request, account_id):
             )
 
         rows.append({
-            'date': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '-',
+            'date': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M') if p.date else '-',
             'process_no': p.process_no or '-',
             'payment_type_display': str(type_labels.get(p.payment_type, p.payment_type)),
             'amount': _row_amount,
@@ -1307,7 +1307,7 @@ def bank_transfer_detail(request, payment_id):
             'from_account': from_name,
             'to_account': to_name,
             'amount': str(payment.amount),
-            'date': payment.date.strftime('%d.%m.%Y %H:%M') if payment.date else '-',
+            'date': timezone.localtime(payment.date).strftime('%d.%m.%Y %H:%M') if payment.date else '-',
             'performed_by': (
                 f"{payment.performed_by.first_name} {payment.performed_by.last_name}".strip()
                 if payment.performed_by else '-'
@@ -1438,7 +1438,7 @@ def daily_close_list(request, account_id):
             'difference': str(c.difference),
             'note': c.note or '',
             'closed_by': str(c.closed_by) if c.closed_by else '-',
-            'created_at': c.created_at.strftime('%d.%m.%Y %H:%M') if c.created_at else '',
+            'created_at': timezone.localtime(c.created_at).strftime('%d.%m.%Y %H:%M') if c.created_at else '',
         })
 
     return JsonResponse({'result': True, 'data': data})
@@ -1848,7 +1848,7 @@ def pending_payments_list(request):
         if key not in grouped:
             grouped[key] = {
                 'process_no': p.process_no or '-',
-                'date': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '-',
+                'date': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M') if p.date else '-',
                 'payments': [],
             }
         cur = p.bank_account.currency if p.bank_account else 'TRY'

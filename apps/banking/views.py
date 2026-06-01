@@ -171,7 +171,7 @@ def get_all_transactions(request):
             'match_status': txn.match_status,
             'match_score': txn.match_score,
             'payment_status': txn.payment_status,
-            'doc_date': txn.doc_date.strftime('%d.%m.%Y %H:%M') if txn.doc_date else '-',
+            'doc_date': timezone.localtime(txn.doc_date).strftime('%d.%m.%Y %H:%M') if txn.doc_date else '-',
             'bank_name': txn.bank_name or '-',
             'iban': txn.iban or '-',
             'other_name': txn.other_name or '-',
@@ -1083,7 +1083,7 @@ def commission_report(request):
     data = []
     for p in page:
         data.append({
-            'date': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '-',
+            'date': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M') if p.date else '-',
             'process_no': p.process_no or '-',
             'bank_account': p.bank_account.name if p.bank_account else '-',
             'bank_name': p.bank_account.bank_name if p.bank_account else '-',
@@ -1301,13 +1301,13 @@ def reconcile_payments_list(request):
             bank_txn_info = {
                 'id': str(bt.id),
                 'amount': str(bt.amount),
-                'doc_date': bt.doc_date.strftime('%d.%m.%Y %H:%M') if bt.doc_date else '-',
+                'doc_date': timezone.localtime(bt.doc_date).strftime('%d.%m.%Y %H:%M') if bt.doc_date else '-',
                 'other_name': bt.other_name or '-',
             }
 
         data.append({
             'id': str(pmt.id),
-            'date': pmt.date.strftime('%d.%m.%Y %H:%M') if pmt.date else '-',
+            'date': timezone.localtime(pmt.date).strftime('%d.%m.%Y %H:%M') if pmt.date else '-',
             'bank_account_name': pmt.bank_account.name if pmt.bank_account else '-',
             'bank_account_id': str(pmt.bank_account.id) if pmt.bank_account else None,
             'amount': str(pmt.amount),
@@ -1315,7 +1315,7 @@ def reconcile_payments_list(request):
             'payment_type_display': pmt.get_payment_type_display(),
             'reconciliation_status': pmt.reconciliation_status,
             'reconciliation_diff': str(pmt.reconciliation_diff) if pmt.reconciliation_diff is not None else None,
-            'reconciled_at': pmt.reconciled_at.strftime('%d.%m.%Y %H:%M') if pmt.reconciled_at else None,
+            'reconciled_at': timezone.localtime(pmt.reconciled_at).strftime('%d.%m.%Y %H:%M') if pmt.reconciled_at else None,
             'reconciled_by': (
                 f"{pmt.reconciled_by.first_name} {pmt.reconciled_by.last_name}"
                 if pmt.reconciled_by else None

@@ -290,7 +290,7 @@ def start_or_continue_session(request):
                 'session_id': str(session.id),
                 'scope_type': session.scope_type,
                 'scope_label': session.scope_label or '',
-                'start_time': session.start_time.strftime('%d.%m.%Y %H:%M'),
+                'start_time': timezone.localtime(session.start_time).strftime('%d.%m.%Y %H:%M'),
             },
         })
 
@@ -967,7 +967,7 @@ def download_inventory_pdf(request, session_id):
     context = {
         'company_name': store.title or "Kuyum Plus",
         'report_date': timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M"),
-        'session_info': f"Başlangıç: {session.start_time.strftime('%d.%m.%Y %H:%M')}",
+        'session_info': f"Başlangıç: {timezone.localtime(session.start_time).strftime('%d.%m.%Y %H:%M')}",
         'report_no': f"CNT-{session.id}",
         'authorized': request.user.get_full_name() or request.user.username,
         'store_id': store.store_id or str(store.id),

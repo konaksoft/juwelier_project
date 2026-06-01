@@ -48,7 +48,7 @@ app.conf.worker_max_tasks_per_child = 100
 # Ayni anda sadece 1 task on-bellege alinir; ani yuk altinda birikmesi engellenir.
 app.conf.worker_prefetch_multiplier = 1
 
-app.autodiscover_tasks(['apps.invoices', 'apps.products', 'apps.dashboard', 'apps.banking', 'apps.stock_management', 'apps.gold_purchases', 'apps.backups', 'apps.live_board', 'apps.definitions.rates'])
+app.autodiscover_tasks(['apps.invoices', 'apps.dashboard', 'apps.banking', 'apps.stock_management', 'apps.gold_purchases', 'apps.backups', 'apps.live_board', 'apps.definitions.rates'])
 
 # ── Celery Beat Schedule ───────────────────────────────────────────────────
 # Beat schedule TEK KAYNAKTAN okunur: settings.py → CELERY_BEAT_SCHEDULE.

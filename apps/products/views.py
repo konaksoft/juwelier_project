@@ -14,7 +14,6 @@ from django.utils import timezone  # Eksik import eklendi
 from apps.definitions.currencies.models import Currencies
 from apps.helpers.image_resize import process_image
 from apps.products.models import Products, Categories
-from apps.products.tasks import update_products_from_api
 
 # --- FAZ 3: StockService ve StockSnapshot entegrasyonu ---
 from apps.stock_management.services.stock_service import (

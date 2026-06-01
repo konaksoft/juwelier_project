@@ -600,6 +600,32 @@
 
                     <div class="separator separator-dashed my-5"></div>
 
+                    <!-- ─── Mağaza Saat Dilimi (çok ülke desteği) ─── -->
+                    <h5 class="fw-bold text-gray-800 mb-4"><i class="fa-solid fa-clock me-2"></i> Saat Dilimi</h5>
+
+                    <div class="row mb-5 align-items-center">
+                        <label class="col-lg-4 fw-semibold text-muted">Mağaza Saat Dilimi</label>
+                        <div class="col-lg-8">
+                            <select class="form-select form-select-solid store-setting-select"
+                                    data-key="timezone_code" id="selTimezoneCode">
+                                <option value="Europe/Berlin" {% if record.config.timezone_code == 'Europe/Berlin' or not record.config.timezone_code %}selected{% endif %}>Berlin (UTC+1 / UTC+2)</option>
+                                <option value="Europe/Amsterdam" {% if record.config.timezone_code == 'Europe/Amsterdam' %}selected{% endif %}>Amsterdam (UTC+1 / UTC+2)</option>
+                                <option value="Europe/Brussels" {% if record.config.timezone_code == 'Europe/Brussels' %}selected{% endif %}>Brüksel (UTC+1 / UTC+2)</option>
+                                <option value="Europe/Paris" {% if record.config.timezone_code == 'Europe/Paris' %}selected{% endif %}>Paris (UTC+1 / UTC+2)</option>
+                                <option value="Europe/Vienna" {% if record.config.timezone_code == 'Europe/Vienna' %}selected{% endif %}>Viyana (UTC+1 / UTC+2)</option>
+                                <option value="Europe/Zurich" {% if record.config.timezone_code == 'Europe/Zurich' %}selected{% endif %}>Zürih (UTC+1 / UTC+2)</option>
+                                <option value="Europe/London" {% if record.config.timezone_code == 'Europe/London' %}selected{% endif %}>Londra (UTC+0 / UTC+1)</option>
+                                <option value="Europe/Istanbul" {% if record.config.timezone_code == 'Europe/Istanbul' %}selected{% endif %}>İstanbul (UTC+3)</option>
+                            </select>
+                            <div class="text-muted fs-7 mt-2 ms-2">
+                                <i class="fa-solid fa-circle-info text-primary"></i>
+                                Rapor, ekstre, fiş ve hareket ekranlarındaki tarih/saat bu saat dilimine göre gösterilir. Veriler her zaman UTC saklanır; bu ayar yalnızca gösterimi etkiler, mevcut kayıtları değiştirmez.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="separator separator-dashed my-5"></div>
+
                     <!-- ─── FAZ 38: Cari Hesap & Tahsilat Tercihleri ─── -->
                     <h5 class="fw-bold text-gray-800 mb-4"><i class="fa-solid fa-receipt me-2"></i> Cari Hesap & Tahsilat</h5>
 

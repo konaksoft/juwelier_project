@@ -1414,10 +1414,10 @@ class POSCommissionService:
             dict: {'rate', 'commission', 'net_amount', 'maturity_date', 'maturity_days', 'source'}
         """
         from apps.banking.models import POSCommissionRate
-        from datetime import timedelta, date as dt_date
+        from datetime import timedelta
 
         if txn_date is None:
-            txn_date = timezone.now().date() if hasattr(timezone.now(), 'date') else dt_date.today()
+            txn_date = timezone.localtime(timezone.now()).date()
 
         amount = Decimal(str(amount))
 
