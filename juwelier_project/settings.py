@@ -216,6 +216,21 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=4, minute=0, day_of_week=0),
         'options': {'queue': 'juwelier_default'},
     },
+
+    # ==== Dashboard Rollup Hesaplama (FAZ R-3) ====
+    # Berlin saatine göre tetiklenir (CELERY_TIMEZONE='Europe/Berlin').
+    'dashboard-nightly-rollup': {
+        'task': 'dashboard.compute_daily_rollups',
+        # Her gece 02:05 — son 4 günün DailyStoreReport/DailyEmployeeReport
+        'schedule': crontab(hour=2, minute=5),
+        'options': {'queue': 'juwelier_default'},
+    },
+    'dashboard-today-rollup-15min': {
+        'task': 'dashboard.compute_today_rollup',
+        # 15 dakikada bir — bugünün rollup'ı + KPI cache temizliği
+        'schedule': 15 * 60,
+        'options': {'queue': 'juwelier_default'},
+    },
 }
 
 # FAZ E — Yedekleme Retention Politikası (.env override edilebilir)

@@ -1,10 +1,13 @@
-from django.utils import translation
+from django.utils import translation, timezone
 from django.conf import settings
 from django.core.cache import cache
 
 
 STORE_LANG_CACHE_KEY = "store_lang_{store_id}"
 STORE_LANG_CACHE_TTL = 60 * 60  # 1 saat
+
+STORE_TZ_CACHE_KEY = "store_tz_{store_id}"
+STORE_TZ_CACHE_TTL = 60 * 60  # 1 saat
 
 
 class StoreLanguageMiddleware:
@@ -33,6 +36,7 @@ class StoreLanguageMiddleware:
 
     def __call__(self, request):
         request_lang = None
+        tz_activated = False
 
         if hasattr(request, 'user') and request.user.is_authenticated:
             request_lang = self._get_store_language(request.user)
@@ -40,7 +44,20 @@ class StoreLanguageMiddleware:
                 translation.activate(request_lang)
                 request.LANGUAGE_CODE = request_lang
 
-        response = self.get_response(request)
+            store_tz = self._get_store_timezone(request.user)
+            if store_tz:
+                try:
+                    import zoneinfo
+                    timezone.activate(zoneinfo.ZoneInfo(store_tz))
+                    tz_activated = True
+                except Exception:
+                    timezone.deactivate()
+
+        try:
+            response = self.get_response(request)
+        finally:
+            if tz_activated:
+                timezone.deactivate()
 
         # Response aşamasında dili tekrar oku (dil güncelleme isteği sonrası
         # signal cache'i temizlemiş olabilir; yeni dili cookie'ye yaz).
@@ -84,3 +101,28 @@ class StoreLanguageMiddleware:
 
         cache.set(cache_key, lang, STORE_LANG_CACHE_TTL)
         return lang
+
+    def _get_store_timezone(self, user):
+        """
+        Kullanıcının mağazasına ait timezone_code'u döner.
+        Önce Redis cache; miss durumunda DB sorgusu + cache'e yaz.
+        Hata/eksik durumda settings.TIME_ZONE fallback.
+        """
+        store_id = getattr(user, 'store_id', None)
+        if not store_id:
+            return None
+
+        cache_key = STORE_TZ_CACHE_KEY.format(store_id=store_id)
+        tz = cache.get(cache_key)
+        if tz is not None:
+            return tz
+
+        try:
+            from apps.settings.models import StoreConfiguration
+            config = StoreConfiguration.objects.only('timezone_code').get(store_id=store_id)
+            tz = config.timezone_code or settings.TIME_ZONE
+        except Exception:
+            tz = settings.TIME_ZONE
+
+        cache.set(cache_key, tz, STORE_TZ_CACHE_TTL)
+        return tz

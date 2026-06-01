@@ -1,7 +1,7 @@
 # apps/dashboard/tasks.py
 import io
 import os
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from collections import defaultdict
 
@@ -37,6 +37,10 @@ if os.path.exists(font_path):
         pass
 
 FX_CODES = {'USD', 'EUR', 'CAD', 'QAR', 'TRY', 'GBP', 'CHF', 'AUD', 'SAR'}
+
+
+def _local_today():
+    return timezone.localtime(timezone.now()).date()
 
 
 def _dec(val, q='0.01'):
@@ -272,7 +276,7 @@ def _build_profit_report_context(store, user, start_date, end_date, period_days,
 
             rows.append({
                 "process_no": p.process_no,
-                "datetime": p.date.strftime("%d/%m/%Y %H:%M"),
+                "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M"),
                 "product": p.product.name if p.product else "-",
                 "qty": qty_display,
                 "customer": f"{p.customer.first_name} {p.customer.last_name}" if p.customer else "-",
@@ -374,7 +378,7 @@ def _build_profit_report_context(store, user, start_date, end_date, period_days,
 
             rows.append({
                 "process_no": p.process_no,
-                "datetime": p.date.strftime("%d/%m/%Y %H:%M"),
+                "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M"),
                 "product": p.product.name if p.product else "-",
                 "barcode": p.product.barcode if p.product and p.product.barcode else "-",
                 "qty": qty_display,
@@ -637,8 +641,8 @@ def _build_customer_detail_report_context(store, user, customer, start_date, end
 
         row = {
             "process_no": p.process_no,
-            "datetime": p.date.strftime("%d/%m/%Y %H:%M") if p.date else "-",
-            "date_short": p.date.strftime("%d/%m/%Y") if p.date else "-",
+            "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M") if p.date else "-",
+            "date_short": timezone.localtime(p.date).strftime("%d/%m/%Y") if p.date else "-",
             "tx_type": tx_label,
             "tx_code": tx_type,
             "is_entry": is_entry,
@@ -711,7 +715,7 @@ def _build_customer_detail_report_context(store, user, customer, start_date, end
 
         payment_rows.append({
             "process_no": pay.process_no,
-            "datetime": pay.date.strftime("%d/%m/%Y %H:%M") if pay.date else "-",
+            "datetime": timezone.localtime(pay.date).strftime("%d/%m/%Y %H:%M") if pay.date else "-",
             "payment_type": pay_label,
             "direction": direction,
             "is_output": pay.is_output,
@@ -871,7 +875,7 @@ def _build_currency_report_context(store, user, start_date, end_date, period_day
 
         rows.append({
             "process_no": p.process_no or str(p.id)[:8],
-            "datetime": p.date.strftime("%d/%m/%Y %H:%M"),
+            "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M"),
             "customer": full_name(getattr(p, 'customer', None)),
             "currency": currency_code,
             "tx_type": tx_label,
@@ -1135,7 +1139,7 @@ def generate_report_task(self, report_type, user_id, start_date_str, end_date_st
         if not store:
             raise ValueError("Kullanıcının mağazası yok")
 
-        today_date = date.today()
+        today_date = _local_today()
         start_date, end_date, period_days = _parse_date_params(start_date_str, end_date_str, period, today_date)
         if start_date is None:
             raise ValueError("Geçersiz tarih parametreleri")
@@ -1170,7 +1174,7 @@ def generate_report_task(self, report_type, user_id, start_date_str, end_date_st
             rec.save()
             return {"status": "FAILED", "error": rec.error_message}
 
-        date_str = timezone.now().strftime("%d-%m-%Y_%H%M")
+        date_str = timezone.localtime(timezone.now()).strftime("%d-%m-%Y_%H%M")
 
         if report_type == 'profit':
             clean_name = f"{profit_type.capitalize()}_Kar_Raporu_{date_str}.pdf"
@@ -1216,11 +1220,11 @@ def compute_daily_rollups():
     Son 3 günü de yeniden hesaplar (geç kapanan işlemler için).
     """
     import logging
-    from datetime import date, timedelta
+    from datetime import timedelta
     from apps.dashboard.services import compute_reports_for_all_stores
 
     logger = logging.getLogger('dashboard.reports')
-    today = date.today()
+    today = _local_today()
 
     total = 0
     for days_ago in range(3, -1, -1):  # 3 gün önce → bugün
@@ -1245,7 +1249,6 @@ def compute_today_rollup():
     Redis cache'ini de temizler.
     """
     import logging
-    from datetime import date
     from django.core.cache import cache
     from apps.stores.models import Stores
     from apps.dashboard.services import (
@@ -1254,7 +1257,7 @@ def compute_today_rollup():
     )
 
     logger = logging.getLogger('dashboard.reports')
-    today = date.today()
+    today = _local_today()
     updated = 0
 
     for store in Stores.objects.filter(is_active=True):

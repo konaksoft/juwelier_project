@@ -25,6 +25,7 @@ def update_configuration(request):
     ALLOWED_FIELDS = [
         # --- Dil & Bölgesel (juwelier_plus port) ---
         'language_code',
+        'timezone_code',
         'base_spot_currency',
         'base_spot_unit',
 
@@ -72,6 +73,18 @@ def update_configuration(request):
             try:
                 from django.core.cache import cache
                 cache.delete(f'store_lang_{store.id}')
+            except Exception:
+                pass
+
+        elif key == 'timezone_code':
+            _v = (value or '').strip()
+            valid_tz = {c[0] for c in StoreConfiguration.TIMEZONE_CHOICES}
+            if _v not in valid_tz:
+                return JsonResponse({'success': False, 'error': f'Geçersiz saat dilimi: {_v}'})
+            config.timezone_code = _v
+            try:
+                from django.core.cache import cache
+                cache.delete(f'store_tz_{store.id}')
             except Exception:
                 pass
 

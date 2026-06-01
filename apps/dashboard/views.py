@@ -5,7 +5,7 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from datetime import date, timedelta, datetime
+from datetime import timedelta, datetime
 
 from apps.customers import models
 from apps.customers.models import Customers
@@ -47,6 +47,10 @@ DEFAULT_FONT['helvetica'] = font_name
 DEFAULT_FONT['Times-Roman'] = font_name
 
 
+def _local_today():
+    return timezone.localtime(timezone.now()).date()
+
+
 @role_required('DASHBOARD_INDEX_VIEW')
 @login_required(login_url='login')
 def index_view(request):
@@ -71,7 +75,7 @@ def dashboard_data(request):
 
     store = request.user.store
     period_str = request.GET.get('period')
-    today = date.today()
+    today = _local_today()
     end_date = today
 
     if period_str:
@@ -154,7 +158,7 @@ def get_summary_data(request):
 
     store = request.user.store
     store_id = store.id
-    today = date.today()
+    today = _local_today()
 
     # Statik sayılar: Redis cache (5 dk)
     counts_key = f"dashboard_counts:{store_id}"
@@ -301,7 +305,7 @@ def generate_report(request):
     period = request.GET.get('period', 'daily')
 
     user_store_id = request.user.store_id
-    today_date = date.today()
+    today_date = _local_today()
 
     # --- 1. TARİH HESAPLAMA MANTIĞI ---
     if start_date_param and end_date_param:
@@ -497,7 +501,7 @@ def generate_currency_report(request):
         val = f"{fn} {ln}".strip()
         return val if val else getattr(obj, 'username', '-') if hasattr(obj, 'username') else '-'
 
-    today_date = date.today()
+    today_date = _local_today()
 
     # --- 1. TARİH HESAPLAMA MANTIĞI ---
     if start_date_param and end_date_param:
@@ -596,7 +600,7 @@ def generate_currency_report(request):
 
         rows.append({
             "process_no": p.process_no or str(p.id)[:8],
-            "datetime": p.date.strftime("%d/%m/%Y %H:%M"),  # _fmt_dt yerine doğrudan strftime
+            "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M"),  # _fmt_dt yerine doğrudan strftime
             "customer": full_name(getattr(p, 'customer', None)),
             "currency": currency_code,
             "tx_type": tx_label,
@@ -710,7 +714,7 @@ def generate_current_stock_report(request):
         or getattr(store, 'id', '-')
     )
 
-    today_date = date.today()
+    today_date = _local_today()
 
     if start_date_param and end_date_param:
         try:
@@ -1138,7 +1142,7 @@ def generate_bank_balance_report(request):
         or getattr(store, "id", "-")
     )
 
-    today = date.today()
+    today = _local_today()
     period = request.GET.get("period", "daily")
 
     if period == "daily":
@@ -1244,7 +1248,7 @@ def generate_profit_report(request):
     end_date_param = request.GET.get('end_date')
     report_type = request.GET.get('type', 'ziynet')
     user_store = request.user.store
-    today_date = date.today()
+    today_date = _local_today()
 
     # ─── 1. TARİH HESAPLAMA (Değişmedi) ─────────────────────
     if start_date_param and end_date_param:
@@ -1392,7 +1396,7 @@ def generate_profit_report(request):
 
             rows.append({
                 "process_no": p.process_no,
-                "datetime": p.date.strftime("%d/%m/%Y %H:%M"),
+                "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M"),
                 "product": p.product.name if p.product else "-",
                 "qty": qty_display,
                 "customer": (
@@ -1581,7 +1585,7 @@ def generate_profit_report(request):
 
         rows.append({
             "process_no": p.process_no,
-            "datetime": p.date.strftime("%d/%m/%Y %H:%M"),
+            "datetime": timezone.localtime(p.date).strftime("%d/%m/%Y %H:%M"),
             "product": p.product.name if p.product else "-",
             "barcode": (
                 p.product.barcode
@@ -1662,7 +1666,7 @@ def generate_customer_report(request):
     period = request.GET.get('period', 'daily')
     start_date_param = request.GET.get('start_date')
     end_date_param = request.GET.get('end_date')
-    today_date = date.today()
+    today_date = _local_today()
     start_date, end_date, period_days = _parse_date_params(start_date_param, end_date_param, period, today_date)
     if start_date is None:
         return HttpResponse('Geçersiz periyot veya tarih seçildi.', status=400)
@@ -1701,7 +1705,7 @@ def generate_customer_detail_report(request):
     period = request.GET.get('period', 'monthly')
     start_date_param = request.GET.get('start_date')
     end_date_param = request.GET.get('end_date')
-    today_date = date.today()
+    today_date = _local_today()
 
     start_date, end_date, period_days = _parse_date_params(
         start_date_param, end_date_param, period, today_date
@@ -1946,7 +1950,7 @@ def api_employee_performance(request):
     period = request.GET.get('period', 'daily')
     start_date_param = request.GET.get('start_date')
     end_date_param = request.GET.get('end_date')
-    today_date = date.today()
+    today_date = _local_today()
 
     start_date, end_date, period_days = _parse_date_params(
         start_date_param, end_date_param, period, today_date
@@ -2033,7 +2037,7 @@ def api_supplier_ledger(request):
     period = request.GET.get('period', 'monthly')
     start_date_param = request.GET.get('start_date')
     end_date_param = request.GET.get('end_date')
-    today_date = date.today()
+    today_date = _local_today()
     from apps.dashboard.tasks import _parse_date_params
     start_date, end_date, _ = _parse_date_params(
         start_date_param, end_date_param, period, today_date
@@ -2070,7 +2074,7 @@ def api_supplier_ledger(request):
 
         movements.append({
             'process_no': p['process_no'] or '-',
-            'date': p['date'].strftime('%d/%m/%Y %H:%M') if p['date'] else '-',
+            'date': timezone.localtime(p['date']).strftime('%d/%m/%Y %H:%M') if p['date'] else '-',
             'transaction_type': p['transaction_type'],
             'amount_eur': str(amt),
             'amount_hs': str(p['price_hs'] or Decimal('0')),
@@ -2108,7 +2112,7 @@ def api_dashboard_kpi(request):
     from apps.stock_management.services.price_service import PriceService
 
     store = request.user.store
-    today = date.today()
+    today = _local_today()
 
     # ── 1. Bugünkü KPI'lar (rollup'tan, < 5ms) ──
     kpi = get_dashboard_summary(store, today)
@@ -2236,7 +2240,7 @@ def api_date_range_summary(request):
     period = request.GET.get('period', 'monthly')
     start_date_param = request.GET.get('start_date')
     end_date_param = request.GET.get('end_date')
-    today_date = date.today()
+    today_date = _local_today()
 
     start_date, end_date, period_days = _parse_date_params(
         start_date_param, end_date_param, period, today_date

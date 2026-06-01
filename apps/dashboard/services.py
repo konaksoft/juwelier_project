@@ -22,7 +22,7 @@ FAZ C — Çoklu Maden/Ürün Entegrasyonu (2026-04-21):
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import (
@@ -36,6 +36,10 @@ logger = logging.getLogger('dashboard.reports')
 ZERO = Decimal('0')
 ZERO2 = Decimal('0.00')
 ZERO4 = Decimal('0.0000')
+
+
+def _local_today():
+    return timezone.localtime(timezone.now()).date()
 
 
 # ============================================================================
@@ -263,7 +267,7 @@ def compute_daily_store_report(store, report_date):
     watch_stock_pieces = None
     watch_stock_value_eur = None
 
-    if report_date >= date.today() - timedelta(days=1):
+    if report_date >= _local_today() - timedelta(days=1):
         # FAZ 34: product__is_deleted=False filtresi paritte icin eklendi
         # (get_store_assets_summary ile ayni davranis).
         stock_agg = (
@@ -434,7 +438,7 @@ def get_dashboard_summary(store, target_date=None):
     from django.core.cache import cache
 
     if target_date is None:
-        target_date = date.today()
+        target_date = _local_today()
 
     cache_key = f"dashboard_kpi:{store.id}:{target_date.isoformat()}"
 

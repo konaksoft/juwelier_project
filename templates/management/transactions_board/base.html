@@ -1513,97 +1513,28 @@
 
                 <div class="modal-body py-3">
                     <div class="row mb-3 g-2 align-items-end">
-                        <div class="col-md-3 col-6">
+                        <div class="col-md-6 col-6">
                             <label for="first_name" class="form-label small mb-1">Ad <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="first_name" name="first_name"
                                    required>
                         </div>
-                        <div class="col-md-3 col-6">
+                        <div class="col-md-6 col-6">
                             <label for="last_name" class="form-label small mb-1">Soyad <span
                                     class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="last_name" name="last_name"
                                    required>
-                        </div>
-                        <div class="col-md-6 col-12">
-                            <label for="identification_number" class="form-label small mb-1">Kimlik No
-                                (Opsiyonel)</label>
-                            <input type="text" class="form-control form-control-sm" id="identification_number"
-                                   name="identification_number" maxlength="30"
-                                   placeholder="Kimlik/Pasaport No">
                         </div>
                     </div>
 
                     <div class="row mb-3 g-2">
                         <div class="col-md-6 col-6">
                             <label for="phone" class="form-label small mb-1">Telefon <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" id="phone" name="phone" required
-                                   data-inputmask="'mask': '999-999-9999'">
+                            <input type="tel" class="form-control form-control-sm" id="phone" name="phone" required
+                                   placeholder="+49 152 12345678">
                         </div>
                         <div class="col-md-6 col-6">
                             <label for="email" class="form-label small mb-1">E-posta</label>
                             <input type="email" class="form-control form-control-sm" id="email" name="email">
-                        </div>
-                    </div>
-
-                    <div class="row mb-2 g-2">
-                        <div class="col-6">
-                            <label class="form-label small mb-1 d-block">Ön Yüz</label>
-                            <div class="image-input image-input-empty image-input-outline w-100"
-                                 data-kt-image-input="true"
-                                 style="background-color: #22314A; border: 1px dashed rgba(255, 205, 2, 0.3); border-radius: 8px;">
-                                <div class="image-input-wrapper w-100 h-80px"
-                                     style="background-size: contain; background-position: center;"></div>
-                                <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
-                                       data-kt-image-input-action="change" data-bs-toggle="tooltip"
-                                       title="Ön Yüz Ekle/Değiştir"
-                                       style="position: absolute; right: -10px; top: -10px;">
-                                    <i class="ki-duotone ki-pencil fs-7"><span class="path1"></span><span
-                                            class="path2"></span></i>
-                                    <input type="file" id="identification_front_image" name="identification_front_image"
-                                           accept="image/*">
-                                    <input type="hidden" name="avatar_remove">
-                                </label>
-                                <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
-                                      data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="Kaldır"
-                                      style="position: absolute; right: -10px; bottom: -10px;">
-                                    <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span
-                                            class="path2"></span></i>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small mb-1 d-block">Arka Yüz</label>
-                            <div class="image-input image-input-empty image-input-outline w-100"
-                                 data-kt-image-input="true"
-                                 style="background-color: #22314A; border: 1px dashed rgba(255, 205, 2, 0.3); border-radius: 8px;">
-                                <div class="image-input-wrapper w-100 h-80px"
-                                     style="background-size: contain; background-position: center;"></div>
-                                <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
-                                       data-kt-image-input-action="change" data-bs-toggle="tooltip"
-                                       title="Arka Yüz Ekle/Değiştir"
-                                       style="position: absolute; right: -10px; top: -10px;">
-                                    <i class="ki-duotone ki-pencil fs-7"><span class="path1"></span><span
-                                            class="path2"></span></i>
-                                    <input type="file" id="identification_back_image" name="identification_back_image"
-                                           accept="image/*">
-                                    <input type="hidden" name="avatar_remove">
-                                </label>
-                                <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
-                                      data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="Kaldır"
-                                      style="position: absolute; right: -10px; bottom: -10px;">
-                                    <i class="ki-duotone ki-cross fs-2"><span class="path1"></span><span
-                                            class="path2"></span></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-0 mt-3"
-                         id="identity_note_customer" style="border-radius: 8px;">
-                        <i class="fa-solid fa-triangle-exclamation fs-4"></i>
-                        <div class="small lh-sm" style="font-size: 0.75rem;">
-                            Kimlik fotoğrafı eklenecekse <b>ön ve arka yüz birlikte</b> yüklenmelidir. Ayrıca <b>Kimlik
-                            Numarası</b> alanı zorunlu olur.
                         </div>
                     </div>
 
@@ -2484,16 +2415,6 @@
             }
         });
 
-        // --- TELEFON FORMATLAMA YARDIMCISI ---
-        if ($.fn.inputmask) {
-            $('#phone').inputmask({"mask": "999-999-9999", "placeholder": ""});
-        } else {
-            $('#phone').on('input', function () {
-                var x = $(this).val().replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
-                $(this).val(!x[2] ? x[1] : x[1] + '-' + x[2] + (x[3] ? '-' + x[3] : ''));
-            });
-        }
-
         // 4. Kaydet Butonu
         $('#btnSaveCustomer').off('click').on('click', function () {
             var btn = $(this);
@@ -2514,55 +2435,20 @@
                 return false;
             }
 
-            var rawPhone = $('#phone').val() || '';
-            var digitsPhone = rawPhone.replace(/\D/g, '');
+            var rawPhone = ($('#phone').val() || '').trim();
+            var phoneClean = rawPhone.replace(/[\s\-().]/g, '');
+            if (phoneClean.startsWith('+')) {
+                phoneClean = '+' + phoneClean.slice(1).replace(/\+/g, '');
+            }
+            var phoneDigits = phoneClean.replace(/\D/g, '');
 
-            if (digitsPhone.startsWith('0')) digitsPhone = digitsPhone.substring(1);
-            if (digitsPhone.startsWith('90') && digitsPhone.length > 10) digitsPhone = digitsPhone.substring(2);
-
-            if (!/^5\d{9}$/.test(digitsPhone)) {
-                Swal.fire('Hata', 'Lütfen geçerli bir cep telefonu numarası girin. (5XX...)', 'error');
+            if (!/^\+?\d+$/.test(phoneClean) || phoneDigits.length < 7 || phoneDigits.length > 15) {
+                Swal.fire('Hata', 'Geçersiz telefon numarası. Lütfen ülke koduyla birlikte geçerli bir numara girin.', 'error');
                 $('#btnSaveCustomer').prop('disabled', false);
                 return false;
             }
 
-            // --- MANUEL RESİM VALİDASYONU ---
-            var frontEl = document.getElementById('identification_front_image');
-            var backEl = document.getElementById('identification_back_image');
-            var frontSelected = !!(frontEl.files && frontEl.files.length);
-            var backSelected = !!(backEl.files && backEl.files.length);
-            var anyImageSelected = frontSelected || backSelected;
-
-            var tcRaw = $('#identification_number').val() || '';
-            var idNumber = tcRaw.replace(/\D/g, '');
             var isUpdate = $('#cust_record_id').val() !== '';
-
-            if (!isUpdate && anyImageSelected) {
-                if (!(frontSelected && backSelected)) {
-                    Swal.fire('Hata', 'Yeni kayıtta kimlik fotoğrafı ekleyecekseniz ön ve arka yüzü birlikte yüklemelisiniz.', 'error');
-                    $('#btnSaveCustomer').prop('disabled', false);
-                    return false;
-                }
-            }
-
-            if (anyImageSelected && !idNumber) {
-                Swal.fire('Hata', 'Kimlik görseli yüklerken TCKN zorunludur.', 'error');
-                $('#btnSaveCustomer').prop('disabled', false);
-                return false;
-            }
-
-            if (idNumber) {
-                if (!(idNumber.length === 10 || idNumber.length === 11)) {
-                    Swal.fire('Hata', 'VKN 10, TCKN 11 hane olmalıdır.', 'error');
-                    $('#btnSaveCustomer').prop('disabled', false);
-                    return false;
-                }
-                if (idNumber.length === 11 && typeof kpIsValidTckn === 'function' && !kpIsValidTckn(idNumber)) {
-                    Swal.fire('Hata', 'T.C. Kimlik Numarası formatı geçersiz.', 'error');
-                    $('#btnSaveCustomer').prop('disabled', false);
-                    return false;
-                }
-            }
 
             var formData = new FormData(this);
 

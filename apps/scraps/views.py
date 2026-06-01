@@ -8,6 +8,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.db.models import (
     Q, OuterRef, Subquery, CharField, DecimalField, IntegerField,
@@ -38,6 +39,10 @@ from apps.stock_management.services.cancel_service import cancel_stock_entry
 from apps.suppliers.models import Suppliers, SupplierLedger
 from apps.process.models import Process
 from apps.process.views import generate_process_no
+
+
+def _local_today():
+    return timezone.localtime(timezone.now()).date()
 
 
 # ----------------- yardımcılar -----------------
@@ -1585,8 +1590,8 @@ def get_pool_sources(request):
                 'gram': _gram_val,
                 'price_hs': _price_hs_val,
                 'price_hs_per_gram': round(_unit_hs, 3),
-                'date': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '',
-                'date_short': p.date.strftime('%d %b %Y') if p.date else '',
+                'date': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M') if p.date else '',
+                'date_short': timezone.localtime(p.date).strftime('%d %b %Y') if p.date else '',
                 'product_id': str(p.product_id),
                 'scrap_id': scrap_by_product.get(str(p.product_id), ''),
             })
@@ -1658,8 +1663,8 @@ def get_pool_contents(request):
                 'price_hs': float(ph),
                 'price_hs_per_gram': float(unit_hs.quantize(Decimal('0.001'))),
                 'process_no': proc.process_no or '',
-                'date': proc.date.strftime('%d.%m.%Y %H:%M') if proc.date else '',
-                'date_short': proc.date.strftime('%d %b %Y') if proc.date else '',
+                'date': timezone.localtime(proc.date).strftime('%d.%m.%Y %H:%M') if proc.date else '',
+                'date_short': timezone.localtime(proc.date).strftime('%d %b %Y') if proc.date else '',
                 'label': (s_name if s_name else 'Tedarikçisiz'),
             })
 
@@ -2204,9 +2209,9 @@ def pool_detail(request, scrap_id):
     # Varsayılan tarih filtresi: son 30 gün
     # Eski (iptal edilmiş + REVERSAL) verileri otomatik gizler; kullanıcı
     # "Tüm Geçmişi Göster" butonuyla bu filtreyi tek tıkla kaldırır.
-    from datetime import date, timedelta
-    today_iso = date.today().isoformat()
-    default_date_from = (date.today() - timedelta(days=30)).isoformat()
+    from datetime import timedelta
+    today_iso = _local_today().isoformat()
+    default_date_from = (_local_today() - timedelta(days=30)).isoformat()
 
     view_material_type = (p.material_type or 'GOLD').upper()
 
@@ -2332,7 +2337,7 @@ def pool_process_detail(request, scrap_id, process_no):
         process_info = {
             'process_no': proc.process_no,
             'transaction_type': proc.transaction_type or '-',
-            'date': proc.date.strftime('%d %b %Y · %H:%M') if proc.date else '-',
+            'date': timezone.localtime(proc.date).strftime('%d %b %Y · %H:%M') if proc.date else '-',
             'date_iso': proc.date.isoformat() if proc.date else None,
             'source_name': _source_name,
             'source_kind': _source_kind,
@@ -2373,7 +2378,7 @@ def pool_process_detail(request, scrap_id, process_no):
         _u = Decimal(str(lr.unit_cost_hs or 0))
         ledger_payload.append({
             'id': str(lr.id),
-            'date': lr.created_on.strftime('%d %b %Y · %H:%M') if lr.created_on else '-',
+            'date': timezone.localtime(lr.created_on).strftime('%d %b %Y · %H:%M') if lr.created_on else '-',
             'direction': lr.direction,
             'reason': lr.reason,
             'reason_label': 'İPTAL ('+REASON_LABELS.get(lr.reason, lr.reason)+')' if _is_rev

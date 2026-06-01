@@ -901,7 +901,7 @@ def preview_report(request, session_id):
         'missing_groups': _group_rows_by_category(missing_rows),
         'error_groups': _group_rows_by_category(error_rows),
         'found_groups': _group_rows_by_category(found_rows),
-        'report_date': timezone.now().strftime("%d.%m.%Y %H:%M"),
+        'report_date': timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M"),
         'company_name': store.title or "Kuyum Plus",
         'scope_type': session.scope_type,
         'scope_label': session.scope_label or '',
@@ -966,7 +966,7 @@ def download_inventory_pdf(request, session_id):
 
     context = {
         'company_name': store.title or "Kuyum Plus",
-        'report_date': timezone.now().strftime("%d.%m.%Y %H:%M"),
+        'report_date': timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M"),
         'session_info': f"Başlangıç: {session.start_time.strftime('%d.%m.%Y %H:%M')}",
         'report_no': f"CNT-{session.id}",
         'authorized': request.user.get_full_name() or request.user.username,

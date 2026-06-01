@@ -452,7 +452,7 @@ def get_supplier_process_history(request):
             # FAZ 11 / SYNC-04: TR locale tarih formatı (gg.aa.yyyy SS:DD)
             # Tüm uygulama genelinde standart format. Backend ORM sort'u
             # yine timestamp üzerinden yaptığı için sıralama doğru çalışır.
-            'date': p.date.strftime('%d.%m.%Y %H:%M'),
+            'date': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M'),
             'process_no': p.process_no,
             'transaction_type': p.transaction_type,
             'product__name': p_name,
@@ -827,7 +827,7 @@ def download_supplier_report(request, record_id):
     # 7. Context
     context = {
         'company_name': "Kuyum Plus",
-        'report_date': timezone.now().strftime("%d.%m.%Y %H:%M"),
+        'report_date': timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M"),
         'report_no': f"RPT-{s.id.hex[:6].upper()}",
         'authorized': request.user.get_full_name() or request.user.username,
         'record': s,
@@ -846,7 +846,7 @@ def download_supplier_report(request, record_id):
     # 8. Render PDF
     html_string = render_to_string('management/suppliers/supplier_report_pdf.html', context)
     response = HttpResponse(content_type='application/pdf')
-    filename = f"TedarikciEkstre_{s.company_name}_{timezone.now().strftime('%Y%m%d')}.pdf"
+    filename = f"TedarikciEkstre_{s.company_name}_{timezone.localtime(timezone.now()).strftime('%Y%m%d')}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     pisa_status = pisa.CreatePDF(html_string, dest=response, encoding='utf-8')
@@ -940,7 +940,7 @@ def supplier_fis_data(request):
             else:
                 miktar = '-'
             movements.append({
-                'tarih': r.created_on.strftime('%d.%m.%Y %H:%M'),
+                'tarih': timezone.localtime(r.created_on).strftime('%d.%m.%Y %H:%M'),
                 'tip': tip,
                 'miktar': miktar,
                 'tutar': f'{r.amount_value:.3f} {r.currency}',
@@ -976,7 +976,7 @@ def supplier_fis_data(request):
                 tutar_parts.append(f'{p.amount:.2f} TL')
 
             movements.append({
-                'tarih': p.date.strftime('%d.%m.%Y %H:%M') if p.date else '-',
+                'tarih': timezone.localtime(p.date).strftime('%d.%m.%Y %H:%M') if p.date else '-',
                 'tip': tip,
                 'miktar': miktar,
                 'tutar': ' / '.join(tutar_parts) if tutar_parts else '-',
@@ -984,7 +984,7 @@ def supplier_fis_data(request):
             })
 
     # ── 3. FİŞ META ──
-    fis_no = f'FIS-{s.id.hex[:6].upper()}-{timezone.now().strftime("%d%m%y")}'
+    fis_no = f'FIS-{s.id.hex[:6].upper()}-{timezone.localtime(timezone.now()).strftime("%d%m%y")}'
 
     # ════════════════════════════════════════════════════════════════════════
     # FAZ 11 / SYNC-01 + SYNC-02 — TASLAK SEPET ÖZETİ (2026-04-24)
@@ -1081,7 +1081,7 @@ def supplier_fis_data(request):
         'movements': movements,
         'is_cantaci': is_cantaci,
         'fis_no': fis_no,
-        'fis_tarih': timezone.now().strftime('%d.%m.%Y %H:%M'),
+        'fis_tarih': timezone.localtime(timezone.now()).strftime('%d.%m.%Y %H:%M'),
         # FAZ 11 / SYNC-01 + SYNC-02
         'pending_basket': pending_basket,
     })
@@ -1227,7 +1227,7 @@ def cantaci_hareketler(request):
             _desc = f'Toptan: {r.product.name}'
 
         data.append({
-            'created_on': r.created_on.strftime('%Y-%m-%d %H:%M'),
+            'created_on': timezone.localtime(r.created_on).strftime('%Y-%m-%d %H:%M'),
             'cantaci_tx_type': _tx,
             'description': _desc,
             'quantity_gram': float(r.quantity_gram),
@@ -1287,7 +1287,7 @@ def cantaci_export(request, record_id):
         header_font = Font(bold=True, size=14)
         ws.append([f"Çantacı Ekstre - {s.company_name}"])
         ws['A1'].font = header_font
-        ws.append([f"Tarih: {timezone.now().strftime('%d.%m.%Y %H:%M')}"])
+        ws.append([f"Tarih: {timezone.localtime(timezone.now()).strftime('%d.%m.%Y %H:%M')}"])
         ws.append([])
 
         # KPI Özet
@@ -1312,7 +1312,7 @@ def cantaci_export(request, record_id):
         }
         for h in hareketler:
             ws.append([
-                h.created_on.strftime('%d.%m.%Y %H:%M'),
+                timezone.localtime(h.created_on).strftime('%d.%m.%Y %H:%M'),
                 tx_labels.get(h.cantaci_tx_type, h.cantaci_tx_type or '-'),
                 h.description or '-',
                 float(h.quantity_gram),
@@ -1327,7 +1327,7 @@ def cantaci_export(request, record_id):
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        filename = f"CantaciEkstre_{s.company_name}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+        filename = f"CantaciEkstre_{s.company_name}_{timezone.localtime(timezone.now()).strftime('%Y%m%d')}.xlsx"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         wb.save(response)
         return response
@@ -1342,7 +1342,7 @@ def cantaci_export(request, record_id):
         }
         context = {
             'record': s,
-            'report_date': timezone.now().strftime("%d.%m.%Y %H:%M"),
+            'report_date': timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M"),
             'authorized': request.user.get_full_name() or request.user.username,
             'hareketler': hareketler,
             'tx_labels': tx_labels,
@@ -1350,7 +1350,7 @@ def cantaci_export(request, record_id):
         }
         html_string = render_to_string('management/suppliers/cantaci_report_pdf.html', context)
         response = HttpResponse(content_type='application/pdf')
-        filename = f"CantaciEkstre_{s.company_name}_{timezone.now().strftime('%Y%m%d')}.pdf"
+        filename = f"CantaciEkstre_{s.company_name}_{timezone.localtime(timezone.now()).strftime('%Y%m%d')}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         pisa_status = pisa.CreatePDF(html_string, dest=response, encoding='utf-8')
         if pisa_status.err:

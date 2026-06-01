@@ -427,7 +427,7 @@ def expense_categories_list(request):
             'display_order': c.display_order,
             'is_active': c.is_active,
             'is_system_preset': c.is_system_preset,
-            'created_on': c.created_on.strftime('%d.%m.%Y %H:%M'),
+            'created_on': timezone.localtime(c.created_on).strftime('%d.%m.%Y %H:%M') if c.created_on else '',
         })
     return JsonResponse({'result': True, 'data': rows})
 
@@ -795,7 +795,7 @@ def expense_report_data(request):
             cash_name = entry.related_payment.bank_account.name
         rows.append({
             'id': str(entry.id),
-            'date': entry.created_on.strftime('%d.%m.%Y %H:%M'),
+            'date': timezone.localtime(entry.created_on).strftime('%d.%m.%Y %H:%M') if entry.created_on else '',
             'category': cat_name,
             'description': entry.description or '',
             'amount_eur': _fmt_amount(entry.amount_eur),

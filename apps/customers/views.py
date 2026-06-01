@@ -1,5 +1,6 @@
 import json
 import random
+import re
 import string
 import secrets
 from datetime import datetime
@@ -228,6 +229,22 @@ def normalize_tr_phone(phone_raw: str) -> str:
     return digits  # veya phone_raw
 
 
+def normalize_intl_phone(phone_raw: str) -> str:
+    """
+    Uluslararası telefon numarasını E.164 uyumlu sade biçime getirir.
+    Boşluk, tire, parantez temizlenir; tek bir baştaki '+' korunur; harf reddedilir.
+    Örnek: '+49 152 12345678' -> '+4915212345678', '0152 12345678' -> '015212345678'
+    """
+    if not phone_raw:
+        return ""
+
+    cleaned = re.sub(r"[\s\-().]", "", str(phone_raw))
+
+    if cleaned.startswith("+"):
+        return "+" + re.sub(r"\D", "", cleaned[1:])
+    return re.sub(r"\D", "", cleaned)
+
+
 @login_required()
 @role_required('CUSTOMERS_CUSTOMERS_VIEW')
 def customers_view(request):
@@ -263,10 +280,14 @@ def add_customer(request):
 
         record_id = request.POST.get('record_id')
         raw_phone = request.POST.get('phone')
-        phone = normalize_tr_phone(raw_phone) if raw_phone else None
+        phone = None
+        if raw_phone and raw_phone.strip():
+            if len(raw_phone) > 30:
+                return JsonResponse({'error': True, 'error_msg': 'Geçersiz telefon numarası. Lütfen ülke koduyla birlikte geçerli bir numara girin.'})
+            phone = normalize_intl_phone(raw_phone)
+            if not re.fullmatch(r"\+?\d{7,15}", phone):
+                return JsonResponse({'error': True, 'error_msg': 'Geçersiz telefon numarası. Lütfen ülke koduyla birlikte geçerli bir numara girin.'})
 
-        if phone and (len(phone) != 10 or not phone.startswith('5')):
-            return JsonResponse({'error': True, 'error_msg': 'Geçersiz telefon numarası. (5XX... formatında olmalı)'})
         identification_number = _none_if_blank(request.POST.get('identification_number'))
 
         # --- DİNAMİK ZORUNLULUK + KİMLİK ALGORİTMA KONTROLLERİ ---
@@ -285,9 +306,11 @@ def add_customer(request):
         # 10 hane → VKN format kontrolü (kurumsal müşteri)
         # diğer  → reddedilir
         if identification_number:
-            is_valid, err_msg = validate_identification_number(identification_number)
-            if not is_valid:
-                return JsonResponse({'error': True, 'error_msg': err_msg})
+            store_country = (getattr(store, 'country', '') or '').strip().lower()
+            if store_country in ('türkiye', 'turkiye', 'turkey', 'tr', ''):
+                is_valid, err_msg = validate_identification_number(identification_number)
+                if not is_valid:
+                    return JsonResponse({'error': True, 'error_msg': err_msg})
 
         if record_id:
             record = get_object_or_404(Customers, id=record_id, store=store, is_deleted=False)

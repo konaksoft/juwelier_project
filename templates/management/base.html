@@ -848,16 +848,7 @@
                                     <span class="menu-heading uppercase text-2sm font-medium text-gray-500 ps-[10px] pe-[10px]">Ürün Yönetimi</span>
                                 </div>
 
-                                <!-- Order 4 -->
-                                {% if request.user|menu_allowed:'ABC1003D' %}
-                                    <div class="menu-item">
-                                        <a href="{% url 'products:index' %}" class="menu-link">
-                                            <span class="menu-icon"><i
-                                                    class="fa-solid fa-boxes-stacked fs-2"></i></span>
-                                            <span class="menu-title">Sarrafiye ve Döviz </span>
-                                        </a>
-                                    </div>
-                                {% endif %}
+
 
                                 <!-- Order 5 -->
                                 {% if request.user|menu_allowed:'ABC1007D' %}
@@ -959,16 +950,6 @@
                                     </div>
                                 {% endif %}
 
-                                <!-- Order 12b — Açık Bankacılık (Mutabakat) -->
-                                {% if request.user|menu_allowed:'ABC1706D' %}
-                                    <div class="menu-item">
-                                        <a href="{% url 'banking:index' %}" class="menu-link">
-                                            <span class="menu-icon"><i
-                                                    class="fas fa-building-columns fs-2"></i></span>
-                                            <span class="menu-title">Açık Bankacılık</span>
-                                        </a>
-                                    </div>
-                                {% endif %}
                             {% endif %}
 
                             <!-- ========== 4. GRUP: MAĞAZA YÖNETİMİ (Order 13-18) ========== -->
