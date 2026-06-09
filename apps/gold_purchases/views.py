@@ -293,6 +293,60 @@ def _resolve_diamond_label_data(p):
     return out
 
 
+def _resolve_diamond_stone_rows(p, max_rows=None):
+    """
+    Çoklu taş (D1, D2, ...) satırlarını normalize eder.
+
+    Dönüş: liste. Her eleman:
+        {'index': 1, 'carat': '0,08', 'color': 'F', 'clarity': 'SI1',
+         'cut': '', 'line': 'D1: 0,08 F SI1'}
+
+    Kurallar:
+      - Yalnızca BİRDEN FAZLA anlamlı taş varsa dolu liste döner; aksi halde []
+        (tek taş / taşsız üründe mevcut tekil 4C davranışı aynen korunur).
+      - Karat, renk ve berraklık tümü boş olan taş atlanır.
+      - Ondalık ayraç virgül (Almanya/Avrupa): 0.08 -> 0,08.
+      - Kesim (cut) satıra DAHİL EDİLMEZ (alan darlığı; karat+renk+berraklık öncelikli).
+      - max_rows verilirse fazla satırlar kırpılır (küçük/büyük etiket sınırı).
+    """
+    dd = getattr(p, 'diamond_detail', None)
+    if not dd:
+        return []
+    try:
+        stones = list(dd.stones.all().order_by('position'))
+    except Exception:
+        stones = []
+
+    rows = []
+    for s in stones:
+        try:
+            carat_f = float(s.carat_weight or 0)
+        except (TypeError, ValueError):
+            carat_f = 0.0
+        carat_str = f"{carat_f:.2f}".replace('.', ',') if carat_f > 0 else ''
+        color = (s.color_grade or '').strip()
+        clarity = (s.clarity_grade or '').strip()
+        cut = (s.cut_grade or '').strip()
+        if not carat_str and not color and not clarity:
+            continue
+        n = len(rows) + 1
+        body = ' '.join([x for x in (carat_str, color, clarity) if x])
+        rows.append({
+            'index': n,
+            'carat': carat_str,
+            'color': color,
+            'clarity': clarity,
+            'cut': cut,
+            'line': f"D{n}: {body}".strip(),
+        })
+
+    if len(rows) <= 1:
+        return []
+    if max_rows is not None and len(rows) > max_rows:
+        rows = rows[:max_rows]
+    return rows
+
+
 @login_required
 def get_print_data(request):
     ids_param = request.GET.get('ids', '')
@@ -477,6 +531,7 @@ def get_print_data(request):
 
         # ── Material'a özel metin alanı listesi ──
         # GOLD: karat/gram/milyem; DIAMOND: 4C + sertifika; WATCH: marka/model/referans
+        stone_rows = []
         if product_material == MaterialType.DIAMOND:
             # 2026-04-28: DiamondDetail özet alanları boşsa DiamondStone'dan
             # auto-derive eden helper kullanılır. Fiyat dd.sale_price'tan
@@ -510,6 +565,13 @@ def get_print_data(request):
                 ('certificate_no',  cert_no),
                 ('supplier',        supplier_name),
             ]
+            # Çoklu taş: >1 taş varsa 4C özet alanları yerine alt alta D1/D2/D3
+            # satırları basılır (carat alanının X/Y/font'u baz alınır).
+            _stone_max = 6 if active_size == 'large' else 3
+            stone_rows = _resolve_diamond_stone_rows(p, max_rows=_stone_max)
+            if stone_rows:
+                _drop = {'carat_weight', 'color_grade', 'clarity_grade', 'cut_grade'}
+                text_field_list = [t for t in text_field_list if t[0] not in _drop]
         elif product_material == MaterialType.WATCH:
             wd = getattr(p, 'watch_detail', None)
             brand_val    = clean_text(wd.brand or "") if wd else ""
@@ -543,6 +605,26 @@ def get_print_data(request):
                 ('ring_size',    ring_size_val),
             ]
 
+        # ── Çoklu taş satırları (D1, D2, ...) — carat alanını baz alır ──
+        def build_stone_lines_zpl(x_offset=0, inverted=False, mirror_y=False):
+            if not stone_rows:
+                return ""
+            cc = config.get('carat_weight', {}) or default_diamond_small_config().get('carat_weight', {})
+            if not cc.get('visible', True):
+                return ""
+            base_x = cc.get('x', 0)
+            base_y = cc.get('y', 0)
+            f = cc.get('font', 18)
+            line_gap = f + 4
+            rot = 'I' if inverted else 'N'
+            out = ""
+            for row in stone_rows:
+                ly = base_y + (row['index'] - 1) * line_gap
+                if mirror_y:
+                    ly = LABEL_HEIGHT - ly + 100
+                out += f"^FT{base_x + x_offset},{ly}^A0{rot},{f},{f}^FH\\^FD{clean_text(row['line'])}^FS"
+            return out
+
         # ── Tüm metin alanlarını oluşturan yardımcı ──
         def build_text_fields(x_offset=0, inverted=False, mirror_y=False):
             fields = ""
@@ -554,6 +636,7 @@ def get_print_data(request):
                     fields += z(key, val, x_offset=x_offset, inverted=inverted, y_override=new_y)
                 else:
                     fields += z(key, val, x_offset=x_offset, inverted=inverted)
+            fields += build_stone_lines_zpl(x_offset=x_offset, inverted=inverted, mirror_y=mirror_y)
             return fields
 
         # ── BİRİNCİ YARI (Her zaman basılır) ──
@@ -1504,6 +1587,8 @@ def print_barcode_normal(request):
                 'color_grade':     (dl['color_grade']      if dl else ''),
                 'clarity_grade':   (dl['clarity_grade']    if dl else ''),
                 'cut_grade':       (dl['cut_grade']        if dl else ''),
+                # Çoklu taş satırları (>1 taşta dolu; tek taşta [] → tekil 4C korunur)
+                'stone_rows':      (_resolve_diamond_stone_rows(p, max_rows=(6 if _active_sz == 'large' else 3)) if product_material == 'DIAMOND' else []),
                 'certificate_lab': (dl['certificate_lab']  if dl else ''),
                 'certificate_no':  (dl['certificate_no']   if dl else ''),
                 # Montür altın bilgileri (opsiyonel; default visible=False)

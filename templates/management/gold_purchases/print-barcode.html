@@ -211,27 +211,38 @@
 
                     <!-- ─── DIAMOND: 4C + Sertifika ─── -->
                     {% if product.material_type == 'DIAMOND' %}
-                        {% if cfg.carat_weight.visible and product.carat_weight %}
-                            <div style="font-size:{{ cfg.carat_weight.print_font }}px; transform:translate({{ cfg.carat_weight.print_dx }}px, {{ cfg.carat_weight.print_dy }}px);">
-                                {{ product.carat_weight }}
-                            </div>
-                        {% endif %}
-                        <div class="info-row">
-                            {% if cfg.color_grade.visible and product.color_grade %}
-                                <div style="font-size:{{ cfg.color_grade.print_font }}px; transform:translate({{ cfg.color_grade.print_dx }}px, {{ cfg.color_grade.print_dy }}px);">
-                                    {{ product.color_grade }}
+                        {% if product.stone_rows %}
+                            <!-- Çoklu taş: D1/D2/D3 alt alta; carat alanının konum/font'u baz alınır -->
+                            {% if cfg.carat_weight.visible %}
+                                <div style="font-size:{{ cfg.carat_weight.print_font }}px; transform:translate({{ cfg.carat_weight.print_dx }}px, {{ cfg.carat_weight.print_dy }}px); line-height:1.15;">
+                                    {% for srow in product.stone_rows %}
+                                        <div>{{ srow.line }}</div>
+                                    {% endfor %}
                                 </div>
                             {% endif %}
-                            {% if cfg.clarity_grade.visible and product.clarity_grade %}
-                                <div style="font-size:{{ cfg.clarity_grade.print_font }}px; transform:translate({{ cfg.clarity_grade.print_dx }}px, {{ cfg.clarity_grade.print_dy }}px);">
-                                    {{ product.clarity_grade }}
+                        {% else %}
+                            {% if cfg.carat_weight.visible and product.carat_weight %}
+                                <div style="font-size:{{ cfg.carat_weight.print_font }}px; transform:translate({{ cfg.carat_weight.print_dx }}px, {{ cfg.carat_weight.print_dy }}px);">
+                                    {{ product.carat_weight }}
                                 </div>
                             {% endif %}
-                        </div>
-                        {% if cfg.cut_grade.visible and product.cut_grade %}
-                            <div style="font-size:{{ cfg.cut_grade.print_font }}px; transform:translate({{ cfg.cut_grade.print_dx }}px, {{ cfg.cut_grade.print_dy }}px);">
-                                {{ product.cut_grade }}
+                            <div class="info-row">
+                                {% if cfg.color_grade.visible and product.color_grade %}
+                                    <div style="font-size:{{ cfg.color_grade.print_font }}px; transform:translate({{ cfg.color_grade.print_dx }}px, {{ cfg.color_grade.print_dy }}px);">
+                                        {{ product.color_grade }}
+                                    </div>
+                                {% endif %}
+                                {% if cfg.clarity_grade.visible and product.clarity_grade %}
+                                    <div style="font-size:{{ cfg.clarity_grade.print_font }}px; transform:translate({{ cfg.clarity_grade.print_dx }}px, {{ cfg.clarity_grade.print_dy }}px);">
+                                        {{ product.clarity_grade }}
+                                    </div>
+                                {% endif %}
                             </div>
+                            {% if cfg.cut_grade.visible and product.cut_grade %}
+                                <div style="font-size:{{ cfg.cut_grade.print_font }}px; transform:translate({{ cfg.cut_grade.print_dx }}px, {{ cfg.cut_grade.print_dy }}px);">
+                                    {{ product.cut_grade }}
+                                </div>
+                            {% endif %}
                         {% endif %}
 
                         {% if cfg.mount_gram and cfg.mount_gram.visible and product.mount_gram %}
