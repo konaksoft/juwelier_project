@@ -245,6 +245,12 @@
                             {% endif %}
                         {% endif %}
 
+                        {% if cfg.growth_type and cfg.growth_type.visible and product.growth_type %}
+                            <div style="font-size:{{ cfg.growth_type.print_font }}px; transform:translate({{ cfg.growth_type.print_dx }}px, {{ cfg.growth_type.print_dy }}px);">
+                                {{ product.growth_type }}
+                            </div>
+                        {% endif %}
+
                         {% if cfg.mount_gram and cfg.mount_gram.visible and product.mount_gram %}
                             <div style="font-size:{{ cfg.mount_gram.print_font }}px; transform:translate({{ cfg.mount_gram.print_dx }}px, {{ cfg.mount_gram.print_dy }}px);">
                                 {{ product.mount_gram }}

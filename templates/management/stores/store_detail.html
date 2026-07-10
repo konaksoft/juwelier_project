@@ -3526,6 +3526,7 @@
                     "cut_grade":      {"label": "Kesim",           "x": 180, "y": 200, "font": 13, "width": 0,  "visible": true},
                     "mount_karat":    {"label": "Montür Ayarı",    "x": 320, "y": 200, "font": 13, "width": 0,  "visible": false},
                     "mount_gram":     {"label": "Montür Gramı",    "x": 380, "y": 200, "font": 13, "width": 0,  "visible": false},
+                    "growth_type":    {"label": "Taş Kökeni",      "x": 180, "y": 280, "font": 13, "width": 0,  "visible": false},
                     "price":          {"label": "Fiyat",           "x": 220, "y": 220, "font": 25, "width": 0,  "visible": true,  "show_currency": true},
                     "certificate_lab": {"label": "Sertifika",      "x": 180, "y": 240, "font": 12, "width": 0,  "visible": true},
                     "certificate_no": {"label": "Sert. No",        "x": 240, "y": 240, "font": 12, "width": 0,  "visible": false},
@@ -3548,7 +3549,7 @@
 
             const fieldOrderByMaterial = {
                 GOLD:    ["store_name", "barcode_lines", "barcode_no", "quality_text", "price", "mileage", "gram", "jewelry_type", "supplier", "ring_size"],
-                DIAMOND: ["store_name", "barcode_lines", "barcode_no", "carat_weight", "color_grade", "clarity_grade", "cut_grade", "mount_karat", "mount_gram", "price", "certificate_lab", "certificate_no", "supplier"],
+                DIAMOND: ["store_name", "barcode_lines", "barcode_no", "carat_weight", "color_grade", "clarity_grade", "cut_grade", "mount_karat", "mount_gram", "growth_type", "price", "certificate_lab", "certificate_no", "supplier"],
                 WATCH:   ["store_name", "barcode_lines", "barcode_no", "brand", "model_name", "reference_no", "movement_type", "condition", "price", "supplier", "box_papers"]
             };
 
@@ -3557,7 +3558,7 @@
             // show_currency=false durumunda updatePreview() suffix'i strip eder.
             const previewSampleByMaterial = {
                 GOLD:    { store_name: 'MAĞAZA ADI', barcode_no: 'PR12345', quality_text: '14K', price: '3.500,00 S', mileage: '0.585 M', gram: '2.15 gr', jewelry_type: 'YÜZÜK', supplier: 'Tedarikçi Şti.', ring_size: '14' },
-                DIAMOND: { store_name: 'MAĞAZA ADI', barcode_no: 'DM12345', carat_weight: '0.85 ct', color_grade: 'D', clarity_grade: 'VS1', cut_grade: 'Excellent', mount_karat: '18K', mount_gram: '4,10 gr', price: '125.000 $', certificate_lab: 'GIA', certificate_no: '1234567890', supplier: 'Tedarikçi Şti.' },
+                DIAMOND: { store_name: 'MAĞAZA ADI', barcode_no: 'DM12345', carat_weight: '0.85 ct', color_grade: 'D', clarity_grade: 'VS1', cut_grade: 'Excellent', mount_karat: '18K', mount_gram: '4,10 gr', growth_type: 'NAT', price: '125.000 $', certificate_lab: 'GIA', certificate_no: '1234567890', supplier: 'Tedarikçi Şti.' },
                 WATCH:   { store_name: 'MAĞAZA ADI', barcode_no: 'WT12345', brand: 'Rolex', model_name: 'Submariner', reference_no: '116610LN', movement_type: 'Otomatik', condition: 'Yeni', price: '850.000 S', supplier: 'Tedarikçi Şti.', box_papers: 'Kutu+Belge' }
             };
 

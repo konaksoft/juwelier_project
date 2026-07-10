@@ -1473,6 +1473,29 @@
                             </div>
                         </div>
 
+                        <!-- ─────── 2.5 Taş Kökeni (Doğal / Laboratuvar) ─────── -->
+                        <div class="border rounded p-3 mb-4 bg-light-primary">
+                            <h6 class="mb-3 text-primary fw-bold">
+                                <i class="fa-solid fa-flask me-2"></i> Taş Kökeni
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <select class="form-select" name="diamond_growth_type" id="dia_growth_type">
+                                            <option value="NATURAL" selected>Doğal (Natural)</option>
+                                            <option value="LAB_GROWN">Laboratuvar (Lab-Grown)</option>
+                                        </select>
+                                        <label for="dia_growth_type">Taş Kökeni</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block">
+                                <i class="fa-solid fa-circle-info me-1"></i>
+                                Etikette NAT/LAB olarak basılır. Görünmüyorsa Mağaza → Etiket Tasarımı → Pırlanta
+                                bölümünden "Taş Kökeni" alanını görünür yapın.
+                            </small>
+                        </div>
+
                         <!-- ─────── 3. Satış Fiyatı (Döviz bazlı) ─────── -->
                         <!-- R-04 (2026-04-28): Kâr % alanı eklendi. JS, buy_price_eur × (1+kar/100) -->
                         <!-- ile sale_price_eur türetir; FX endpoint'inden seçili para biriminin     -->
@@ -4878,6 +4901,7 @@
                         var keepCurrency = diamondForm.querySelector('[name="sale_currency"]').value;
                         var keepMountKar = diamondForm.querySelector('[name="mount_karat"]').value;
                         var keepMountMet = diamondForm.querySelector('[name="mount_metal"]').value;
+                        var keepGrowthType = diamondForm.querySelector('[name="diamond_growth_type"]').value;
 
                         diamondForm.reset();
                         diamondForm.querySelector('[name="supplier_id"]').value = keepSupplier;
@@ -4885,6 +4909,7 @@
                         diamondForm.querySelector('[name="sale_currency"]').value = keepCurrency;
                         diamondForm.querySelector('[name="mount_karat"]').value = keepMountKar;
                         diamondForm.querySelector('[name="mount_metal"]').value = keepMountMet;
+                        diamondForm.querySelector('[name="diamond_growth_type"]').value = keepGrowthType;
 
                         // FAZ E UI FIX: Image preview'ı seri girişte de sıfırla
                         var diaWrapper = diamondForm.querySelector('.image-input-wrapper');
@@ -5100,6 +5125,7 @@
         var DIAMOND_TEMPLATE_FIELDS = [
             'sale_currency', 'sale_price', 'buy_price_eur',
             'mount_metal', 'mount_karat', 'mount_gram',
+            'diamond_growth_type',
         ];
 
         var WATCH_TEMPLATE_FIELDS = [

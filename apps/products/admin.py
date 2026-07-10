@@ -68,11 +68,11 @@ class DiamondDetailAdmin(admin.ModelAdmin):
     list_display = (
         'product', 'carat_weight', 'shape',
         'color_grade', 'clarity_grade', 'cut_grade',
-        'certificate_lab', 'certificate_no',
+        'certificate_lab', 'certificate_no', 'growth_type',
     )
     list_filter = (
         'shape', 'color_grade', 'clarity_grade',
-        'cut_grade', 'certificate_lab',
+        'cut_grade', 'certificate_lab', 'growth_type',
     )
     search_fields = ('certificate_no', 'product__name', 'product__barcode')
     raw_id_fields = ('product',)

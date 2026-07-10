@@ -330,6 +330,8 @@ class DiamondDetail(models.Model):
       - GIA, IGI, HRD, AGS gibi bağımsız laboratuvarların raporu.
       - certificate_no artık tekil değil (unique kaldırıldı).
       - Taşların kendi sertifikası DiamondStone.certificate_no'da tutulur.
+      - growth_type: Doğal (NATURAL) / Laboratuvar (LAB_GROWN) — etikette NAT/LAB
+        basılır. Boş = bilinmiyor (eski kayıtlar; NATURAL varsayılmaz).
 
     Montür Altını:
       - mount_karat + mount_gram — Sigorta ve etiket amaçlı.
@@ -395,6 +397,19 @@ class DiamondDetail(models.Model):
         GSI   = 'GSI',   'GSI (Gemological Science International)'
         NONE  = 'NONE',  'Sertifikasız'
         OTHER = 'OTHER', 'Diğer'
+
+    class GrowthType(models.TextChoices):
+        NATURAL   = 'NATURAL',   'Doğal (Natural)'
+        LAB_GROWN = 'LAB_GROWN', 'Laboratuvar (Lab-Grown)'
+
+    # Etiket kısa gösterimi — tek gerçek kaynak (SSOT). ZPL ve HTML etiket
+    # akışları bu mapping'i kullanır; ham enum (LAB_GROWN) ASLA etikete basılmaz.
+    # Bilinmeyen/boş (None) → '' (etikette hiçbir köken metni gösterilmez;
+    # boş değer NAT'a dönüştürülMEZ — eski/kökeni bilinmeyen kayıt koruması).
+    GROWTH_TYPE_LABEL_SHORT = {
+        'NATURAL':   'NAT',
+        'LAB_GROWN': 'LAB',
+    }
 
     class Fluorescence(models.TextChoices):
         NONE    = 'NONE',    'Yok'
@@ -558,6 +573,25 @@ class DiamondDetail(models.Model):
         verbose_name="Sertifika Numarası (Piece-Level)",
         help_text="Ürün bütünü için verilmiş sertifika. Taş bazlı sertifika DiamondStone'dadır.",
     )
+
+    # DİKKAT — `default` BİLİNÇLİ olarak YOK. default='NATURAL' verilseydi
+    # migration mevcut TÜM DiamondDetail satırlarını NATURAL'a yazardı; kökeni
+    # bilinmeyen (belki Lab) eski pırlantalar yanlışlıkla "Doğal" olurdu.
+    # null=True + default'suz → eski kayıtlar NULL ("bilinmiyor") kalır.
+    # Yeni ürünler kökeni form/servis katmanında AÇIKÇA (NATURAL/LAB_GROWN) alır.
+    growth_type = models.CharField(
+        max_length=10,
+        choices=GrowthType.choices,
+        null=True,
+        blank=True,
+        verbose_name="Taş Kökeni",
+        help_text="Doğal mı laboratuvar üretimi mi (etikette NAT/LAB). Boş = bilinmiyor; eski kayıtlarda boş bırakılır, NATURAL varsayılmaz.",
+    )
+
+    @property
+    def growth_type_short(self) -> str:
+        """Etiket kısa metni: NATURAL→'NAT', LAB_GROWN→'LAB', boş/bilinmeyen→''."""
+        return self.GROWTH_TYPE_LABEL_SHORT.get((self.growth_type or '').strip().upper(), '')
 
     # ------------------------------------------------------------------
     # ÜRETİCİ REFERANS KODU (BÖLÜM 1 / P-07 — 2026-04-27)

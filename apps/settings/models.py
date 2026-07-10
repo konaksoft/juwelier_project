@@ -290,6 +290,8 @@ def default_diamond_small_config():
     # altın saflığı (örn. "18K") ve montür gramı etikete basılır. Default visible=False
     # (mevcut müşteriler bekledikleri etikete sürpriz alan eklenmesin).
     # price.show_currency=True → fiyat suffix'i (₺/$/€/£) gösterilir; isteyen kapatabilir.
+    # growth_type (Taş Kökeni — NAT/LAB) aynı sebeple default visible=False; kullanmak
+    # isteyen mağaza Etiket Tasarımı ekranından açar.
     return {
         "store_name":     {"x": 180, "y": 90,  "font": 20, "visible": True,  "label": "Firma Adı"},
         "barcode_no":     {"x": 180, "y": 145, "font": 20, "visible": True,  "label": "Barkod No"},
@@ -299,6 +301,7 @@ def default_diamond_small_config():
         "cut_grade":      {"x": 180, "y": 200, "font": 13, "visible": True,  "label": "Kesim"},
         "mount_karat":    {"x": 320, "y": 200, "font": 13, "visible": False, "label": "Montür Ayarı"},
         "mount_gram":     {"x": 380, "y": 200, "font": 13, "visible": False, "label": "Montür Gramı"},
+        "growth_type":    {"x": 180, "y": 280, "font": 13, "visible": False, "label": "Taş Kökeni"},
         "price":          {"x": 220, "y": 220, "font": 25, "visible": True,  "label": "Fiyat", "show_currency": True},
         "certificate_lab": {"x": 180, "y": 240, "font": 12, "visible": True,  "label": "Sertifika"},
         "certificate_no": {"x": 240, "y": 240, "font": 12, "visible": False, "label": "Sert. No"},
@@ -318,6 +321,7 @@ def default_diamond_large_config():
         "cut_grade":      {"x": 180, "y": 200, "font": 15, "visible": True,  "label": "Kesim"},
         "mount_karat":    {"x": 320, "y": 200, "font": 15, "visible": False, "label": "Montür Ayarı"},
         "mount_gram":     {"x": 380, "y": 200, "font": 15, "visible": False, "label": "Montür Gramı"},
+        "growth_type":    {"x": 180, "y": 280, "font": 15, "visible": False, "label": "Taş Kökeni"},
         "price":          {"x": 220, "y": 220, "font": 28, "visible": True,  "label": "Fiyat", "show_currency": True},
         "certificate_lab": {"x": 180, "y": 240, "font": 14, "visible": True,  "label": "Sertifika"},
         "certificate_no": {"x": 240, "y": 240, "font": 14, "visible": False, "label": "Sert. No"},

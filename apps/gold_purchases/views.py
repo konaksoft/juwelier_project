@@ -207,6 +207,7 @@ def _resolve_diamond_label_data(p):
         # show/hide config ile kontrol edilir, default visible=False).
         'mount_karat':     '',   # "18K" / "" (NONE filtrelenir)
         'mount_gram_str':  '',   # "4,10 gr" / ""
+        'growth_type':     '',   # "NAT" / "LAB" (opsiyonel — etikette show/hide config ile kontrol edilir)
     }
 
     dd = getattr(p, 'diamond_detail', None)
@@ -277,6 +278,11 @@ def _resolve_diamond_label_data(p):
     out['certificate_lab'] = cert_lab
 
     out['certificate_no'] = _pick(dd.certificate_no, 'certificate_no')
+
+    # ── Taş kökeni: NATURAL→'NAT', LAB_GROWN→'LAB', boş/bilinmeyen→'' ──
+    # Boş değer NAT'a dönüştürülMEZ (eski/kökeni bilinmeyen kayıt koruması).
+    # Tek gerçek kaynak: DiamondDetail.growth_type_short property'si.
+    out['growth_type'] = dd.growth_type_short
 
     # ── Montür altın alanları: NONE / 0.000 olanlar boş döner ──
     mk_raw = (dd.mount_karat or '').strip() if isinstance(dd.mount_karat, str) else (dd.mount_karat or '')
@@ -546,6 +552,7 @@ def get_print_data(request):
             cert_no     = clean_text(dl['certificate_no'])
             mount_karat_val = clean_text(dl['mount_karat'])
             mount_gram_val  = clean_text(dl['mount_gram_str'])
+            growth_val      = clean_text(dl['growth_type'])
             # FAZ DIA-LBL (2026-04-28): show_currency toggle — config'te kapalıysa
             # döviz simgesi (₺/$/€/£) basılmaz; yalnız sayı görünür.
             _price_cfg = config.get('price', {}) or {}
@@ -558,6 +565,7 @@ def get_print_data(request):
                 ('color_grade',     color_val),
                 ('clarity_grade',   clarity_val),
                 ('cut_grade',       cut_val),
+                ('growth_type',     growth_val),
                 ('mount_karat',     mount_karat_val),
                 ('mount_gram',      mount_gram_val),
                 ('price',           diamond_price_label),
@@ -1587,6 +1595,7 @@ def print_barcode_normal(request):
                 'color_grade':     (dl['color_grade']      if dl else ''),
                 'clarity_grade':   (dl['clarity_grade']    if dl else ''),
                 'cut_grade':       (dl['cut_grade']        if dl else ''),
+                'growth_type':     (dl['growth_type']      if dl else ''),
                 # Çoklu taş satırları (>1 taşta dolu; tek taşta [] → tekil 4C korunur)
                 'stone_rows':      (_resolve_diamond_stone_rows(p, max_rows=(6 if _active_sz == 'large' else 3)) if product_material == 'DIAMOND' else []),
                 'certificate_lab': (dl['certificate_lab']  if dl else ''),
@@ -2810,6 +2819,14 @@ def multi_material_product_add(request):
                     sale_currency_raw if sale_currency_raw in valid_diamond_cur else 'USD'
                 )
 
+                # Taş kökeni (YENİ ürün): form her zaman NATURAL/LAB_GROWN gönderir.
+                # Geçersiz/eksik değer bu CREATE akışında NATURAL'a düşer (yeni pırlanta
+                # için makul varsayılan). Eski-kayıt koruması modeldedir (default yok,
+                # null=True) — bu endpoint yalnızca yeni kayıt üretir, eski satıra dokunmaz.
+                _valid_growth = {c[0] for c in DiamondDetail.GrowthType.choices}  # {'NATURAL','LAB_GROWN'}
+                growth_type_raw = (request.POST.get('diamond_growth_type') or '').upper().strip()
+                diamond_growth_type = growth_type_raw if growth_type_raw in _valid_growth else 'NATURAL'
+
                 # Montür gramı (is_mounted türetmek için okunur)
                 mount_gram_val = parse_decimal_locale(
                     request.POST.get('mount_gram'), default="0.000"
@@ -2839,6 +2856,7 @@ def multi_material_product_add(request):
                         cut_grade=(request.POST.get('diamond_cut_grade') or '').strip() or None,
                         certificate_lab=(request.POST.get('diamond_certificate_lab') or 'NONE'),
                         certificate_no=(request.POST.get('diamond_certificate_no') or '').strip() or None,
+                        growth_type=diamond_growth_type,
                         # P-07 (2026-04-27): Üretici referans kodu (örn: RAI5.61-27).
                         # Opsiyonel — accordion alanı; boş gönderilirse None saklanır.
                         supplier_ref=(request.POST.get('diamond_supplier_ref') or '').strip() or None,
