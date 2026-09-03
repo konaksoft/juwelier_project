@@ -933,8 +933,12 @@
                 </div>
                 <div class="modal-body">
                     <!-- FİLTRELER -->
-                    <div class="row g-2 mb-3 align-items-end">
-                        <div class="col-md-3">
+                    <!-- Tüm filtreler BACKEND'de uygulanır (JS satır gizleme YOK).
+                         Değişiklikte /detailed-report yeniden çağrılır; PDF linki
+                         de AYNI query string ile güncellenir → ekran ile PDF
+                         sonucu ayrışamaz. -->
+                    <div class="row g-2 mb-2 align-items-end">
+                        <div class="col-6 col-md-4 col-xl-2">
                             <label class="form-label small text-muted mb-1">Satış Durumu</label>
                             <select class="form-select form-select-sm" id="drpDetailedStatusFilter">
                                 <option value="all" selected>Tümü</option>
@@ -942,22 +946,54 @@
                                 <option value="satilan">Sadece Satılanlar</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <label class="form-label small text-muted mb-1">Ürün Grubu</label>
+                            <!-- Sınıflandırma Products.material_type ile yapılır
+                                 (isim içinde "pırlanta" geçiyor mu değil). -->
+                            <select class="form-select form-select-sm" id="drpDetailedGroupFilter">
+                                <option value="" selected>Tümü</option>
+                                <option value="GOLD">Altın</option>
+                                <option value="DIAMOND">Pırlanta</option>
+                                <option value="WATCH">Saat</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-4 col-xl-2">
                             <label class="form-label small text-muted mb-1">Ayar Filtresi</label>
                             <select class="form-select form-select-sm" id="drpDetailedAyarFilter">
                                 <option value="">Tüm Ayarlar</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md-6 col-xl-2">
                             <label class="form-label small text-muted mb-1">Takı Tipi Ara</label>
                             <input type="text" class="form-control form-control-sm" id="txtDetailedCategoryFilter"
-                                   placeholder="Yüzük, kolye, bilezik...">
+                                   placeholder="Yüzük, kolye...">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <label class="form-label small text-muted mb-1">
+                                Tarih
+                                <span class="text-muted fw-normal">(Tezgahta: giriş · Satılan: satış)</span>
+                            </label>
+                            <div class="d-flex gap-1">
+                                <input type="date" class="form-control form-control-sm" id="dtDetailedFrom"
+                                       aria-label="Başlangıç Tarihi">
+                                <input type="date" class="form-control form-control-sm" id="dtDetailedTo"
+                                       aria-label="Bitiş Tarihi">
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-1">
                             <button type="button" class="btn btn-sm btn-light w-100" id="btnDetailedResetFilters">
                                 <i class="fa-solid fa-rotate-left me-1"></i>Sıfırla
                             </button>
                         </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1 mb-3" id="detailedQuickRanges">
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-range="today">Bugün</button>
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-range="yesterday">Dün</button>
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-range="last7">Son 7 Gün</button>
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-range="last30">Son 30 Gün</button>
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-range="thismonth">Bu Ay</button>
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" data-range="lastmonth">Geçen Ay</button>
+                        <button type="button" class="btn btn-sm btn-light py-1 px-2 fs-8" data-range="all">Tümü</button>
                     </div>
 
                     <!-- Özet KPI Kutuları -->
@@ -1002,11 +1038,14 @@
                                     <th class="text-center text-success" style="background:#e8f5ed;">Adet</th>
                                     <th class="text-center text-success" style="background:#e8f5ed;">Gram</th>
                                     <th class="text-center text-success" style="background:#e8f5ed;">Has</th>
-                                    <th class="text-center text-success" style="background:#e8f5ed;">Maliyet (Has)</th>
+                                    <!-- Maliyet birimi SATIR BAZINDA gösterilir:
+                                         Altın → HAS, Pırlanta/Saat → EUR/USD/...
+                                         Farklı birimler ASLA tek toplamda birleştirilmez. -->
+                                    <th class="text-center text-success" style="background:#e8f5ed;">Maliyet</th>
                                     <th class="text-center text-warning" style="background:#fff8e1;">Adet</th>
                                     <th class="text-center text-warning" style="background:#fff8e1;">Gram</th>
                                     <th class="text-center text-warning" style="background:#fff8e1;">Has</th>
-                                    <th class="text-center text-warning" style="background:#fff8e1;">Maliyet (Has)</th>
+                                    <th class="text-center text-warning" style="background:#fff8e1;">Maliyet</th>
                                 </tr>
                             </thead>
                             <tbody id="detailedReportBody">
@@ -1031,6 +1070,11 @@
                             </tfoot>
                         </table>
                     </div>
+
+                    <!-- PARA BİRİMİ BAZINDA MALİYET TOPLAMLARI -->
+                    <!-- Farklı para birimleri kur dönüşümü YAPILMADAN ayrı
+                         gösterilir; tek "EUR" etiketi altında toplanmaz. -->
+                    <div id="detailedCostTotals" class="mt-3" style="display:none;"></div>
                 </div>
                 <div class="modal-footer justify-content-between">
                     <a href="/gold-purchases/export-detailed-report-pdf"
@@ -1370,6 +1414,10 @@
                         <input type="hidden" name="material_type" value="DIAMOND">
                         <!-- R-04 (2026-04-28): JS Kâr % auto-calc'ı bu hidden alanı doldurur. -->
                         <input type="hidden" name="sale_price_eur" id="dia_sale_price_eur" value="0">
+                        <!-- 2026-09-01 DÜZENLEME MODU: dolu ise form UPDATE endpoint'ine gider.
+                             Boş ise (yeni kayıt) create endpoint'i kullanılır. -->
+                        <input type="hidden" name="gold_purchase_id" id="dia_gold_purchase_id" value="">
+                        <input type="hidden" name="product_id" id="dia_product_id" value="">
 
                         <!-- ─────── 1. Temel + Tedarikçi + Resim/Kamera ─────── -->
                         <!-- FAZ E UI FIX (2026-04-23): Altın formundaki image-input + -->
@@ -1511,7 +1559,10 @@
                                     <div class="form-floating mb-3">
                                         <input type="text" class="form-control" name="buy_price_eur"
                                                id="dia_buy_price_eur" placeholder="0,00" value="0">
-                                        <label for="dia_buy_price_eur">Alış TL (Maliyet)</label>
+                                        <!-- Maliyet, mağazanın BİRİNCİL para birimi cinsindendir
+                                             (StoreConfiguration.primary_currency). Alan adı tarihsel
+                                             nedenle buy_price_eur'dur; etiket SSOT'tan gelir. -->
+                                        <label for="dia_buy_price_eur">Alış {{ store_currency|default:'EUR' }} (Maliyet)</label>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -1523,11 +1574,15 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-floating mb-3">
-                                        <select class="form-select" name="sale_currency" id="dia_sale_currency">
-                                            <option value="USD" selected>USD</option>
-                                            <option value="EUR">EUR</option>
-                                            <option value="GBP">GBP</option>
-                                            <option value="TRY">TRY</option>
+                                        <!-- Varsayılan para birimi mağazanın primary_currency'sinden
+                                             gelir (Almanya → EUR). Ülke hard-code'u YOK; backend de
+                                             aynı SSOT'u kullanır (resolve_default_sale_currency). -->
+                                        <select class="form-select" name="sale_currency" id="dia_sale_currency"
+                                                data-default-currency="{{ diamond_default_currency|default:'USD' }}">
+                                            <option value="USD" {% if diamond_default_currency == 'USD' %}selected{% endif %}>USD</option>
+                                            <option value="EUR" {% if diamond_default_currency == 'EUR' %}selected{% endif %}>EUR</option>
+                                            <option value="GBP" {% if diamond_default_currency == 'GBP' %}selected{% endif %}>GBP</option>
+                                            <option value="TRY" {% if diamond_default_currency == 'TRY' %}selected{% endif %}>TRY</option>
                                         </select>
                                         <label for="dia_sale_currency">Para Birimi</label>
                                     </div>
@@ -1724,7 +1779,7 @@
                                     <small>
                                         <!-- FAZ E UI FIX (2026-04-23): Ham fonksiyon adı yerine  -->
                                         <!-- dinamik seçili döviz etiketi gösterilir.             -->
-                                        Pırlantanın <strong>Alış TL Karşılığı</strong> seçili tedarikçinin carisine
+                                        Pırlantanın <strong>Alış {{ store_currency|default:'EUR' }} Karşılığı</strong> seçili tedarikçinin carisine
                                         <strong class="text-info" id="dia_ledger_currency_label">USD</strong>
                                         cinsinden <strong>borç</strong> olarak işlenecektir.
                                     </small>
@@ -1804,6 +1859,9 @@
                           enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
                         <input type="hidden" name="material_type" value="WATCH">
+                        <!-- 2026-09-01 DÜZENLEME MODU (Pırlanta ile simetrik) -->
+                        <input type="hidden" name="gold_purchase_id" id="wat_gold_purchase_id" value="">
+                        <input type="hidden" name="product_id" id="wat_product_id" value="">
                         <input type="hidden" name="jewelry_type" value="Saat">
 
                         <!-- ─────── 1. Tedarikçi + Stok + Resim/Kamera ─────── -->
@@ -1983,12 +2041,13 @@
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-floating mb-3">
-                                        <select class="form-select" name="sale_currency" id="wat_sale_currency">
-                                            <option value="USD" selected>USD</option>
-                                            <option value="EUR">EUR</option>
-                                            <option value="GBP">GBP</option>
-                                            <option value="CHF">CHF</option>
-                                            <option value="TRY">TRY</option>
+                                        <select class="form-select" name="sale_currency" id="wat_sale_currency"
+                                                data-default-currency="{{ watch_default_currency|default:'USD' }}">
+                                            <option value="USD" {% if watch_default_currency == 'USD' %}selected{% endif %}>USD</option>
+                                            <option value="EUR" {% if watch_default_currency == 'EUR' %}selected{% endif %}>EUR</option>
+                                            <option value="GBP" {% if watch_default_currency == 'GBP' %}selected{% endif %}>GBP</option>
+                                            <option value="CHF" {% if watch_default_currency == 'CHF' %}selected{% endif %}>CHF</option>
+                                            <option value="TRY" {% if watch_default_currency == 'TRY' %}selected{% endif %}>TRY</option>
                                         </select>
                                         <label for="wat_sale_currency">Para Birimi</label>
                                     </div>
@@ -2004,7 +2063,7 @@
                                     <div class="form-floating mb-3">
                                         <input type="text" class="form-control" name="buy_price_eur"
                                                id="wat_buy_price_eur" placeholder="0,00" value="0">
-                                        <label for="wat_buy_price_eur">Alış TL Karşılığı (Maliyet)</label>
+                                        <label for="wat_buy_price_eur">Alış {{ store_currency|default:'EUR' }} Karşılığı (Maliyet)</label>
                                     </div>
                                 </div>
                             </div>
@@ -2028,7 +2087,7 @@
                                     <small>
                                         <!-- FAZ E UI FIX (2026-04-23): Ham fonksiyon adı yerine  -->
                                         <!-- dinamik seçili döviz etiketi gösterilir.             -->
-                                        Saatin <strong>Alış TL Karşılığı</strong> seçili tedarikçinin carisine
+                                        Saatin <strong>Alış {{ store_currency|default:'EUR' }} Karşılığı</strong> seçili tedarikçinin carisine
                                         <strong class="text-info" id="wat_ledger_currency_label">USD</strong>
                                         cinsinden <strong>borç</strong> olarak işlenecektir.
                                     </small>
@@ -2499,8 +2558,17 @@
             $('#importResult').addClass('d-none').html('');
         });
 
-        // Detaylı Rapor (Kategori + Ayar) — modal açıldığında verileri çek
-        var _detailedReportRaw = []; // Orijinal veri (filtreleme için saklanır)
+        // ═══════════════════════════════════════════════════════════════
+        // DETAYLI RAPOR (2026-09-01) — FİLTRELER BACKEND'DE
+        // ═══════════════════════════════════════════════════════════════
+        // Filtreler artık JS ile satır gizleyerek DEĞİL, query string ile
+        // /gold-purchases/detailed-report çağrılarak uygulanır. PDF linki
+        // AYNI query string'i taşır → ekran ve PDF aynı sonucu verir.
+        var _detailedReportRaw = [];      // Son yanıtın satırları
+        var _detailedCanViewCost = true;  // Maliyet görünürlüğü (backend söyler)
+        var _detailedAyarLoaded = false;  // Ayar listesi ilk yüklemede doldurulur
+        var _detailedFetchSeq = 0;        // Yarış koşulu koruması
+        var _detailedDebounce = null;
 
         // TR locale sayı formatı: 10 → '10,00', 1000 → '1.000,00'
         function _fmtTR(val, decimals) {
@@ -2513,150 +2581,296 @@
             });
         }
 
-        function _renderDetailedReport() {
+        function _escHtml(s) {
+            return String(s === null || s === undefined ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // 'yyyy-mm-dd' (date input) → backend'in beklediği 'gg.aa.yyyy'
+        function _isoToTrDate(v) {
+            if (!v) return '';
+            var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+            return m ? (m[3] + '.' + m[2] + '.' + m[1]) : v;
+        }
+
+        function _detailedFilterParams() {
+            var p = {};
+            var st = $('#drpDetailedStatusFilter').val() || 'all';
+            var grp = $('#drpDetailedGroupFilter').val() || '';
+            var ayar = ($('#drpDetailedAyarFilter').val() || '').trim();
+            var q = ($('#txtDetailedCategoryFilter').val() || '').trim();
+            var dFrom = _isoToTrDate($('#dtDetailedFrom').val() || '');
+            var dTo = _isoToTrDate($('#dtDetailedTo').val() || '');
+            if (st && st !== 'all') p.status = st;
+            if (grp) p.product_group = grp;
+            if (ayar) p.ayar = ayar;
+            if (q) p.category_q = q;
+            if (dFrom) p.date_from = dFrom;
+            if (dTo) p.date_to = dTo;
+            return p;
+        }
+
+        function _syncPdfLink(params) {
+            var qs = $.param(params);
+            $('#btnDownloadDetailedPdf').attr(
+                'href',
+                '/gold-purchases/export-detailed-report-pdf' + (qs ? ('?' + qs) : '')
+            );
+        }
+
+        // Ayar listesi yalnızca FİLTRESİZ ilk yüklemede doldurulur; aksi halde
+        // bir ayar seçilince liste kendi kendini tek seçeneğe indirirdi.
+        function _populateAyarDropdown(rows) {
+            var seen = {}, list = [], current = $('#drpDetailedAyarFilter').val() || '';
+            $.each(rows, function (i, r) {
+                if (r.ayar && !seen[r.ayar]) { seen[r.ayar] = true; list.push(r.ayar); }
+            });
+            list.sort();
+            var html = '<option value="">Tüm Ayarlar</option>';
+            $.each(list, function (i, a) {
+                html += '<option value="' + _escHtml(a) + '">' + _escHtml(a) + '</option>';
+            });
+            $('#drpDetailedAyarFilter').html(html).val(current);
+        }
+
+        function _renderCostTotals(costTotals) {
+            var $box = $('#detailedCostTotals');
+            if (!_detailedCanViewCost || !costTotals || !costTotals.length) {
+                $box.hide().empty();
+                return;
+            }
+            var cards = '';
+            $.each(costTotals, function (i, t) {
+                var unitLabel = (t.unit === 'HAS') ? 'HAS (gr)' : t.unit;
+                cards +=
+                    '<div class="col-6 col-md-4 col-lg-3">' +
+                      '<div class="border rounded p-2 h-100">' +
+                        '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                          '<span class="text-muted small">Maliyet</span>' +
+                          '<span class="badge badge-light-dark">' + _escHtml(unitLabel) + '</span>' +
+                        '</div>' +
+                        '<div class="fw-bold fs-6">' + _escHtml(t.total) + '</div>' +
+                        '<div class="text-muted fs-8">' +
+                          'Tezgahta: ' + _escHtml(t.tezgahta) +
+                          ' · Satılan: ' + _escHtml(t.satilan) +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+            });
+            $box.html(
+                '<div class="d-flex align-items-center mb-2">' +
+                  '<i class="fa-solid fa-coins text-muted me-2"></i>' +
+                  '<span class="fw-semibold">Para Birimi Bazında Maliyet</span>' +
+                  '<span class="text-muted fs-8 ms-2">(kur dönüşümü yapılmaz — birimler ayrı toplanır)</span>' +
+                '</div>' +
+                '<div class="row g-2">' + cards + '</div>'
+            ).show();
+        }
+
+        function _renderDetailedReport(rows, costTotals) {
             var $body = $('#detailedReportBody');
             var $foot = $('#detailedReportFoot');
-            var data = _detailedReportRaw;
 
-            // Filtre değerlerini oku
-            var statusFilter = $('#drpDetailedStatusFilter').val() || 'all';
-            var ayarFilter = ($('#drpDetailedAyarFilter').val() || '').trim();
-            var catQueryRaw = $('#txtDetailedCategoryFilter').val() || '';
-            var catQuery = catQueryRaw.trim().toLocaleLowerCase('tr-TR');
-
-            // Filtrele
-            var filtered = $.grep(data, function (r) {
-                if (ayarFilter && r.ayar !== ayarFilter) return false;
-                if (catQuery) {
-                    var catLower = (r.category || '').toLocaleLowerCase('tr-TR');
-                    if (catLower.indexOf(catQuery) === -1) return false;
-                }
-                if (statusFilter === 'tezgahta' && (parseInt(r.tezgahta_count) || 0) === 0) return false;
-                if (statusFilter === 'satilan' && (parseInt(r.satilan_count) || 0) === 0) return false;
-                return true;
-            });
-
-            // PDF linkini her durumda güncelle
-            var params = [];
-            if (statusFilter && statusFilter !== 'all') params.push('status=' + encodeURIComponent(statusFilter));
-            if (ayarFilter) params.push('ayar=' + encodeURIComponent(ayarFilter));
-            if (catQueryRaw.trim()) params.push('category_q=' + encodeURIComponent(catQueryRaw.trim()));
-            var qs = params.length ? ('?' + params.join('&')) : '';
-            $('#btnDownloadDetailedPdf').attr('href', '/gold-purchases/export-detailed-report-pdf' + qs);
-
-            if (!filtered.length) {
+            if (!rows || !rows.length) {
                 $body.html('<tr><td colspan="10" class="text-center text-muted py-5">Filtre sonucuna göre kayıt bulunamadı.</td></tr>');
                 $foot.hide();
                 $('#detailedReportKpi').hide();
+                _renderCostTotals(null);
                 return;
             }
 
-            var rows = '';
-            var totTezAd = 0, totTezGr = 0.0, totTezHas = 0.0, totTezMal = 0.0;
-            var totSatAd = 0, totSatGr = 0.0, totSatHas = 0.0, totSatMal = 0.0;
+            var html = '';
+            var totTezAd = 0, totTezGr = 0.0, totTezHas = 0.0;
+            var totSatAd = 0, totSatGr = 0.0, totSatHas = 0.0;
             var prevCat = null;
 
-            $.each(filtered, function (i, r) {
+            var groupBadge = {
+                'GOLD': 'badge-light-warning',
+                'DIAMOND': 'badge-light-info',
+                'WATCH': 'badge-light-primary',
+                'SILVER': 'badge-light-secondary'
+            };
+
+            $.each(rows, function (i, r) {
                 var rowClass = (prevCat !== null && prevCat !== r.category)
                     ? ' class="border-top border-2"' : '';
                 prevCat = r.category;
 
-                rows += '<tr' + rowClass + '>' +
-                    '<td class="ps-3 fw-semibold">' + r.category + '</td>' +
-                    '<td class="text-center"><span class="badge badge-light-info">' + r.ayar + '</span></td>' +
+                var badge = '<span class="badge ' +
+                    (groupBadge[r.material_type] || 'badge-light-dark') +
+                    ' fs-9 ms-2">' + _escHtml(r.material_label || r.material_type) + '</span>';
+
+                var unit = r.cost_unit || '';
+                var tezCost = _detailedCanViewCost
+                    ? (_escHtml(r.tezgahta_maliyet) + ' <span class="text-muted fs-8">' + _escHtml(unit) + '</span>')
+                    : '<span class="text-muted">•••</span>';
+                var satCost = _detailedCanViewCost
+                    ? (_escHtml(r.satilan_maliyet) + ' <span class="text-muted fs-8">' + _escHtml(unit) + '</span>')
+                    : '<span class="text-muted">•••</span>';
+
+                html += '<tr' + rowClass + '>' +
+                    '<td class="ps-3 fw-semibold">' + _escHtml(r.category) + badge + '</td>' +
+                    '<td class="text-center"><span class="badge badge-light-info">' + _escHtml(r.ayar) + '</span></td>' +
                     '<td class="text-center text-success fw-bold">' + r.tezgahta_count + '</td>' +
-                    '<td class="text-end text-success pe-2">' + r.tezgahta_gram + '</td>' +
-                    '<td class="text-end text-success pe-2">' + r.tezgahta_has + '</td>' +
-                    '<td class="text-end text-success pe-2">' + r.tezgahta_maliyet + '</td>' +
+                    '<td class="text-end text-success pe-2">' + _escHtml(r.tezgahta_gram) + '</td>' +
+                    '<td class="text-end text-success pe-2">' + _escHtml(r.tezgahta_has) + '</td>' +
+                    '<td class="text-end text-success pe-2">' + tezCost + '</td>' +
                     '<td class="text-center text-warning fw-bold">' + r.satilan_count + '</td>' +
-                    '<td class="text-end text-warning pe-2">' + r.satilan_gram + '</td>' +
-                    '<td class="text-end text-warning pe-2">' + r.satilan_has + '</td>' +
-                    '<td class="text-end text-warning pe-2">' + r.satilan_maliyet + '</td>' +
+                    '<td class="text-end text-warning pe-2">' + _escHtml(r.satilan_gram) + '</td>' +
+                    '<td class="text-end text-warning pe-2">' + _escHtml(r.satilan_has) + '</td>' +
+                    '<td class="text-end text-warning pe-2">' + satCost + '</td>' +
                     '</tr>';
 
-                // Ham değerlerden topla (backend _raw_* alanları)
                 totTezAd += parseInt(r.tezgahta_count) || 0;
                 totTezGr += parseFloat(r._raw_tezgahta_gram) || 0.0;
                 totTezHas += parseFloat(r._raw_tezgahta_has) || 0.0;
-                totTezMal += parseFloat(r._raw_tezgahta_maliyet) || 0.0;
                 totSatAd += parseInt(r.satilan_count) || 0;
                 totSatGr += parseFloat(r._raw_satilan_gram) || 0.0;
                 totSatHas += parseFloat(r._raw_satilan_has) || 0.0;
-                totSatMal += parseFloat(r._raw_satilan_maliyet) || 0.0;
             });
 
-            $body.html(rows);
+            $body.html(html);
 
-            // Tfoot toplamları (TR formatlı)
             $('#foot_tezgahta_count').text(totTezAd);
             $('#foot_tezgahta_gram').text(_fmtTR(totTezGr));
             $('#foot_tezgahta_has').text(_fmtTR(totTezHas));
-            $('#foot_tezgahta_maliyet').text(_fmtTR(totTezMal));
             $('#foot_satilan_count').text(totSatAd);
             $('#foot_satilan_gram').text(_fmtTR(totSatGr));
             $('#foot_satilan_has').text(_fmtTR(totSatHas));
-            $('#foot_satilan_maliyet').text(_fmtTR(totSatMal));
+
+            // Maliyet toplamı yalnızca TEK birim varsa alt satırda gösterilir;
+            // birden fazla birimde "—" yazılır (karışık toplam üretilmez).
+            var single = (_detailedCanViewCost && costTotals && costTotals.length === 1)
+                ? costTotals[0] : null;
+            $('#foot_tezgahta_maliyet').html(
+                single ? (_escHtml(single.tezgahta) + ' <span class="text-muted fs-8">' + _escHtml(single.unit) + '</span>')
+                       : (_detailedCanViewCost ? '<span class="text-muted">—</span>' : '<span class="text-muted">•••</span>')
+            );
+            $('#foot_satilan_maliyet').html(
+                single ? (_escHtml(single.satilan) + ' <span class="text-muted fs-8">' + _escHtml(single.unit) + '</span>')
+                       : (_detailedCanViewCost ? '<span class="text-muted">—</span>' : '<span class="text-muted">•••</span>')
+            );
             $foot.show();
 
-            // KPI kutuları (TR formatlı)
             $('#kpi_tezgahta_count').text(totTezAd);
             $('#kpi_tezgahta_gram').text(_fmtTR(totTezGr) + ' gr');
             $('#kpi_satilan_count').text(totSatAd);
             $('#kpi_satilan_gram').text(_fmtTR(totSatGr) + ' gr');
             $('#detailedReportKpi').css('display', '').removeClass('d-none');
+
+            _renderCostTotals(costTotals);
         }
 
-        function _populateAyarDropdown() {
-            var seen = {};
-            var ayarList = [];
-            $.each(_detailedReportRaw, function (i, r) {
-                if (r.ayar && !seen[r.ayar]) {
-                    seen[r.ayar] = true;
-                    ayarList.push(r.ayar);
+        function _loadDetailedReport() {
+            var params = _detailedFilterParams();
+            _syncPdfLink(params);
+
+            var seq = ++_detailedFetchSeq;
+            var $body = $('#detailedReportBody');
+            $body.html('<tr><td colspan="10" class="text-center text-muted py-5">' +
+                '<span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...</td></tr>');
+
+            $.get('/gold-purchases/detailed-report', params, function (resp) {
+                if (seq !== _detailedFetchSeq) return;  // Eski yanıt — yok say
+                if (!resp || !resp.result) {
+                    _detailedReportRaw = [];
+                    $body.html('<tr><td colspan="10" class="text-center text-muted py-5">Kayıt bulunamadı.</td></tr>');
+                    $('#detailedReportFoot').hide();
+                    $('#detailedReportKpi').hide();
+                    _renderCostTotals(null);
+                    return;
                 }
+                _detailedCanViewCost = (resp.can_view_cost !== false);
+                _detailedReportRaw = resp.data || [];
+                if (!_detailedAyarLoaded) {
+                    _populateAyarDropdown(_detailedReportRaw);
+                    _detailedAyarLoaded = true;
+                }
+                _renderDetailedReport(_detailedReportRaw, resp.cost_totals);
+            }).fail(function () {
+                if (seq !== _detailedFetchSeq) return;
+                $body.html('<tr><td colspan="10" class="text-center text-danger py-5">Veri yüklenirken hata oluştu.</td></tr>');
+                $('#detailedReportFoot').hide();
+                _renderCostTotals(null);
             });
-            ayarList.sort();
-            var html = '<option value="">Tüm Ayarlar</option>';
-            $.each(ayarList, function (i, a) {
-                html += '<option value="' + a + '">' + a + '</option>';
-            });
-            $('#drpDetailedAyarFilter').html(html);
+        }
+
+        function _resetDetailedFilters(reload) {
+            $('#drpDetailedStatusFilter').val('all');
+            $('#drpDetailedGroupFilter').val('');
+            $('#drpDetailedAyarFilter').val('');
+            $('#txtDetailedCategoryFilter').val('');
+            $('#dtDetailedFrom').val('');
+            $('#dtDetailedTo').val('');
+            $('#detailedQuickRanges [data-range]').removeClass('active');
+            if (reload) _loadDetailedReport();
+        }
+
+        // Hızlı tarih aralıkları — yerel saate göre hesaplanır, 'yyyy-aa-gg'
+        // formatında date input'a yazılır (backend gün DAHİL yorumlar).
+        function _pad2(n) { return (n < 10 ? '0' : '') + n; }
+        function _toISO(d) {
+            return d.getFullYear() + '-' + _pad2(d.getMonth() + 1) + '-' + _pad2(d.getDate());
+        }
+        function _applyQuickRange(key) {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var from = null, to = null;
+            if (key === 'today') { from = new Date(today); to = new Date(today); }
+            else if (key === 'yesterday') {
+                from = new Date(today); from.setDate(from.getDate() - 1);
+                to = new Date(from);
+            }
+            else if (key === 'last7') {
+                from = new Date(today); from.setDate(from.getDate() - 6);
+                to = new Date(today);
+            }
+            else if (key === 'last30') {
+                from = new Date(today); from.setDate(from.getDate() - 29);
+                to = new Date(today);
+            }
+            else if (key === 'thismonth') {
+                from = new Date(today.getFullYear(), today.getMonth(), 1);
+                to = new Date(today);
+            }
+            else if (key === 'lastmonth') {
+                from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                to = new Date(today.getFullYear(), today.getMonth(), 0);
+            }
+            $('#dtDetailedFrom').val(from ? _toISO(from) : '');
+            $('#dtDetailedTo').val(to ? _toISO(to) : '');
         }
 
         $('#detailedReportModal').on('show.bs.modal', function () {
-            var $body = $('#detailedReportBody');
             $('#detailedReportFoot').hide();
             $('#detailedReportKpi').hide();
-            $body.html('<tr><td colspan="6" class="text-center text-muted py-5">' +
-                '<span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...</td></tr>');
-
-            // Filtreleri sıfırla
-            $('#drpDetailedStatusFilter').val('all');
+            $('#detailedCostTotals').hide().empty();
+            _detailedAyarLoaded = false;
             $('#drpDetailedAyarFilter').html('<option value="">Tüm Ayarlar</option>').val('');
-            $('#txtDetailedCategoryFilter').val('');
-
-            $.get('/gold-purchases/detailed-report', function (resp) {
-                if (resp && resp.result && resp.data.length) {
-                    _detailedReportRaw = resp.data;
-                    _populateAyarDropdown();
-                    _renderDetailedReport();
-                } else {
-                    _detailedReportRaw = [];
-                    $body.html('<tr><td colspan="6" class="text-center text-muted py-5">Kayıt bulunamadı.</td></tr>');
-                }
-            }).fail(function () {
-                $body.html('<tr><td colspan="6" class="text-center text-danger py-5">Veri yüklenirken hata oluştu.</td></tr>');
-            });
+            _resetDetailedFilters(false);
+            _loadDetailedReport();
         });
 
-        // Filtre event'leri — veriyi yeniden render et
-        $(document).on('change', '#drpDetailedStatusFilter, #drpDetailedAyarFilter', _renderDetailedReport);
-        $(document).on('input', '#txtDetailedCategoryFilter', _renderDetailedReport);
+        // Filtre event'leri — her değişimde BACKEND'den yeniden çekilir
+        $(document).on(
+            'change',
+            '#drpDetailedStatusFilter, #drpDetailedGroupFilter, #drpDetailedAyarFilter, #dtDetailedFrom, #dtDetailedTo',
+            _loadDetailedReport
+        );
+        $(document).on('input', '#txtDetailedCategoryFilter', function () {
+            clearTimeout(_detailedDebounce);
+            _detailedDebounce = setTimeout(_loadDetailedReport, 350);
+        });
+        $(document).on('click', '#detailedQuickRanges [data-range]', function () {
+            var $b = $(this);
+            $('#detailedQuickRanges [data-range]').removeClass('active');
+            $b.addClass('active');
+            _applyQuickRange($b.data('range'));
+            _loadDetailedReport();
+        });
         $(document).on('click', '#btnDetailedResetFilters', function () {
-            $('#drpDetailedStatusFilter').val('all');
-            $('#drpDetailedAyarFilter').val('');
-            $('#txtDetailedCategoryFilter').val('');
-            _renderDetailedReport();
+            _resetDetailedFilters(true);
         });
 
         // Kategori Raporu — modal açıldığında verileri çek
@@ -3059,7 +3273,13 @@
         }
 
         let edit_record = function (id) {
-            $("#addGoldModal").modal('show').find(".modal-title").text("Ürün Düzenle");
+            // ═══════════════════════════════════════════════════════════════
+            // MATERYAL FARKINDALIĞI (2026-09-01)
+            // Eskiden burası HER ZAMAN Altın modalını açıyordu; Pırlanta/Saat
+            // ürününde boş bir "yeni ürün" formu görünüyordu. Artık önce
+            // detay çekilir, material_type'a göre doğru sekme açılır.
+            // ═══════════════════════════════════════════════════════════════
+            $("#addGoldModal").modal('show');
 
             // Stoktan üretim alanlarını gizle (düzenlemede gösterilmez)
             $('#is_from_stock').prop('checked', false);
@@ -3071,6 +3291,18 @@
                     return;
                 }
 
+                var _mat = (d.material_type || 'GOLD').toUpperCase();
+                if (_mat === 'DIAMOND' || _mat === 'WATCH') {
+                    if (window.KP_MULTI_EDIT && typeof window.KP_MULTI_EDIT.open === 'function') {
+                        window.KP_MULTI_EDIT.open(d);
+                    } else {
+                        Swal.fire('Hata', 'Düzenleme bileşeni yüklenemedi.', 'error');
+                    }
+                    return;   // Altın alanları DOLDURULMAZ
+                }
+
+                // ── ALTIN (mevcut akış — davranış korundu) ──
+                $(".modal-title").text("Ürün Düzenle");
                 $("#gold_purchase_id").val(d.product_id);
 
                 // Select2 uyumlu güncelleme — trigger('change') zorunlu
@@ -3108,6 +3340,17 @@
             $('#addGoldPurchaseForm')[0].reset();
             $('#gold_purchase_id').val('');
             $(".modal-title").text("Ürün Ekle");
+
+            // Pırlanta/Saat düzenleme modunu temizle: gizli id'ler, kilitli
+            // alanlar, sekme kilidi ve buton etiketleri "Ekle" durumuna döner.
+            var _diaF = document.getElementById('addDiamondForm');
+            if (_diaF) _diaF.reset();
+            var _watF = document.getElementById('addWatchForm');
+            if (_watF) _watF.reset();
+            if (window.KP_MULTI_EDIT && typeof window.KP_MULTI_EDIT.reset === 'function') {
+                window.KP_MULTI_EDIT.reset();
+            }
+            if (typeof window.KP_RESET_STONES === 'function') window.KP_RESET_STONES();
             $('.image-input-wrapper').css('background-image', 'url(/static/management/media/svg/files/blank-image.svg)');
             var imageInput = document.querySelector('#addGoldPurchaseForm .image-input');
             if (imageInput) {
@@ -4128,6 +4371,15 @@
                 // Footer'ı her zaman görünür tut (eski hide mantığı kaldırıldı)
                 if (modalFooterEl) modalFooterEl.style.display = '';
 
+                // DÜZENLEME MODU (2026-09-01): başlık/buton etiketleri
+                // "Ekle" metinlerine geri dönmemeli.
+                if (window.__mmEditMaterial) {
+                    if (typeof _mmApplyModeLabels === 'function') {
+                        _mmApplyModeLabels(window.__mmEditMaterial, true);
+                    }
+                    return;
+                }
+
                 // Global Kaydet butonunun etiketini tab'a göre güncelle
                 var labelMap = {
                     'GOLD':    'Kaydet',
@@ -4353,6 +4605,13 @@
             stonePosCounter = 0;
             addStoneRow('CENTER');  // Default 1 satır D1
         }
+
+        // Modal kapanışında (dış script bloğundan) taş tablosunu sıfırlamak
+        // için dışa açılır — düzenlemeden kalan taş satırları yeni kayda
+        // taşınmamalıdır.
+        window.KP_RESET_STONES = function () {
+            if (STONES_TBODY) resetStonesTable();
+        };
 
         // İlk açılış — D1 satırı koy
         if (STONES_TBODY) {
@@ -4646,7 +4905,7 @@
                 fd.append('csrfmiddlewaretoken', getCsrfToken());
             }
 
-            fetch('/gold-purchases/multi-material-add', {
+            fetch(_mmEndpointFor(formEl), {
                 method: 'POST',
                 body: fd,
                 credentials: 'same-origin',
@@ -4697,7 +4956,7 @@
                 'sale_price', 'buy_price_eur', 'watch_case_diameter'
             ]);
 
-            fetch('/gold-purchases/multi-material-add', {
+            fetch(_mmEndpointFor(formEl), {
                 method: 'POST',
                 body: fd,
                 credentials: 'same-origin',
@@ -4708,6 +4967,14 @@
                 if (typeof releaseLock === 'function') releaseLock();
                 if (resp.body && resp.body.result) {
                     var matLabel = (resp.body.material_type === 'WATCH') ? 'Saat' : 'Ürün';
+                    // UPDATE: seri girişe devam etmez, modal kapanır.
+                    if (resp.body.updated) {
+                        notifySuccess(matLabel + ' güncellendi. Barkod: ' + (resp.body.barcode || '—'));
+                        if (typeof dt !== 'undefined' && dt && dt.ajax) dt.ajax.reload(null, false);
+                        if (typeof refreshHeaderStats === 'function') refreshHeaderStats();
+                        if (window.jQuery) window.jQuery('#addGoldModal').modal('hide');
+                        return;
+                    }
                     notifySuccess(
                         matLabel + ' kaydedildi. Barkod: ' + (resp.body.barcode || '—')
                     );
@@ -4766,6 +5033,365 @@
                 notifyError('Yazdırma verisi sunucudan alınamadı.');
             });
         };
+
+        // ═════════════════════════════════════════════════════════════════
+        // 4.5) DÜZENLEME MODU — PIRLANTA / SAAT  (2026-09-01)
+        // ═════════════════════════════════════════════════════════════════
+        // "Düzenle" eskiden material_type'a bakmadan HER ZAMAN Altın modalını
+        // açıyordu; Pırlanta ürününde boş bir "yeni kayıt" formu görünüyordu.
+        // Artık get-details payload'ındaki material_type'a göre doğru sekme
+        // açılır ve kayıtlı değerler forma birebir yüklenir (taşlar dahil).
+        //
+        // Endpoint yönlendirmesi VERİ ODAKLIDIR: formdaki gizli
+        // gold_purchase_id doluysa UPDATE, boşsa CREATE endpoint'i kullanılır.
+        // Böylece düzenleme create yoluna DÜŞEMEZ.
+        // ─────────────────────────────────────────────────────────────────
+        function _mmVal(root, selector, value) {
+            var el = root ? root.querySelector(selector) : null;
+            if (!el) return;
+            el.value = (value === null || value === undefined) ? '' : String(value);
+        }
+
+        // Kayıtlı DB değeri listede yoksa option olarak EKLENİR — aksi halde
+        // select ilk seçeneğe düşer ve kaydedilmiş veri sessizce değişirdi.
+        function _mmSelect(root, selector, value, fallbackLabel) {
+            var el = root ? root.querySelector(selector) : null;
+            if (!el) return;
+            var v = (value === null || value === undefined) ? '' : String(value);
+            var found = Array.prototype.some.call(el.options, function (o) {
+                return o.value === v;
+            });
+            if (!found) {
+                var label = fallbackLabel || (v === '' ? 'Belirtilmemiş' : v);
+                var newOpt = new Option(label, v);
+                newOpt.dataset.runtime = '1';   // reset'te temizlenir
+                el.add(newOpt, 0);
+            }
+            el.value = v;
+            if (window.jQuery && window.jQuery(el).data('select2')) {
+                window.jQuery(el).trigger('change');
+            }
+        }
+
+        // Backend '0.26' döner; form TR locale ('0,26') kullanır.
+        function _mmToTr(v) {
+            if (v === null || v === undefined || v === '') return '';
+            return String(v).replace('.', ',');
+        }
+
+        function _mmSetCostField(inputEl, canView, value) {
+            if (!inputEl) return;
+            if (canView) {
+                inputEl.value = _mmToTr(value);
+                inputEl.disabled = false;
+                inputEl.placeholder = '0,00';
+                inputEl.removeAttribute('title');
+            } else {
+                // Yetkisiz kullanıcıya maliyet GÖSTERİLMEZ ve YAZDIRILMAZ.
+                // (Backend de yetkisiz POST'ta maliyeti güncellemez.)
+                inputEl.value = '';
+                inputEl.disabled = true;
+                inputEl.placeholder = '•••';
+                inputEl.setAttribute('title', 'Maliyet görüntüleme yetkiniz yok.');
+            }
+        }
+
+        function _mmRenderStones(stones) {
+            if (!STONES_TBODY) return;
+            STONES_TBODY.innerHTML = '';
+            stonePosCounter = 0;
+            if (!stones || !stones.length) {
+                addStoneRow('CENTER');
+                return;
+            }
+            stones.forEach(function (s, idx) {
+                var pos = parseInt(s.position, 10) || (idx + 1);
+                var role = s.role || (idx === 0 ? 'CENTER' : 'SIDE');
+                var sType = (s.stone_type || 'DIAMOND').toUpperCase();
+                var row = buildStoneRow(pos, role, sType);
+                STONES_TBODY.appendChild(row);
+                _mmSelect(row, '[name="stone_type[]"]', sType);
+                _mmSelect(row, '[name="stone_role[]"]', role);
+                _mmVal(row, '[name="stone_position[]"]', pos);
+                _mmVal(row, '[name="stone_carat[]"]', _mmToTr(s.carat_weight));
+                _mmSelect(row, '[name="stone_shape[]"]', s.shape || '');
+                var colorEl = row.querySelector('[name="stone_color[]"]');
+                if (colorEl) {
+                    if (colorEl.tagName === 'SELECT') {
+                        _mmSelect(row, '[name="stone_color[]"]', s.color_grade || '');
+                    } else {
+                        colorEl.value = s.color_grade || '';
+                    }
+                }
+                _mmSelect(row, '[name="stone_clarity[]"]', s.clarity_grade || '');
+                _mmSelect(row, '[name="stone_cut[]"]', s.cut_grade || '');
+                _mmSelect(row, '[name="stone_cert_lab[]"]', s.certificate_lab || 'NONE');
+                _mmVal(row, '[name="stone_cert_no[]"]', s.certificate_no || '');
+            });
+        }
+
+        function _mmSetImagePreview(formEl, url) {
+            if (!formEl) return;
+            var wrapper = formEl.querySelector('.image-input-wrapper');
+            if (wrapper) {
+                wrapper.style.backgroundImage =
+                    'url(' + (url || '/static/management/media/svg/files/blank-image.svg') + ')';
+            }
+            var imgInput = formEl.querySelector('.image-input');
+            if (imgInput && url) {
+                imgInput.classList.remove('image-input-empty');
+            }
+        }
+
+        // Düzenlemede stok adedi DEĞİŞTİRİLEMEZ: backend update endpoint'i
+        // StockService'i hiç çağırmaz; alanı da kilitleyip yanlış beklenti
+        // oluşmasını engelliyoruz.
+        function _mmLockStockField(el, pieces, locked) {
+            if (!el) return;
+            if (locked) {
+                el.value = (pieces === null || pieces === undefined) ? '' : String(pieces);
+                el.readOnly = true;
+                el.classList.add('bg-light');
+                el.setAttribute('title', 'Düzenlemede stok adedi değiştirilmez.');
+            } else {
+                el.readOnly = false;
+                el.classList.remove('bg-light');
+                el.removeAttribute('title');
+            }
+        }
+
+        function _mmLockLedgerToggle(toggleEl, infoEl, locked, alreadyPosted) {
+            if (!toggleEl) return;
+            if (locked) {
+                toggleEl.checked = false;
+                toggleEl.disabled = true;
+                toggleEl.setAttribute(
+                    'title',
+                    alreadyPosted
+                        ? 'Bu ürün için tedarikçi cari kaydı zaten oluşturulmuş.'
+                        : 'Düzenlemede tedarikçi carisine yeni borç yazılmaz.'
+                );
+            } else {
+                toggleEl.disabled = !document.getElementById(
+                    toggleEl.id === 'dia_process_ledger' ? 'dia_supplier_id' : 'wat_supplier_id'
+                ).value;
+                toggleEl.removeAttribute('title');
+            }
+            if (infoEl) infoEl.classList.add('d-none');
+        }
+
+        function _mmSetTabsLocked(locked, activeKey) {
+            // Düzenlemede materyal tipi DEĞİŞTİRİLEMEZ (Products.clean() de
+            // reddeder) → diğer sekmeler kilitlenir.
+            document.querySelectorAll('#materialTypeTabs a[data-bs-toggle="tab"]')
+                .forEach(function (a) {
+                    var key = a.getAttribute('data-tab-key');
+                    if (locked && key !== activeKey) {
+                        a.classList.add('disabled');
+                        a.setAttribute('aria-disabled', 'true');
+                        a.style.pointerEvents = 'none';
+                        a.style.opacity = '0.45';
+                    } else {
+                        a.classList.remove('disabled');
+                        a.removeAttribute('aria-disabled');
+                        a.style.pointerEvents = '';
+                        a.style.opacity = '';
+                    }
+                });
+        }
+
+        function _mmApplyModeLabels(materialKey, isEdit) {
+            var titleEl = document.querySelector('#addGoldModal .modal-title');
+            var saveBtn = document.getElementById('btnSavePurchase');
+            var printBtn = document.getElementById('btnSaveAndPrint');
+            var addTitles = {
+                'GOLD': 'Altın Ürün Ekle',
+                'DIAMOND': 'Pırlanta Ekle (Çoklu Taş Destekli)',
+                'WATCH': 'Saat Ekle'
+            };
+            var editTitles = {
+                'GOLD': 'Ürün Düzenle',
+                'DIAMOND': 'Pırlanta Düzenle',
+                'WATCH': 'Saat Düzenle'
+            };
+            var addLabels = {
+                'GOLD': 'Kaydet', 'DIAMOND': 'Pırlantayı Kaydet', 'WATCH': 'Saati Kaydet'
+            };
+            if (titleEl) {
+                titleEl.textContent = (isEdit ? editTitles : addTitles)[materialKey] || 'Ürün Ekle';
+            }
+            if (saveBtn) {
+                saveBtn.textContent = isEdit
+                    ? 'Değişiklikleri Kaydet'
+                    : (addLabels[materialKey] || 'Kaydet');
+            }
+            // Düzenlemede "Kaydet ve Yazdır" gizlenir: barkod zaten basılı ve
+            // düzenleme yeni barkod ÜRETMEZ.
+            if (printBtn) printBtn.style.display = isEdit ? 'none' : '';
+        }
+
+        function _mmActivateTab(materialKey) {
+            var linkId = materialKey === 'DIAMOND' ? 'tab-link-diamond'
+                       : materialKey === 'WATCH' ? 'tab-link-watch' : 'tab-link-gold';
+            var link = document.getElementById(linkId);
+            if (!link) return;
+            window.__activeMaterialTab = materialKey;
+            if (window.jQuery && window.jQuery(link).tab) {
+                window.jQuery(link).tab('show');
+            } else if (window.bootstrap && window.bootstrap.Tab) {
+                (window.bootstrap.Tab.getOrCreateInstance(link)).show();
+            }
+        }
+
+        function _mmOpenDiamondEdit(d) {
+            var form = document.getElementById('addDiamondForm');
+            if (!form) return;
+            var dia = d.diamond || {};
+
+            _mmVal(form, '#dia_gold_purchase_id', d.gold_purchase_id || '');
+            _mmVal(form, '#dia_product_id', d.product_id || '');
+            _mmSelect(form, '#dia_supplier_id', d.supplier_id || '');
+            _mmSelect(form, '#dia_jewelry_type', d.jewelry_type || '');
+            _mmSelect(form, '#dia_mount_karat', dia.mount_karat || '18K');
+            _mmVal(form, '#dia_mount_gram', _mmToTr(dia.mount_gram));
+            // Taş kökeni boşsa (eski kayıt) "Belirtilmemiş" seçilir; kaydetmede
+            // backend geçersiz değeri yok sayar → köken NATURAL'a ÇEVRİLMEZ.
+            _mmSelect(form, '#dia_growth_type', dia.growth_type || '', 'Belirtilmemiş');
+            _mmVal(form, '#dia_profit', _mmToTr(d.profit));
+            // Kayıtlı para birimi AYNEN gelir — mağaza varsayılanı uygulanmaz.
+            _mmSelect(form, '#dia_sale_currency', dia.sale_currency || '');
+            _mmVal(form, '#dia_sale_price', _mmToTr(dia.sale_price));
+            _mmVal(form, '#dia_sale_price_eur', d.sale_price_eur || '0');
+            _mmVal(form, '#dia_name', d.name || '');
+            _mmSelect(form, '#dia_mount_metal', dia.mount_metal || 'GOLD_YELLOW');
+            _mmVal(form, '#dia_supplier_ref', dia.supplier_ref || '');
+
+            _mmSetCostField(form.querySelector('#dia_buy_price_eur'),
+                            !!d.can_view_cost, d.buy_price_eur);
+            _mmLockStockField(form.querySelector('#dia_stock_pieces'), d.stock_pieces, true);
+            _mmLockLedgerToggle(
+                document.getElementById('dia_process_ledger'),
+                document.getElementById('dia_ledger_info'),
+                true, !!d.has_supplier_ledger
+            );
+            _mmSetImagePreview(form, d.image);
+            _mmRenderStones(dia.stones);
+
+            var ccyLabel = document.getElementById('dia_ledger_currency_label');
+            if (ccyLabel && dia.sale_currency) ccyLabel.textContent = dia.sale_currency;
+        }
+
+        function _mmOpenWatchEdit(d) {
+            var form = document.getElementById('addWatchForm');
+            if (!form) return;
+            var w = d.watch || {};
+
+            _mmVal(form, '#wat_gold_purchase_id', d.gold_purchase_id || '');
+            _mmVal(form, '#wat_product_id', d.product_id || '');
+            _mmSelect(form, '#wat_supplier_id', d.supplier_id || '');
+            _mmSelect(form, '#wat_condition', w.condition || 'NEW');
+            _mmVal(form, '#wat_brand', w.brand || '');
+            _mmVal(form, '#wat_model', w.model_name || '');
+            _mmVal(form, '#wat_reference_no', w.reference_no || '');
+            _mmVal(form, '#wat_serial_no', w.serial_no || '');
+            _mmSelect(form, '#wat_movement', w.movement_type || '');
+            _mmSelect(form, '#wat_case_material', w.case_material || '');
+            _mmVal(form, '#wat_case_diameter', _mmToTr(w.case_diameter));
+            _mmVal(form, '#wat_year', w.year_of_mfg || '');
+            _mmVal(form, '#wat_warranty', w.warranty_date || '');
+            var boxEl = form.querySelector('#wat_box_papers');
+            if (boxEl) boxEl.checked = !!w.box_papers;
+            _mmSelect(form, '#wat_sale_currency', w.sale_currency || '');
+            _mmVal(form, '#wat_sale_price', _mmToTr(w.sale_price));
+
+            _mmSetCostField(form.querySelector('#wat_buy_price_eur'),
+                            !!d.can_view_cost, d.buy_price_eur);
+            _mmLockStockField(form.querySelector('#wat_stock_pieces'), d.stock_pieces, true);
+            _mmLockLedgerToggle(
+                document.getElementById('wat_process_ledger'),
+                document.getElementById('wat_ledger_info'),
+                true, !!d.has_supplier_ledger
+            );
+            _mmSetImagePreview(form, d.image);
+
+            var ccyLabel = document.getElementById('wat_ledger_currency_label');
+            if (ccyLabel && w.sale_currency) ccyLabel.textContent = w.sale_currency;
+        }
+
+        function _mmResetEditState() {
+            window.__mmEditMaterial = null;
+            ['dia', 'wat'].forEach(function (prefix) {
+                var gp = document.getElementById(prefix + '_gold_purchase_id');
+                var pid = document.getElementById(prefix + '_product_id');
+                if (gp) gp.value = '';
+                if (pid) pid.value = '';
+                var cost = document.getElementById(prefix + '_buy_price_eur');
+                if (cost) {
+                    cost.disabled = false;
+                    cost.placeholder = '0,00';
+                    cost.removeAttribute('title');
+                }
+                var stock = document.getElementById(prefix + '_stock_pieces');
+                _mmLockStockField(stock, null, false);
+                if (stock) stock.value = '1';
+                var toggle = document.getElementById(prefix + '_process_ledger');
+                if (toggle) {
+                    toggle.checked = false;
+                    toggle.disabled = true;
+                    toggle.removeAttribute('title');
+                }
+                var info = document.getElementById(prefix + '_ledger_info');
+                if (info) info.classList.add('d-none');
+                // Para birimi seçicisini mağaza varsayılanına geri al ve
+                // düzenlemede eklenmiş "listede olmayan" option'ları temizle.
+                var ccy = document.getElementById(prefix + '_sale_currency');
+                if (ccy) {
+                    var def = ccy.getAttribute('data-default-currency') || 'USD';
+                    Array.prototype.slice.call(ccy.options).forEach(function (o) {
+                        if (o.dataset && o.dataset.runtime === '1') o.remove();
+                    });
+                    ccy.value = def;
+                }
+                var growth = document.getElementById(prefix === 'dia' ? 'dia_growth_type' : '');
+                if (growth) {
+                    var blank = growth.querySelector('option[value=""]');
+                    if (blank) blank.remove();
+                    growth.value = 'NATURAL';
+                }
+            });
+            _mmSetTabsLocked(false, null);
+            _mmApplyModeLabels(window.__activeMaterialTab || 'GOLD', false);
+        }
+
+        // Dış script bloğundaki edit_record() bu API'yi kullanır.
+        window.KP_MULTI_EDIT = {
+            open: function (d) {
+                var mat = (d.material_type || 'GOLD').toUpperCase();
+                window.__mmEditMaterial = mat;
+                _mmActivateTab(mat);
+                if (mat === 'DIAMOND') {
+                    _mmOpenDiamondEdit(d);
+                } else if (mat === 'WATCH') {
+                    _mmOpenWatchEdit(d);
+                }
+                _mmSetTabsLocked(true, mat);
+                // Sekme geçiş animasyonu shown.bs.tab ile başlıkları geri
+                // yazabildiği için etiketleri hem şimdi hem geçiş sonrası uygula.
+                _mmApplyModeLabels(mat, true);
+                setTimeout(function () { _mmApplyModeLabels(mat, true); }, 250);
+            },
+            reset: _mmResetEditState,
+            isEditing: function () { return !!window.__mmEditMaterial; }
+        };
+
+        // Aktif form düzenleme modunda mı? (endpoint kararı VERİDEN gelir)
+        function _mmEndpointFor(formEl) {
+            var gpEl = formEl ? formEl.querySelector('[name="gold_purchase_id"]') : null;
+            var isEdit = !!(gpEl && (gpEl.value || '').trim());
+            return isEdit
+                ? '/gold-purchases/multi-material-update'
+                : '/gold-purchases/multi-material-add';
+        }
 
         // ─────────────────────────────────────────────────────────────────
         // 5) PIRLANTA FORM SUBMIT
@@ -4867,7 +5493,7 @@
                     fd.append('csrfmiddlewaretoken', getCsrfToken());
                 }
 
-                fetch('/gold-purchases/multi-material-add', {
+                fetch(_mmEndpointFor(diamondForm), {
                     method: 'POST',
                     body: fd,
                     credentials: 'same-origin',
@@ -4876,6 +5502,15 @@
                 .then(function (r) { return r.json().then(function (j) { return {ok: r.ok, body: j}; }); })
                 .then(function (resp) {
                     releaseLock();  // FAZ E UI FIX: form-level lock + butonları aç
+                    if (resp.body && resp.body.result && resp.body.updated) {
+                        // DÜZENLEME: aynı ürün UPDATE edildi — yeni barkod YOK,
+                        // stok artmadı, cariye 2. borç yazılmadı. Modal kapanır.
+                        notifySuccess('Pırlanta güncellendi. Barkod: ' + (resp.body.barcode || '—'));
+                        if (typeof dt !== 'undefined' && dt && dt.ajax) dt.ajax.reload(null, false);
+                        if (typeof refreshHeaderStats === 'function') refreshHeaderStats();
+                        if (window.jQuery) window.jQuery('#addGoldModal').modal('hide');
+                        return;
+                    }
                     if (resp.body && resp.body.result) {
                         notifySuccess('Pırlanta kaydedildi. Barkod: ' + (resp.body.barcode || '—'));
                         if (typeof dt !== 'undefined' && dt && dt.ajax) {

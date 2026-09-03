@@ -346,3 +346,57 @@ DIA-DT sonrası kullanıcı geri bildirimi:
 - **Migration gerekmedi:** Tüm değişiklikler JSONField içeriğinde — Django default fonksiyonları yeni rows'a uygulanır, `_merge` eski rows'a.
 - **Toggle kapsamı:** `.diamond-only-option` div'i HTML'de göründükten sonra JS `_syncDiamondOnlyOptions` ile show/hide; GOLD/WATCH tab'ında DOM'da var ama display:none.
 - Helper `_resolve_diamond_label_data` defansif okumalarla sarıldı: `mount_karat='NONE'`, `mount_gram=0.000` durumlarında alan boş döner — etiket boyutu sürpriz büyümez.
+
+---
+
+## FAZ PIRLANTA-EDIT + DETAYLI RAPOR (2026-09-01)
+
+Barkodlu Ürünler ekranında iki iş: **(1)** Pırlanta düzenlemenin çalışmaması (P0),
+**(2)** Detaylı Rapor'a ürün grubu + tarih filtresi ve gerçek maliyet.
+
+### 1. Kök nedenler
+
+| # | Belirti | Kök neden |
+|---|---------|-----------|
+| 1 | Pırlanta "Düzenle" boş Altın formu açıyor | `edit_record()` `material_type`'a HİÇ bakmıyordu, daima `#addGoldModal` + altın alanları. `get_details` yalnızca altın kolonlarını dönüyordu (`DiamondDetail`/`DiamondStone`/`sale_currency` yok). |
+| 2 | Kaydedince ikinci ürün oluşurdu | Pırlanta için **UPDATE endpoint'i YOKTU**; `multi_material_product_add` create-only (her çağrıda yeni barkod + yeni `GoldPurchases` + `StockService.record_entry` + `SupplierLedger`). |
+| 3 | Para birimi hep USD | Şablonda `<option value="USD" selected>` + view'da `or 'USD'` / `else 'USD'` hard-code. |
+| 4 | Maliyet 0 görünüyor | Pırlanta maliyeti `Products.buy_price_eur`'dedir; `Products.clean()` DIAMOND/WATCH için `buy_price_hs`'i **zorla 0'a çeker** ve `get_details` tam da onu dönüyordu. |
+| 5 | Rapor filtreleri sahte | `/detailed-report` filtresiz tek aggregate; durum/ayar/arama **JS ile satır gizleyerek**; PDF ayrı bir Python filtresi uyguluyordu. |
+
+### 2. Para birimi SSOT — `apps/settings/currency.py` (YENİ)
+
+- `read_primary_currency(store)` → yapılandırma yoksa **None** ("yok" ile "EUR" ayrımı korunur).
+- `get_store_primary_currency(store, default)` → görüntüleme/etiket için.
+- `resolve_default_sale_currency(store, allowed, legacy_default='USD')` → **yeni kayıt** varsayılanı.
+- Kaynak: `StoreConfiguration.primary_currency`. **Ülke→para birimi hard-code'u YOK.**
+  Almanya (EUR) → EUR, TRY yapılandırılmış mağaza → TRY, yapılandırma satırı yok → USD (eski davranış).
+- `apps/process/fast_views.py` ve `apps/banking/bank_views.py` içindeki iki kopya helper bu modüle **delege** edildi (üçüncü kopya çıkmadı).
+- **Kayıtlı para birimi ASLA ezilmez:** düzenlemede DB'deki `sale_currency` aynen gelir; mağaza varsayılanı yalnız alan gerçekten boşsa uygulanır.
+
+### 3. Düzenleme akışı
+
+- **Yeni endpoint:** `POST /gold-purchases/multi-material-update` → `multi_material_product_update`.
+  Barkod/RFID üretmez, `GoldPurchases` açmaz, `StockService`'i **çağırmaz**, `SupplierLedger`/`Process` **yazmaz**.
+  `material_type` değiştirilemez; taşlar aynı transaction içinde replace-all.
+- `get_details` materyal farkındalı: `material_type` + `diamond{...stones[]}` / `watch{...}` + `stock_pieces` + `has_supplier_ledger` + `can_view_cost` + `cost_currency`.
+  Ekranın kendi yetki kodu (`GOLD_PURCHASES_GOLD_PURCHASES_INDEX`) ile korunur.
+- Frontend: `window.KP_MULTI_EDIT.open(payload)` doğru sekmeyi açar, formu hydrate eder, taş tablosunu kayıttan kurar; sekmeler kilitlenir, stok adedi read-only olur, cari toggle kapanır, "Kaydet ve Yazdır" gizlenir.
+  **Endpoint kararı veriden gelir:** formdaki gizli `gold_purchase_id` doluysa UPDATE, boşsa CREATE.
+- **IDOR yaması:** `gold_purchase_add` UPDATE yolundaki `get_object_or_404(Products, id=...)` artık `store=` + `is_deleted=False` ile kapsamlı.
+
+### 4. Detaylı Rapor
+
+- Filtre SSOT'u: `parse_detailed_report_filters(request)` + `_build_detailed_report_rows(store, filters, include_cost)` — ekran ve PDF **aynı** fonksiyonları çağırır.
+- **Ürün grubu:** `Products.material_type` (isim eşleştirmesi DEĞİL) — DataTable materyal pill'leriyle aynı sözlük.
+- **Tarih semantiği:** Tezgahtaki → `GoldPurchases.created_on`; Satılan → `Process.date` (`transaction_type='SALE'`, `is_status='COMPLETED'`) `Exists` alt sorgusu ile. `updated_at` KULLANILMAZ.
+  Aralık gün bazında **inclusive** (`_report_day_range`: bitiş günü + 1 gün exclusive üst sınır, timezone-aware).
+- **Maliyet birimi satır bazında:** metal satır → HAS; Pırlanta/Saat → `Products.price_currency` (yoksa mağaza birincil birimi).
+  Satırlar maliyet para birimine göre de ayrılır (`cost_currency_key`) — **altın gruplaması etkilenmez** (anahtar sabit `''`).
+  Toplamlar `summarize_cost_by_currency()` ile birim bazında ayrı; kur dönüşümü YOK, karışık toplam YOK (`—`).
+- **RBAC:** `user_can_view_cost(user)` tek kapı; JSON, ekran ve PDF aynı koşula bağlı. Yetkisiz kullanıcı maliyet alanlarını hiç almaz ve **kayıtlı maliyeti POST ile sıfırlayamaz**.
+
+### 5. Testler
+
+`apps/gold_purchases/tests_diamond_edit_report.py` — 60 test (A–M maddeleri + Altın/Türkiye regresyonu + şablon render).
+Toplam `apps.gold_purchases`: **84/84 OK**.

@@ -48,14 +48,13 @@ def _get_store_primary_currency(store, default='EUR'):
     """
     Mağazanın birincil para birimini StoreConfiguration'dan okur.
     Yapılandırma yoksa default döner. Almanya pazarı için 'EUR' varsayılan.
+
+    SSOT: apps.settings.currency.get_store_primary_currency
+    (Aynı okuma mantığı banking/gold_purchases'ta da gerekiyordu; üçüncü
+    kopya yerine kanonik modüle delege edildi — davranış birebir aynıdır.)
     """
-    try:
-        cfg = StoreConfiguration.objects.filter(store=store).only('primary_currency').first()
-        if cfg and cfg.primary_currency:
-            return cfg.primary_currency
-    except Exception:
-        pass
-    return default
+    from apps.settings.currency import get_store_primary_currency
+    return get_store_primary_currency(store, default=default)
 
 
 def _dec(x, q='0.01'):

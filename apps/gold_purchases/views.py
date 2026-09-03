@@ -6,10 +6,11 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q, Sum, Value, DecimalField, F, Func, Subquery, OuterRef, Count, ExpressionWrapper, Case, When
+from django.db.models import Q, Sum, Value, DecimalField, CharField, F, Func, Subquery, OuterRef, Count, ExpressionWrapper, Case, When, Exists
 from django.db.models.functions import Coalesce, Cast, Lower, Replace
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.core.exceptions import ValidationError as ValidationError_DjangoCore
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
@@ -40,6 +41,62 @@ from apps.stock_management.services.conversion_service import ConversionService
 
 # --- PIVOT FAZ E (2026-04-23): Çoklu Maden ürün uzantı tabloları ---
 from apps.products.models import MaterialType, DiamondDetail, DiamondStone, WatchDetail
+
+# --- MAĞAZA PARA BİRİMİ SSOT (2026-09-01) ---
+# Ülke/pazar farkı (Almanya EUR / Türkiye TRY) YALNIZCA
+# StoreConfiguration.primary_currency üzerinden gelir. Bu dosyada hiçbir yerde
+# "Almanya ise EUR" gibi bir eşleme YAZILMAZ.
+from apps.settings.currency import (
+    get_store_primary_currency,
+    get_store_primary_currency_symbol,
+    resolve_default_sale_currency,
+)
+
+# Pırlanta ve Saat satış fiyatı seçicilerinin kabul ettiği kodlar.
+# Kaynak: DiamondDetail.SaleCurrency / WatchDetail.SaleCurrency (models.py).
+DIAMOND_SALE_CURRENCIES = tuple(c[0] for c in DiamondDetail.SaleCurrency.choices)
+WATCH_SALE_CURRENCIES = tuple(c[0] for c in WatchDetail.SaleCurrency.choices)
+
+# `Products.price_currency` (legacy alan) için kabul edilen fiat kodları.
+_PRICE_CURRENCY_WHITELIST = ('USD', 'EUR', 'GBP', 'TRY', 'CAD', 'QAR', 'CHF')
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MALİYET GÖRÜNÜRLÜĞÜ (RBAC) — TEK KAPI, ÜÇ YÜZEY
+# ═══════════════════════════════════════════════════════════════════════════
+# Projede ayrı bir "maliyet görme" yetki kodu YOKTUR; maliyet/kâr yüzeyleri
+# ekranın KENDİ yetki kodu ile korunur (aynı desen: process/views.py
+# profit_report_data / profit_report_pdf → 'PROCESS_PROCESS_INDEX').
+# Barkodlu Ürünler ekranının kodu 'GOLD_PURCHASES_GOLD_PURCHASES_INDEX'
+# (role_required Katman 2 → menü kodu ABC1007D).
+#
+# Bu helper dekoratörün uyguladığı KAPININ AYNISINI veri seviyesinde tekrar
+# uygular; böylece JSON endpoint, ekran ve PDF maliyeti AYNI koşula bağlar.
+# "Frontend'de gizle, PDF'te açık dön" tarzı sızıntı yapısal olarak imkânsız.
+COST_VISIBILITY_PERMISSION = 'GOLD_PURCHASES_GOLD_PURCHASES_INDEX'
+
+
+def user_can_view_cost(user) -> bool:
+    """Kullanıcı maliyet (alış/maliyet) alanlarını görebilir mi?
+
+    Mevcut RBAC davranışı KORUNUR: bugün bu ekranı açabilen herkes maliyeti
+    görüyordu; kural değişmedi, yalnızca tek bir yere taşındı. Yeni bir yetki
+    kodu tanımlanMADI (tanımlansaydı mevcut yetkili kullanıcılar maliyeti
+    kaybederdi — regresyon).
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_superuser', False):
+        return True
+    try:
+        from apps.roles.decorators import MAIN_PAGE_TO_ABC_MAP, _check_role_detail
+        abc_code = MAIN_PAGE_TO_ABC_MAP.get(COST_VISIBILITY_PERMISSION)
+        if not abc_code or not getattr(user, 'role_id', None):
+            return False
+        return _check_role_detail(user, abc_code)
+    except Exception:
+        # Yetki altyapısı okunamıyorsa FAIL-CLOSED: maliyet gösterilmez.
+        return False
 
 
 # --- YARDIMCI FONKSİYONLAR ---
@@ -701,7 +758,14 @@ def gold_purchase_add(request):
         category = Categories.objects.filter(is_deleted=False).first()
 
     if record_id:
-        record = get_object_or_404(Products, id=record_id)
+        # ── MULTI-TENANT GUARD (2026-09-01) ──────────────────────────────
+        # Önceden: get_object_or_404(Products, id=record_id) → mağaza
+        # kapsamı YOKTU; başka mağazanın ürün UUID'si ile bu endpoint'e
+        # POST atılabiliyordu (IDOR). Artık ürün, isteği yapan kullanıcının
+        # mağazasına ait olmak ZORUNDA.
+        record = get_object_or_404(
+            Products, id=record_id, store=store, is_deleted=False
+        )
         supplier_val = request.POST.get('supplier_id') or None
         GoldPurchases.objects.filter(
             product=record, store=store, is_deleted=False
@@ -1020,9 +1084,27 @@ def gold_purchases_index(request):
         store=store, is_deleted=False, is_active=True
     ).order_by('template_name')
 
+    # --- MAĞAZA PARA BİRİMİ (SSOT) ---
+    # Yeni Pırlanta/Saat kaydında para birimi seçicisinin varsayılanı
+    # StoreConfiguration.primary_currency'den gelir. Şablonda hiçbir yerde
+    # "Almanya ise EUR" gibi bir koşul YOKTUR.
+    store_currency = get_store_primary_currency(store)
+    diamond_default_currency = resolve_default_sale_currency(
+        store, DIAMOND_SALE_CURRENCIES, legacy_default='USD'
+    )
+    watch_default_currency = resolve_default_sale_currency(
+        store, WATCH_SALE_CURRENCIES, legacy_default='USD'
+    )
+
     context = {
         'suppliers': suppliers,
         'title': 'Tedarikçiden Altın Alımı',
+        # Para birimi SSOT'u (etiketler + seçici varsayılanları)
+        'store_currency': store_currency,
+        'store_currency_symbol': get_store_primary_currency_symbol(store),
+        'diamond_default_currency': diamond_default_currency,
+        'watch_default_currency': watch_default_currency,
+        'can_view_cost': user_can_view_cost(request.user),
         'gp_total_has_active': agg['has_active'],
         'gp_total_has_sold': agg['has_sold'],
         'gp_active_count': agg['active_count'],
@@ -1847,17 +1929,85 @@ def mark_as_printed(request):
 # GÖREV 1: Ürün Detay Endpoint (Düzenle butonu için)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _decimal_str(val, default=''):
+    """Decimal/None → form'a yazılabilir düz string. None → default."""
+    if val is None:
+        return default
+    try:
+        return format(Decimal(str(val)).normalize(), 'f')
+    except (InvalidOperation, ValueError, TypeError):
+        return str(val)
+
+
+def _current_stock_pieces(product, store):
+    """Ürünün mağazadaki güncel adet stoğu (bilgi amaçlı; düzenlemede
+    DEĞİŞTİRİLMEZ)."""
+    try:
+        snap = StockSnapshot.objects.filter(product=product, store=store).first()
+        return int(snap.stock_pieces or 0) if snap else 0
+    except Exception:
+        return 0
+
+
+def _serialize_diamond_stones(diamond_detail):
+    """DiamondStone satırlarını modal taş tablosunun beklediği sırayla döner.
+
+    Düzenlemede taşların KAYBOLMAMASI bu fonksiyona bağlıdır: kayıtlı her taş
+    (D1 merkez, D2+ yan) position sırasıyla döner.
+    """
+    if not diamond_detail:
+        return []
+    rows = []
+    stones = diamond_detail.stones.all().order_by('position', 'id')
+    for s in stones:
+        rows.append({
+            'stone_type': s.stone_type or 'DIAMOND',
+            'role': s.role or 'CENTER',
+            'position': int(s.position or 0),
+            'carat_weight': _decimal_str(s.carat_weight, '0'),
+            'shape': s.shape or '',
+            'color_grade': s.color_grade or '',
+            'clarity_grade': s.clarity_grade or '',
+            'cut_grade': s.cut_grade or '',
+            'certificate_lab': s.certificate_lab or '',
+            'certificate_no': s.certificate_no or '',
+        })
+    return rows
+
+
 @login_required(login_url='login')
+@role_required('GOLD_PURCHASES_GOLD_PURCHASES_INDEX')
 def get_details(request):
-    """Düzenle butonu tıklandığında ürünün tüm bilgilerini döner."""
+    """Düzenle butonu tıklandığında ürünün tüm bilgilerini döner.
+
+    MATERYAL FARKINDALIĞI (2026-09-01):
+        Eskiden yalnızca ALTIN alanları dönüyordu; Pırlanta/Saat ürününde
+        modal boş "yeni kayıt" gibi açılıyordu. Artık payload
+        `material_type` taşır ve DIAMOND/WATCH için uzantı tablosu
+        (DiamondDetail + DiamondStone / WatchDetail) alanları da döner.
+
+    MALİYET:
+        Pırlanta/Saat maliyeti `Products.buy_price_eur` alanındadır
+        (mağazanın birincil para birimi cinsinden). `buy_price_hs`
+        DIAMOND/WATCH için Products.clean() tarafından ZORLA 0'a çekilir —
+        maliyet ORADAN OKUNAMAZ.
+
+    RBAC:
+        Maliyet alanları yalnızca `user_can_view_cost()` True ise döner.
+
+    MULTI-TENANT:
+        GoldPurchases kaydı `store=request.user.store` ile aranır; başka
+        mağazanın id'si 404 döner (IDOR koruması).
+    """
     record_id = request.GET.get('id')
     if not record_id:
         return JsonResponse({'result': False, 'error_msg': 'ID gerekli.'})
 
+    store = request.user.store
     gp = get_object_or_404(
         GoldPurchases,
         id=record_id,
-        store=request.user.store,
+        store=store,
         is_deleted=False
     )
     p = gp.product
@@ -1871,16 +2021,24 @@ def get_details(request):
         except Exception:
             image_url = ''
 
-    return JsonResponse({
+    mat_type = (p.material_type or MaterialType.GOLD).upper()
+    can_see_cost = user_can_view_cost(request.user)
+    cost_currency = get_store_primary_currency(store)
+
+    data = {
         'result': True,
         'product_id': str(p.id),
+        'gold_purchase_id': str(gp.id),
+        'material_type': mat_type,
+        'name': p.name or '',
         'jewelry_type': p.jewelry_type or '',
+        'brand': p.brand or '',
+        'description': p.description or '',
         'gram': str(p.gram or ''),
         'gold_rate': str(int(float(p.gold_rate))) if p.gold_rate else '',
         'product_mileage': str(p.product_mileage or ''),
         'labor_mileage': str(p.labor_mileage or ''),
         'piece_labor': str(p.piece_labor or ''),
-        'buy_price_hs': str(p.buy_price_hs or ''),
         'sale_price_hs': str(p.sale_price_hs or ''),
         'profit': str(p.profit or ''),
         'supplier_id': str(gp.supplier_id) if gp.supplier_id else '',
@@ -1888,7 +2046,80 @@ def get_details(request):
         'image': image_url,
         'barcode': p.barcode or '',
         'rfid_code': p.rfid_code or '',
-    })
+        'stock_pieces': _current_stock_pieces(p, store),
+        # Maliyet görünürlüğü (frontend etiket/blok gizleme için)
+        'can_view_cost': can_see_cost,
+        'cost_currency': cost_currency,
+        'is_sold': bool(gp.is_status is False or p.is_completed),
+    }
+
+    # ── MALİYET (RBAC kapısı) ───────────────────────────────────────────
+    # Yetkisiz kullanıcıya maliyet alanları HİÇ gönderilmez (boş string
+    # değil — anahtar hiç yok; böylece "0 mı, gizli mi" karışmaz).
+    if can_see_cost:
+        data['buy_price_hs'] = str(p.buy_price_hs or '')
+        data['buy_price_eur'] = _decimal_str(p.buy_price_eur, '0')
+        data['sale_price_eur'] = _decimal_str(p.sale_price_eur, '0')
+
+    # ── Tedarikçi cari durumu ───────────────────────────────────────────
+    # Düzenlemede cariye İKİNCİ KEZ borç yazılmaz; UI bu bayrakla
+    # "zaten işlendi" bilgisini gösterir ve checkbox'ı kilitler.
+    try:
+        data['has_supplier_ledger'] = SupplierLedger.objects.filter(
+            product=p, is_active=True
+        ).exists()
+    except Exception:
+        data['has_supplier_ledger'] = False
+
+    # ── PIRLANTA ────────────────────────────────────────────────────────
+    if mat_type == MaterialType.DIAMOND:
+        dd = getattr(p, 'diamond_detail', None)
+        if dd is None:
+            dd = DiamondDetail.objects.filter(product=p).first()
+        data['diamond'] = {
+            'mount_metal': (dd.mount_metal if dd else '') or '',
+            'mount_karat': (dd.mount_karat if dd else '') or '',
+            'mount_gram': _decimal_str(dd.mount_gram if dd else None, '0'),
+            # DB'de KAYITLI para birimi neyse O döner. Mağaza varsayılanı
+            # (EUR) burada UYGULANMAZ — eski USD kaydı USD kalır.
+            'sale_currency': (dd.sale_currency if dd else '') or '',
+            'sale_price': _decimal_str(dd.sale_price if dd else None, '0'),
+            'carat_weight': _decimal_str(dd.carat_weight if dd else None, ''),
+            'shape': (dd.shape if dd else '') or '',
+            'color_grade': (dd.color_grade if dd else '') or '',
+            'clarity_grade': (dd.clarity_grade if dd else '') or '',
+            'cut_grade': (dd.cut_grade if dd else '') or '',
+            'certificate_lab': (dd.certificate_lab if dd else '') or '',
+            'certificate_no': (dd.certificate_no if dd else '') or '',
+            'growth_type': (dd.growth_type if dd else '') or '',
+            'supplier_ref': (dd.supplier_ref if dd else '') or '',
+            'fluorescence': (dd.fluorescence if dd else '') or '',
+            'stones': _serialize_diamond_stones(dd),
+        }
+
+    # ── SAAT ────────────────────────────────────────────────────────────
+    elif mat_type == MaterialType.WATCH:
+        wd = getattr(p, 'watch_detail', None)
+        if wd is None:
+            wd = WatchDetail.objects.filter(product=p).first()
+        data['watch'] = {
+            'brand': (wd.brand if wd else '') or '',
+            'model_name': (wd.model_name if wd else '') or '',
+            'reference_no': (wd.reference_no if wd else '') or '',
+            'serial_no': (wd.serial_no if wd else '') or '',
+            'movement_type': (wd.movement_type if wd else '') or '',
+            'case_material': (wd.case_material if wd else '') or '',
+            'case_diameter': _decimal_str(wd.case_diameter if wd else None, ''),
+            'year_of_mfg': str(wd.year_of_mfg) if (wd and wd.year_of_mfg) else '',
+            'warranty_date': (wd.warranty_date.isoformat()
+                              if (wd and wd.warranty_date) else ''),
+            'box_papers': bool(wd.box_papers) if wd else False,
+            'condition': (wd.condition if wd else '') or 'NEW',
+            'sale_currency': (wd.sale_currency if wd else '') or '',
+            'sale_price': _decimal_str(wd.sale_price if wd else None, '0'),
+        }
+
+    return JsonResponse(data)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2332,17 +2563,158 @@ def _fmt_tr(val, decimals=2):
     return s.replace(',', 'X').replace('.', ',').replace('X', '.')
 
 
-def _build_detailed_report_rows(store):
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAYLI RAPOR — FİLTRE SSOT'u (2026-09-01)
+# ═══════════════════════════════════════════════════════════════════════════
+# Ekran (JSON) ve PDF AYNI parse + AYNI queryset fonksiyonunu kullanır.
+# "Ekranda başka, PDF'te başka sonuç" durumu yapısal olarak imkânsızdır.
+#
+# ÜRÜN GRUBU: sınıflandırma isim eşleştirmesiyle DEĞİL, ekranda hâlihazırda
+# kullanılan kanonik alan olan `Products.material_type` ile yapılır
+# (DataTable materyal pill'leri de aynı sözlüğü kullanır: '' | GOLD |
+#  DIAMOND | WATCH — bkz. get_all()).
+#
+# TARİH: "hangi tarih?" sorusu iki ayak için AYRI cevaplanır:
+#   TEZGAHTAKİ → GoldPurchases.created_on (stok/giriş tarihi, auto_now_add)
+#   SATILAN    → Process.date (transaction_type='SALE', is_status='COMPLETED')
+#                yani GERÇEK satış işlemi tarihi. `updated_at` KULLANILMAZ:
+#                Ocak'ta satılıp Ağustos'ta güncellenen ürün Ağustos satışı
+#                gibi görünmez.
+# ═══════════════════════════════════════════════════════════════════════════
+
+PRODUCT_GROUP_CHOICES = ('GOLD', 'DIAMOND', 'WATCH')
+
+# Ürün grubu etiketleri — MaterialType.choices'tan türetilir (SSOT).
+MATERIAL_LABELS = {code: label for code, label in MaterialType.choices}
+
+
+def _report_day_range(date_from_str, date_to_str):
+    """'gg.aa.yyyy' veya 'yyyy-aa-gg' aralığını timezone-aware sınırlara çevirir.
+
+    Dönüş: (start_dt, end_dt) — start dahil, end dahil (bitiş gününün 23:59:59
+    dahil olacak şekilde ertesi günün 00:00'ından ÖNCESİ).
+
+    Mağaza yerel saat dilimi (StoreConfiguration.timezone_code) yerine Django
+    aktif saat dilimi kullanılır; proje TIME_ZONE'u 'Europe/Berlin'dir ve
+    settings.middleware zaten mağaza diline/zamanına göre aktive eder.
     """
-    Kategori + Ayar bazında; Tezgahta/Satılan için Adet, Gram, Has (saf altın gramı),
-    Maliyet (buy_price_hs) değerlerini döner. Tek ORM sorgusu (FAZ 9.8 uyumlu).
+    from datetime import datetime as _dt, time as _time, timedelta as _td
+
+    def _parse(s):
+        s = (s or '').strip()
+        if not s:
+            return None
+        for fmt in ('%d.%m.%Y', '%Y-%m-%d', '%d/%m/%Y'):
+            try:
+                return _dt.strptime(s, fmt).date()
+            except ValueError:
+                continue
+        return None
+
+    d_from = _parse(date_from_str)
+    d_to = _parse(date_to_str)
+
+    start_dt = end_dt = None
+    if d_from:
+        start_dt = _dt.combine(d_from, _time.min)
+    if d_to:
+        # Bitiş günü DAHİL: ertesi günün 00:00'ı üst sınır (exclusive).
+        end_dt = _dt.combine(d_to + _td(days=1), _time.min)
+
+    if settings.USE_TZ:
+        tz = timezone.get_current_timezone()
+        if start_dt is not None:
+            start_dt = timezone.make_aware(start_dt, tz)
+        if end_dt is not None:
+            end_dt = timezone.make_aware(end_dt, tz)
+    return start_dt, end_dt
+
+
+def parse_detailed_report_filters(request):
+    """Rapor filtrelerini isteğe bakarak TEK yerde normalize eder.
+
+    JSON endpoint'i ve PDF endpoint'i bu fonksiyonu ortak kullanır.
     """
+    group = (request.GET.get('product_group') or '').upper().strip()
+    if group not in PRODUCT_GROUP_CHOICES:
+        group = ''  # 'Tümü'
+    status = (request.GET.get('status') or 'all').strip().lower()
+    if status not in ('all', 'tezgahta', 'satilan'):
+        status = 'all'
+    return {
+        'product_group': group,
+        'status': status,
+        'ayar': (request.GET.get('ayar') or '').strip(),
+        'category_q': (request.GET.get('category_q') or '').strip(),
+        'date_from': (request.GET.get('date_from') or '').strip(),
+        'date_to': (request.GET.get('date_to') or '').strip(),
+    }
+
+
+def _build_detailed_report_rows(store, filters=None, include_cost=True):
+    """
+    Kategori + Ayar bazında; Tezgahta/Satılan için Adet, Gram, Has (saf altın
+    gramı), Maliyet değerlerini döner.
+
+    filters: parse_detailed_report_filters() çıktısı (None → filtresiz).
+    include_cost: False ise maliyet alanları HİÇ hesaplanmaz/dönmez (RBAC).
+    """
+    filters = filters or {}
     DEC18_6 = DecimalField(max_digits=18, decimal_places=6)
     zero_dec = Value(Decimal('0'), output_field=DEC18_6)
     base_qs = GoldPurchases.objects.filter(is_deleted=False, store=store)
 
-    # FAZ 9.8
+    # ── ÜRÜN GRUBU (backend seviyesinde; JS satır gizleme YOK) ──────────
+    product_group = filters.get('product_group') or ''
+    if product_group in PRODUCT_GROUP_CHOICES:
+        base_qs = base_qs.filter(product__material_type=product_group)
+
+    # ── TAKI TİPİ ARAMA (TR-duyarlı küçük harf) ─────────────────────────
+    category_q = filters.get('category_q') or ''
+    if category_q:
+        base_qs = base_qs.annotate(
+            _cat_tr_norm=Lower(
+                Replace(
+                    Replace(
+                        Coalesce(F('product__jewelry_type'), Value('')),
+                        Value('İ'), Value('i'),
+                    ),
+                    Value('I'), Value('ı'),
+                )
+            )
+        ).filter(_cat_tr_norm__contains=_tr_lower(category_q))
+
+    # FAZ 9.8: Satıldı = is_status=False VEYA product.is_completed=True
     sold_q = Q(is_status=False) | Q(product__is_completed=True)
+
+    # ── TARİH ARALIĞI ───────────────────────────────────────────────────
+    start_dt, end_dt = _report_day_range(
+        filters.get('date_from'), filters.get('date_to')
+    )
+
+    # TEZGAHTAKİ ayağı: stok giriş tarihi (GoldPurchases.created_on)
+    shelf_q = ~sold_q
+    if start_dt is not None:
+        shelf_q &= Q(created_on__gte=start_dt)
+    if end_dt is not None:
+        shelf_q &= Q(created_on__lt=end_dt)
+
+    # SATILAN ayağı: GERÇEK satış işlemi tarihi (Process.date)
+    sold_filter_q = sold_q
+    if start_dt is not None or end_dt is not None:
+        sale_proc = Process.objects.filter(
+            store=store,
+            product=OuterRef('product'),
+            transaction_type='SALE',
+            is_status='COMPLETED',
+            is_deleted=False,
+        )
+        if start_dt is not None:
+            sale_proc = sale_proc.filter(date__gte=start_dt)
+        if end_dt is not None:
+            sale_proc = sale_proc.filter(date__lt=end_dt)
+        base_qs = base_qs.annotate(_sold_in_range=Exists(sale_proc))
+        sold_filter_q = sold_q & Q(_sold_in_range=True)
 
     gram_expr = Cast(F('product__gram'), DEC18_6)
     # Has gram = fiziksel gram × milyem / 1000  (saf altın ağırlık eşdeğeri)
@@ -2362,48 +2734,162 @@ def _build_detailed_report_rows(store):
         default=ExpressionWrapper(buy_price_cast * gram_expr, output_field=DEC18_6),
         output_field=DEC18_6,
     )
+    # PARASAL MALİYET (Pırlanta/Saat): Products.buy_price_eur — mağazanın
+    # birincil para birimi cinsindendir. buy_price_hs DIAMOND/WATCH için
+    # Products.clean() tarafından zorla 0'a çekilir, oradan OKUNAMAZ.
+    money_cost_expr = Cast(
+        Coalesce(F('product__buy_price_eur'), Value(Decimal('0'))), DEC18_6
+    )
+
+    annotations = dict(
+        tezgahta_count=Count('id', filter=shelf_q),
+        tezgahta_gram=Coalesce(Sum(gram_expr, filter=shelf_q, output_field=DEC18_6), zero_dec),
+        tezgahta_has=Coalesce(Sum(has_gram_expr, filter=shelf_q, output_field=DEC18_6), zero_dec),
+        satilan_count=Count('id', filter=sold_filter_q),
+        satilan_gram=Coalesce(Sum(gram_expr, filter=sold_filter_q, output_field=DEC18_6), zero_dec),
+        satilan_has=Coalesce(Sum(has_gram_expr, filter=sold_filter_q, output_field=DEC18_6), zero_dec),
+    )
+    if include_cost:
+        annotations.update(
+            tezgahta_maliyet=Coalesce(Sum(maliyet_expr, filter=shelf_q, output_field=DEC18_6), zero_dec),
+            satilan_maliyet=Coalesce(Sum(maliyet_expr, filter=sold_filter_q, output_field=DEC18_6), zero_dec),
+            tezgahta_cost_money=Coalesce(Sum(money_cost_expr, filter=shelf_q, output_field=DEC18_6), zero_dec),
+            satilan_cost_money=Coalesce(Sum(money_cost_expr, filter=sold_filter_q, output_field=DEC18_6), zero_dec),
+        )
+
+    # ── MALİYET PARA BİRİMİ KIRILIMI (sessiz karışma koruması) ─────────
+    # Pırlanta/Saat satırları, ürünün KAYITLI fiyat para birimine göre de
+    # ayrılır; aksi halde tek bir "Maliyet" hücresinde USD ve EUR tutarlar
+    # sessizce toplanırdı. ALTIN satırları bu kırılımdan ETKİLENMEZ
+    # (anahtar sabit '' → mevcut gruplama birebir korunur).
+    base_qs = base_qs.annotate(
+        cost_currency_key=Case(
+            When(
+                product__material_type__in=(MaterialType.DIAMOND, MaterialType.WATCH),
+                then=Coalesce(F('product__price_currency'), Value('')),
+            ),
+            default=Value(''),
+            output_field=CharField(),
+        )
+    )
 
     rows = (
         base_qs
         .values(
+            'cost_currency_key',
             category=F('product__jewelry_type'),
             mileage=F('product__product_mileage'),
+            material_type=F('product__material_type'),
         )
-        .annotate(
-            tezgahta_count=Count('id', filter=~sold_q),
-            tezgahta_gram=Coalesce(Sum(gram_expr, filter=~sold_q, output_field=DEC18_6), zero_dec),
-            tezgahta_has=Coalesce(Sum(has_gram_expr, filter=~sold_q, output_field=DEC18_6), zero_dec),
-            tezgahta_maliyet=Coalesce(Sum(maliyet_expr, filter=~sold_q, output_field=DEC18_6), zero_dec),
-            satilan_count=Count('id', filter=sold_q),
-            satilan_gram=Coalesce(Sum(gram_expr, filter=sold_q, output_field=DEC18_6), zero_dec),
-            satilan_has=Coalesce(Sum(has_gram_expr, filter=sold_q, output_field=DEC18_6), zero_dec),
-            satilan_maliyet=Coalesce(Sum(maliyet_expr, filter=sold_q, output_field=DEC18_6), zero_dec),
-        )
+        .annotate(**annotations)
         .order_by('category', 'mileage')
     )
 
+    # ── SATIŞ DURUMU FİLTRESİ (satır seviyesinde, backend'de) ───────────
+    status_filter = (filters.get('status') or 'all')
+    ayar_filter = (filters.get('ayar') or '')
+    store_ccy = get_store_primary_currency(store)
+
     data = []
     for r in rows:
-        data.append({
+        if status_filter == 'tezgahta' and not r['tezgahta_count']:
+            continue
+        if status_filter == 'satilan' and not r['satilan_count']:
+            continue
+        # Tarih aralığı verildiğinde her iki ayağı da boş kalan satır
+        # raporda görünmemeli (aralık dışı ürün "0"larla sızmasın).
+        if (start_dt is not None or end_dt is not None) and \
+                not r['tezgahta_count'] and not r['satilan_count']:
+            continue
+        mat = (r['material_type'] or MaterialType.GOLD).upper()
+        # Ayar (milyem) yalnızca metal ürünlerde anlamlıdır; Pırlanta/Saat'te
+        # Products.clean() milyemi 0'a çeker → "0 M" yerine '—' gösterilir.
+        if mat in (MaterialType.DIAMOND, MaterialType.WATCH):
+            ayar_label = '—'
+        else:
+            ayar_label = _mileage_to_ayar(r['mileage'])
+        if ayar_filter and ayar_label != ayar_filter:
+            continue
+
+        # Maliyet birimi: metal ürünlerde HAS, Pırlanta/Saat'te kayıtlı para
+        # birimi (yoksa mağazanın birincil para birimi).
+        if mat in (MaterialType.DIAMOND, MaterialType.WATCH):
+            _ccy = (r.get('cost_currency_key') or '').upper()
+            cost_unit = _ccy if _ccy not in ('', 'HS', 'HG') else store_ccy
+            cost_is_metal = False
+        else:
+            cost_unit = 'HAS'
+            cost_is_metal = True
+        row = {
             'category': r['category'] or 'Tanımsız',
-            'ayar': _mileage_to_ayar(r['mileage']),
+            'ayar': ayar_label,
+            'material_type': mat,
+            'material_label': MATERIAL_LABELS.get(mat, mat),
+            'cost_unit': cost_unit,
+            'cost_is_metal': cost_is_metal,
             'tezgahta_count': r['tezgahta_count'] or 0,
             'tezgahta_gram': _fmt_tr(r['tezgahta_gram']),
             'tezgahta_has': _fmt_tr(r['tezgahta_has']),
-            'tezgahta_maliyet': _fmt_tr(r['tezgahta_maliyet']),
             'satilan_count': r['satilan_count'] or 0,
             'satilan_gram': _fmt_tr(r['satilan_gram']),
             'satilan_has': _fmt_tr(r['satilan_has']),
-            'satilan_maliyet': _fmt_tr(r['satilan_maliyet']),
-            # Ham değerler (JS filtreleme/toplam için)
+            # Ham değerler (JS toplamları için)
             '_raw_tezgahta_gram': float(r['tezgahta_gram']),
             '_raw_tezgahta_has': float(r['tezgahta_has']),
-            '_raw_tezgahta_maliyet': float(r['tezgahta_maliyet']),
             '_raw_satilan_gram': float(r['satilan_gram']),
             '_raw_satilan_has': float(r['satilan_has']),
-            '_raw_satilan_maliyet': float(r['satilan_maliyet']),
-        })
+        }
+        if include_cost:
+            # Gösterilen maliyet, satırın kendi birimindedir:
+            #   metal satır → Has maliyet, Pırlanta/Saat satır → parasal maliyet
+            raw_tez_cost = (float(r['tezgahta_maliyet']) if cost_is_metal
+                            else float(r['tezgahta_cost_money']))
+            raw_sat_cost = (float(r['satilan_maliyet']) if cost_is_metal
+                            else float(r['satilan_cost_money']))
+            row.update({
+                'tezgahta_maliyet': _fmt_tr(raw_tez_cost, 3 if cost_is_metal else 2),
+                'satilan_maliyet': _fmt_tr(raw_sat_cost, 3 if cost_is_metal else 2),
+                '_raw_tezgahta_maliyet': raw_tez_cost,
+                '_raw_satilan_maliyet': raw_sat_cost,
+            })
+        data.append(row)
     return data
+
+
+def summarize_cost_by_currency(rows):
+    """Rapor satırlarının maliyet toplamlarını BİRİM BAZINDA ayırır.
+
+    FARKLI PARA BİRİMLERİNİ TEK TOPLAMDA BİRLEŞTİRMEK YASAKTIR: kur
+    dönüşümü yapılmaz, her birim (HAS / EUR / USD ...) ayrı satır olur.
+    Ekran ve PDF bu AYNI fonksiyonu kullanır.
+    """
+    bucket = {}
+    for r in rows:
+        unit = r.get('cost_unit')
+        if not unit or '_raw_tezgahta_maliyet' not in r:
+            continue
+        b = bucket.setdefault(unit, {
+            'unit': unit,
+            'is_metal': bool(r.get('cost_is_metal')),
+            '_raw_tezgahta': 0.0,
+            '_raw_satilan': 0.0,
+            'tezgahta_count': 0,
+            'satilan_count': 0,
+        })
+        b['_raw_tezgahta'] += r.get('_raw_tezgahta_maliyet', 0.0)
+        b['_raw_satilan'] += r.get('_raw_satilan_maliyet', 0.0)
+        b['tezgahta_count'] += r.get('tezgahta_count', 0)
+        b['satilan_count'] += r.get('satilan_count', 0)
+
+    out = []
+    for unit in sorted(bucket.keys(), key=lambda u: (u != 'HAS', u)):
+        b = bucket[unit]
+        dec = 3 if b['is_metal'] else 2
+        b['tezgahta'] = _fmt_tr(b['_raw_tezgahta'], dec)
+        b['satilan'] = _fmt_tr(b['_raw_satilan'], dec)
+        b['total'] = _fmt_tr(b['_raw_tezgahta'] + b['_raw_satilan'], dec)
+        out.append(b)
+    return out
 
 
 @login_required(login_url='login')
@@ -2411,11 +2897,51 @@ def _build_detailed_report_rows(store):
 def get_barcoded_products_report(request):
     """
     Kategori + Ayar bazında detaylı rapor AJAX endpoint'i.
-    Adet, Gram, Has (saf altın), Maliyet (Has) değerlerini döner.
+
+    Filtreler (hepsi BACKEND'de uygulanır — JS satır gizleme YOK):
+        product_group : '' | GOLD | DIAMOND | WATCH
+        status        : all | tezgahta | satilan
+        ayar          : '14 Ayar' vb.
+        category_q    : takı tipi arama
+        date_from / date_to : gg.aa.yyyy (başlangıç ve bitiş günü DAHİL)
+
+    Maliyet alanları yalnızca `user_can_view_cost()` True ise döner.
     """
     store = request.user.store
-    data = _build_detailed_report_rows(store)
-    return JsonResponse({'result': True, 'data': data})
+    filters = parse_detailed_report_filters(request)
+    include_cost = user_can_view_cost(request.user)
+    data = _build_detailed_report_rows(store, filters, include_cost=include_cost)
+    return JsonResponse({
+        'result': True,
+        'data': data,
+        'filters': filters,
+        'can_view_cost': include_cost,
+        'store_currency': get_store_primary_currency(store),
+        'store_currency_symbol': get_store_primary_currency_symbol(store),
+        # Maliyet toplamları BİRİM BAZINDA ayrı (HAS / EUR / USD ...).
+        'cost_totals': summarize_cost_by_currency(data),
+    })
+
+
+def _detailed_report_filter_labels(filters, money_costs=None):
+    """Aktif filtrelerin insan-okur özeti (PDF başlığında gösterilir)."""
+    labels = []
+    group = filters.get('product_group') or ''
+    if group:
+        labels.append(f"Ürün Grubu: {MATERIAL_LABELS.get(group, group)}")
+    if filters.get('status') == 'tezgahta':
+        labels.append('Durum: Sadece Tezgahtakiler')
+    elif filters.get('status') == 'satilan':
+        labels.append('Durum: Sadece Satılanlar')
+    if filters.get('ayar'):
+        labels.append(f"Ayar: {filters['ayar']}")
+    if filters.get('category_q'):
+        labels.append(f"Takı Tipi: {filters['category_q']}")
+    if filters.get('date_from') or filters.get('date_to'):
+        labels.append(
+            f"Tarih: {filters.get('date_from') or '...'} – {filters.get('date_to') or '...'}"
+        )
+    return labels
 
 
 @login_required(login_url='login')
@@ -2423,8 +2949,13 @@ def get_barcoded_products_report(request):
 def export_detailed_report_pdf(request):
     """
     Kategori + Ayar bazlı raporu xhtml2pdf ile PDF olarak indirir (landscape A4).
-    Adet, Gram, Has (saf altın), Maliyet (Has) kolonlarıyla detaylı analiz.
-    Filtre parametreleri: status (all/tezgahta/satilan), ayar, category_q
+
+    EKRANLA AYNI SONUÇ GARANTİSİ: filtre parse'ı ve queryset üretimi ekran
+    endpoint'iyle ORTAK fonksiyonlardır (parse_detailed_report_filters +
+    _build_detailed_report_rows). PDF'te ayrı bir sorgu YOKTUR.
+
+    MALİYET GÜVENLİĞİ: maliyet kolonları `user_can_view_cost()` False ise
+    PDF'te de üretilmez (frontend'de gizleyip PDF'ten açık dönme açığı yok).
     """
     from io import BytesIO
     try:
@@ -2434,35 +2965,18 @@ def export_detailed_report_pdf(request):
     from django.template.loader import render_to_string
 
     store = request.user.store
-    all_data = _build_detailed_report_rows(store)
-
-    # Filtre parametreleri
-    status_filter = (request.GET.get('status') or 'all').strip().lower()
-    ayar_filter = (request.GET.get('ayar') or '').strip()
-    category_q = (request.GET.get('category_q') or '').strip()
-    category_q_low = _tr_lower(category_q) if category_q else ''
-
-    data = []
-    for r in all_data:
-        if ayar_filter and r['ayar'] != ayar_filter:
-            continue
-        if category_q_low and category_q_low not in _tr_lower(r['category']):
-            continue
-        if status_filter == 'tezgahta' and r['tezgahta_count'] == 0:
-            continue
-        if status_filter == 'satilan' and r['satilan_count'] == 0:
-            continue
-        data.append(r)
+    filters = parse_detailed_report_filters(request)
+    include_cost = user_can_view_cost(request.user)
+    data = _build_detailed_report_rows(store, filters, include_cost=include_cost)
+    cost_totals = summarize_cost_by_currency(data)
 
     # Genel toplamlar (ham değerler üzerinden hesapla, sonra TR formatına çevir)
     total_tezgahta_count = sum(d['tezgahta_count'] for d in data)
     total_satilan_count = sum(d['satilan_count'] for d in data)
     total_tezgahta_gram = sum(d['_raw_tezgahta_gram'] for d in data)
     total_tezgahta_has = sum(d['_raw_tezgahta_has'] for d in data)
-    total_tezgahta_maliyet = sum(d['_raw_tezgahta_maliyet'] for d in data)
     total_satilan_gram = sum(d['_raw_satilan_gram'] for d in data)
     total_satilan_has = sum(d['_raw_satilan_has'] for d in data)
-    total_satilan_maliyet = sum(d['_raw_satilan_maliyet'] for d in data)
 
     store_name = (
         getattr(store, 'barcode_title', None)
@@ -2472,32 +2986,30 @@ def export_detailed_report_pdf(request):
     )
     report_date = timezone.now().strftime('%d/%m/%Y %H:%M')
 
-    # Aktif filtre özeti (raporda görünsün diye)
-    filter_labels = []
-    if status_filter == 'tezgahta':
-        filter_labels.append('Durum: Sadece Tezgahtakiler')
-    elif status_filter == 'satilan':
-        filter_labels.append('Durum: Sadece Satılanlar')
-    if ayar_filter:
-        filter_labels.append(f'Ayar: {ayar_filter}')
-    if category_q:
-        filter_labels.append(f'Takı Tipi: {category_q}')
-
     html_string = render_to_string(
         'management/gold_purchases/detailed_report_pdf.html',
         {
             'store_name': store_name,
             'report_date': report_date,
             'data': data,
-            'filter_labels': filter_labels,
+            'filter_labels': _detailed_report_filter_labels(filters),
+            'can_view_cost': include_cost,
+            'cost_totals': cost_totals,
+            'store_currency': get_store_primary_currency(store),
+            'product_group_label': (
+                MATERIAL_LABELS.get(filters['product_group'], filters['product_group'])
+                if filters['product_group'] else 'Tumu'
+            ),
+            'date_range_label': (
+                f"{filters.get('date_from') or '...'} - {filters.get('date_to') or '...'}"
+                if (filters.get('date_from') or filters.get('date_to')) else 'Tumu'
+            ),
             'total_tezgahta_count': total_tezgahta_count,
             'total_satilan_count': total_satilan_count,
             'total_tezgahta_gram': _fmt_tr(total_tezgahta_gram),
             'total_tezgahta_has': _fmt_tr(total_tezgahta_has),
-            'total_tezgahta_maliyet': _fmt_tr(total_tezgahta_maliyet),
             'total_satilan_gram': _fmt_tr(total_satilan_gram),
             'total_satilan_has': _fmt_tr(total_satilan_has),
-            'total_satilan_maliyet': _fmt_tr(total_satilan_maliyet),
             'grand_total_count': total_tezgahta_count + total_satilan_count,
         },
     )
@@ -2719,8 +3231,22 @@ def multi_material_product_add(request):
 
             # WATCH/DIAMOND için price_currency döviz olarak saklanır
             # (legacy alan, CurrencyChoices içinden seçilir)
-            sale_currency_raw = (request.POST.get('sale_currency') or 'USD').upper()
-            if sale_currency_raw in ('USD', 'EUR', 'GBP', 'TRY', 'CAD', 'QAR'):
+            #
+            # PARA BİRİMİ VARSAYILANI (2026-09-01): Form hiç değer göndermezse
+            # mağazanın birincil para birimi (StoreConfiguration.primary_currency)
+            # uygulanır — Almanya mağazasında EUR, TRY yapılandırılmış mağazada
+            # TRY. Ülke→para birimi hard-code'u YOKTUR; yapılandırma
+            # okunamazsa modülün eski varsayılanı (USD) korunur.
+            _store_default_ccy = resolve_default_sale_currency(
+                store,
+                (DIAMOND_SALE_CURRENCIES if mat_type == MaterialType.DIAMOND
+                 else WATCH_SALE_CURRENCIES),
+                legacy_default='USD',
+            )
+            sale_currency_raw = (
+                request.POST.get('sale_currency') or _store_default_ccy
+            ).upper()
+            if sale_currency_raw in _PRICE_CURRENCY_WHITELIST:
                 record.price_currency = sale_currency_raw
 
             # piece_labor ve fixed_labor_amount: WATCH/DIAMOND için ANLAMLIDIR
@@ -2771,9 +3297,10 @@ def multi_material_product_add(request):
 
             if mat_type == MaterialType.WATCH:
                 # Geçerli sale_currency değerleri WatchDetail.SaleCurrency'den
-                valid_watch_cur = ('USD', 'EUR', 'GBP', 'CHF', 'TRY')
                 watch_sale_cur = (
-                    sale_currency_raw if sale_currency_raw in valid_watch_cur else 'USD'
+                    sale_currency_raw
+                    if sale_currency_raw in WATCH_SALE_CURRENCIES
+                    else _store_default_ccy
                 )
 
                 # year_of_mfg: güvenli int parse
@@ -2814,9 +3341,10 @@ def multi_material_product_add(request):
 
             else:  # DIAMOND
                 # Geçerli sale_currency değerleri DiamondDetail.SaleCurrency'den
-                valid_diamond_cur = ('USD', 'EUR', 'GBP', 'TRY')
                 diamond_sale_cur = (
-                    sale_currency_raw if sale_currency_raw in valid_diamond_cur else 'USD'
+                    sale_currency_raw
+                    if sale_currency_raw in DIAMOND_SALE_CURRENCIES
+                    else _store_default_ccy
                 )
 
                 # Taş kökeni (YENİ ürün): form her zaman NATURAL/LAB_GROWN gönderir.
@@ -2997,6 +3525,318 @@ def multi_material_product_add(request):
 
     except ValueError as ve:
         # StockService validation hataları ve parse hataları buraya düşer
+        return JsonResponse({'error': True, 'error_msg': str(ve)}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': True, 'error_msg': str(e)}, status=500)
+
+
+# ============================================================================
+# ÇOKLU MADEN GÜNCELLEME (2026-09-01) — WATCH / DIAMOND için PATCH semantiği
+# ============================================================================
+# NEDEN AYRI ENDPOINT?
+#   `multi_material_product_add` yapısı gereği CREATE-only'dir: her çağrıda
+#   yeni barkod üretir, yeni GoldPurchases satırı açar, stok girişi yapar ve
+#   (istenirse) tedarikçi carisine borç yazar. Düzenleme akışının oraya
+#   düşmesi = ikinci ürün + ikinci barkod + çift stok + çift cari borç.
+#   Bu yüzden düzenleme AYRI bir endpoint'tir; create yoluna DÜŞEMEZ.
+#
+# BU ENDPOINT'İN YAPMADIKLARI (bilinçli):
+#   - Barkod / RFID YENİDEN ÜRETİLMEZ.
+#   - GoldPurchases satırı OLUŞTURULMAZ (mevcut satır güncellenir).
+#   - StockService.record_entry ÇAĞRILMAZ  → stok adedi artmaz.
+#   - SupplierLedger / Process kaydı OLUŞTURULMAZ → cariye 2. borç yazılmaz.
+#   - material_type DEĞİŞTİRİLMEZ (Products.clean() zaten reddeder).
+# ============================================================================
+
+def _apply_diamond_update(request, record, store, sale_price_foreign,
+                          sale_currency_raw):
+    """DiamondDetail + DiamondStone güncellemesi (UPDATE semantiği)."""
+    dd = DiamondDetail.objects.filter(product=record).first()
+    if dd is None:
+        dd = DiamondDetail(product=record)
+
+    # ── Para birimi: KAYITLI DEĞER KORUNUR ───────────────────────────────
+    # Geçerli bir kod POST edilmişse o uygulanır. Aksi halde DB'deki değer
+    # aynen kalır; DB'de de yoksa (eski/boş kayıt) mağaza varsayılanı devreye
+    # girer. Kayıtlı USD bir ürün ASLA otomatik EUR'ya çevrilmez.
+    if sale_currency_raw in DIAMOND_SALE_CURRENCIES:
+        dd.sale_currency = sale_currency_raw
+    elif not dd.sale_currency:
+        dd.sale_currency = resolve_default_sale_currency(
+            store, DIAMOND_SALE_CURRENCIES, legacy_default='USD'
+        )
+
+    if 'sale_price' in request.POST:
+        dd.sale_price = sale_price_foreign
+
+    if 'mount_metal' in request.POST:
+        dd.mount_metal = (request.POST.get('mount_metal') or 'GOLD_YELLOW')
+    if 'mount_karat' in request.POST:
+        dd.mount_karat = (request.POST.get('mount_karat') or '18K')
+    if 'mount_gram' in request.POST:
+        mount_gram_val = parse_decimal_locale(
+            request.POST.get('mount_gram'), default="0.000"
+        )
+        dd.mount_gram = mount_gram_val
+        dd.is_mounted = bool(mount_gram_val > 0)
+
+    # Piece-level 4C özet alanları
+    if 'diamond_carat_weight' in request.POST:
+        summary_carat = parse_decimal_locale(
+            request.POST.get('diamond_carat_weight'), default="0"
+        )
+        dd.carat_weight = summary_carat if summary_carat > 0 else None
+    for post_key, field in (
+        ('diamond_shape', 'shape'),
+        ('diamond_color_grade', 'color_grade'),
+        ('diamond_clarity_grade', 'clarity_grade'),
+        ('diamond_cut_grade', 'cut_grade'),
+        ('diamond_certificate_no', 'certificate_no'),
+        ('diamond_supplier_ref', 'supplier_ref'),
+        ('diamond_fluorescence', 'fluorescence'),
+    ):
+        if post_key in request.POST:
+            setattr(dd, field, (request.POST.get(post_key) or '').strip() or None)
+    if 'diamond_certificate_lab' in request.POST:
+        dd.certificate_lab = (request.POST.get('diamond_certificate_lab') or 'NONE')
+
+    # ── Taş kökeni: ESKİ KAYIT KORUMASI ──────────────────────────────────
+    # Geçersiz/boş değer mevcut kökeni EZMEZ (create akışındaki NATURAL
+    # fallback'i yalnızca YENİ kayıt içindir).
+    _valid_growth = {c[0] for c in DiamondDetail.GrowthType.choices}
+    growth_raw = (request.POST.get('diamond_growth_type') or '').upper().strip()
+    if growth_raw in _valid_growth:
+        dd.growth_type = growth_raw
+
+    dd.save()
+
+    # ── Taşlar: tam yerine koyma (replace-all) ───────────────────────────
+    # Modal her kaydetmede taş tablosunun TAMAMINI gönderir; satır silme /
+    # sıra değişimi ancak böyle doğru yansır. Aynı transaction içinde
+    # olduğu için yarım kalma riski yoktur.
+    stones_payload = _parse_diamond_stones_payload(request)
+    if stones_payload:
+        DiamondStone.objects.filter(diamond_detail=dd).delete()
+        for stone_data in stones_payload:
+            DiamondStone.objects.create(diamond_detail=dd, **stone_data)
+    return dd
+
+
+def _apply_watch_update(request, record, store, sale_price_foreign,
+                        sale_currency_raw):
+    """WatchDetail güncellemesi (UPDATE semantiği)."""
+    wd = WatchDetail.objects.filter(product=record).first()
+    if wd is None:
+        wd = WatchDetail(product=record)
+
+    if sale_currency_raw in WATCH_SALE_CURRENCIES:
+        wd.sale_currency = sale_currency_raw
+    elif not wd.sale_currency:
+        wd.sale_currency = resolve_default_sale_currency(
+            store, WATCH_SALE_CURRENCIES, legacy_default='USD'
+        )
+
+    if 'sale_price' in request.POST:
+        wd.sale_price = sale_price_foreign
+
+    for post_key, field in (
+        ('watch_brand', 'brand'),
+        ('watch_model_name', 'model_name'),
+        ('watch_reference_no', 'reference_no'),
+        ('watch_serial_no', 'serial_no'),
+        ('watch_movement_type', 'movement_type'),
+        ('watch_case_material', 'case_material'),
+    ):
+        if post_key in request.POST:
+            setattr(wd, field, (request.POST.get(post_key) or '').strip() or None)
+
+    if 'watch_case_diameter' in request.POST:
+        cd_val = parse_decimal_locale(
+            request.POST.get('watch_case_diameter'), default="0"
+        )
+        wd.case_diameter = cd_val if cd_val and cd_val > 0 else None
+    if 'watch_year_of_mfg' in request.POST:
+        year_raw = (request.POST.get('watch_year_of_mfg') or '').strip()
+        wd.year_of_mfg = int(year_raw) if year_raw.isdigit() else None
+    if 'watch_warranty_date' in request.POST:
+        wd.warranty_date = (request.POST.get('watch_warranty_date') or '').strip() or None
+    if 'watch_condition' in request.POST:
+        wd.condition = (request.POST.get('watch_condition') or 'NEW')
+    # Checkbox işaretli DEĞİLSE POST'ta HİÇ görünmez; bu yüzden varlığına
+    # bakılamaz. Saat formunun her zaman gönderdiği `watch_brand` alanını
+    # "bu gerçekten saat formu submit'i" işareti olarak kullanıyoruz.
+    if 'watch_brand' in request.POST:
+        wd.box_papers = bool(request.POST.get('watch_box_papers'))
+
+    wd.save()
+    return wd
+
+
+@login_required(login_url='login')
+@role_required('GOLD_PURCHASES_GOLD_PURCHASE_ADD')
+@require_http_methods(["POST"])
+def multi_material_product_update(request):
+    """Kayıtlı bir Pırlanta/Saat ürününü GÜNCELLER (PATCH semantiği).
+
+    Zorunlu POST alanları:
+        gold_purchase_id (veya product_id) — mağaza kapsamında aranır.
+        material_type — kayıtlı tiple EŞLEŞMEK ZORUNDA.
+    """
+    store = request.user.store
+
+    # ---- 1. Kayıt çözümleme (MULTI-TENANT: store zorunlu) ----
+    gp_id = (request.POST.get('gold_purchase_id') or '').strip()
+    product_id = (request.POST.get('product_id') or '').strip()
+    if not gp_id and not product_id:
+        return JsonResponse({
+            'error': True,
+            'error_msg': 'Güncelleme için gold_purchase_id veya product_id zorunludur.',
+        }, status=400)
+
+    gp_qs = GoldPurchases.objects.filter(store=store, is_deleted=False)
+    gp = None
+    try:
+        if gp_id:
+            gp = gp_qs.filter(id=gp_id).select_related('product').first()
+        else:
+            gp = gp_qs.filter(product_id=product_id).select_related('product').first()
+    except (ValueError, ValidationError_DjangoCore):
+        gp = None
+
+    if gp is None or gp.product is None:
+        # Başka mağazanın kaydı da buraya düşer → veri SIZMAZ.
+        return JsonResponse({
+            'error': True, 'error_msg': 'Kayıt bulunamadı.',
+        }, status=404)
+
+    record = gp.product
+
+    # ---- 2. material_type doğrulaması ----
+    stored_type = (record.material_type or '').upper()
+    if stored_type not in (MaterialType.WATCH, MaterialType.DIAMOND):
+        return JsonResponse({
+            'error': True,
+            'error_msg': (
+                f"Bu endpoint yalnızca WATCH/DIAMOND ürünleri günceller. "
+                f"Kayıtlı tip: '{stored_type}'. Altın için /gold-purchases/add kullanın."
+            ),
+        }, status=400)
+
+    posted_type = (request.POST.get('material_type') or '').upper()
+    if posted_type and posted_type != stored_type:
+        return JsonResponse({
+            'error': True,
+            'error_msg': (
+                f"Ürün tipi değiştirilemez. Kayıtlı: '{stored_type}', "
+                f"gelen: '{posted_type}'."
+            ),
+        }, status=400)
+    mat_type = stored_type
+
+    # ---- 2b. Pırlanta için taş kontrolü (create ile aynı sözleşme) ----
+    if mat_type == MaterialType.DIAMOND:
+        if not _parse_diamond_stones_payload(request):
+            return JsonResponse({
+                'error': True,
+                'error_msg': (
+                    'Pırlanta ürünü en az 1 taş kaydı gerektirir. '
+                    'Lütfen taş tablosuna geçerli karat değerine (> 0) sahip '
+                    'en az bir taş ekleyin.'
+                ),
+            }, status=400)
+
+    can_edit_cost = user_can_view_cost(request.user)
+
+    try:
+        with transaction.atomic():
+            # ---- 3. Products alanları ----
+            if 'jewelry_type' in request.POST:
+                record.jewelry_type = request.POST.get('jewelry_type') or ''
+            posted_name = (request.POST.get('name') or '').strip()
+            if posted_name:
+                record.name = posted_name
+            elif 'jewelry_type' in request.POST and record.jewelry_type:
+                record.name = record.jewelry_type
+            if 'brand' in request.POST:
+                record.brand = request.POST.get('brand') or ''
+            if 'description' in request.POST:
+                record.description = request.POST.get('description') or ''
+            if 'piece_labor' in request.POST:
+                record.piece_labor = parse_decimal_locale(
+                    request.POST.get('piece_labor'), default="0.00"
+                )
+            if 'fixed_labor_amount' in request.POST:
+                record.fixed_labor_amount = parse_decimal_locale(
+                    request.POST.get('fixed_labor_amount'), default="0.00"
+                )
+            if 'profit' in request.POST:
+                record.profit = parse_decimal_locale(
+                    request.POST.get('profit'), default="0.000"
+                )
+
+            sale_currency_raw = (request.POST.get('sale_currency') or '').upper().strip()
+            if sale_currency_raw in _PRICE_CURRENCY_WHITELIST:
+                record.price_currency = sale_currency_raw
+
+            # ── MALİYET: yalnızca yetkili kullanıcı yazabilir ────────────
+            # Maliyeti GÖREMEYEN kullanıcının formu 0 gönderip kaydı
+            # sıfırlayamaz (sessiz veri kaybı koruması).
+            if can_edit_cost and 'buy_price_eur' in request.POST:
+                record.buy_price_eur = parse_decimal_locale(
+                    request.POST.get('buy_price_eur'), default="0.00"
+                )
+            if can_edit_cost and 'sale_price_eur' in request.POST:
+                record.sale_price_eur = parse_decimal_locale(
+                    request.POST.get('sale_price_eur'), default="0.00"
+                )
+
+            image = request.FILES.get('image')
+            if image:
+                filename, processed = process_image(image)
+                record.image.save(filename, processed, save=False)
+
+            # Barkod/RFID KORUNUR — yeniden üretilmez.
+            record.save()
+
+            # ---- 4. Uzantı tablosu ----
+            sale_price_foreign = parse_decimal_locale(
+                request.POST.get('sale_price'), default="0.00"
+            )
+            if mat_type == MaterialType.DIAMOND:
+                _apply_diamond_update(
+                    request, record, store, sale_price_foreign, sale_currency_raw
+                )
+            else:
+                _apply_watch_update(
+                    request, record, store, sale_price_foreign, sale_currency_raw
+                )
+
+            # ---- 5. Tedarikçi (yalnızca ilişki güncellenir) ----
+            # DİKKAT: cari borç (SupplierLedger) ve Process kaydı BURADA
+            # OLUŞTURULMAZ — düzenleme cariye ikinci kez borç yazmaz.
+            if 'supplier_id' in request.POST:
+                gp.supplier_id = (request.POST.get('supplier_id') or None)
+                gp.save(update_fields=['supplier'])
+
+            return JsonResponse({
+                'result': True,
+                'updated': True,
+                'gold_purchase_id': str(gp.id),
+                'product_id': str(record.id),
+                'barcode': record.barcode or '',
+                'rfid_code': record.rfid_code or '',
+                'material_type': mat_type,
+            })
+
+    except ValidationError_DjangoCore as ve:
+        return JsonResponse({
+            'error': True,
+            'error_msg': '; '.join(
+                f"{k}: {', '.join(map(str, v))}"
+                for k, v in getattr(ve, 'message_dict', {'hata': ve.messages}).items()
+            ),
+        }, status=400)
+    except ValueError as ve:
         return JsonResponse({'error': True, 'error_msg': str(ve)}, status=400)
     except Exception as e:
         return JsonResponse({'error': True, 'error_msg': str(e)}, status=500)

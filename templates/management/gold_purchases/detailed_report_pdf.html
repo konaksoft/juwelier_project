@@ -208,7 +208,7 @@
             <td style="width:40%;">
                 <div class="meta-info">
                     <strong>Rapor Tarihi:</strong> {{ report_date }}<br>
-                    <strong>Kapsam:</strong> Kategori &amp; Ayar &middot; Adet / Gram / Has / Maliyet
+                    <strong>Kapsam:</strong> Urun Grubu &amp; Kategori &amp; Ayar &middot; Adet / Gram / Has{% if can_view_cost %} / Maliyet{% endif %}
                 </div>
             </td>
         </tr>
@@ -248,8 +248,8 @@
         </td>
         <td class="kpi-cell">
             <div class="kpi-box kpi-box-green">
-                <div class="kpi-label">Maliyet (Has)</div>
-                <div class="kpi-val kpi-val-green">{{ total_tezgahta_maliyet }}</div>
+                <div class="kpi-label">Urun Grubu</div>
+                <div class="kpi-val kpi-val-green" style="font-size:11px;">{{ product_group_label }}</div>
             </div>
         </td>
     </tr>
@@ -277,8 +277,8 @@
         </td>
         <td class="kpi-cell">
             <div class="kpi-box kpi-box-amber">
-                <div class="kpi-label">Maliyet (Has)</div>
-                <div class="kpi-val kpi-val-amber">{{ total_satilan_maliyet }}</div>
+                <div class="kpi-label">Tarih Araligi</div>
+                <div class="kpi-val kpi-val-amber" style="font-size:11px;">{{ date_range_label }}</div>
             </div>
         </td>
     </tr>
@@ -310,16 +310,18 @@
             <tr class="cat-separator"><td colspan="10"></td></tr>
             {% endif %}{% endifchanged %}
             <tr>
-                <td class="td-cat">{{ row.category }}</td>
+                <td class="td-cat">{{ row.category }} <span class="badge-ayar">{{ row.material_label }}</span></td>
                 <td class="text-center"><span class="badge-ayar">{{ row.ayar }}</span></td>
                 <td class="text-center text-green">{{ row.tezgahta_count }}</td>
                 <td class="text-right text-green">{{ row.tezgahta_gram }}</td>
                 <td class="text-right text-green">{{ row.tezgahta_has }}</td>
-                <td class="text-right text-green">{{ row.tezgahta_maliyet }}</td>
+                <!-- Maliyet birimi SATIR BAZINDA basilir (HAS / EUR / USD ...).
+                     Yetkisiz kullaniciya PDF'te de gosterilmez. -->
+                <td class="text-right text-green">{% if can_view_cost %}{{ row.tezgahta_maliyet }} {{ row.cost_unit }}{% else %}---{% endif %}</td>
                 <td class="text-center text-amber">{{ row.satilan_count }}</td>
                 <td class="text-right text-amber">{{ row.satilan_gram }}</td>
                 <td class="text-right text-amber">{{ row.satilan_has }}</td>
-                <td class="text-right text-amber">{{ row.satilan_maliyet }}</td>
+                <td class="text-right text-amber">{% if can_view_cost %}{{ row.satilan_maliyet }} {{ row.cost_unit }}{% else %}---{% endif %}</td>
             </tr>
         {% empty %}
         <tr>
@@ -333,14 +335,40 @@
             <td class="text-center">{{ total_tezgahta_count }}</td>
             <td>{{ total_tezgahta_gram }}</td>
             <td>{{ total_tezgahta_has }}</td>
-            <td>{{ total_tezgahta_maliyet }}</td>
+            <td>---</td>
             <td class="text-center">{{ total_satilan_count }}</td>
             <td>{{ total_satilan_gram }}</td>
             <td>{{ total_satilan_has }}</td>
-            <td>{{ total_satilan_maliyet }}</td>
+            <td>---</td>
         </tr>
     </tfoot>
 </table>
+
+{% if can_view_cost and cost_totals %}
+<!-- PARA BIRIMI BAZINDA MALIYET -->
+<!-- Farkli para birimleri kur donusumu YAPILMADAN ayri gosterilir; tek bir
+     etiket altinda toplanmaz (sessiz para birimi karistirmasi yasak). -->
+<table class="data-table" style="margin-top:10px;">
+    <thead>
+        <tr>
+            <th class="th-left" style="width:25%;">Maliyet Birimi</th>
+            <th style="width:25%;">Tezgahtaki</th>
+            <th style="width:25%;">Satilan</th>
+            <th style="width:25%;">Toplam</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in cost_totals %}
+        <tr>
+            <td class="td-cat">{% if t.unit == 'HAS' %}HAS (gr){% else %}{{ t.unit }}{% endif %}</td>
+            <td class="text-right text-green">{{ t.tezgahta }}</td>
+            <td class="text-right text-amber">{{ t.satilan }}</td>
+            <td class="text-right">{{ t.total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 
 <div id="footerContent">
     Kuyum Plus Kuyumculuk Yonetim Sistemi tarafindan otomatik olusturulmustur. | Sayfa

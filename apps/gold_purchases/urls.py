@@ -48,4 +48,9 @@ urlpatterns = [
     # Altın için mevcut 'add' endpoint'i (gold_purchase_add) kullanılmaya devam eder.
     # 3'lü tab yapısında Pırlanta ve Saat tab'ları AJAX ile buraya POST atacaktır.
     path('multi-material-add', multi_material_product_add, name='multi_material_add'),
+
+    # --- 2026-09-01: Pırlanta/Saat GÜNCELLEME (PATCH semantiği) ---
+    # Düzenleme akışı BURAYA gider; create endpoint'ine ASLA düşmez.
+    # Yeni barkod üretmez, stok girmez, tedarikçi carisine 2. borç yazmaz.
+    path('multi-material-update', multi_material_product_update, name='multi_material_update'),
 ]

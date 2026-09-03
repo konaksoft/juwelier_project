@@ -59,17 +59,12 @@ def _get_store_primary_currency(store, default='EUR'):
 
     StoreConfig yoksa veya alan boşsa `default` döner. Asla istisna fırlatmaz;
     rapor/özet akışları her durumda çalışmaya devam etmelidir.
+
+    SSOT: apps.settings.currency.get_store_primary_currency
+    (Üçüncü bir kopya çıkmasın diye kanonik modüle delege edildi.)
     """
-    if not store:
-        return default
-    try:
-        from apps.settings.models import StoreConfiguration  # lazy import
-        cfg = StoreConfiguration.objects.filter(store=store).first()
-        if cfg and getattr(cfg, 'primary_currency', None):
-            return (cfg.primary_currency or default).upper()
-    except Exception:
-        pass
-    return default
+    from apps.settings.currency import get_store_primary_currency
+    return get_store_primary_currency(store, default=default)
 
 
 def _require_store(request):
